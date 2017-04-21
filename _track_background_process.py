@@ -1,6 +1,5 @@
 from __future__ import division
 from _track_functions import calculate_line, RunningPrograms
-from _track_constants import PROGRAMS
 from _track_messages import *
 from _track_files import load_program, save_program
 import time
@@ -12,7 +11,7 @@ def background_process(q_recv, q_send):
         notify.queue(START_THREAD)
         q_send.put(notify.output())
         store = {'Data': load_program(),
-                 'Programs': {'Class': RunningPrograms(PROGRAMS),
+                 'Programs': {'Class': RunningPrograms(),
                               'Current': None,
                               'Previous': None},
                  'Resolution': None}
