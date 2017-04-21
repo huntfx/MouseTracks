@@ -1,6 +1,6 @@
 import win32con
 
-PROGRAMS = 'Program List.txt'
+VERSION = 2.0
 
 MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
 KEYS = {
