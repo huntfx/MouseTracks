@@ -1,5 +1,6 @@
 MESSAGE_LEVEL = 1
 
+DEBUG = -1
 MOUSE_UNDETECTED = 0
 MOUSE_DETECTED = 1
 MOUSE_POSITION = 2
@@ -29,6 +30,8 @@ class Notify(object):
         q0 = self.message_queue[0].append
         q1 = self.message_queue[1].append
         q2 = self.message_queue[2].append
+        if message_id == DEBUG:
+            q2('Debug: {}'.format(args))
         if message_id == MOUSE_UNDETECTED:
             q2('Unable to track cursor.')
         if message_id == MOUSE_DETECTED:
