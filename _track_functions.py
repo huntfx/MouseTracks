@@ -156,20 +156,17 @@ class RunningPrograms(object):
         programs = tuple(tuple(j.strip() for j in i.split(':'))
                          for i in programs if i and i[0] not in ('#', ';', '//'))
         self.programs = {i[0]: i[1] if len(i) > 1 else i[0].replace('.exe', '') for i in programs}
-        
-    '''
-    def refresh(self, join=False):
-        t = Thread(target=self._refresh)
-        t.start()
-        if join:
-            t.join()
-            '''
+
             
     def refresh(self):
         task_list = os.popen("tasklist").read().splitlines()
-        self.processes = {line.strip().split()[0]: i for i, line in enumerate(task_list) if line}
+        self.processes = {line.strip().split('.exe')[0] + '.exe': i
+                          for i, line in enumerate(task_list) if '.exe' in line}
         
     def check(self):
+        """Check for any programs in the list that are currently loaded.
+        Choose the one with the highest ID as it'll likely be the most recent one.
+        """
         matching_programs = {}
         for program in self.programs:
             if program in self.processes:
