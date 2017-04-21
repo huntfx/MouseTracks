@@ -45,3 +45,10 @@ def rename_file(old_name, new_name):
     except WindowsError:
         return False
     return True
+
+def create_folder(folder_path):
+    try:
+        os.makedirs(folder_path)
+    except WindowsError:
+        return False
+    return True
