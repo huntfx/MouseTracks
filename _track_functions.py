@@ -1,109 +1,19 @@
 from __future__ import division
 from threading import Thread
-import multiprocessing
-#Thread = multiprocessing.Process #swap to multi processing
-import cPickle
-import base64
 import time
 import os
-
-SAVE = False
-
-FILE = 'MouseTrack.data'
-
-class DataStore(object):
-    """Load and save the file/data."""
-    def __init__(self, file_name):
-        self.file = file_name
-        self.reload()
-        
-    def reload(self):
-        """Replace the current data with the data from the file."""
-        try:
-            with open(self.file, 'r') as f:
-                data = f.read()
-            self.data = cPickle.loads(base64.b64decode(data))
-        except (IOError, TypeError, EOFError):
-            self.data = {}
-            
-    def save(self, join=False):
-        if SAVE:
-            return
-        
-        t = Thread(target=self._save)
-        t.start()
-        if join:
-            t.join()
-            
-    def _save(self):
-        """Copy the temporary dictionary to the actual dictionary and
-        save the file.
-        As this could take a long time, and the script should stay
-        running, this is run in a background thread.
-        """
-        print 'Writing recent data to main dictionary (sorry, could take a while)...'
-        SAVE = True
-        '''
-        data_copy = {k: v for k, v in self.data.iteritems()}
-        self.data = {}
-        for res, data in data_copy.iteritems():
-            for name, coordinates in data.iteritems():
-                for coordinate in coordinates.keys():
-                    count = coordinates[coordinate]
-                    try:
-                        if name == 'Movement':
-                            current_value = self._data[res][name][coordinate]
-                            self._data[res][name][coordinate] = max(current_value, count)
-                        else:
-                            self._data[res][name][coordinate] += count
-                    except KeyError:
-                        try:
-                            self._data[res][name][coordinate] = count
-                        except KeyError:
-                            try:
-                                self._data[res][name] = {coordinate: count}
-                            except KeyError:
-                                self._data[res] = {name: {coordinate: count}}
-        '''
-        print 'Serialising data...'
-        writeable_data = base64.b64encode(cPickle.dumps(self.data))
-        current_time = int(time.time())
-        print 'Saving file...'
-        temp_name = '{}.{}'.format(self.file, current_time)
-        old_name = '{}.old'.format(self.file)
-        try:
-            with open(temp_name, 'w') as f:
-                f.write(writeable_data)
-            try:
-                os.remove(old_name)
-            except WindowsError:
-                pass
-            try:
-                os.rename(FILE, old_name)
-            except WindowsError:
-                pass
-            try:
-                os.rename(temp_name, FILE)
-            except WindowsError:
-                print 'Failed to save file.'
-                try:
-                    os.remove(temp_name)
-                except WindowsError:
-                    pass
-            else:
-                print 'Finished saving.'
-        except IOError:
-            print 'Unable to save file, make sure this has the correct permissions.'
-        SAVE = False
-        
-    def read(self):
-        return {k: v for k, v in self.data.iteritems()}
+from _track_windows import get_cursor_pos
+from multiprocessing import Process, Queue
 
 
 class RefreshRateLimiter(object):
     def __init__(self, min_time):
         self.time = time.time()
         self.frame_time = min_time
+        self.pos = get_cursor_pos()
+
+    def mouse_pos(self):
+        return self.pos
 
     def __enter__(self):
         return self
@@ -188,7 +98,9 @@ def calculate_line(start, end):
         if end[0] in (x-1, x, x+1) and end[1] in (y-1, y, y+1):
             return result
 
+
 class ColourRange(object):
+    """Make a transition between colours."""
     def __init__(self, amount, colours):
         self.amount = amount - 1
         self.colours = colours
@@ -219,3 +131,50 @@ class ColourRange(object):
             return tuple(int(i + j) for i, j in zip(base_colour, mix_colour))
         else:
             return tuple(i + j for i, j in zip(base_colour, mix_colour))
+
+
+class RunningPrograms(object):
+    def __init__(self, program_list):
+        self.refresh()
+        self.program_list = program_list
+        self.reload_file()
+
+    def reload_file(self):
+        try:
+            with open(self.program_list, 'r') as f:
+                lines = f.readlines()
+        except IOError:
+            with open(self.program_list, 'w') as f:
+                lines = ['# Type any programs you want to be tracked here.',
+                         '# It is done in the format "program.exe: name"'
+                         ', where two can have the same name.',
+                         '# If no name is given it\'ll default to the filename.',
+                         '',
+                         'game.exe: Name']
+                f.write('\r\n'.join(lines))
+        programs = tuple(i.strip() for i in lines)
+        programs = tuple(tuple(j.strip() for j in i.split(':'))
+                         for i in programs if i and i[0] not in ('#', ';', '//'))
+        self.programs = {i[0]: i[1] if len(i) > 1 else i[0].replace('.exe', '') for i in programs}
+        
+    '''
+    def refresh(self, join=False):
+        t = Thread(target=self._refresh)
+        t.start()
+        if join:
+            t.join()
+            '''
+            
+    def refresh(self):
+        task_list = os.popen("tasklist").read().splitlines()
+        self.processes = {line.strip().split()[0]: i for i, line in enumerate(task_list) if line}
+        
+    def check(self):
+        matching_programs = {}
+        for program in self.programs:
+            if program in self.processes:
+                matching_programs[self.processes[program]] = program
+        if not matching_programs:
+            return None
+        latest_program = matching_programs[max(matching_programs.keys())]
+        return (self.programs[latest_program], latest_program)
