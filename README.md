@@ -9,6 +9,7 @@ This was made with the intention of recording mouse movements over multiple reso
  - Display movement history ~~and click heatmap~~ (rewritten version coming shortly)
  - Fade out movement history to keep recent tracks more visible
  - Set colours of movement history
+ - Keep separate tracks for different applications (a file called "Program List.txt" will be created with instructions)
  
 <b>Known Issues:</b>
  - They keyboard stops being properly detected during full screen games.
