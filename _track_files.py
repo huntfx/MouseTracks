@@ -2,7 +2,9 @@ import cPickle
 import zlib
 import re
 import time
-from _track_windows import remove_file, rename_file
+import os
+from _track_windows import remove_file, rename_file, create_folder
+from _track_constants import VERSION
 
 def load_program(program_name=None):
     if program_name is None:
@@ -21,19 +23,24 @@ def load_program(program_name=None):
             return {'Count': 0,
                     'Tracks': {},
                     'Clicks': {},
-                    'Keys': {}}
-        
+                    'Keys': {},
+                    'LastSave': time.time(),
+                    'Version': VERSION}
+
 
 def save_program(program_name, data):
     if program_name is None:
         program_name = ['Default', 'Default']
     name_format = re.sub('[^A-Za-z0-9]+', '', program_name[0]).lower()
+    data['LastSave'] = time.time()
+    data['Version'] = VERSION
     compressed_data = zlib.compress(cPickle.dumps(data))
         
     old_name = 'Data/{}.data.old'.format(name_format)
     new_name = 'Data/{}.data'.format(name_format)
     temp_name = 'Data/{}.data.{}'.format(name_format, time.time())
-    
+
+    create_folder('Data')
     with open(temp_name, 'wb') as f:
         f.write(compressed_data)
     remove_file(old_name)
