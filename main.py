@@ -1,5 +1,6 @@
 from __future__ import division
 from multiprocessing import Process, Queue
+import time
 
 from _track_windows import get_device_data, get_mouse_click, get_key_press
 from _track_messages import *
@@ -28,7 +29,8 @@ if __name__ == '__main__':
                        'Clicked': False,
                        'OffScreen': False},
              'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
-             'LastActivity': None}
+             'LastActivity': 0}
+    mouse_pos = store['Mouse']['Position']
 
     #Start threaded process
     q_send = Queue()
@@ -40,16 +42,31 @@ if __name__ == '__main__':
     notify.queue(START_MAIN)
     while True:
         with RefreshRateLimiter(1 / updates_per_second) as limiter:
+
+            #Print any messages from previous loop
+            notify_extra = ''
+            received_data = []
+            while not q_recv.empty():
+                received_data.append(q_recv.get())
+            if received_data:
+                notify_extra = ' | '.join(received_data)
+            notify_output = notify.output()
+            if notify_extra:
+                if notify_output:
+                    notify_output = notify_extra + ' | ' + notify_output
+                else:
+                    notify_output = notify_extra
+            if notify_output:
+                print notify_output
+
             frame_data = {}
-            
-            mouse_pos = store['Mouse']['Position']
             mouse_pos['Current'] = limiter.mouse_pos()
 
             #Check if mouse is inactive (such as in a screensaver)
             if mouse_pos['Current'] is None:
                 if not store['Mouse']['Inactive']:
                     notify.queue(MOUSE_UNDETECTED)
-                store['Mouse']['Inactive'] = True
+                    store['Mouse']['Inactive'] = True
                 time.sleep(timer['MouseInactiveWait'])
                 continue
 
@@ -143,22 +160,7 @@ if __name__ == '__main__':
             #Send data to thread
             if frame_data:
                 q_send.put(frame_data)
-            notify_extra = ''
-            received_data = []
-            while not q_recv.empty():
-                received_data.append(q_recv.get())
-            if received_data:
-                notify_extra = ' | '.join(received_data)
 
-            #End of loop stuff
-            notify_output = notify.output()
-            if notify_extra:
-                if notify_output:
-                    notify_output = notify_extra + ' | ' + notify_output
-                else:
-                    notify_output = notify_extra
-            if notify_output:
-                print notify_output
             mouse_pos['Previous'] = mouse_pos['Current']
             
-        i += 1
+            i += 1
