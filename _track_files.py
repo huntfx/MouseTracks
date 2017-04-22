@@ -25,7 +25,8 @@ def load_program(program_name=None):
                     'Clicks': {},
                     'Keys': {},
                     'LastSave': time.time(),
-                    'Version': VERSION}
+                    'Version': VERSION,
+                    'Ticks': 0}
 
 
 def save_program(program_name, data):
