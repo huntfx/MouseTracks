@@ -15,7 +15,7 @@ def background_process(q_recv, q_send):
                               'Current': None,
                               'Previous': None},
                  'Resolution': None}
-        notify.queue(THREAD_LOADED)
+        notify.queue(DATA_LOADED)
         q_send.put(notify.output())
         while True:
             received_data = q_recv.get()
@@ -63,7 +63,10 @@ def _background_process(received_data, store):
                 store['Programs']['Previous'] = store['Programs']['Current']
                     
                 store['Data'] = load_program(store['Programs']['Current'])
-                notify.queue(THREAD_LOADED)
+                if store['Data']['Count']:
+                    notify.queue(DATA_LOADED)
+                else:
+                    notify.queue(DATA_NOTFOUND)                    
 
 
     if 'Resolution' in received_data:
@@ -84,9 +87,9 @@ def _background_process(received_data, store):
 
     if 'MouseClick' in received_data:
         try:
-            store['Data']['Tracks'][store['Resolution']][received_data['MouseClick']] += 1
+            store['Data']['Clicks'][store['Resolution']][received_data['MouseClick']] += 1
         except KeyError:
-            store['Data']['Tracks'][store['Resolution']][received_data['MouseClick']] = 1
+            store['Data']['Clicks'][store['Resolution']][received_data['MouseClick']] = 1
 
     if 'MouseMove' in received_data:
         start, end = received_data['MouseMove']
