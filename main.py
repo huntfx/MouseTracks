@@ -14,7 +14,7 @@ timer = {'UpdateScreen': 3,
          'UpdatePrograms': 2,
          'Save': 30,
          'MouseInactiveWait': 2,
-         'ReloadProgramList': 60}
+         'ReloadProgramList': 45}
 
 
 timer = {k: v * updates_per_second for k, v in timer.iteritems()}
@@ -43,6 +43,13 @@ if __name__ == '__main__':
     while True:
         with RefreshRateLimiter(1 / updates_per_second) as limiter:
 
+            #Send data to thread
+            try:
+                if frame_data:
+                    q_send.put(frame_data)
+            except NameError:
+                pass
+                
             #Print any messages from previous loop
             notify_extra = ''
             received_data = []
@@ -68,6 +75,7 @@ if __name__ == '__main__':
                     notify.queue(MOUSE_UNDETECTED)
                     store['Mouse']['Inactive'] = True
                 time.sleep(timer['MouseInactiveWait'])
+                frame_data['MouseAFK'] = updates_per_second * timer['MouseInactiveWait']
                 continue
 
             #Check if mouse left the monitor
@@ -94,6 +102,9 @@ if __name__ == '__main__':
                 if not store['Mouse']['OffScreen']:
                     frame_data['MouseMove'] = (mouse_pos['Previous'], mouse_pos['Current'])
                     notify.queue(MOUSE_POSITION, mouse_pos['Current'])
+                    inactive_time = i - store['LastActivity'] - 1
+                    if inactive_time > 0:
+                        frame_data['MouseAFK'] = inactive_time
                     store['LastActivity'] = i
 
             #Mouse clicks
@@ -103,6 +114,9 @@ if __name__ == '__main__':
                     if not store['Mouse']['OffScreen']:
                         notify.queue(MOUSE_CLICKED, mouse_pos['Current'])
                         frame_data['MouseClick'] = mouse_pos['Current']
+                        inactive_time = i - store['LastActivity'] - 1
+                        if inactive_time > 0:
+                            frame_data['MouseAFK'] = inactive_time
                         store['LastActivity'] = i
                     else:
                         notify.queue(MOUSE_CLICKED_OFFSCREEN)
@@ -129,6 +143,9 @@ if __name__ == '__main__':
             if keys_pressed:
                 frame_data['Keys'] = keys_pressed
                 notify.queue(KEYBOARD_PRESSES, keys_pressed)
+                inactive_time = i - store['LastActivity'] - 1
+                if inactive_time > 0:
+                    frame_data['MouseAFK'] = inactive_time
                 store['LastActivity'] = i
 
             #Check if resolution has changed
@@ -157,10 +174,6 @@ if __name__ == '__main__':
                 else:
                     notify.queue(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
             
-            #Send data to thread
-            if frame_data:
-                q_send.put(frame_data)
 
             mouse_pos['Previous'] = mouse_pos['Current']
-            
             i += 1
