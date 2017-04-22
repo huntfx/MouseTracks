@@ -101,11 +101,12 @@ def _background_process(received_data, store):
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
                 
         store['Data']['Count'] += 1
-        if store['Data']['Count'] > 450000:
+        if store['Data']['Count'] > 432000:
             for resolution in store['Data']['Tracks'].keys():
-                store['Data']['Tracks']['Resolution'] = {k: v // 1.1 for k, v in
-                                                store['Data']['Tracks']['Resolution'].iteritems()}
+                store['Data']['Tracks'][resolution] = {k: v // 1.1 for k, v in
+                                                store['Data']['Tracks'][resolution].iteritems()}
                 store['Data']['Count'] //= 1.1
+                notify.queue(DATA_NOTFOUND)
 
     notify_output = notify.output()
     if notify_output:
