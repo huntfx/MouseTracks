@@ -10,6 +10,7 @@ MOUSE_CLICKED = 8
 MOUSE_UNCLICKED = 9
 MOUSE_CLICKED_OFFSCREEN = 10
 MOUSE_HELD = 11
+MOUSE_TRACK_COMPRESS = 12
 RESOLUTION_CHANGED = 16
 KEYBOARD_PRESSES = 32
 PROGRAM_STARTED = 48
@@ -20,8 +21,9 @@ SAVE_FAIL = 66
 SAVE_SKIP = 67
 START_MAIN = 80
 START_THREAD = 81
-THREAD_LOADED = 82
-PROGRAM_RELOAD = 83
+DATA_LOADED = 82
+DATA_NOTFOUND = 83
+PROGRAM_RELOAD = 84
 
 class Notify(object):
     def __init__(self):
@@ -50,6 +52,8 @@ class Notify(object):
             q1('Mouse button unclicked.')
         if message_id == MOUSE_HELD:
             q1('Mouse button being held.')
+        if message_id == MOUSE_TRACK_COMPRESS:
+            q2('Tracking data has been compressed.')
         if message_id == RESOLUTION_CHANGED:
             q2('Resolution changed from {}x{} to {}x{}'.format(args[0][0], args[0][1],
                                                                args[1][0], args[1][1]))
@@ -72,8 +76,10 @@ class Notify(object):
             q2('Started main loop.')
         if message_id == START_THREAD:
             q2('Started background thread.')
-        if message_id == THREAD_LOADED:
+        if message_id == DATA_LOADED:
             q1('Finished loading data in background.')
+        if message_id == DATA_NOTFOUND:
+            q1('Started new data store.')
         if message_id == PROGRAM_RELOAD:
             q1('Finished reloading program list.')
             
