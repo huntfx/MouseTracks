@@ -6,13 +6,14 @@ This was made with the intention of recording mouse movements over multiple reso
 
 <b>Current Features</b>:
  - Track movement, clicks and key presses, over multiple resolutions
- - Display movement history ~~and click heatmap~~ (rewritten version coming shortly)
- - Fade out movement history to keep recent tracks more visible
- - Set colours of movement history
- - Keep separate tracks for different applications (a file called "Program List.txt" will be created with instructions)
+ - Display mouse tracks and click heatmap
+ - Fade out mouse tracks to keep recent tracks more visible
+ - Change colours used to generate tracks and heatmap
+ - Keep separate tracks for different applications defined in "Program List.txt"
  
 <b>Known Issues:</b>
  - They keyboard stops being properly detected during full screen games.
+ - Only works on Windows
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
