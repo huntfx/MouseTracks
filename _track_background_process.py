@@ -108,13 +108,10 @@ def _background_process(received_data, store):
                 store['Data']['Count'] //= 1.1
                 notify.queue(DATA_NOTFOUND)
 
-    store['Data']['Ticks'] += 1
+    
+    if 'Ticks' in received_data:
+        store['Data']['Ticks'] += received_data['Ticks']
 
-    if 'MouseAFK' in received_data:
-        updates_missed = received_data['MouseAFK']
-        store['Data']['Ticks'] += updates_missed
-        
-    #notify.queue(DEBUG, store['Data']['Ticks'])
     notify_output = notify.output()
     if notify_output:
         return notify_output
