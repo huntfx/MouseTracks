@@ -7,9 +7,9 @@ from multiprocessing import Process, Queue
 
 
 class RefreshRateLimiter(object):
-    def __init__(self, min_time):
+    def __init__(self, ticks):
         self.time = time.time()
-        self.frame_time = min_time
+        self.frame_time = 1 / ticks
         self.pos = get_cursor_pos()
 
     def mouse_pos(self):
@@ -19,7 +19,8 @@ class RefreshRateLimiter(object):
         return self
 
     def __exit__(self, *args):
-        time.sleep(max(0, self.frame_time - time.time() + self.time))
+        time_difference = time.time() - self.time
+        time.sleep(max(0, self.frame_time - time_difference))
 
 
 def calculate_line(start, end):
@@ -134,7 +135,7 @@ class ColourRange(object):
 
 
 class RunningPrograms(object):
-    def __init__(self, program_list):
+    def __init__(self, program_list='Program List.txt'):
         self.refresh()
         self.program_list = program_list
         self.reload_file()
@@ -146,17 +147,35 @@ class RunningPrograms(object):
         except IOError:
             with open(self.program_list, 'w') as f:
                 lines = ['# Type any programs you want to be tracked here.',
-                         '# It is done in the format "program.exe: name"'
+                         '# It is done in the format "CaseSensitive.exe: name"'
                          ', where two can have the same name.',
                          '# If no name is given it\'ll default to the filename.',
+                         '# In the case of multiple programs loaded at the same time'
+                         ', the program will try select the most recently loaded.',
                          '',
                          'game.exe: Name']
                 f.write('\r\n'.join(lines))
-        programs = tuple(i.strip() for i in lines)
-        programs = tuple(tuple(j.strip() for j in i.split(':'))
-                         for i in programs if i and i[0] not in ('#', ';', '//'))
-        self.programs = {i[0]: i[1] if len(i) > 1 else i[0].replace('.exe', '') for i in programs}
 
+        programs = tuple(i.strip() for i in lines)
+        self.programs = {}
+        for program_info in programs:
+            print program_info
+            if not program_info or program_info[0] in ('#', ';', '//'):
+                continue
+            try:
+                exe_name, friendly_name = program_info.split('.exe', 1)
+                if not friendly_name:
+                    raise ValueError()
+            except ValueError:
+                if '.exe' in program_info:
+                    exe_name = program_info.split('.exe')[0]
+                    friendly_name = ':' + exe_name
+                else:
+                    continue
+            friendly_name = friendly_name.split(':', 1)[1].strip()
+            exe_name = exe_name.strip() + '.exe'
+            self.programs[exe_name] = friendly_name
+            
             
     def refresh(self):
         task_list = os.popen("tasklist").read().splitlines()
