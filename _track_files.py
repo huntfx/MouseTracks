@@ -14,7 +14,9 @@ def load_program(program_name=None):
     name_format = re.sub('[^A-Za-z0-9]+', '', program_name).lower()
     try:
         with open('Data/{}.data'.format(name_format), 'rb') as f:
-            return cPickle.loads(zlib.decompress(f.read()))
+            loaded_data = cPickle.loads(zlib.decompress(f.read()))
+            loaded_data['TimesLoaded'] += 1
+            return loaded_data
     except (IOError, zlib.error):
         try:
             with open('Data/{}.data.old'.format(name_format), 'rb') as f:
@@ -26,7 +28,8 @@ def load_program(program_name=None):
                     'Keys': {},
                     'LastSave': time.time(),
                     'Version': VERSION,
-                    'Ticks': 0}
+                    'Ticks': 0,
+                    'TimesLoaded': 0}
 
 
 def save_program(program_name, data):
