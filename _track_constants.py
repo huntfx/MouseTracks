@@ -2,6 +2,13 @@ import win32con
 
 VERSION = 2.0
 
+HEATMAP = [
+    (0, 0, 0), (0, 0, 128), (0, 0, 255), (0, 64, 255),
+    (0, 128, 255), (0, 192, 255), (64, 255, 192),
+    (128, 255, 128), (192, 255, 64), (255, 255, 0),
+    (255, 128, 0), (255, 64, 0), (255, 0, 0)
+]
+
 MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
 KEYS = {
     'F1': win32con.VK_F1,
