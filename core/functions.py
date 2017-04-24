@@ -201,7 +201,11 @@ class RunningPrograms(object):
 class SimpleConfig(object):
     def __init__(self, file_name, default_data):
         self.file_name = file_name
-        self.default_data = default_data
+        self._default_data = default_data
+        self.default_data = {}
+        for group, data in self._default_data:
+            self.default_data[group] = data
+        self.load()
     
     def load(self):
         try:
@@ -261,11 +265,15 @@ class SimpleConfig(object):
 
     def save(self):
         output = []
-        for group, variables in self.default_data.iteritems():
+        for group, variables in self._default_data:
             if output:
                 output.append('')
             output.append('[{}]'.format(group))
-            for variable, defaults in variables.iteritems():
+            if '__note__' in variables:
+                for note in variables.pop('__note__'):
+                    output.append('// {}'.format(note))
+            for variable in sorted(variables.keys()):
+                defaults = variables[variable]
                 try:
                     output.append('// {}'.format(defaults[2]))
                 except IndexError:
