@@ -35,7 +35,7 @@ class Notify(object):
         if message_id == DEBUG:
             q2('Debug: {}'.format(args))
         if message_id == MOUSE_UNDETECTED:
-            q2('Unable to track cursor.')
+            q2('Unable to read cursor position (usually happens when user is away).')
         if message_id == MOUSE_DETECTED:
             q2('Cursor position has been detected again.')
         if message_id == MOUSE_OFFSCREEN:
@@ -77,7 +77,7 @@ class Notify(object):
         if message_id == START_THREAD:
             q2('Started background thread.')
         if message_id == DATA_LOADED:
-            q1('Finished loading data in background.')
+            q1('Finished loading data.')
         if message_id == DATA_NOTFOUND:
             q1('Started new data store.')
         if message_id == PROGRAM_RELOAD:
