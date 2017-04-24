@@ -1,14 +1,23 @@
 # Determine which operating system is being used.
 # A quick check will be one to make sure all the required modules exist
-
-current_os = 'Windows'
+import platform
+current_os = platform.system()
 
 if current_os == 'Windows':
-    from windows import *
+    try:
+        from windows import *
+    except ImportError:
+        raise ImportError('no module found for windows')
 if current_os == 'Linux':
-    from linux import *
+    try:
+        from linux import *
+    except ImportError:
+        raise ImportError('no module found for linux')
 if current_os == 'Mac':
-    from mac import *
+    try:
+        from mac import *
+    except ImportError:
+        raise ImportError('no module found for mac')
 
 try:
     get_device_data
