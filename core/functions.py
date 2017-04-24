@@ -196,3 +196,84 @@ class RunningPrograms(object):
             return None
         latest_program = matching_programs[max(matching_programs.keys())]
         return (self.programs[latest_program], latest_program)
+
+
+class SimpleConfig(object):
+    def __init__(self, file_name, default_data):
+        self.file_name = file_name
+        self.default_data = default_data
+    
+    def load(self):
+        try:
+            with open(self.file_name, 'r') as f:
+                config_lines = [i.strip() for i in f.readlines()]
+        except IOError:
+            config_lines = []
+
+        config_data = {}
+        for line in config_lines:
+            if not line:
+                continue
+            if line.startswith('['):
+                current_group = line[1:].split(']', 1)[0]
+                config_data[current_group] = {}
+            elif line[0] in (';', '/', '#'):
+                pass
+            else:
+                name, value = [i.strip() for i in line.split('=')]
+                try:
+                    default_value, default_type = self.default_data[current_group][name][:2]
+                except KeyError:
+                    pass
+                else:
+                    if default_type == bool:
+                        if value.lower() in ('0', 'false'):
+                            value = False
+                        elif value.lower() in ('1', 'true'):
+                            value = True
+                        else:
+                            value = default_value
+                    if default_type == int:
+                        if '.' in value:
+                            value = value.split('.')[0]
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            value = default_value
+                    else:
+                        value = default_type(value)
+                
+                config_data[current_group][name] = value
+
+        for group, variables in self.default_data.iteritems():
+            for variable, defaults in variables.iteritems():
+                try:
+                    config_data[group][variable]
+                except KeyError:
+                    try:
+                        config_data[group][variable] = defaults[0]
+                    except KeyError:
+                        config_data[group] = {variable: defaults[0]}
+
+        self.data = config_data        
+        return self.data
+
+
+    def save(self):
+        output = []
+        for group, variables in self.default_data.iteritems():
+            if output:
+                output.append('')
+            output.append('[{}]'.format(group))
+            for variable, defaults in variables.iteritems():
+                try:
+                    output.append('// {}'.format(defaults[2]))
+                except IndexError:
+                    pass
+                try:
+                    value = self.data[group][variable]
+                except KeyError:
+                    value = defaults[0]
+                output.append('{} = {}'.format(variable, value))
+        with open(self.file_name, 'w') as f:
+            f.write('\r\n'.join(output))
