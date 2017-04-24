@@ -1,7 +1,7 @@
 import win32api
 import win32con
-from _track_constants import MOUSE_BUTTONS
 import os
+
 
 def get_device_data():
     """Get the resolution and refresh rate of the main monitor."""
@@ -12,6 +12,7 @@ def get_device_data():
     return {'Resolution': resolution, 0: resolution,
             'Refresh': refresh_rate, 1: refresh_rate}
 
+
 def get_cursor_pos():
     """Return the cursor position as a tuple."""
     try:
@@ -19,16 +20,18 @@ def get_cursor_pos():
     except win32api.error:
         return None
 
+
 def get_mouse_click():
     """Check if one of the three main mouse buttons is being clicked."""
     return any(win32api.GetKeyState(button) < 0 for button in MOUSE_BUTTONS)
+
 
 def get_key_press(key):
     """Check if a key is being pressed.
     Needs changing for something that detects keypresses in applications.
     """
-    #return win32api.GetAsyncKeyState(key)
-    return win32api.GetKeyState(key) < 0
+    return win32api.GetAsyncKeyState(key)
+
 
 def remove_file(file_name):
     """Delete a file."""
@@ -38,6 +41,7 @@ def remove_file(file_name):
         return False
     return True
 
+
 def rename_file(old_name, new_name):
     """Rename a file."""
     try:
@@ -45,6 +49,7 @@ def rename_file(old_name, new_name):
     except WindowsError:
         return False
     return True
+
 
 def create_folder(folder_path):
     """Create a folder."""
