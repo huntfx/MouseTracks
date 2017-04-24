@@ -10,7 +10,8 @@ MOUSE_CLICKED = 8
 MOUSE_UNCLICKED = 9
 MOUSE_CLICKED_OFFSCREEN = 10
 MOUSE_HELD = 11
-MOUSE_TRACK_COMPRESS = 12
+MOUSE_TRACK_COMPRESS_START = 12
+MOUSE_TRACK_COMPRESS_END = 13
 RESOLUTION_CHANGED = 16
 KEYBOARD_PRESSES = 32
 PROGRAM_STARTED = 48
@@ -52,8 +53,10 @@ class Notify(object):
             q1('Mouse button unclicked.')
         if message_id == MOUSE_HELD:
             q1('Mouse button being held.')
-        if message_id == MOUSE_TRACK_COMPRESS:
-            q2('Tracking data has been compressed.')
+        if message_id == MOUSE_TRACK_COMPRESS_START:
+            q2('Tracking data is being compressed...')
+        if message_id == MOUSE_TRACK_COMPRESS_END:
+            q2('Finished compressing.')
         if message_id == RESOLUTION_CHANGED:
             q2('Resolution changed from {}x{} to {}x{}'.format(args[0][0], args[0][1],
                                                                args[1][0], args[1][1]))
