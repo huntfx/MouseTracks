@@ -5,9 +5,9 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import resample
 import numpy as np
 
-from _track_constants import HEATMAP
-from _track_files import load_program
-from _track_functions import ColourRange
+from core.constants import HEATMAP
+from core.files import load_program
+from core.functions import ColourRange
 
 def merge_resolutions(main_data, max_resolution=(3840, 2160), interpolate=True):
     """Upscale each resolution to make them all match.
@@ -87,10 +87,7 @@ def convert_to_rgb(image_array, colour_range):
 def generate_tracks(value_range, numpy_arrays, colour_list=None):
 
     print 'Generating mouse tracks...'
-    #Set up the list of colours
-    if colour_list is None:
-        colour_list = [[255, 255, 255], [0, 0, 0]]
-    cr = ColourRange(value_range[1] - value_range[0], colour_list)
+    cr = ColourRange(value_range[1] - value_range[0], colour_list or [[255, 255, 255], [0, 0, 0]])
 
     print 'Merging arrays...'
     if len(numpy_arrays) > 1:
@@ -102,15 +99,15 @@ def generate_tracks(value_range, numpy_arrays, colour_list=None):
     im = Image.fromarray(convert_to_rgb(max_array, cr))
     return im
     
-def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=0.5, gaussian_blur=25):
+def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=0.5, gaussian_blur=32):
 
     print 'Merging arrays...'
     if len(numpy_arrays) > 1:
         max_array = np.add.reduce(numpy_arrays)
     else:
         max_array = numpy_arrays[0]
-        
-    print 'Applying exponential reduction...'
+
+    print 'Converting to heatmap...'
     h = len(max_array)
     w = len(max_array[0])
     heatmap = np.zeros(h * w).reshape((h, w))
@@ -138,7 +135,7 @@ def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=0.5, 
 
 #Options
 profile = 'default'
-desired_resolution = (1920, 1080)
+desired_resolution = (2560, 1440)
 upscale_resolution = (3840, 2160)
 upscale_multiplier = 1
 
@@ -147,13 +144,15 @@ main_data = load_program(profile)
 
 print 'Desired resolution: {}x{}'.format(*desired_resolution)
 
+
+'''
 value_range, numpy_arrays = merge_resolutions(main_data['Tracks'], upscale_resolution)
 im = generate_tracks(value_range, numpy_arrays)
 im = im.resize(desired_resolution, Image.ANTIALIAS)
 print 'Saving mouse track image...'
 im.save('Result/Recent Movement.png')
 print 'Finished saving.'
-
+'''
 
 value_range, numpy_arrays = merge_resolutions(main_data['Clicks'], upscale_resolution, interpolate=False)
 im = generate_clicks(numpy_arrays)
