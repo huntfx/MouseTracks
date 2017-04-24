@@ -2,7 +2,7 @@ from __future__ import division
 from threading import Thread
 import time
 import os
-from _track_windows import get_cursor_pos
+from _os import get_cursor_pos
 from multiprocessing import Process, Queue
 
 
@@ -101,7 +101,10 @@ def calculate_line(start, end):
 
 
 class ColourRange(object):
-    """Make a transition between colours."""
+    """Make a transition between colours.
+
+    Note: This needs updating to work with small floats.
+    """
     def __init__(self, amount, colours):
         self.amount = amount - 1
         self.colours = colours
@@ -159,7 +162,6 @@ class RunningPrograms(object):
         programs = tuple(i.strip() for i in lines)
         self.programs = {}
         for program_info in programs:
-            print program_info
             if not program_info or program_info[0] in ('#', ';', '//'):
                 continue
             try:
