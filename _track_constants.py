@@ -1,5 +1,3 @@
-import win32con
-
 VERSION = 2.0
 
 HEATMAP = [
