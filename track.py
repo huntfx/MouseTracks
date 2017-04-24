@@ -102,9 +102,9 @@ def _background_process(received_data, store):
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
                 
         store['Data']['Count'] += 1
-        compress_frequency = CONFIG['CompressTracks']['Frequency']
-        compress_multplier = CONFIG['CompressTracks']['Multiplier']
-        compress_limit = compress_frequency * CONFIG['Main']['UpdatesPerSecond']
+        compress_frequency = CONFIG.data['CompressTracks']['Frequency']
+        compress_multplier = CONFIG.data['CompressTracks']['Multiplier']
+        compress_limit = compress_frequency * CONFIG.data['Main']['UpdatesPerSecond']
         if store['Data']['Count'] > compress_limit:
             notify.queue(MOUSE_TRACK_COMPRESS_START)
             for resolution in store['Data']['Tracks'].keys():
