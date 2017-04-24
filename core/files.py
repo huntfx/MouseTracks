@@ -3,7 +3,7 @@ import zlib
 import re
 import time
 import os
-from os.windows import remove_file, rename_file, create_folder
+from _os import remove_file, rename_file, create_folder
 from constants import VERSION
 
 
