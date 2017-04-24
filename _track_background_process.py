@@ -1,7 +1,7 @@
 from __future__ import division
-from _track_functions import calculate_line, RunningPrograms
-from _track_messages import *
-from _track_files import load_program, save_program
+from core.functions import calculate_line, RunningPrograms
+from core.messages import *
+from core.files import load_program, save_program
 import time
 import sys
 
