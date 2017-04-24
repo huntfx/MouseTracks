@@ -8,13 +8,20 @@ from core.functions import RefreshRateLimiter
 from core.constants import *
 from track import background_process
 
-
-updates_per_second = 60
 mouse_inactive_delay = 2
+'''
+updates_per_second = 60
 timer = {'UpdateScreen': 3,
          'UpdatePrograms': 2,
          'Save': 30,
          'ReloadProgramList': 45}
+'''
+
+updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
+timer = {'UpdateScreen': CONFIG.data['Frequency']['CheckScreen'],
+         'UpdatePrograms': CONFIG.data['Frequency']['CheckPrograms'],
+         'Save': CONFIG.data['Frequency']['Save'],
+         'ReloadProgramList': CONFIG.data['Frequency']['ReloadPrograms']}
 
 
 timer = {k: v * updates_per_second for k, v in timer.iteritems()}
