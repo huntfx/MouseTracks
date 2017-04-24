@@ -3,8 +3,9 @@ import zlib
 import re
 import time
 import os
-from _track_windows import remove_file, rename_file, create_folder
-from _track_constants import VERSION
+from os.windows import remove_file, rename_file, create_folder
+from constants import VERSION
+
 
 def load_program(program_name=None):
     if program_name is None:
