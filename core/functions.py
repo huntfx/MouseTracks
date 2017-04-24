@@ -225,6 +225,7 @@ class SimpleConfig(object):
                 pass
             else:
                 name, value = [i.strip() for i in line.split('=')]
+                value = value.replace('#', ';').replace('/', ';').split(';', 1)[0]
                 try:
                     default_value, default_type = self.default_data[current_group][name][:2]
                 except KeyError:
@@ -275,13 +276,13 @@ class SimpleConfig(object):
             for variable in sorted(variables.keys()):
                 defaults = variables[variable]
                 try:
-                    output.append('// {}'.format(defaults[2]))
-                except IndexError:
-                    pass
-                try:
                     value = self.data[group][variable]
                 except KeyError:
                     value = defaults[0]
                 output.append('{} = {}'.format(variable, value))
+                try:
+                    output[-1] += '    // {}'.format(defaults[2])
+                except IndexError:
+                    pass
         with open(self.file_name, 'w') as f:
             f.write('\r\n'.join(output))
