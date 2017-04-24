@@ -2,7 +2,7 @@ from __future__ import division
 from multiprocessing import Process, Queue
 import time
 
-from core.os.windows import get_device_data, get_mouse_click, get_key_press
+from core._os import get_device_data, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
 from core.messages import *
 from core.functions import RefreshRateLimiter
 from core.constants import *
