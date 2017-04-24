@@ -1,0 +1,198 @@
+// Add any programs you want to be tracked here.
+// It is done in the format "MyGame.exe: Friendly Name", where two exe files can be given the same name to be grouped.
+// If no name is given it'll default to the filename.
+
+AbsoluteDrift.exe: Absolute Drift
+Air Brawl.exe
+AlienBreed-Impact.exe: Alien Breed Impact
+ShippingPC-AFEARGame.exe: Alien Rage
+AoK HD.exe: Age Of Empires 2
+AvP.exe: Aliens vs Predator
+AvP_DX11.exe: Aliens vs Predator
+AssassinsCreed_Game.exe: Assassin's Creed
+APGame.exe: Alpha Protocol
+BangBangRacing.exe: Bang Bang Racing
+ShippingPC-BmGame.exe: Batman Arkham Asylum
+BioShockInfinite.exe: BioShock Infinite
+Blameless.exe: Blameless
+Borderlands.exe: Borderlands
+Borderlands2.exe: Borderlands 2
+braid.exe: Braid
+Brawlhalla.exe: Brawlhalla
+BurnoutParadise.exe: Burnout Paradise
+iw6sp64_ship.exe: Call of Duty: Ghosts
+Cities.exe: Cities: Skylines
+CoJGunslinger.exe: Call of Juarez: Gunslinger
+consortium.exe: Consortium
+RelicCOH.exe: Company of Heroes
+csgo.exe: Counter Strike: Global Offensive
+Crysis.exe: Crysis
+Orlando.exe: Dangerous Golf
+DarkApp.exe: Dark
+mm.exe: Dark Messiah of Might & Magic
+DarknessII.exe: Darkness 2
+DOW2.exe: Warhammer 40,000: Dawn of War 2
+darkcrusade.exe: Warhammer 40,000: Dawn of War - Dark Crusade
+RelicDoW3.exe: Warhammer 40,000: Dawn of War 3
+dearesther.exe: Dear Esther
+Descent.exe: Descent Underground
+dxhr.exe: Deus Ex: Human Revolution
+DXB.exe: Deus Ex: Breach
+DeusEx_steam.exe: Deus Ex: The Fall
+Devilian.exe: Devilian
+dirt3.exe: Dirt 3
+dirt3_game.exe: Dirt 3
+Dishonored.exe: Dishonored
+Distance.exe: Distance
+EoCApp.exe: Divinity: Original Sin
+DMC-DevilMayCry.exe: DmC Devil May Cry
+DoorKickers.exe: Door Kickers
+DrLangeskov.exe: Dr Langeskov, The Tiger, and The Terribly Cursed Emerald: A Whirlwind Heist
+DAOrigins.exe: Dragon Age: Origins
+DUKE3D.EXE: Duke Nukem 3D
+DukeForever.exe: Duke Nukem Forever
+DungeonSiege.exe: Dungeon Siege
+DungeonSiege2.exe: Dungeon Siege 2
+Dungeon Siege III.exe: Dungeon Siege 3
+Empire.exe: Empire Total War
+Enslaved.exe: Enslaved
+event0.exe: Event[0]
+Evolve.exe: Evolve
+Fallout3.exe: Fallout 3
+FalloutShelter.exe: Fallout Shelter
+fancy_skulls.exe: Fancy Skulls
+farcry3.exe: Far Cry 3
+FEAR.exe: F. E. A. R.
+FrontMissionEvolved.exe: Front Mission Evolved
+GJL.exe: Galactic Junk League
+GW3.exe: Geometry Wars 3
+GoatGame-Win32-Shipping.exe: Goat Simulator
+GodMode.exe: God Mode
+GTA5.exe: Grand Theft Auto 5
+GrimFandango.exe: Grim Fandango
+guild-quest.exe: Guild Quest
+Gunz2_Steam.exe: GunZ 2: The Second duel
+HackerEvolution.exe: Hacker Evolution
+hl.exe: Half-Life
+hl2.exe: Half-Life 2
+HMM.exe: Heavy Metal Machines
+HoM.exe: Hero of Many
+HotlineMiami.exe: Hotline Miami
+HydroPC.exe: Hydrophobia
+IAmWeaponRevival.exe: I am weapon: Revival
+invisibleinc.exe: Invisible Inc.
+istrolid.exe: Istrolid
+kaneandlynch.exe: Kane and Lynch: Dead Men
+KillingFloor.exe: Killing Floor
+KFGame.exe: Killing Floor 2
+lcgol.exe: Lara Croft and the Guardian of Light
+LawBreakers.exe: Law Breakers
+left4dead2.exe: Left 4 Dead 2
+LifeIsStrange.exe: Life Is Strange
+limbo.exe: Limbo
+LovelyPlanet.exe: Lovely Planet
+MadMax.exe: Mad Max
+MassEffect.exe: Mass Effect
+mafia2.exe: Mafia 2
+MassEffect2.exe: Mass Effect 2
+MaxPayne3.exe: Max Payne 3
+MWOClient.exe: MechWarrior Online
+MK10.exe: Mortal Kombat 10
+MXReflex.exe: MX vs. ATV Reflex
+NS2.exe: Natural Selection 2
+Nexuiz.exe
+NMS.exe: No Man's Sky
+OctodadDadliestCatch.exe: Octodad: Deadliest Catch
+AbeWin.exe: Oddworld: Abe's Oddysee
+OfOrcsAndMen_Steam.exe: Of Orcs and Men
+OGAT.exe: Of Guards And Thieves
+One Finger Death Punch.exe: One Finger Death Punch
+SpitfireGame.exe: Orcs Must Die! Unchained
+DinoHordeGame.exe: ORION: Prelude
+Paladins.exe: Paladins
+ParadiseIsland.exe: Paradise Island
+PathOfExile_x64Steam.exe: Path of Exile
+PathOfExileSteam.exe: Path of Exile
+payday2_win32_release.exe: PAYDAY 2
+Pid.exe: Pid
+Pixel Puzzles Ultimate.exe: Pixel Puzzles Ultimate
+PlagueIncEvolved.exe: Plague Inc: Evolved
+PlagueIncSC.exe: Plague Inc: Evolved
+Pneuma Breath of Life.exe: Pneuma: Breath of Life
+portal2.exe: Portal 2
+Prison Architect.exe: Prison Architect
+Prison Architect Safe Mode.exe: Prison Architect
+Grickle101.exe: Puzzle Agent
+Grickle102.exe: Puzzle Agent 2
+Winquake.exe: Quake
+Glquake.exe: Quake
+quake.exe: Quake
+quake2.exe: Quake 2
+Quake4.exe: Quake 4
+RaceTheSun.exe: Race The Sun
+RememberMe.exe: Remember Me
+rift_x64.exe: RiFT
+GameWin32RetailSteam.exe: Riptide GP2
+RocketLeague.exe: Rocket League
+Rocksmith2014.exe: Rocksmith 2014
+RCT2.EXE: Rollercoaster Tycoon 2
+sacred2.exe: Sacred 2
+SR2_pc.exe: Saints Row
+ShadowComplex-Win32.exe: Shadow Complex
+Shadowgrounds.exe: Shadowgrounds
+ShadowOfMordor.exe: Shadow Of Mordor
+Shadowrun.exe: Shadowrun Returns
+SniperEliteV2.exe: Sniper Elite V2
+Sniper_x86.exe: Sniper: Ghost Warrior
+playSNOW.exe: SNOW
+dungeon.exe: Soda Dungeon
+Fractured Space.exe: Fractured Space
+splintercell.exe: Splinter Cell
+Stardew Valley.exe
+SuperDungeonBros.exe: Super Dungeon Bros
+SuperMeatBoy.exe: Super Meat Boy
+SUPERHOT.exe: SUPERHOT
+swkotor.exe: Star Wars: Knights of the Old Republic
+Isaac.exe: The Binding of Isaac
+Binding_of_Isaac.exe: The Binding of Isaac
+TheLab.exe: The Lab
+Orion.exe: Guardians of ORION
+osu!.exe: OSU!
+Overwatch.exe: Overwatch
+The Plan.exe
+stanley.exe: The Stanley Parable
+witcher.exe: The Witcher
+witcher2.exe: The Witcher 2
+witcher3.exe: The Witcher 3
+ImpossibleGame.exe: The Impossible Game
+Polynomial.exe: The Polynomial
+Shipping-ThiefGame.exe: Thief
+TQ.exe: Titan Quest
+Blacklist_game.exe: Splinter Cell: Blacklist
+Blacklist_DX11_game.exe: Splinter Cell: Blacklist
+TombRaider.exe: Tomb Raider
+Torchlight.exe
+TOXIKK.exe
+trials_fusion.exe: Trials Fusion
+Tron.exe: Tron 2.0
+Trove.exe
+Unreal.exe
+UnrealTournament.exe: Unreal Tournament
+UT2004.exe: Unreal Tournament 2004
+UT3.exe: Unreal Tournament 3
+Uplink.exe
+UrbanTrialFreestyle.exe: Urban Trial Freestyle
+WFTOGame.exe: War For The Overworld
+Warframe.x64.exe: Warframe
+Warframe.exe: Warframe
+EternalCrusadeClient.exe: Warhammer 40,000: Eternal Crusade
+vermintide.exe: Warhammer: End Times - Vermintide
+watch_dogs.exe: Watch_Dogs
+Waveform.exe
+We Were Here.exe: We Were Here
+We Were Here VR.exe: We Were Here
+WolfNewOrder_x64.exe: Wolfenstein: The New Order
+WormsRevolution.exe: Worms Revolution
+XComGame.exe: XCOM: Enemy Unknown
+ZenoClash.exe: Zeno Clash
+Ziggurat.exe
