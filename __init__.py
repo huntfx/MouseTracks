@@ -2,11 +2,11 @@ from __future__ import division
 from multiprocessing import Process, Queue
 import time
 
-from _track_windows import get_device_data, get_mouse_click, get_key_press
-from _track_messages import *
-from _track_functions import RefreshRateLimiter
-from _track_constants import *
-from _track_background_process import background_process
+from core.os.windows import get_device_data, get_mouse_click, get_key_press
+from core.messages import *
+from core.functions import RefreshRateLimiter
+from core.constants import *
+from track import background_process
 
 
 updates_per_second = 60
