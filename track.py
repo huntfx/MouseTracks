@@ -2,6 +2,7 @@ from __future__ import division
 from core.functions import calculate_line, RunningPrograms
 from core.messages import *
 from core.files import load_program, save_program
+from core.constants import CONFIG
 import time
 import sys
 
@@ -101,12 +102,16 @@ def _background_process(received_data, store):
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
                 
         store['Data']['Count'] += 1
-        if store['Data']['Count'] > 432000:
+        compress_frequency = CONFIG['CompressTracks']['Frequency']
+        compress_multplier = CONFIG['CompressTracks']['Multiplier']
+        compress_limit = compress_frequency * CONFIG['Main']['UpdatesPerSecond']
+        if store['Data']['Count'] > compress_limit:
+            notify.queue(MOUSE_TRACK_COMPRESS_START)
             for resolution in store['Data']['Tracks'].keys():
-                store['Data']['Tracks'][resolution] = {k: v // 1.1 for k, v in
+                store['Data']['Tracks'][resolution] = {k: v // compress_multplier for k, v in
                                                 store['Data']['Tracks'][resolution].iteritems()}
-                store['Data']['Count'] //= 1.1
-                notify.queue(DATA_NOTFOUND)
+                store['Data']['Count'] //= compress_multplier
+            notify.queue(MOUSE_TRACK_COMPRESS_END)
 
     
     if 'Ticks' in received_data:
