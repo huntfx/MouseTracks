@@ -2,20 +2,14 @@ from __future__ import division
 from multiprocessing import Process, Queue
 import time
 
-from core._os import get_device_data, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
+from core._os import get_resolution, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
 from core.messages import *
 from core.functions import RefreshRateLimiter
 from core.constants import *
 from track import background_process
 
+CONFIG.save()
 mouse_inactive_delay = 2
-'''
-updates_per_second = 60
-timer = {'UpdateScreen': 3,
-         'UpdatePrograms': 2,
-         'Save': 30,
-         'ReloadProgramList': 45}
-'''
 
 updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
 timer = {'UpdateScreen': CONFIG.data['Frequency']['CheckScreen'],
@@ -28,7 +22,7 @@ timer = {k: v * updates_per_second for k, v in timer.iteritems()}
 
 if __name__ == '__main__':
 
-    store = {'Resolution': {'Current': get_device_data()['Resolution'],
+    store = {'Resolution': {'Current': get_resolution(),
                             'Previous': None},
              'Mouse': {'Position': {'Current': None,
                                     'Previous': None},
@@ -153,7 +147,7 @@ if __name__ == '__main__':
 
             #Check if resolution has changed
             if not i % timer['UpdateScreen']:
-                store['Resolution']['Current'] = get_device_data()['Resolution']
+                store['Resolution']['Current'] = get_resolution()
                 if store['Resolution']['Previous'] != store['Resolution']['Current']:
                     if store['Resolution']['Previous'] is not None:
                         notify.queue(RESOLUTION_CHANGED, store['Resolution']['Previous'],
