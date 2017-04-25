@@ -5,14 +5,18 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import resample
 import numpy as np
 
-from core.constants import HEATMAP
+from core.constants import HEATMAP, CONFIG
 from core.files import load_program
 from core.functions import ColourRange
 
-def merge_resolutions(main_data, max_resolution=(3840, 2160), interpolate=True):
+def merge_resolutions(main_data, max_resolution=None, interpolate=True, trim_edge=0):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
+    if max_resolution is None:
+        max_resolution = (CONFIG.data['GenerateImages']['UpscaleResolutionX'],
+                          CONFIG.data['GenerateImages']['UpscaleResolutionY'])
+    
     numpy_arrays = []
     highest_value = None
     lowest_value = None
@@ -41,8 +45,8 @@ def merge_resolutions(main_data, max_resolution=(3840, 2160), interpolate=True):
 
         #Build 2D array from data
         new_data = []
-        width_range = range(current_resolution[0])
-        height_range = range(current_resolution[1])
+        width_range = range(trim_edge, current_resolution[0] - trim_edge)
+        height_range = range(trim_edge, current_resolution[1] - trim_edge)
         for y in height_range:
             new_data.append([])
             for x in width_range:
@@ -52,10 +56,13 @@ def merge_resolutions(main_data, max_resolution=(3840, 2160), interpolate=True):
                     new_data[-1].append(0)
 
         #Calculate the zoom level needed
-        zoom_factor = (max_resolution[1] / current_resolution[1],
-                       max_resolution[0] / current_resolution[0])
-        
-        numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
+        if max_resolution != current_resolution:
+            zoom_factor = (max_resolution[1] / current_resolution[1],
+                           max_resolution[0] / current_resolution[0])
+            
+            numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
+        else:
+            numpy_arrays.append(np.array(new_data))
 
     return (lowest_value, highest_value), numpy_arrays
 
@@ -99,7 +106,13 @@ def generate_tracks(value_range, numpy_arrays, colour_list=None):
     im = Image.fromarray(convert_to_rgb(max_array, cr))
     return im
     
-def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=0.5, gaussian_blur=32):
+def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=None,
+                    gaussian_blur=None, trim_edges=0):
+
+    if exponential_multiplier is None:
+        exponential_multiplier = CONFIG.data['GenerateHeatmap']['ExponentialMultiplier']
+    if gaussian_blur is None:
+        gaussian_blur = CONFIG.data['GenerateHeatmap']['GaussianBlurSize']
 
     print 'Merging arrays...'
     if len(numpy_arrays) > 1:
@@ -135,28 +148,35 @@ def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=0.5, 
 
 #Options
 profile = 'default'
-desired_resolution = (2560, 1440)
-upscale_resolution = (3840, 2160)
-upscale_multiplier = 1
+desired_resolution = (CONFIG.data['GenerateImages']['OutputResolutionX'],
+                      CONFIG.data['GenerateImages']['OutputResolutionY'])
 
-upscale_resolution = tuple(int(i * upscale_multiplier) for i in upscale_resolution)
+
 main_data = load_program(profile)
 
 print 'Desired resolution: {}x{}'.format(*desired_resolution)
 
+def create_tracks(image_name, data):
+    value_range, numpy_arrays = merge_resolutions(data)
+    im = generate_tracks(value_range, numpy_arrays)
+    im = im.resize(desired_resolution, Image.ANTIALIAS)
+    print 'Saving mouse track image...'
+    im.save(image_name)
+    print 'Finished saving.'
 
-'''
-value_range, numpy_arrays = merge_resolutions(main_data['Tracks'], upscale_resolution)
-im = generate_tracks(value_range, numpy_arrays)
-im = im.resize(desired_resolution, Image.ANTIALIAS)
-print 'Saving mouse track image...'
-im.save('Result/Recent Movement.png')
-print 'Finished saving.'
-'''
 
-value_range, numpy_arrays = merge_resolutions(main_data['Clicks'], upscale_resolution, interpolate=False)
-im = generate_clicks(numpy_arrays)
-im = im.resize(desired_resolution, Image.ANTIALIAS)
-print 'Saving click heatmap image...'
-im.save('Result/Recent Clicks.png')
-print 'Finished saving.'
+def create_heatmap(image_name, data, trim_edges=None):
+    if trim_edges is None:
+        trim_edges = CONFIG.data['GenerateHeatmap']['TrimEdges']
+    
+    value_range, numpy_arrays = merge_resolutions(data, interpolate=False, trim_edge=trim_edges)
+    im = generate_clicks(numpy_arrays)
+    im = im.resize(desired_resolution, Image.ANTIALIAS)
+    
+    print 'Saving click heatmap...'
+    im.save(image_name)
+    print 'Finished saving.'
+
+
+create_tracks('Result/Recent Tracks.png', main_data['Tracks'])    
+create_heatmap('Result/Recent Clicks.png', main_data['Clicks'])
