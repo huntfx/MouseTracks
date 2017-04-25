@@ -1,5 +1,3 @@
-'https://www.reddit.com/r/discordapp/comments/3plprj/games_exe_list_post_games_you_want_to_be_added/'
-'https://hastebin.com/catuyoguxi.apache'
 from functions import SimpleConfig
 VERSION = 2.0
 
@@ -12,7 +10,14 @@ HEATMAP = [
 
 _config_defaults = [
     ('Main', {
-        'UpdatesPerSecond': (60, int)
+        'UpdatesPerSecond': (60, int, 'This is probably best left at 60 even if'
+                                      ' you have a higher refresh rate.')
+    }),
+    ('CompressTracks', {
+        '__note__': ['Set how often the older tracks should be compressed, and by how much.',
+                     'This stops the tracking image from becoming fully black with extended use.'],
+        'Frequency': (7200, int),
+        'Multiplier': (1.1, float)
     }),
     ('Frequency', {
         'Save': (30, int),
@@ -22,23 +27,25 @@ _config_defaults = [
     }),
     ('GenerateImages', {
         '__note__': ['For the best results, make sure the upscale resolution'
-                     ' is higher than or equal to the highest recorded resolution'],
+                     ' is higher than or equal to the highest recorded resolution.'],
         'UpscaleResolutionX': (3840, int),
         'UpscaleResolutionY': (2160, int),
         'OutputResolutionX': (1920, int),
         'OutputResolutionY': (1080, int)
     }),
-    ('HeatMap', {
-        'GaussianBlurSize': (32, int),
+    ('GenerateHeatmap', {
+        'GaussianBlurSize': (25, int),
         'ExponentialMultiplier': (0.5, float),
-        'ColourProfile': ('HeatMap', str)
+        'ColourProfile': ('HeatMap', str),
+        'TrimEdges': (20, int, 'Removes edges so that frequently clicked things like the close'
+                              ' button won\'t affect the rest of the results.')
     }),
-    ('Tracks', {
+    ('GenerateTracks', {
         'ColourProfile': ('BlackAndWhite', str)
     })
 ]
 
-config = SimpleConfig('../config.ini', _config_defaults)
+CONFIG = SimpleConfig('config.ini', _config_defaults)
 
 if __name__ == '__main__':
-    config.save()
+    CONFIG.save()
