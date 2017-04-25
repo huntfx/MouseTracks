@@ -1,8 +1,8 @@
 from __future__ import division
-from core.functions import calculate_line, RunningPrograms
-from core.messages import *
-from core.files import load_program, save_program
-from core.constants import CONFIG
+from functions import calculate_line, RunningPrograms
+from messages import *
+from files import load_program, save_program
+from constants import CONFIG
 import time
 import sys
 
