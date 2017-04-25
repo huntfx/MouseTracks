@@ -2,25 +2,22 @@ from __future__ import division
 from multiprocessing import Process, Queue
 import time
 
-from core._os import get_resolution, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
-from core.messages import *
-from core.functions import RefreshRateLimiter
-from core.constants import *
+from _os import get_resolution, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
+from messages import *
+from functions import RefreshRateLimiter
+from constants import *
 from track import background_process
 
-CONFIG.save()
-mouse_inactive_delay = 2
+def start_tracking():
+    
+    mouse_inactive_delay = 2
 
-updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
-timer = {'UpdateScreen': CONFIG.data['Frequency']['CheckScreen'],
-         'UpdatePrograms': CONFIG.data['Frequency']['CheckPrograms'],
-         'Save': CONFIG.data['Frequency']['Save'],
-         'ReloadProgramList': CONFIG.data['Frequency']['ReloadPrograms']}
-
-
-timer = {k: v * updates_per_second for k, v in timer.iteritems()}
-
-if __name__ == '__main__':
+    updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
+    timer = {'UpdateScreen': CONFIG.data['Frequency']['CheckScreen'],
+             'UpdatePrograms': CONFIG.data['Frequency']['CheckPrograms'],
+             'Save': CONFIG.data['Frequency']['Save'],
+             'ReloadProgramList': CONFIG.data['Frequency']['ReloadPrograms']}
+    timer = {k: v * updates_per_second for k, v in timer.iteritems()}
 
     store = {'Resolution': {'Current': get_resolution(),
                             'Previous': None},
@@ -34,13 +31,14 @@ if __name__ == '__main__':
              'LastActivity': 0,
              'LastSent': 0}
     mouse_pos = store['Mouse']['Position']
-
+    
     #Start threaded process
     q_send = Queue()
     q_recv = Queue()
     p = Process(target=background_process, args=(q_send, q_recv))
     p.daemon = True
     p.start()
+    
     i = 0
     notify.queue(START_MAIN)
     while True:
@@ -56,7 +54,7 @@ if __name__ == '__main__':
                     store['LastSent'] = i
             except NameError:
                 pass
-                
+            
             #Print any messages from previous loop
             notify_extra = ''
             received_data = []
@@ -173,3 +171,4 @@ if __name__ == '__main__':
             
             mouse_pos['Previous'] = mouse_pos['Current']
             i += 1
+            
