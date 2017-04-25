@@ -20,7 +20,8 @@ if current_os == 'Mac':
         raise ImportError('no module found for mac')
 
 try:
-    get_device_data
+    get_resolution
+    get_refresh_rate
     get_cursor_pos
     get_mouse_click
     get_key_press
