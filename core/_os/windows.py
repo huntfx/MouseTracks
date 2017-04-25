@@ -3,18 +3,30 @@ import win32con
 import os
 
 
-def get_device_data():
-    """Get the resolution and refresh rate of the main monitor."""
+def get_resolution():
+    """Get the resolution of the main monitor.
+    Returns:
+        (x, y) resolution as a tuple.
+    """
+    return (win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1))
+
+
+def get_refresh_rate():
+    """Get the refresh rate of the main monitor.
+    Returns:
+        Refresh rate/display frequency as an int.
+    """
     device = win32api.EnumDisplayDevices()
     settings = win32api.EnumDisplaySettings(device.DeviceName, 0)
-    refresh_rate = getattr(settings, 'DisplayFrequency')
-    resolution = (win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1))
-    return {'Resolution': resolution, 0: resolution,
-            'Refresh': refresh_rate, 1: refresh_rate}
+    return getattr(settings, 'DisplayFrequency')
 
 
 def get_cursor_pos():
-    """Return the cursor position as a tuple."""
+    """Read the cursor position on screen.
+    Returns:
+        (x, y) coordinates as a tuple.
+        None if it can't be detected.
+    """
     try:
         return win32api.GetCursorPos()
     except win32api.error:
@@ -22,19 +34,27 @@ def get_cursor_pos():
 
 
 def get_mouse_click():
-    """Check if one of the three main mouse buttons is being clicked."""
+    """Check if one of the three main mouse buttons is being clicked.
+    Returns:
+        True/False if any clicks have been detected or not.
+    """
     return any(win32api.GetKeyState(button) < 0 for button in MOUSE_BUTTONS)
 
 
 def get_key_press(key):
     """Check if a key is being pressed.
     Needs changing for something that detects keypresses in applications.
+    Returns:
+        True/False if the selected key has been pressed or not.
     """
     return win32api.GetAsyncKeyState(key)
 
 
 def remove_file(file_name):
-    """Delete a file."""
+    """Delete a file.
+    Returns:
+        True/False if successful or not.
+    """
     try:
         os.remove(file_name)
     except WindowsError:
@@ -43,7 +63,10 @@ def remove_file(file_name):
 
 
 def rename_file(old_name, new_name):
-    """Rename a file."""
+    """Rename a file.
+    Return:
+        True/False if successful or not.
+    """
     try:
         os.rename(old_name, new_name)
     except WindowsError:
@@ -52,7 +75,10 @@ def rename_file(old_name, new_name):
 
 
 def create_folder(folder_path):
-    """Create a folder."""
+    """Create a folder.
+    Return:
+        True/False if successful or not.
+    """
     try:
         os.makedirs(folder_path)
     except WindowsError:
