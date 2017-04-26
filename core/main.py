@@ -2,7 +2,7 @@ from __future__ import division
 from multiprocessing import Process, Queue
 import time
 
-from _os import get_resolution, get_mouse_click, get_key_press, KEYS, MOUSE_BUTTONS
+from _os import get_resolution, get_mouse_click, get_key_press, KEYS
 from messages import *
 from functions import RefreshRateLimiter
 from constants import *
@@ -132,10 +132,13 @@ def start_tracking():
             for k in KEYS:
                 if get_key_press(KEYS[k]):
                     if store['Keyboard']['KeysPressed'][k]:
-                        pass
+                        key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
+                        if store['Keyboard']['KeysPressed'][k] < limiter.time - key_press_repeat:
+                            keys_pressed.append(k)
+                            store['Keyboard']['KeysPressed'][k] = limiter.time
                     else:
                         keys_pressed.append(k)
-                        store['Keyboard']['KeysPressed'][k] = True
+                        store['Keyboard']['KeysPressed'][k] = limiter.time
                 elif store['Keyboard']['KeysPressed'][k]:
                     store['Keyboard']['KeysPressed'][k] = False
             if keys_pressed:
