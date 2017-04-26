@@ -11,7 +11,9 @@ HEATMAP = [
 _config_defaults = [
     ('Main', {
         'UpdatesPerSecond': (60, int, 'This is probably best left at 60 even if'
-                                      ' you have a higher refresh rate.')
+                                      ' you have a higher refresh rate.'),
+        'RepeatKeyPress': (0.25, float, 'Record a new key press at this frequency'
+                                        ' if a key is being held down (set to 0 to disable).')
     }),
     ('CompressTracks', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
@@ -19,7 +21,7 @@ _config_defaults = [
         'Frequency': (7200, int),
         'Multiplier': (1.1, float)
     }),
-    ('Frequency', {
+    ('Timer', {
         'Save': (30, int),
         'CheckPrograms': (2, int),
         'CheckScreen': (3, int),
