@@ -100,16 +100,20 @@ def _background_process(received_data, store):
             mouse_coordinates = [start, end] + calculate_line(start, end)
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
-                
+
         store['Data']['Count'] += 1
+        
+        #Compress tracks if the count gets too high
         compress_frequency = CONFIG.data['CompressTracks']['Frequency']
         compress_multplier = CONFIG.data['CompressTracks']['Multiplier']
         compress_limit = compress_frequency * CONFIG.data['Main']['UpdatesPerSecond']
         if store['Data']['Count'] > compress_limit:
             notify.queue(MOUSE_TRACK_COMPRESS_START)
-            for resolution in store['Data']['Tracks'].keys():
-                store['Data']['Tracks'][resolution] = {k: v // compress_multplier for k, v in
-                                                store['Data']['Tracks'][resolution].iteritems()}
+            tracks = store['Data']['Tracks']
+            for resolution in tracks.keys():
+                track_items = tracks[resolution].iteritems()
+                tracks[resolution] = {k: int(v // compress_multplier) for k, v in track_items}
+                tracks[resolution] = {k: v for k, v in track_items if v}
                 store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
