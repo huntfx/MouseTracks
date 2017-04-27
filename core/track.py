@@ -87,10 +87,11 @@ def _background_process(received_data, store):
                 store['Data']['Keys'][key] = 1
 
     if 'MouseClick' in received_data:
-        try:
-            store['Data']['Clicks'][store['Resolution']][received_data['MouseClick']] += 1
-        except KeyError:
-            store['Data']['Clicks'][store['Resolution']][received_data['MouseClick']] = 1
+        for mouse_click in received_data['MouseClick']:
+            try:
+                store['Data']['Clicks'][store['Resolution']][mouse_click] += 1
+            except KeyError:
+                store['Data']['Clicks'][store['Resolution']][mouse_click] = 1
 
     if 'MouseMove' in received_data:
         start, end = received_data['MouseMove']
