@@ -1,3 +1,5 @@
+from datetime import datetime
+
 MESSAGE_LEVEL = 1
 
 DEBUG = -1
@@ -106,5 +108,10 @@ class Notify(object):
 
     def reset(self):
         self.message_queue = {0: [], 1: [], 2: []}
+
+
+def time_format(t):
+    return '[{}]'.format(datetime.fromtimestamp(t).strftime("%H:%M:%S"))
+
 
 notify = Notify()
