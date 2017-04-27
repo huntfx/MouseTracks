@@ -69,7 +69,7 @@ def start_tracking():
                 else:
                     notify_output = notify_extra
             if notify_output:
-                print notify_output
+                print '{} {}'.format(time_format(limiter.time), notify_output)
 
             frame_data = {}
             mouse_pos['Current'] = limiter.mouse_pos()
