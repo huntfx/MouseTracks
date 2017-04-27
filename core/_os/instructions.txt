@@ -15,7 +15,7 @@ It usually happens somewhere between when the screensaver starts and when the di
 Check which error it is and return None if it happens.
 
 get_mouse_click():
-Returns True or False if the mouse is being clicked.
+Returns a tuple of True or False if mouse buttons 1, 2 and 3 are being clicked.
 
 get_key_press(key):
 Returns True or False if the key is being pressed.
