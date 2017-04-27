@@ -1,6 +1,5 @@
 from __future__ import division
 from PIL import Image
-from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
 import numpy as np
 
@@ -36,8 +35,8 @@ def generate_clicks(numpy_arrays, colour_list=None, exponential_multiplier=None,
     h = len(max_array)
     w = len(max_array[0])
     heatmap = np.zeros(h * w).reshape((h, w))
-    height_range = range(h)
-    width_range = range(w)
+    height_range = range(trim_edges, h - trim_edges)
+    width_range = range(trim_edges, w - trim_edges)
     for x in width_range:
         for y in height_range:
             heatmap[y][x] = max_array[y][x] ** exponential_multiplier
@@ -78,8 +77,8 @@ def create_heatmap(image_name, data, trim_edges=None):
     if trim_edges is None:
         trim_edges = CONFIG.data['GenerateHeatmap']['TrimEdges']
     
-    value_range, numpy_arrays = merge_resolutions(data, interpolate=False, trim_edge=trim_edges)
-    im = generate_clicks(numpy_arrays)
+    value_range, numpy_arrays = merge_resolutions(data, interpolate=False)
+    im = generate_clicks(numpy_arrays, trim_edges=trim_edges)
     im = im.resize(desired_resolution, Image.ANTIALIAS)
     
     print 'Saving click heatmap...'
