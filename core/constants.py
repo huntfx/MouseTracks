@@ -13,7 +13,9 @@ _config_defaults = [
         'UpdatesPerSecond': (60, int, 'This is probably best left at 60 even if'
                                       ' you have a higher refresh rate.'),
         'RepeatKeyPress': (0.25, float, 'Record a new key press at this frequency'
-                                        ' if a key is being held down (set to 0 to disable).')
+                                        ' if a key is being held down (set to 0 to disable).'),
+        'RepeatClicks': (0.18, float, 'Record a new click at this frequency'
+                                      ' if the mouse is being held down (set to 0 to disable).')
     }),
     ('CompressTracks', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
