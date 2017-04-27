@@ -111,9 +111,9 @@ def _background_process(received_data, store):
             notify.queue(MOUSE_TRACK_COMPRESS_START)
             tracks = store['Data']['Tracks']
             for resolution in tracks.keys():
-                track_items = tracks[resolution].iteritems()
-                tracks[resolution] = {k: int(v // compress_multplier) for k, v in track_items}
-                tracks[resolution] = {k: v for k, v in track_items if v}
+                tracks[resolution] = {k: int(v // compress_multplier)
+                                      for k, v in tracks[resolution].iteritems()}
+                tracks[resolution] = {k: v for k, v in tracks[resolution].iteritems() if v}
                 store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
