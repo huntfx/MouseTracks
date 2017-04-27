@@ -25,7 +25,7 @@ def start_tracking():
                                     'Previous': None},
                        'NotMoved': 0,
                        'Inactive': False,
-                       'Clicked': False,
+                       'Clicked': {},
                        'OffScreen': False},
              'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
              'LastActivity': 0,
@@ -108,31 +108,36 @@ def start_tracking():
                     notify.queue(MOUSE_POSITION, mouse_pos['Current'])
                     store['LastActivity'] = i
 
+            
             #Mouse clicks
-            mouse_click = get_mouse_click()
-            if mouse_click:
-                click_repeat = CONFIG.data['Main']['RepeatClicks']
-                
-                #First click
-                if not store['Mouse']['Clicked']:
-                    if not store['Mouse']['OffScreen']:
-                        notify.queue(MOUSE_CLICKED, mouse_pos['Current'])
-                        frame_data['MouseClick'] = mouse_pos['Current']
-                        store['LastActivity'] = i
-                        store['Mouse']['Clicked'] = limiter.time
-                    else:
-                        notify.queue(MOUSE_CLICKED_OFFSCREEN)
-
-                #Held clicks
-                elif click_repeat and store['Mouse']['Clicked'] < limiter.time - click_repeat:
-                    if not store['Mouse']['OffScreen']:
-                        notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'])
-                    store['Mouse']['Clicked'] = limiter.time
-
-            elif store['Mouse']['Clicked']:
-                notify.queue(MOUSE_UNCLICKED)
-                store['Mouse']['Clicked'] = False
-
+            click_repeat = CONFIG.data['Main']['RepeatClicks']
+            for mouse_button, clicked in enumerate(get_mouse_click()):
+                mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
+                if clicked:
+                    #First click
+                    if not mb_clicked:
+                        if not store['Mouse']['OffScreen']:
+                            notify.queue(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
+                            try:
+                                frame_data['MouseClick'].append(mouse_pos['Current'])
+                            except KeyError:
+                                frame_data['MouseClick'] = [mouse_pos['Current']]
+                            store['Mouse']['Clicked'][mouse_button] = limiter.time
+                        else:
+                            notify.queue(MOUSE_CLICKED_OFFSCREEN, mouse_button)
+                    #Held clicks
+                    elif click_repeat and mb_clicked < limiter.time - click_repeat:
+                        if not store['Mouse']['OffScreen']:
+                            notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
+                            try:
+                                frame_data['MouseClick'].append(mouse_pos['Current'])
+                            except KeyError:
+                                frame_data['MouseClick'] = [mouse_pos['Current']]
+                        store['Mouse']['Clicked'][mouse_button] = limiter.time
+                elif mb_clicked:
+                    notify.queue(MOUSE_UNCLICKED)
+                    del store['Mouse']['Clicked'][mouse_button]
+                    
 
             #Key presses
             keys_pressed = []
