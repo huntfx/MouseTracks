@@ -38,7 +38,8 @@ def get_mouse_click():
     Returns:
         True/False if any clicks have been detected or not.
     """
-    return any(win32api.GetKeyState(button) < 0 for button in MOUSE_BUTTONS)
+    buttons = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
+    return tuple(win32api.GetKeyState(button) < 0 for button in buttons)
 
 
 def get_key_press(key):
@@ -86,7 +87,6 @@ def create_folder(folder_path):
     return True
 
 
-MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
 KEYS = {
     'F1': win32con.VK_F1,
     'F2': win32con.VK_F2,
