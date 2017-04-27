@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from scipy.ndimage.interpolation import zoom
 
 from constants import HEATMAP, CONFIG
 from files import load_program
@@ -20,7 +21,7 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, max_resolution=None, interpolate=True, trim_edge=0):
+def merge_resolutions(main_data, max_resolution=None, interpolate=True):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -56,8 +57,8 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True, trim_edg
 
         #Build 2D array from data
         new_data = []
-        width_range = range(trim_edge, current_resolution[0] - trim_edge)
-        height_range = range(trim_edge, current_resolution[1] - trim_edge)
+        width_range = range(current_resolution[0])
+        height_range = range(current_resolution[1])
         for y in height_range:
             new_data.append([])
             for x in width_range:
