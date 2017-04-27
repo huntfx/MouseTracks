@@ -28,6 +28,9 @@ DATA_LOADED = 82
 DATA_NOTFOUND = 83
 PROGRAM_RELOAD = 84
 
+def _mb_text(id):
+    return ('Left', 'Middle', 'Right')[id]
+
 class Notify(object):
     def __init__(self):
         self.reset()
@@ -48,11 +51,13 @@ class Notify(object):
         if message_id == MOUSE_POSITION:
             q0('Cursor position: ({}, {})'.format(args[0][0], args[0][1]))
         if message_id == MOUSE_CLICKED:
-            q1('Mouse button clicked at ({}, {})'.format(args[0][0], args[0][1]))
+            q1('{} mouse button clicked at ({}, {})'.format(_mb_text(args[1]),
+                                                            args[0][0], args[0][1]))
         if message_id == MOUSE_CLICKED_OFFSCREEN:
-            q1('Mouse button clicked.')
+            q1('{} mouse button clicked.'.format(_mb_text(args[0])))
         if message_id == MOUSE_CLICKED_HELD:
-            q1('Mouse button being held at ({}, {})'.format(args[0][0], args[0][1]))
+            q1('{} mouse button being held at ({}, {})'.format(_mb_text(args[1]),
+                                                               args[0][0], args[0][1]))
         if message_id == MOUSE_UNCLICKED:
             q0('Mouse button unclicked.')
         if message_id == MOUSE_HELD:
