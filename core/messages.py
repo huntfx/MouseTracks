@@ -9,11 +9,13 @@ MOUSE_ONSCREEN = 4
 MOUSE_CLICKED = 8
 MOUSE_UNCLICKED = 9
 MOUSE_CLICKED_OFFSCREEN = 10
-MOUSE_HELD = 11
-MOUSE_TRACK_COMPRESS_START = 12
-MOUSE_TRACK_COMPRESS_END = 13
+MOUSE_CLICKED_HELD = 11
+MOUSE_HELD = 12
+MOUSE_TRACK_COMPRESS_START = 13
+MOUSE_TRACK_COMPRESS_END = 14
 RESOLUTION_CHANGED = 16
 KEYBOARD_PRESSES = 32
+KEYBOARD_PRESSES_HELD = 33
 PROGRAM_STARTED = 48
 PROGRAM_QUIT = 49
 SAVE_START = 64
@@ -49,8 +51,10 @@ class Notify(object):
             q1('Mouse button clicked at ({}, {})'.format(args[0][0], args[0][1]))
         if message_id == MOUSE_CLICKED_OFFSCREEN:
             q1('Mouse button clicked.')
+        if message_id == MOUSE_CLICKED_HELD:
+            q1('Mouse button being held at ({}, {})'.format(args[0][0], args[0][1]))
         if message_id == MOUSE_UNCLICKED:
-            q1('Mouse button unclicked.')
+            q0('Mouse button unclicked.')
         if message_id == MOUSE_HELD:
             q1('Mouse button being held.')
         if message_id == MOUSE_TRACK_COMPRESS_START:
@@ -62,6 +66,8 @@ class Notify(object):
                                                                args[1][0], args[1][1]))
         if message_id == KEYBOARD_PRESSES:
             q1('Key Presses: {}'.format(', '.join(*args)))
+        if message_id == KEYBOARD_PRESSES_HELD:
+            q1('Key Presses (held down): {}'.format(', '.join(*args)))
         if message_id == PROGRAM_STARTED:
             q2('Program Loaded: {}'.format(args[0][0]))
         if message_id == PROGRAM_QUIT:
