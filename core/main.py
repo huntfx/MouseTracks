@@ -112,31 +112,36 @@ def start_tracking():
             #Mouse clicks
             click_repeat = CONFIG.data['Main']['RepeatClicks']
             for mouse_button, clicked in enumerate(get_mouse_click()):
-                mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
+                
+                mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)               
                 if clicked:
+                    store['LastActivity'] = i
+                    
                     #First click
                     if not mb_clicked:
+                        store['Mouse']['Clicked'][mouse_button] = limiter.time
                         if not store['Mouse']['OffScreen']:
                             notify.queue(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
                             try:
                                 frame_data['MouseClick'].append(mouse_pos['Current'])
                             except KeyError:
                                 frame_data['MouseClick'] = [mouse_pos['Current']]
-                            store['Mouse']['Clicked'][mouse_button] = limiter.time
                         else:
                             notify.queue(MOUSE_CLICKED_OFFSCREEN, mouse_button)
+                            
                     #Held clicks
                     elif click_repeat and mb_clicked < limiter.time - click_repeat:
+                        store['Mouse']['Clicked'][mouse_button] = limiter.time
                         if not store['Mouse']['OffScreen']:
                             notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
                             try:
                                 frame_data['MouseClick'].append(mouse_pos['Current'])
                             except KeyError:
                                 frame_data['MouseClick'] = [mouse_pos['Current']]
-                        store['Mouse']['Clicked'][mouse_button] = limiter.time
                 elif mb_clicked:
                     notify.queue(MOUSE_UNCLICKED)
                     del store['Mouse']['Clicked'][mouse_button]
+                    store['LastActivity'] = i
                     
 
             #Key presses
