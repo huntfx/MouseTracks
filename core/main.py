@@ -13,10 +13,10 @@ def start_tracking():
     mouse_inactive_delay = 2
 
     updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
-    timer = {'UpdateScreen': CONFIG.data['Frequency']['CheckScreen'],
-             'UpdatePrograms': CONFIG.data['Frequency']['CheckPrograms'],
-             'Save': CONFIG.data['Frequency']['Save'],
-             'ReloadProgramList': CONFIG.data['Frequency']['ReloadPrograms']}
+    timer = {'UpdateScreen': CONFIG.data['Timer']['CheckScreen'],
+             'UpdatePrograms': CONFIG.data['Timer']['CheckPrograms'],
+             'Save': CONFIG.data['Timer']['Save'],
+             'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms']}
     timer = {k: v * updates_per_second for k, v in timer.iteritems()}
 
     store = {'Resolution': {'Current': get_resolution(),
@@ -111,39 +111,48 @@ def start_tracking():
             #Mouse clicks
             mouse_click = get_mouse_click()
             if mouse_click:
+                click_repeat = CONFIG.data['Main']['RepeatClicks']
+                
+                #First click
                 if not store['Mouse']['Clicked']:
                     if not store['Mouse']['OffScreen']:
                         notify.queue(MOUSE_CLICKED, mouse_pos['Current'])
                         frame_data['MouseClick'] = mouse_pos['Current']
                         store['LastActivity'] = i
+                        store['Mouse']['Clicked'] = limiter.time
                     else:
                         notify.queue(MOUSE_CLICKED_OFFSCREEN)
+
+                #Held clicks
+                elif click_repeat and store['Mouse']['Clicked'] < limiter.time - click_repeat:
+                    if not store['Mouse']['OffScreen']:
+                        notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'])
                     store['Mouse']['Clicked'] = limiter.time
-                elif store['Mouse']['Clicked'] > 0 and store['Mouse']['Clicked'] + 1 < limiter.time:
-                    store['Mouse']['Clicked'] *= -1
-                    notify.queue(MOUSE_HELD)
-            else:
-                if store['Mouse']['Clicked'] < 0 and store['Mouse']['Clicked'] > 1 - limiter.time:
-                    notify.queue(MOUSE_UNCLICKED)
+
+            elif store['Mouse']['Clicked']:
+                notify.queue(MOUSE_UNCLICKED)
                 store['Mouse']['Clicked'] = False
+
 
             #Key presses
             keys_pressed = []
+            key_status = store['Keyboard']['KeysPressed']
+            key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
             for k in KEYS:
                 if get_key_press(KEYS[k]):
-                    if store['Keyboard']['KeysPressed'][k]:
-                        key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
-                        if store['Keyboard']['KeysPressed'][k] < limiter.time - key_press_repeat:
+                    if key_status[k]:
+                        if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
                             keys_pressed.append(k)
-                            store['Keyboard']['KeysPressed'][k] = limiter.time
+                            key_status[k] = limiter.time
+                            notify.queue(KEYBOARD_PRESSES_HELD, keys_pressed)
                     else:
                         keys_pressed.append(k)
-                        store['Keyboard']['KeysPressed'][k] = limiter.time
-                elif store['Keyboard']['KeysPressed'][k]:
-                    store['Keyboard']['KeysPressed'][k] = False
+                        key_status[k] = limiter.time
+                        notify.queue(KEYBOARD_PRESSES, keys_pressed)
+                elif key_status[k]:
+                    key_status[k] = False
             if keys_pressed:
                 frame_data['Keys'] = keys_pressed
-                notify.queue(KEYBOARD_PRESSES, keys_pressed)
                 store['LastActivity'] = i
 
             #Check if resolution has changed
