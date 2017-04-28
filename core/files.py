@@ -43,7 +43,7 @@ def save_program(program_name, data):
         
     old_name = 'Data/{}.data.old'.format(name_format)
     new_name = 'Data/{}.data'.format(name_format)
-    temp_name = 'Data/{}.data.{}'.format(name_format, time.time())
+    temp_name = 'Data/{}.data.{}'.format(name_format, int(time.time()))
 
     create_folder('Data')
     with open(temp_name, 'wb') as f:
