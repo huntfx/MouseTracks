@@ -26,7 +26,7 @@ _config_defaults = [
     ('Timer', {
         'Save': (30, int),
         'CheckPrograms': (2, int),
-        'CheckScreen': (3, int),
+        'CheckResolution': (1, int),
         'ReloadPrograms': (600, int)
     }),
     ('GenerateImages', {
