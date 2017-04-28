@@ -7,32 +7,41 @@ import time
 import sys
 
 
+def _notify_send(q_send, notify):
+    output = notify.output()
+    if output:
+        q_send.put(output)
+
+
 def background_process(q_recv, q_send):
     try:
         notify.queue(START_THREAD)
-        q_send.put(notify.output())
+        #q_send.put(notify.output())
+        _notify_send(q_send, notify)
         store = {'Data': load_program(),
                  'Programs': {'Class': RunningPrograms(),
                               'Current': None,
                               'Previous': None},
                  'Resolution': None}
         notify.queue(DATA_LOADED)
-        q_send.put(notify.output())
+        #q_send.put(notify.output())
+        _notify_send(q_send, notify)
         while True:
             received_data = q_recv.get()
             try:
-                messages = _background_process(received_data, store)
+                messages = _background_process(q_send, received_data, store)
             except Exception as e:
                 q_send.put('{}: {}'.format(sys.exc_info()[0], e))
                 return
             else:
-                if messages:
-                    q_send.put(messages)
+                pass
+                #if messages:
+                #    q_send.put(messages)
     except Exception as e:
         q_send.put('{}: {}'.format(sys.exc_info()[0], e))
 
 
-def _background_process(received_data, store):
+def _background_process(q_send, received_data, store):
 
     check_resolution = False
     if 'Save' in received_data:
@@ -40,10 +49,12 @@ def _background_process(received_data, store):
             notify.queue(SAVE_SUCCESS)
         else:
             notify.queue(SAVE_FAIL)
+        _notify_send(q_send, notify)
     
     if 'Programs' in received_data:
         if received_data['Programs']:
             store['Programs']['Class'].reload_file()
+            notify.queue(PROGRAM_RELOAD)
         else:
             store['Programs']['Class'].refresh()
             store['Programs']['Current'] = store['Programs']['Class'].check()
@@ -55,6 +66,8 @@ def _background_process(received_data, store):
                     notify.queue(PROGRAM_STARTED, store['Programs']['Current'])
                     
                 notify.queue(SAVE_START)
+                _notify_send(q_send, notify)
+                
                 check_resolution = True
                 if save_program(store['Programs']['Previous'], store['Data']):
                     notify.queue(SAVE_SUCCESS)
@@ -67,7 +80,8 @@ def _background_process(received_data, store):
                 if store['Data']['Count']:
                     notify.queue(DATA_LOADED)
                 else:
-                    notify.queue(DATA_NOTFOUND)                    
+                    notify.queue(DATA_NOTFOUND)
+        _notify_send(q_send, notify)
 
 
     if 'Resolution' in received_data:
@@ -110,6 +124,7 @@ def _background_process(received_data, store):
         compress_limit = compress_frequency * CONFIG.data['Main']['UpdatesPerSecond']
         if store['Data']['Count'] > compress_limit:
             notify.queue(MOUSE_TRACK_COMPRESS_START)
+            _notify_send(q_send, notify)
             tracks = store['Data']['Tracks']
             for resolution in tracks.keys():
                 tracks[resolution] = {k: int(v // compress_multplier)
@@ -122,6 +137,7 @@ def _background_process(received_data, store):
     if 'Ticks' in received_data:
         store['Data']['Ticks'] += received_data['Ticks']
 
-    notify_output = notify.output()
-    if notify_output:
-        return notify_output
+    _notify_send(q_send, notify)
+    #notify_output = notify.output()
+    #if notify_output:
+    #    return notify_output
