@@ -38,11 +38,9 @@ _config_defaults = [
         'OutputResolutionY': (1080, int)
     }),
     ('GenerateHeatmap', {
-        'GaussianBlurSize': (25, int),
+        'GaussianBlurSize': (22, int),
         'ExponentialMultiplier': (0.5, float),
         'ColourProfile': ('HeatMap', str),
-        'TrimEdges': (20, int, 'Removes edges so that frequently clicked things like the close'
-                              ' button won\'t affect the rest of the results.'),
         'SetMaxRange': (0, int, 'Manually set the highest value.'
                                 ' Set to 0 to use auto, otherwise use trial and error'
                                 ' to get it right.')
