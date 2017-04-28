@@ -13,7 +13,7 @@ def start_tracking():
     mouse_inactive_delay = 2
 
     updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
-    timer = {'UpdateScreen': CONFIG.data['Timer']['CheckScreen'],
+    timer = {'UpdateScreen': CONFIG.data['Timer']['CheckResolution'],
              'UpdatePrograms': CONFIG.data['Timer']['CheckPrograms'],
              'Save': CONFIG.data['Timer']['Save'],
              'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms']}
