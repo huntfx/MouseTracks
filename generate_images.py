@@ -28,12 +28,11 @@ def generate_clicks(numpy_arrays, colour_list=None):
     #Create a new numpy array and copy over the values
     #I'm not sure if there's a way to skip this step since it seems a bit useless
     print 'Converting to heatmap...'
-    trim_edges = CONFIG.data['GenerateHeatmap']['TrimEdges']
     h = len(max_array)
     w = len(max_array[0])
     heatmap = np.zeros(h * w).reshape((h, w))
-    height_range = range(trim_edges, h - trim_edges)
-    width_range = range(trim_edges, w - trim_edges)
+    height_range = range(h)
+    width_range = range(w)
     exponential_multiplier = CONFIG.data['GenerateHeatmap']['ExponentialMultiplier']
     for x in width_range:
         for y in height_range:
