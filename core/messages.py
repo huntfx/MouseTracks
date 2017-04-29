@@ -20,15 +20,16 @@ KEYBOARD_PRESSES = 32
 KEYBOARD_PRESSES_HELD = 33
 PROGRAM_STARTED = 48
 PROGRAM_QUIT = 49
+PROGRAM_RELOAD = 50
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
-SAVE_SKIP = 67
+SAVE_FAIL_RETRY = 67
+SAVE_SKIP = 68
 START_MAIN = 80
 START_THREAD = 81
 DATA_LOADED = 82
 DATA_NOTFOUND = 83
-PROGRAM_RELOAD = 84
 
 def _mb_text(id):
     return ('Left', 'Middle', 'Right')[id]
@@ -79,12 +80,17 @@ class Notify(object):
             q2('Program Loaded: {}'.format(args[0][0]))
         if message_id == PROGRAM_QUIT:
             q2('Program quit.')
+        if message_id == PROGRAM_RELOAD:
+            q1('Finished reloading program list.')
         if message_id == SAVE_START:
             q2('Saving the file...')
         if message_id == SAVE_SUCCESS:
             q2('Finished saving.')
         if message_id == SAVE_FAIL:
             q2('Unable to save file, make sure this has the correct permissions.')
+        if message_id == SAVE_FAIL_RETRY:
+            q2('Unable to save file,'
+               ' trying again in {} second{}.'.format(args[0], '' if args[0] == 1 else 's'))
         if message_id == SAVE_SKIP:
             q2('Skipping save, user inactive for {} second{}.'.format(args[0],
                                                                       '' if args[0] == 1 else 's'))
@@ -96,8 +102,6 @@ class Notify(object):
             q1('Finished loading data.')
         if message_id == DATA_NOTFOUND:
             q1('Started new data store.')
-        if message_id == PROGRAM_RELOAD:
-            q1('Finished reloading program list.')
             
     def output(self):
         allowed_levels = range(MESSAGE_LEVEL, 3)
