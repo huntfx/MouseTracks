@@ -8,6 +8,7 @@ import sys
 
 
 def _notify_send(q_send, notify):
+    """Wrapper to the notify class to send non empty values."""
     output = notify.output()
     if output:
         q_send.put(output)
@@ -16,27 +17,25 @@ def _notify_send(q_send, notify):
 def background_process(q_recv, q_send):
     try:
         notify.queue(START_THREAD)
-        #q_send.put(notify.output())
         _notify_send(q_send, notify)
+        
         store = {'Data': load_program(),
                  'Programs': {'Class': RunningPrograms(),
                               'Current': None,
                               'Previous': None},
                  'Resolution': None}
+        
         notify.queue(DATA_LOADED)
-        #q_send.put(notify.output())
         _notify_send(q_send, notify)
+        
         while True:
             received_data = q_recv.get()
             try:
                 messages = _background_process(q_send, received_data, store)
             except Exception as e:
-                q_send.put('{}: {}'.format(sys.exc_info()[0], e))
+                q_send.put('{}: line {}'.format(sys.exc_info()[2].tb_lineno, e))
                 return
-            else:
-                pass
-                #if messages:
-                #    q_send.put(messages)
+            
     except Exception as e:
         q_send.put('{}: {}'.format(sys.exc_info()[0], e))
 
@@ -45,6 +44,8 @@ def _background_process(q_send, received_data, store):
 
     check_resolution = False
     if 'Save' in received_data:
+        notify.queue(SAVE_START)
+        _notify_send(q_send, notify)
         if save_program(store['Programs']['Current'], store['Data']):
             notify.queue(SAVE_SUCCESS)
         else:
@@ -73,6 +74,7 @@ def _background_process(q_send, received_data, store):
                     notify.queue(SAVE_SUCCESS)
                 else:
                     notify.queue(SAVE_FAIL)
+                _notify_send(q_send, notify)
     
                 store['Programs']['Previous'] = store['Programs']['Current']
                     
@@ -138,6 +140,3 @@ def _background_process(q_send, received_data, store):
         store['Data']['Ticks'] += received_data['Ticks']
 
     _notify_send(q_send, notify)
-    #notify_output = notify.output()
-    #if notify_output:
-    #    return notify_output
