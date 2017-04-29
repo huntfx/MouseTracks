@@ -54,6 +54,7 @@ def start_tracking():
                     store['LastSent'] = i
             except NameError:
                 pass
+
             
             #Print any messages from previous loop
             notify_extra = ''
@@ -74,6 +75,7 @@ def start_tracking():
             frame_data = {}
             mouse_pos['Current'] = limiter.mouse_pos()
 
+
             #Check if mouse is inactive (such as in a screensaver)
             if mouse_pos['Current'] is None:
                 if not store['Mouse']['Inactive']:
@@ -81,6 +83,7 @@ def start_tracking():
                     store['Mouse']['Inactive'] = True
                 time.sleep(mouse_inactive_delay)
                 continue
+
 
             #Check if mouse left the monitor
             elif (not 0 <= mouse_pos['Current'][0] < store['Resolution']['Current'][0]
@@ -92,10 +95,12 @@ def start_tracking():
                 notify.queue(MOUSE_ONSCREEN)
                 store['Mouse']['OffScreen'] = False
 
-            #Notify if mouse is no longer inactive
+
+            #Notify once if mouse is no longer inactive
             if store['Mouse']['Inactive']:
                 store['Mouse']['Inactive'] = False
                 notify.queue(MOUSE_DETECTED)
+
 
             #Check if mouse is in a duplicate position
             if mouse_pos['Current'] is None or mouse_pos['Current'] == mouse_pos['Previous']:
@@ -108,7 +113,7 @@ def start_tracking():
                     notify.queue(MOUSE_POSITION, mouse_pos['Current'])
                     store['LastActivity'] = i
 
-            
+
             #Mouse clicks
             click_repeat = CONFIG.data['Main']['RepeatClicks']
             for mouse_button, clicked in enumerate(get_mouse_click()):
@@ -142,7 +147,7 @@ def start_tracking():
                     notify.queue(MOUSE_UNCLICKED)
                     del store['Mouse']['Clicked'][mouse_button]
                     store['LastActivity'] = i
-                    
+ 
 
             #Key presses
             keys_pressed = []
@@ -150,20 +155,28 @@ def start_tracking():
             key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
             for k in KEYS:
                 if get_key_press(KEYS[k]):
+
+                    #If key is currently being held down
                     if key_status[k]:
                         if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
                             keys_pressed.append(k)
                             key_status[k] = limiter.time
                             notify.queue(KEYBOARD_PRESSES_HELD, keys_pressed)
+
+                    #If key has been pressed
                     else:
                         keys_pressed.append(k)
                         key_status[k] = limiter.time
                         notify.queue(KEYBOARD_PRESSES, keys_pressed)
+
+                #If key has been released
                 elif key_status[k]:
                     key_status[k] = False
+                    
             if keys_pressed:
                 frame_data['Keys'] = keys_pressed
                 store['LastActivity'] = i
+
 
             #Check if resolution has changed
             if not i % timer['UpdateScreen']:
@@ -175,19 +188,21 @@ def start_tracking():
                     frame_data['Resolution'] = store['Resolution']['Current']
                     store['Resolution']['Previous'] = store['Resolution']['Current']
 
+
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
                 frame_data['Programs'] = False
-                
+            
+            
             #Send request to reload program list
             if not i % timer['ReloadProgramList']:
                 frame_data['Programs'] = True
-
+            
+            
             #Send save request
             if i and not i % timer['Save']:
                 if store['LastActivity'] > i - timer['Save']:
                     frame_data['Save'] = True
-                    notify.queue(SAVE_START)
                 else:
                     notify.queue(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
             
