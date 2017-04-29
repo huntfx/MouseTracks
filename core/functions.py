@@ -161,21 +161,44 @@ class RunningPrograms(object):
 
         programs = tuple(i.strip() for i in lines)
         self.programs = {}
+        program_type = None #1: windows, 2: linux, 3: mac
         for program_info in programs:
             if not program_info or program_info[0] in ('#', ';', '//'):
                 continue
             try:
-                exe_name, friendly_name = program_info.split('.exe', 1)
+                #If filename and name are given
+                friendly_name = None
+                if '.exe' in program_info:
+                    while '.exe ' in program_info:
+                        program_info = program_info.replace('.exe ', '.exe')
+                    exe_name, friendly_name = program_info.split('.exe:', 1)
+                    program_type = 1
+                if '.app' in program_info:
+                    while '.app ' in program_info:
+                        program_info = program_info.replace('.app ', '.app')
+                    exe_name, friendly_name = program_info.split('.app:', 1)
+                    program_type = 3
                 if not friendly_name:
                     raise ValueError()
+
+            #If name is same as filename
             except ValueError:
                 if '.exe' in program_info:
                     exe_name = program_info.split('.exe')[0]
-                    friendly_name = ':' + exe_name
+                    friendly_name = exe_name
+                    program_type = 1
+                if '.app' in program_info:
+                    exe_name = program_info.split('.app')[0]
+                    friendly_name = exe_name
+                    program_type = 3
                 else:
                     continue
-            friendly_name = friendly_name.split(':', 1)[1].strip()
-            exe_name = exe_name.strip() + '.exe'
+                
+            friendly_name = friendly_name.strip()
+            if program_type == 1:
+                exe_name = exe_name.strip() + '.exe'
+            elif program_type == 3:
+                exe_name = exe_name.strip() + '.app'
             self.programs[exe_name] = friendly_name
             
             
@@ -285,4 +308,4 @@ class SimpleConfig(object):
                 except IndexError:
                     pass
         with open(self.file_name, 'w') as f:
-            f.write('\r\n'.join(output))
+            f.write('\n'.join(output))
