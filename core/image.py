@@ -2,9 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.ndimage.interpolation import zoom
 
-from constants import HEATMAP, CONFIG
-from files import load_program
-from functions import ColourRange
+from constants import CONFIG
 
 
 def merge_array_max(arrays):
