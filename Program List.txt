@@ -32,6 +32,7 @@ AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
 ArcheAge.exe
+arena.exe: Total War: Arena
 arma3.exe: Arma III
 armoredwarfare.exe: Armored Warfare
 AssassinsCreed_Game.exe: Assassin's Creed
@@ -39,6 +40,8 @@ AssettoCorsa.exe: Assetto Corsa
 AstronautsGame-Win64-Shipping.exe: The Vanishing of Ethan Carter
 audiosurf.exe: Audiosurf
 audiosurf2.exe: Audiosurf 2
+avalonlords.app: Avalon Lords
+avalonlords.exe: Avalon Lords
 AvP.exe: Aliens vs Predator
 AvP_DX11.exe: Aliens vs Predator
 Awesomenauts.exe
@@ -117,6 +120,7 @@ dave.exe: Dangerous Dave
 dayz.exe: Day Z
 DBXV.exe: Dragon Ball XenoVerse
 DCGAME.exe: DC Universe Online
+dcs.exe: DCS World
 DeadCore.exe
 DeadIslandGame.exe: Dead Island
 DeadIslandGame_x86_rwdi.exe: Dead Island Riptide
@@ -146,6 +150,7 @@ dndclient.exe: Dungeons & Dragons Online
 DNF.exe: Dungeon & Fighter
 Dnlauncher.exe: Dragon Nest
 Dofus.exe
+Dolphin.exe
 dontstarve_steam.exe: Don't Starve
 DoorKickers.exe: Door Kickers
 dota.exe: DOTA
@@ -162,6 +167,7 @@ DuckGame.exe: Duck Game
 Duelyst.exe
 DUKE3D.EXE: Duke Nukem 3D
 DukeForever.exe: Duke Nukem Forever
+DunDefGame.exe: Dungeon Defenders II
 DunDefLauncher.exe: Dungeon Defenders II
 Dungeon Siege III.exe: Dungeon Siege 3
 dungeon.exe: Soda Dungeon
@@ -178,7 +184,6 @@ elsword.exe: Elsword
 Empire.exe: Empire Total War
 empires2.exe: Age of Empires II
 EndlessLegend.exe: Endless Legend
-Engine.exe: F.E.A.R.
 Enslaved.exe: Enslaved
 EoCApp.exe: Divinity: Original Sin
 eqgame.exe: EverQuest
@@ -189,6 +194,7 @@ EthanCarter-Win64-Shipping.exe: The Vanishing of Ethan Carter Redux
 eu4.exe: Europa Universalis 4
 eurotrucks2.exe: Euro Truck Simulator 2
 event0.exe: Event[0]
+Everlasting%20Summer.app: Everlasting Summer
 EverQuest2.exe: EverQuest II
 Evolve.exe: Evolve
 exefile.exe: Eve Online
@@ -230,6 +236,7 @@ GJL.exe: Galactic Junk League
 Glquake.exe: Quake
 GoatGame-Win32-Shipping.exe: Goat Simulator
 GodMode.exe: God Mode
+grandia2.exe: Grandia 2
 Grickle101.exe: Puzzle Agent
 Grickle102.exe: Puzzle Agent 2
 grid2.exe: Grid 2
@@ -239,6 +246,7 @@ GTA5.exe: Grand Theft Auto 5
 GTAIV.exe: Grand Theft Auto 4
 gta_sa.exe: Grand Theft Auto: San Andreas
 guild-quest.exe: Guild Quest
+GunsofIcarusOnline.app: Guns of Icarus - Online
 Gunz2_Steam.exe: GunZ 2: The Second duel
 Gw.exe: Guild Wars
 Gw2-64.exe: Guild Wars 2
@@ -247,6 +255,7 @@ gw2.exe: Guild Wars 2
 GW3.exe: Geometry Wars 3
 H1Z1.exe
 HackerEvolution.exe: Hacker Evolution
+Hate%20Plus.app: Hate Plus
 hatoful.exe: Hatoful Boyfriend
 Hearthstone.app
 Hearthstone.exe
@@ -268,6 +277,7 @@ HoM.exe: Hero of Many
 HOMEFRONT.exe: Homefront
 Hon.exe: Heroes of Newerth
 HotlineMiami.exe: Hotline Miami
+Huniepop.app: Hunie Pop
 HuniePop.exe
 HydroPC.exe: Hydrophobia
 IAmWeaponRevival.exe: I am weapon: Revival
@@ -366,6 +376,7 @@ NitronicRush.exe: Nitronic Rush
 NMS.exe: No Man's Sky
 NovaRO.exe: Nova Ragnarok Online
 NS2.exe: Natural Selection 2
+ns2.exe: Natural Selection 2
 NS3FB.exe: Naruto Shippuden Ultimate Ninja Storm 3 Full Burst
 NSUNSR.exe: Naruto Shippuden Ultimate Ninja Storm Revolution
 nuclearthrone.exe: Nuclear Throne
@@ -382,7 +393,7 @@ ori.exe: Ori and the Blind Forest
 Orion.exe: Guardians of ORION
 Orlando.exe: Dangerous Golf
 OSBuddy.exe: RuneScape
-osu!.exe: osu!
+osu!.exe: OSU!
 Outlast.app
 Overwatch.exe: Overwatch
 overwatch.exe: Overwatch
@@ -411,6 +422,7 @@ planetside2_x86.exe: Planetside 2
 playSNOW.exe: SNOW
 Pneuma Breath of Life.exe: Pneuma: Breath of Life
 PokeMMO.exe
+Pokemon Trading Card Game Online.exe
 PokerNight2.exe: Poker Night 2
 pol.exe: FINAL FANTASY XI
 Polynomial.exe: The Polynomial
@@ -437,6 +449,7 @@ Rage.exe: RAGE
 ragexe.exe: Ragnarok Online
 Railroads.exe: Sid Meier's Railroads!
 RainbowSix.exe: Rainbow Six Siege
+Rayman Legends.exe
 RCT2.EXE: Rollercoaster Tycoon 2
 reactivedrop.exe: Alien Swarm: Reactive Drop
 reflex.exe: Reflex
@@ -444,10 +457,13 @@ RelicCOH.exe: Company of Heroes
 RelicCoH2.exe: Company of Heroes 2
 RelicDoW3.exe: Warhammer 40,000: Dawn of War 3
 RememberMe.exe: Remember Me
+Reus.app
+reus.exe: Reus
 rFactor.exe
 rift.exe: Rift
 rift_x64.exe: RiFT
 RimWorld914Win.exe: RimWorld
+Rising Angels - Reborn.app
 Risk of Rain.exe
 RivalsofAether.exe: Rivals of Aether
 Roblox.exe
@@ -481,7 +497,7 @@ ShippingPC-BmGame.exe: Batman Arkham Asylum
 ShippingPC-StormGame.exe: Bulletstorm
 Shogun2.exe: Total War: Shogun 2
 ShooterGame-Win32-Shipping.exe: Dirty Bomb
-ShooterGame.exe: Other
+ShooterGame.exe: Ark: Survival Evolved
 ShovelKnight.exe: Shovel Knight
 SimCity.exe
 Simpsons.exe: The Simpsons: Hit & Run
@@ -501,6 +517,7 @@ SRHK.exe: Shadowrun: Hong Kong
 SSFIV.exe: Ultra Street Fighter IV
 Stalker-COP.exe: S.T.A.L.K.E.R.: Call of Pripyat
 stanley.exe: The Stanley Parable
+Starbound.app
 starbound.exe: Starbound
 starbound_opengl.exe: Starbound
 StarCitizen.exe: Star Citizen
@@ -519,6 +536,7 @@ SUPERHOT.exe: SUPERHOT
 SuperMeatBoy.exe: Super Meat Boy
 Supernova.exe
 survivor.exe: Shadowgrounds: Survivor
+swarm.exe: Alien Swarm
 SwiftKit-RS.exe: RuneScape
 swkotor.exe: Star Wars: Knights of the Old Republic
 Sword of Asumi.exe
@@ -527,16 +545,47 @@ SwordCoast.exe: Sword Coast Legends
 swtor.exe: Star Wars: The Old Republic
 t6sp.exe: Call of Duty: Black Ops
 Tabletop Simulator.exe
+Tales of Zesteria.exe: Tales of Zestiria
 Talisman.exe: Talisman: Digital Edition
 TERA.exe
 Terraria.exe
 TESV.exe: The Elder Scrolls V: Skyrim
-th123.exe: TH12.3 Hisoutensoku
-th123e.exe: TH12.3 Hisoutensoku
-th135.exe: TH13.5 Hopeless Mascarade
-th135e.exe: TH13.5 Hopeless Mascarade
-th145.exe: TH14.5 Urban Legend in Limbo
-th145e.exe: TH14.5 Urban Legend in Limbo
+th06.exe: Touhou 6: Embodiment of Scarlet Devil
+th06e.exe: Touhou 6: Embodiment of Scarlet Devil
+th07.exe: Touhou 7: Perfect Cherry Blossom
+th07e.exe: Touhou 7: Perfect Cherry Blossom
+th08.exe: Touhou 8: Imperishable Night
+th08e.exe: Touhou 8: Imperishable Night
+th09.exe: Touhou 9: Phantasmagoria Of Flower View
+th095.exe: Touhou 9.5: Shoot the Bullet
+th095e.exe: Touhou 9.5: Shoot the Bullet
+th09e.exe: Touhou 9: Phantasmagoria Of Flower View
+th10.exe: Touhou 10: Mountain of Faith
+th105.exe: Touhou 10.5: Scarlet Weather Rhapsody
+th105e.exe: Touhou 10.5: Scarlet Weather Rhapsody
+th10e.exe: Touhou 10: Mountain of Faith
+th11.exe: Touhou 11: Subterranean Animism
+th11e.exe: Touhou 11: Subterranean Animism
+th12.exe: Touhou 12: Undefined Fantastic Object
+th123.exe: Touhou 12.3: Hisoutensoku
+th123e.exe: Touhou 12.3: Hisoutensoku
+th125.exe: Touhou 12.5: Double Spoiler
+th125e.exe: Touhou 12.5: Double Spoiler
+th128.exe: Touhou 12.8: Great Fairy Wars
+th128e.exe: Touhou 12.8: Great Fairy Wars
+th12e.exe: Touhou 12: Undefined Fantastic Object
+th13.exe: Touhou 13: Ten Desires
+th135.exe: Touhou 13.5 Hopeless Mascarade
+th135e.exe: Touhou 13.5 Hopeless Mascarade
+th13e.exe: Touhou 13: Ten Desires
+th14.exe: Touhou 14: Double Dealing Character
+th143.exe: Touhou 14.3: Impossible Spell Card
+th143e.exe: Touhou 14.3: Impossible Spell Card
+th145.exe: Touhou 14.5: Urban Legend in Limbo
+th145e.exe: Touhou 14.5: Urban Legend in Limbo
+th14e.exe: Touhou 14: Double Dealing Character
+th15.exe: Touhou 15: Legacy of Lunatic Kingdom
+th15e.exe: Touhou 15: Legacy of Lunatic Kingdom
 The Plan.exe
 The Sacred Tears TRUE.exe
 TheCrew.exe: The Crew
@@ -569,7 +618,9 @@ Transistor.exe
 trgame.exe: Tales Runner
 trials_fusion.exe: Trials Fusion
 TribesAscend.exe: Tribes Ascend
+Trine.app
 trine.exe: Trine
+Trine2.app: Trine 2
 trine2_32bit.exe: Trine 2
 Tron.exe: Tron 2.0
 Trove.exe
@@ -578,7 +629,6 @@ ts3w.exe: The Sims 3
 TS4.exe: The Sims 4
 TTREngine.exe: Toontown
 TurbineLauncher.exe: Dungeons & Dragons Online
-UDK.exe: Antichamber
 UNDERTALE.exe: Undertale
 Unity.exe
 Unreal.exe
@@ -591,6 +641,7 @@ UT3.exe: Unreal Tournament 3
 Valkyria.exe: Valkyria Chronicles
 vermintide.exe: Warhammer: End Times - Vermintide
 vindictus.exe: Vindictus
+Wakfu.app
 Wakfu.exe
 WALKINGDEAD101.EXE: The Walking Dead
 Warcraft II BNE.exe: Warcraft II
