@@ -98,3 +98,39 @@ def convert_to_rgb(image_array, colour_range):
                 print '{}% complete ({} pixels)'.format(int(round(100 * count / total)), count)
             
     return np.array(new_data, dtype=np.uint8)
+
+
+class ImageName(object):
+    def __init__(self):
+        self.reload()
+
+    def reload(self):
+        self.output_res_x = str(CONFIG.data['GenerateImages']['OutputResolutionX'])
+        self.output_res_y = str(CONFIG.data['GenerateImages']['OutputResolutionY'])
+        self.upscale_res_x = str(CONFIG.data['GenerateImages']['UpscaleResolutionX'])
+        self.upscale_res_y = str(CONFIG.data['GenerateImages']['UpscaleResolutionY'])
+
+        self.heatmap_gaussian = str(CONFIG.data['GenerateHeatmap']['GaussianBlurSize'])
+        self.heatmap_exp = str(CONFIG.data['GenerateHeatmap']['ExponentialMultiplier'])
+        self.heatmap_colour = str(CONFIG.data['GenerateHeatmap']['ColourProfile'])
+
+        self.track_colour = str(CONFIG.data['GenerateTracks']['ColourProfile'])
+
+    def generate(self, program_name, image_type):
+        if image_type.lower() == 'heatmap':
+            name = CONFIG.data['GenerateHeatmap']['NameFormat']
+            name = name.replace('[ExpMult]', self.heatmap_exp)
+            name = name.replace('[GaussianSize]', self.heatmap_gaussian)
+            name = name.replace('[ColourProfile]', self.heatmap_colour)
+        elif image_type.lower() == 'tracks':
+            name = CONFIG.data['GenerateTracks']['NameFormat']
+            name = name.replace('[ColourProfile]', self.track_colour)
+        else:
+            raise ValueError('incorred image type, must be "tracks" or "heatmap"')
+        name = name.replace('[UResX]', self.upscale_res_x)
+        name = name.replace('[UResY]', self.upscale_res_y)
+        name = name.replace('[ResX]', self.output_res_x)
+        name = name.replace('[ResY]', self.output_res_y)
+        name = name.replace('[FriendlyName]', program_name)
+        
+        return name
