@@ -1,5 +1,6 @@
 import ctypes
 
+
 def file_hide(file_name):
     """Set a file as hidden."""
     ctypes.windll.kernel32.SetFileAttributesW(path, 2)
@@ -47,7 +48,8 @@ def get_mouse_click():
     Returns:
         True/False if any clicks have been detected or not.
     """
-    raise NotImplementedError()
+    buttons = (1, 4, 2)
+    return tuple(ctypes.windll.user32.GetKeyState(button) > 1 for button in buttons)
 
 
 def get_key_press(key):
@@ -56,7 +58,4 @@ def get_key_press(key):
     Returns:
         True/False if the selected key has been pressed or not.
     """
-    raise NotImplementedError()
-
-
-KEYS = {}
+    return ctypes.windll.user32.GetKeyState(key) > 1
