@@ -133,4 +133,4 @@ class ImageName(object):
         name = name.replace('[ResY]', self.output_res_y)
         name = name.replace('[FriendlyName]', program_name)
         
-        return name
+        return '{}.png'.format(name)
