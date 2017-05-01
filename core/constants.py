@@ -1,12 +1,20 @@
 from functions import SimpleConfig
-VERSION = 2.0
+VERSION = '2.0.0'
 
-HEATMAP = [
-    (0, 0, 0), (0, 0, 128), (0, 0, 255), (0, 64, 255),
-    (0, 128, 255), (0, 192, 255), (64, 255, 192),
-    (128, 255, 128), (192, 255, 64), (255, 255, 0),
-    (255, 128, 0), (255, 64, 0), (255, 0, 0)
-]
+
+COLOURS = {
+    'HeatMap': (
+        (0, 0, 0), (0, 0, 128), (0, 0, 255), (0, 64, 255),
+        (0, 128, 255), (0, 192, 255), (64, 255, 192),
+        (128, 255, 128), (192, 255, 64), (255, 255, 0),
+        (255, 128, 0), (255, 64, 0), (255, 0, 0)
+    ),
+    'BlackToWhite': (
+        (255, 255, 255), (0, 0, 0)
+    )
+}
+for _k in COLOURS.keys():
+    COLOURS['{}Reversed'.format(_k)] = COLOURS[_k][::-1]
 
 _config_defaults = [
     ('Main', {
@@ -51,6 +59,3 @@ _config_defaults = [
 ]
 
 CONFIG = SimpleConfig('config.ini', _config_defaults)
-
-if __name__ == '__main__':
-    CONFIG.save()
