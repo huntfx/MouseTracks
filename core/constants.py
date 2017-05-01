@@ -32,7 +32,7 @@ _config_defaults = [
         'Multiplier': (1.1, float)
     }),
     ('Timer', {
-        'Save': (30, int),
+        'Save': (120, int),
         'CheckPrograms': (2, int),
         'CheckResolution': (1, int),
         'ReloadPrograms': (600, int)
@@ -46,19 +46,19 @@ _config_defaults = [
         'OutputResolutionY': (1080, int)
     }),
     ('GenerateHeatmap', {
-        'NameFormat': ('[FriendlyName]: [Type]', str, 'Variables: [Type], [UResX], [UResY],'
+        'NameFormat': ('Result\\[FriendlyName] - Heatmap', str, 'Variables: [UResX], [UResY],'
                                                                 ' [ResX], [ResY], [ExpMult],'
                                                                 ' [GaussianSize], [ColourProfile]'),
-        'GaussianBlurSize': (22, int),
-        'ExponentialMultiplier': (0.5, float),
+        'GaussianBlurSize': (20, int),
+        'ExponentialMultiplier': (1.0, float),
         'ColourProfile': ('HeatMap', str),
         'SetMaxRange': (0, int, 'Manually set the highest value.'
                                 ' Set to 0 to use auto, otherwise use trial and error'
                                 ' to get it right.')
     }),
     ('GenerateTracks', {
-        'NameFormat': ('[FriendlyName]: [Type]', str, 'Variables: [Type], [UResX], [UResY],'
-                                                                ' [ResX], [ResY], [ColourProfile]'),
+        'NameFormat': ('Result\\[FriendlyName] - Tracks', str, 'Variables: [UResX], [UResY],'
+                                                               ' [ResX], [ResY], [ColourProfile]'),
         'ColourProfile': ('BlackAndWhite', str)
     })
 ]
