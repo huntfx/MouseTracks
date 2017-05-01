@@ -46,6 +46,9 @@ _config_defaults = [
         'OutputResolutionY': (1080, int)
     }),
     ('GenerateHeatmap', {
+        'NameFormat': ('[FriendlyName]: [Type]', str, 'Variables: [Type], [UResX], [UResY],'
+                                                                ' [ResX], [ResY], [ExpMult],'
+                                                                ' [GaussianSize], [ColourProfile]'),
         'GaussianBlurSize': (22, int),
         'ExponentialMultiplier': (0.5, float),
         'ColourProfile': ('HeatMap', str),
@@ -54,6 +57,8 @@ _config_defaults = [
                                 ' to get it right.')
     }),
     ('GenerateTracks', {
+        'NameFormat': ('[FriendlyName]: [Type]', str, 'Variables: [Type], [UResX], [UResY],'
+                                                                ' [ResX], [ResY], [ColourProfile]'),
         'ColourProfile': ('BlackAndWhite', str)
     })
 ]
