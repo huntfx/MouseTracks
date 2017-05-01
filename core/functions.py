@@ -248,7 +248,7 @@ class SimpleConfig(object):
                 pass
             else:
                 name, value = [i.strip() for i in line.split('=')]
-                value = value.replace('#', ';').replace('/', ';').split(';', 1)[0]
+                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
                 try:
                     default_value, default_type = self.default_data[current_group][name][:2]
                 except KeyError:
@@ -268,6 +268,8 @@ class SimpleConfig(object):
                             value = int(value)
                         except ValueError:
                             value = default_value
+                    if default_type == str:
+                        value = str(value).rstrip()
                     else:
                         value = default_type(value)
                 
@@ -309,3 +311,27 @@ class SimpleConfig(object):
                     pass
         with open(self.file_name, 'w') as f:
             f.write('\n'.join(output))
+
+
+class GenerateColourMap(object):
+    """Parse input text to generate a range of colours.
+    Just a placeholder for now, but for example:
+    BlackToWhite = ((0, 0, 0), (255, 255, 255))
+    BlackRedToWhite = ((128, 0, 0), (255, 255, 255))
+    RedToGreenToBlue = ((255, 0, 0), (0, 255, 0), (0, 0, 255))
+    """
+    _main_colours = {
+        'red': (255, 0, 0),
+        'green': (0, 255, 0),
+        'blue': (0, 0, 255),
+        'yellow': (255, 255, 0),
+        'cyan': (0, 255, 255),
+        'magenta': (255, 0, 255),
+        'white': (255, 255, 255),
+        'grey': (128, 128, 128),
+        'gray': (128, 128, 128),
+        'black': (0, 0, 0)
+    }
+    def __init__(self):
+        pass
+    
