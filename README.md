@@ -10,7 +10,7 @@ This was made with the intention of recording mouse movements over multiple reso
  - Fade old mouse tracks to keep recent tracks more visible
  - Change colours used to generate tracks and heatmap
  - Keep separate tracks for different applications defined in "Program List.txt"
- - Edit various settings with config.ini
+ - Edit settings with config.ini
  
 <b>Known Issues:</b>
  - They keyboard stops being properly detected during full screen games.
@@ -18,5 +18,28 @@ This was made with the intention of recording mouse movements over multiple reso
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
-
 <img src="http://i.imgur.com/XuEY8yg.jpg">
+
+<b>Colour Maps:</b>
+<br/>Default:
+<img src="http://i.imgur.com/lTCByLO.png">
+<br/>Chalk:
+<img src="http://i.imgur.com/R8BDVyH.jpg">
+<br/>LimeZest:
+<img src="http://i.imgur.com/IFEneWZ.jpg">
+<br/>Sunburst:
+<img src="http://i.imgur.com/AN1CYPD.jpg">
+<br/>Ice:
+<img src="http://i.imgur.com/mXAEV1G.jpg">
+<br/>Hazard:
+<img src="http://i.imgur.com/QftEuAF.png">
+<br/>Street:
+<img src="http://i.imgur.com/IlMHRgg.jpg">
+<br/>Lightning:
+<img src="http://i.imgur.com/O4iqFau.png">
+<br/>Razer:
+<img src="http://i.imgur.com/jxfdWJq.png">
+<br/>Grape:
+<img src="http://i.imgur.com/rye5VAw.png">
+<br/>Neon:
+<img src="http://i.imgur.com/FAVmiK1.png">
