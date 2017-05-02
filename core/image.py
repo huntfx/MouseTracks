@@ -231,7 +231,15 @@ class ColourMap(object):
             (0, 127, 255), (0, 191, 255), (63, 255, 191),
             (127, 255, 127), (191, 255, 63), (255, 255, 0),
             (255, 127, 0), (255, 63, 0), (255, 0, 0)
-        )
+        ),
+        'limezest': ((0.0, 0.0, 0.0), (31.75, 31.75, 31.75),
+                     (0.5, 128.0, 0.5), (255.0, 255.0, 0.0))
+    }
+    _GENERATION_TEXT = {
+        'heatmap': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
+                    'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
+                    'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
+        'limezest': 'BlackToDarkDarkGreyToLightGreenToYellow'
     }
     def __getitem__(self, colour_profile):
         if colour_profile.lower() in self._MAIN:
