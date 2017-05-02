@@ -1,20 +1,20 @@
 from functions import SimpleConfig
-VERSION = '2.0.0'
+VERSION = '2.0'
        
 COLOURS_MAIN = {
-    'red': (1.0, 0.0, 0.0),
-    'green': (0.0, 1.0, 0.0),
-    'blue': (0.0, 0, 1.0),
-    'yellow': (1.0, 1.0, 0.0),
-    'cyan': (0.0, 1.0, 1.0),
-    'magenta': (1.0, 0.0, 1.0),
-    'white': (1.0, 1.0, 1.0),
-    'grey': (0.5, 0.5, 0.5),
-    'gray': (0.5, 0.5, 0.5),
-    'black': (0.0, 0.0, 0.0),
-    'orange': (1.0, 0.5, 0.0),
-    'pink': (1.0, 0.0, 0.5),
-    'purple': (0.5, 0.0, 1.0)
+    'red': (255, 0, 0),
+    'green': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'white': (255, 255, 255),
+    'grey': (127, 127, 127),
+    'gray': (127, 127, 127),
+    'black': (0, 0, 0),
+    'orange': (255, 127, 0),
+    'pink': (255, 0, 127),
+    'purple': (127, 0, 255)
 }
 
 
@@ -67,7 +67,7 @@ _config_defaults = [
     ('GenerateTracks', {
         'NameFormat': ('Result\\[FriendlyName] - Tracks', str, 'Variables: [UResX], [UResY],'
                                                                ' [ResX], [ResY], [ColourProfile]'),
-        'ColourProfile': ('BlackAndWhite', str)
+        'ColourProfile': ('BlackToWhite', str)
     })
 ]
 
