@@ -19,7 +19,7 @@ COLOURS_MAIN = {
 
 
 COLOUR_MODIFIERS = {
-    'light': (0.5, 0.5),
+    'light': (128, 0.5),
     'dark': (0, 0.5)
 }
 
