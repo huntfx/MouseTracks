@@ -205,7 +205,10 @@ def start_tracking():
                     frame_data['Save'] = True
                 else:
                     notify.queue(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
-            
-            mouse_pos['Previous'] = mouse_pos['Current']
+
+            if store['Mouse']['OffScreen']:
+                mouse_pos['Previous'] = None
+            else:
+                mouse_pos['Previous'] = mouse_pos['Current']
             i += 1
             
