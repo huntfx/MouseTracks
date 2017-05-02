@@ -169,7 +169,6 @@ _MODIFIERS = {
 
 def parse_colour_text(colour_name):
     """Convert text into a colour map.
-    Note that this is case sensitive and will not work very well otherwise.
     Mixed Colour:
         Combine multiple colours.
         Examples: BlueRed, BlackYellowGreen
@@ -192,6 +191,7 @@ def parse_colour_text(colour_name):
     i = 0
     #Loop letters until end of word has been reached
     while True:
+        done_stuff = False
         skip = False
         try:
             letter = colour_name[i]
@@ -202,12 +202,20 @@ def parse_colour_text(colour_name):
                 break
             skip = True
 
+        if letter in 'abcdefghijklmnopqrstuvwxyz':
+            word += letter
+            done_stuff = True
+
+        word_colours = word in _COLOURS
+        word_mods = word in _MODIFIERS
+        word_to = word == 'to'
+        
         #Build colours
-        if skip or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+        if skip or word_colours or word_mods or word_to or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
             
-            if word in _MODIFIERS:
+            if word_mods:
                 colours['Mult'].append(_MODIFIERS[word])
-            elif word in _COLOURS:
+            elif word_colours:
                 colours['Temp'].append(_COLOURS[word])
 
                 #Apply modifiers
@@ -216,19 +224,19 @@ def parse_colour_text(colour_name):
                 colours['Mult'] = []
 
             #Merge colours together
-            if word == 'to' or skip:
+            if word_to or skip:
                 num_colours = len(colours['Temp'])
                 joined_colours = [sum(c) / num_colours for c in zip(*colours['Temp'])]
                 colours['Final'].append(joined_colours)
                 colours['Temp'] = []
                 
-            word = letter.lower()
-
-        #Build word letter by letter
-        elif letter in 'abcdefghijklmnopqrstuvwxyz':
-            word += letter
-        else:
-            raise ValueError('invalid colour input')
+            if not done_stuff:
+                word = letter.lower()
+            else:
+                word = ''
+            done_stuff = True
                 
         i += 1
+        if not done_stuff:
+            raise ValueError('invalid colour map text')
     return colours['Final']
