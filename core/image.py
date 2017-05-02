@@ -101,6 +101,9 @@ def convert_to_rgb(image_array, colour_range):
 
 
 class ImageName(object):
+    """Generate an image name using values defined in the config.
+    Not implemented yet: creation time | modify time | exe name
+    """
     def __init__(self):
         self.reload()
 
@@ -132,5 +135,100 @@ class ImageName(object):
         name = name.replace('[ResX]', self.output_res_x)
         name = name.replace('[ResY]', self.output_res_y)
         name = name.replace('[FriendlyName]', program_name)
+
+        #Replace invalid characters
+        invalid_chars = ':*?"<>|'
+        for char in invalid_chars:
+            if char in name:
+                name = name.replace(char, '')
         
         return '{}.png'.format(name)
+
+
+_COLOURS = {
+    'red': (1.0, 0.0, 0.0),
+    'green': (0.0, 1.0, 0.0),
+    'blue': (0.0, 0, 1.0),
+    'yellow': (1.0, 1.0, 0.0),
+    'cyan': (0.0, 1.0, 1.0),
+    'magenta': (1.0, 0.0, 1.0),
+    'white': (1.0, 1.0, 1.0),
+    'grey': (0.5, 0.5, 0.5),
+    'gray': (0.5, 0.5, 0.5),
+    'black': (0.0, 0.0, 0.0),
+    'orange': (1.0, 0.5, 0.0),
+    'pink': (1.0, 0.0, 0.5),
+    'purple': (0.5, 0.0, 1.0)
+}
+
+
+_MODIFIERS = {
+    'light': (0.5, 0.5),
+    'dark': (0, 0.5)
+}
+
+def parse_colour_text(colour_name):
+    """Convert text into a colour map.
+    Note that this is case sensitive and will not work very well otherwise.
+    Mixed Colour:
+        Combine multiple colours.
+        Examples: BlueRed, BlackYellowGreen
+    Modified Colour:
+        Apply a modification to a colour.
+        If multiple ones are applied, they will work in reverse order.
+        Light and dark are not opposites so will not cancel each other out.
+        Examples: LightBlue, DarkLightYellow
+    Transition:
+        This ends the current colour mix and starts a new one.
+        Examples: BlackToWhite, RedToGreenToBlue
+    Combined:
+        Any number of these features can be combined together to create different effects.
+        Example: BlackToDarkYellowToDarkLightGreenYellowToLightYellowWhiteToWhite   
+    """
+    colours = {'Final': [],
+               'Temp': [],
+               'Mult': []}
+    word = ''
+    i = 0
+    #Loop letters until end of word has been reached
+    while True:
+        skip = False
+        try:
+            letter = colour_name[i]
+        except IndexError:
+            try:
+                letter = colour_name[i - 1]
+            except IndexError:
+                break
+            skip = True
+
+        #Build colours
+        if skip or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+            
+            if word in _MODIFIERS:
+                colours['Mult'].append(_MODIFIERS[word])
+            elif word in _COLOURS:
+                colours['Temp'].append(_COLOURS[word])
+
+                #Apply modifiers
+                for mult in colours['Mult'][::-1]:
+                    colours['Temp'][-1] = [mult[0] + mult[1] * c for c in colours['Temp'][-1]]
+                colours['Mult'] = []
+
+            #Merge colours together
+            if word == 'to' or skip:
+                num_colours = len(colours['Temp'])
+                joined_colours = [sum(c) / num_colours for c in zip(*colours['Temp'])]
+                colours['Final'].append(joined_colours)
+                colours['Temp'] = []
+                
+            word = letter.lower()
+
+        #Build word letter by letter
+        elif letter in 'abcdefghijklmnopqrstuvwxyz':
+            word += letter
+        else:
+            raise ValueError('invalid colour input')
+                
+        i += 1
+    return colours['Final']
