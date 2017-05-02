@@ -1,20 +1,28 @@
 from functions import SimpleConfig
 VERSION = '2.0.0'
-
-
-COLOURS = {
-    'HeatMap': (
-        (0, 0, 0), (0, 0, 128), (0, 0, 255), (0, 64, 255),
-        (0, 128, 255), (0, 192, 255), (64, 255, 192),
-        (128, 255, 128), (192, 255, 64), (255, 255, 0),
-        (255, 128, 0), (255, 64, 0), (255, 0, 0)
-    ),
-    'BlackToWhite': (
-        (255, 255, 255), (0, 0, 0)
-    )
+       
+COLOURS_MAIN = {
+    'red': (1.0, 0.0, 0.0),
+    'green': (0.0, 1.0, 0.0),
+    'blue': (0.0, 0, 1.0),
+    'yellow': (1.0, 1.0, 0.0),
+    'cyan': (0.0, 1.0, 1.0),
+    'magenta': (1.0, 0.0, 1.0),
+    'white': (1.0, 1.0, 1.0),
+    'grey': (0.5, 0.5, 0.5),
+    'gray': (0.5, 0.5, 0.5),
+    'black': (0.0, 0.0, 0.0),
+    'orange': (1.0, 0.5, 0.0),
+    'pink': (1.0, 0.0, 0.5),
+    'purple': (0.5, 0.0, 1.0)
 }
-for _k in COLOURS.keys():
-    COLOURS['{}Reversed'.format(_k)] = COLOURS[_k][::-1]
+
+
+COLOUR_MODIFIERS = {
+    'light': (0.5, 0.5),
+    'dark': (0, 0.5)
+}
+
 
 _config_defaults = [
     ('Main', {
