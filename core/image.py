@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.ndimage.interpolation import zoom
 
-from constants import CONFIG
+from constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
 
 
 def merge_array_max(arrays):
@@ -145,28 +145,6 @@ class ImageName(object):
         return '{}.png'.format(name)
 
 
-_COLOURS = {
-    'red': (1.0, 0.0, 0.0),
-    'green': (0.0, 1.0, 0.0),
-    'blue': (0.0, 0, 1.0),
-    'yellow': (1.0, 1.0, 0.0),
-    'cyan': (0.0, 1.0, 1.0),
-    'magenta': (1.0, 0.0, 1.0),
-    'white': (1.0, 1.0, 1.0),
-    'grey': (0.5, 0.5, 0.5),
-    'gray': (0.5, 0.5, 0.5),
-    'black': (0.0, 0.0, 0.0),
-    'orange': (1.0, 0.5, 0.0),
-    'pink': (1.0, 0.0, 0.5),
-    'purple': (0.5, 0.0, 1.0)
-}
-
-
-_MODIFIERS = {
-    'light': (0.5, 0.5),
-    'dark': (0, 0.5)
-}
-
 def parse_colour_text(colour_name):
     """Convert text into a colour map.
     Mixed Colour:
@@ -209,17 +187,17 @@ def parse_colour_text(colour_name):
             word += letter
             done_stuff = True
 
-        word_colours = word in _COLOURS
-        word_mods = word in _MODIFIERS
+        word_colours = word in COLOURS_MAIN
+        word_mods = word in COLOUR_MODIFIERS
         word_to = word == 'to'
         
         #Build colours
         if skip or word_colours or word_mods or word_to or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
             
             if word_mods:
-                colours['Mult'].append(_MODIFIERS[word])
+                colours['Mult'].append(COLOUR_MODIFIERS[word])
             elif word_colours:
-                colours['Temp'].append(_COLOURS[word])
+                colours['Temp'].append(COLOURS_MAIN[word])
 
                 #Apply modifiers
                 for mult in colours['Mult'][::-1]:
