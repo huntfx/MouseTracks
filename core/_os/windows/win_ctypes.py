@@ -1,14 +1,14 @@
 import ctypes
 
 
-def file_hide(file_name):
+def hide_file(file_name):
     """Set a file as hidden."""
-    ctypes.windll.kernel32.SetFileAttributesW(path, 2)
+    ctypes.windll.kernel32.SetFileAttributesW(file_name, 2)
 
    
-def file_unhide(file_name):
+def show_file(file_name):
     """Unset a file as hidden."""
-    ctypes.windll.kernel32.SetFileAttributesW(path, 128)
+    ctypes.windll.kernel32.SetFileAttributesW(file_name, 128)
 
 
 def get_resolution():
