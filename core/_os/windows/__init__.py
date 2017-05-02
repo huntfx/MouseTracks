@@ -1,3 +1,4 @@
+import os
 try:
     from win_api import *
 except ImportError:
