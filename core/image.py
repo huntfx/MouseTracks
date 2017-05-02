@@ -227,15 +227,15 @@ class ColourMap(object):
     """Look up default colours or generate one if the set doesn't exist."""
     _MAIN = {
         'heatmap': (
-            (0.0, 0.0, 0.0), (0.0, 0.0, 0.5), (0.0, 0.0, 1.0), (0.0, 0.25, 1.0),
-            (0.0, 0.5, 1.0), (0.0, 0.75, 1.0), (0.25, 1.0, 0.75),
-            (0.5, 1.0, 0.5), (0.75, 1.0, 0.25), (1.0, 1.0, 0.0),
-            (1.0, 0.5, 0.0), (1.0, 0.25, 0.0), (1.0, 0.0, 0.0)
+            (0, 0, 0), (0, 0, 127), (0, 0, 255), (0, 63, 255),
+            (0, 127, 255), (0, 191, 255), (63, 255, 191),
+            (127, 255, 127), (191, 255, 63), (255, 255, 0),
+            (255, 127, 0), (255, 63, 0), (255, 0, 0)
         )
     }
     def __getitem__(self, colour_profile):
         if colour_profile.lower() in self._MAIN:
-            return self._MAIN[colour_profile]
+            return self._MAIN[colour_profile.lower()]
         else:
             generated_map = parse_colour_text(colour_profile)
             if generated_map:
