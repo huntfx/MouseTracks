@@ -2,14 +2,22 @@ import win32api
 import win32con
 
 
-def file_hide(file_name):
+def hide_file(file_name):
     """Set a file as hidden."""
-    win32api.SetFileAttributes(file_name, win32con.FILE_ATTRIBUTE_HIDDEN)
+    try:
+        win32api.SetFileAttributes(file_name, win32con.FILE_ATTRIBUTE_HIDDEN)
+    except win32api.error:
+        return False
+    return True
 
    
-def file_unhide(file_name):
+def show_file(file_name):
     """Unset a file as hidden."""
-    win32api.SetFileAttributes(file_name, win32con.FILE_ATTRIBUTE_NORMAL) 
+    try:
+        win32api.SetFileAttributes(file_name, win32con.FILE_ATTRIBUTE_NORMAL)
+    except win32api.error:
+        return False
+    return True
 
 
 def get_resolution():
