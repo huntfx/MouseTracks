@@ -180,9 +180,12 @@ def parse_colour_text(colour_name):
     Transition:
         This ends the current colour mix and starts a new one.
         Examples: BlackToWhite, RedToGreenToBlue
-    Combined:
-        Any number of these features can be combined together to create different effects.
-        Example: BlackToDarkYellowToDarkLightGreenYellowToLightYellowWhiteToWhite   
+    Any number of these features can be combined together to create different effects.
+        
+    As an example, here are the values that would result in the heatmap:
+        BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueToCyan
+        ... CyanCyanBlueToCyanCyanCyanYellowToCyanYellowToCyan
+        ... YellowYellowYellowToYellowToOrangeToRedOrangeToRed 
     """
     colours = {'Final': [],
                'Temp': [],
@@ -226,7 +229,7 @@ def parse_colour_text(colour_name):
             #Merge colours together
             if word_to or skip:
                 num_colours = len(colours['Temp'])
-                joined_colours = [sum(c) / num_colours for c in zip(*colours['Temp'])]
+                joined_colours = tuple(sum(c) / num_colours for c in zip(*colours['Temp']))
                 colours['Final'].append(joined_colours)
                 colours['Temp'] = []
                 
@@ -238,5 +241,26 @@ def parse_colour_text(colour_name):
                 
         i += 1
         if not done_stuff:
-            raise ValueError('invalid colour map text')
-    return colours['Final']
+            raise ValueError('invalid characters in colour map')
+    return tuple(colours['Final'])
+
+
+class ColourMap(object):
+    """Look up default colours or generate one if the set doesn't exist."""
+    _MAIN = {
+        'heatmap': (
+            (0.0, 0.0, 0.0), (0.0, 0.0, 0.5), (0.0, 0.0, 1.0), (0.0, 0.25, 1.0),
+            (0.0, 0.5, 1.0), (0.0, 0.75, 1.0), (0.25, 1.0, 0.75),
+            (0.5, 1.0, 0.5), (0.75, 1.0, 0.25), (1.0, 1.0, 0.0),
+            (1.0, 0.5, 0.0), (1.0, 0.25, 0.0), (1.0, 0.0, 0.0)
+        )
+    }
+    def __getitem__(self, colour_profile):
+        if colour_profile.lower() in self._MAIN:
+            return self._MAIN[colour_profile]
+        else:
+            generated_map = parse_colour_text(colour_profile)
+            if generated_map:
+                return generated_map
+            else:
+                raise ValueError('unknown colour map')
