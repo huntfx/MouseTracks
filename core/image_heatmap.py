@@ -4,7 +4,6 @@ from scipy.ndimage.filters import gaussian_filter
 
 from image import *
 from functions import ColourRange
-from constants import COLOURS
 
 def _generate(numpy_arrays):
 
@@ -50,7 +49,8 @@ def _generate(numpy_arrays):
     
     #Convert each point to an RGB tuple
     print 'Converting to RGB...'    
-    cr = ColourRange(max_value - min_value, COLOURS['HeatMap'])
+    colour_map = CONFIG.data['GenerateHeatmap']['ColourProfile']
+    cr = ColourRange(max_value - min_value, ColourMap()[colour_map])
     im = Image.fromarray(convert_to_rgb(heatmap, cr))
     return im
 
