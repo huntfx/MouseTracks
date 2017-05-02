@@ -142,7 +142,7 @@ class ImageName(object):
             if char in name:
                 name = name.replace(char, '')
         
-        return '{}.png'.format(name)
+        return '{}.{}'.format(name, CONFIG.data['GenerateImages']['FileType'])
 
 
 def parse_colour_text(colour_name):
@@ -225,25 +225,26 @@ def parse_colour_text(colour_name):
 
 class ColourMap(object):
     """Look up default colours or generate one if the set doesn't exist."""
-    _MAIN = {
-        'heatmap': (
-            (0, 0, 0), (0, 0, 127), (0, 0, 255), (0, 63, 255),
-            (0, 127, 255), (0, 191, 255), (63, 255, 191),
-            (127, 255, 127), (191, 255, 63), (255, 255, 0),
-            (255, 127, 0), (255, 63, 0), (255, 0, 0)
-        ),
-        'limezest': ((0.0, 0.0, 0.0), (31.75, 31.75, 31.75),
-                     (0.5, 128.0, 0.5), (255.0, 255.0, 0.0))
-    }
-    _GENERATION_TEXT = {
+    _MAPS = {
         'heatmap': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
                     'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
                     'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
-        'limezest': 'BlackToDarkDarkGreyToLightGreenToYellow'
+        'default': 'WhiteToBlack',
+        'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow',
+        'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite',
+        'neon': 'BlackToPurpleToPinkToBlackToPink',
+        'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow',
+        'demon': 'WhiteToRedToBlackToWhite',
+        'chalk': 'BlackBlackToWhite',
+        'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite',
+        'hazard': 'WhiteToBlackToYellow',
+        'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack',
+        'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue',
+        'grape': 'WhiteToBlackToMagenta'
     }
     def __getitem__(self, colour_profile):
-        if colour_profile.lower() in self._MAIN:
-            return self._MAIN[colour_profile.lower()]
+        if colour_profile.lower() in self._MAPS:
+            return parse_colour_text(self._MAPS[colour_profile.lower()])
         else:
             generated_map = parse_colour_text(colour_profile)
             if generated_map:
