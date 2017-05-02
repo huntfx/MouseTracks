@@ -3,7 +3,6 @@ from PIL import Image
 
 from image import *
 from functions import ColourRange
-from constants import COLOURS
 
 def _generate(value_range, numpy_arrays, colour_list=None):
 
@@ -12,9 +11,11 @@ def _generate(value_range, numpy_arrays, colour_list=None):
     max_array = merge_array_max(numpy_arrays)
     
     print 'Converting to RGB...'
-    cr = ColourRange(value_range[1] - value_range[0], COLOURS['BlackToWhite'])
+    colour_map = CONFIG.data['GenerateTracks']['ColourProfile']
+    cr = ColourRange(value_range[1] - value_range[0], ColourMap()[colour_map])
     im = Image.fromarray(convert_to_rgb(max_array, cr))
     return im
+
 
 def generate(image_name, data):
     print 'Creating mouse tracks...'
@@ -26,3 +27,4 @@ def generate(image_name, data):
     print 'Saving image...'
     im.save(image_name)
     print 'Finished saving.'
+
