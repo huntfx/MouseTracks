@@ -93,7 +93,9 @@ def _background_process(q_send, received_data, store):
     if check_resolution:
         if store['Resolution'] not in store['Data']['Tracks']:
             store['Data']['Tracks'][store['Resolution']] = {}
+        if store['Resolution'] not in store['Data']['Clicks']:
             store['Data']['Clicks'][store['Resolution']] = {}
+        if store['Resolution'] not in store['Data']['Acceleration']:
             store['Data']['Acceleration'][store['Resolution']] = {}
     
     if 'Keys' in received_data:
