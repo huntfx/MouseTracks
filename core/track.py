@@ -94,6 +94,7 @@ def _background_process(q_send, received_data, store):
         if store['Resolution'] not in store['Data']['Tracks']:
             store['Data']['Tracks'][store['Resolution']] = {}
             store['Data']['Clicks'][store['Resolution']] = {}
+            store['Data']['Acceleration'][store['Resolution']] = {}
     
     if 'Keys' in received_data:
         for key in received_data['Keys']:
@@ -115,9 +116,11 @@ def _background_process(q_send, received_data, store):
             mouse_coordinates = [end]
         else:
             mouse_coordinates = [start, end] + calculate_line(start, end)
+        num_coordinates = len(mouse_coordinates)
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
-
+            store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
+        
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
@@ -132,6 +135,8 @@ def _background_process(q_send, received_data, store):
                 tracks[resolution] = {k: int(v // compress_multplier)
                                       for k, v in tracks[resolution].iteritems()}
                 tracks[resolution] = {k: v for k, v in tracks[resolution].iteritems() if v}
+                if not tracks[resolution]:
+                    del tracks[resolution]
                 store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
