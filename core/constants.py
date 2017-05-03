@@ -1,5 +1,5 @@
 from functions import SimpleConfig
-VERSION = '2.0'
+VERSION = '2.0.1'
        
 COLOURS_MAIN = {
     'red': (255, 0, 0),
