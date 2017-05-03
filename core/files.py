@@ -3,8 +3,10 @@ import zlib
 import re
 import time
 import os
-from _os import remove_file, rename_file, create_folder
+
+from _os import remove_file, rename_file, create_folder, hide_file
 from constants import VERSION
+from versions import upgrade_version
 
 
 def load_program(program_name=None):
@@ -16,12 +18,10 @@ def load_program(program_name=None):
     try:
         with open('Data/{}.data'.format(name_format), 'rb') as f:
             loaded_data = cPickle.loads(zlib.decompress(f.read()))
-            loaded_data['TimesLoaded'] += 1
-            return loaded_data
     except (IOError, zlib.error):
         try:
             with open('Data/{}.data.old'.format(name_format), 'rb') as f:
-                return cPickle.loads(zlib.decompress(f.read()))
+                loaded_data =  cPickle.loads(zlib.decompress(f.read()))
         except (IOError, zlib.error):
             return {'Count': 0,
                     'Tracks': {},
@@ -32,7 +32,10 @@ def load_program(program_name=None):
                     'Version': VERSION,
                     'Ticks': 0,
                     'TimesLoaded': 0}
-
+    else:
+        loaded_data['TimesLoaded'] += 1
+        return upgrade_version(loaded_data)
+    
 
 def save_program(program_name, data):
     if program_name is None:
@@ -51,6 +54,7 @@ def save_program(program_name, data):
         f.write(compressed_data)
     remove_file(old_name)
     rename_file(new_name, old_name)
+    hide_file(old_name)
     if rename_file(temp_name, new_name):
         return True
     else:
