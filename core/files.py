@@ -26,6 +26,7 @@ def load_program(program_name=None):
             return {'Count': 0,
                     'Tracks': {},
                     'Clicks': {},
+                    'Acceleration': {},
                     'Keys': {},
                     'LastSave': time.time(),
                     'Version': VERSION,
