@@ -121,11 +121,20 @@ def _background_process(q_send, received_data, store):
         num_coordinates = len(mouse_coordinates)
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
-            try:
-                if store['Data']['Acceleration'][store['Resolution']][pixel] < num_coordinates:
-                    raise KeyError()
-            except KeyError:
-                store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
+
+            #Experimental fix for mouse snapping to top corner
+            #Limit movement to a certain amount
+            #Or make sure the mouse has only moved in a straight line
+            topr_start = start == (0, 0)
+            topr_end = end == (0, 0)
+            if (not topr_start and not topr_end or num_coordinates < 30
+                or topr_start and not topr_end and any(not c for c in end)
+                or topr_end and not topr_start and any(not c for c in start)):
+                try:
+                    if store['Data']['Acceleration'][store['Resolution']][pixel] < num_coordinates:
+                        raise KeyError()
+                except KeyError:
+                    store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
@@ -135,6 +144,7 @@ def _background_process(q_send, received_data, store):
         if store['Data']['Count'] > compress_limit:
             notify.queue(MOUSE_TRACK_COMPRESS_START)
             _notify_send(q_send, notify)
+            #Compress tracks
             tracks = store['Data']['Tracks']
             for resolution in tracks.keys():
                 tracks[resolution] = {k: int(v // compress_multplier)
@@ -142,7 +152,15 @@ def _background_process(q_send, received_data, store):
                 tracks[resolution] = {k: v for k, v in tracks[resolution].iteritems() if v}
                 if not tracks[resolution]:
                     del tracks[resolution]
-                store['Data']['Count'] //= compress_multplier
+            #Compress acceleration
+            accel = store['Data']['Acceleration']
+            for resolution in accel.keys():
+                accel[resolution] = {k: int(v // compress_multplier)
+                                     for k, v in accel[resolution].iteritems()}
+                accel[resolution] = {k: v for k, v in accel[resolution].iteritems() if v}
+                if not accel[resolution]:
+                    del accel[resolution]
+            store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
     
