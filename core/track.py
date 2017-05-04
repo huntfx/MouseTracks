@@ -121,8 +121,11 @@ def _background_process(q_send, received_data, store):
         num_coordinates = len(mouse_coordinates)
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
-            store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
-        
+            try:
+                if store['Data']['Acceleration'][store['Resolution']][pixel] < num_coordinates:
+                    raise KeyError()
+            except KeyError:
+                store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
