@@ -313,7 +313,12 @@ class SimpleConfig(object):
             f.write('\n'.join(output))
 
 
-def find_distance(p1, p2):
+def find_distance(p1, p2=None, decimal=False):
     """Find the distance between two (x, y) coordinates."""
-    return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
+    if p2 is None:
+        return (0, 0.0)[decimal]
+    distance = ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
+    if decimal:
+        return distance
+    return int(round(distance))
     
