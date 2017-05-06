@@ -1,5 +1,5 @@
 from functions import SimpleConfig
-VERSION = '2.0.1'
+VERSION = '2.0.1b'
        
 COLOURS_MAIN = {
     'red': (255, 0, 0),
@@ -51,7 +51,8 @@ _config_defaults = [
         'UpscaleResolutionX': (3840, int),
         'UpscaleResolutionY': (2160, int),
         'OutputResolutionX': (1920, int),
-        'OutputResolutionY': (1080, int)
+        'OutputResolutionY': (1080, int),
+        'FileType': ('jpg', str)
     }),
     ('GenerateHeatmap', {
         'NameFormat': ('Result\\[FriendlyName] - Heatmap', str, 'Variables: [UResX], [UResY],'
