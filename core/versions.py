@@ -14,12 +14,12 @@ def upgrade_version(data):
     """
     get_id = VERSION_HISTORY.index
     
-    current_version_id = get_id(data['Version'])
+    current_version_id = get_id(str(data['Version']))
     if current_version_id < get_id('2.0.1'):
         try:
             data['Acceleration']
         except KeyError:
             data['Acceleration'] = {}
-
+            
     data['Version'] = VERSION
     return data
