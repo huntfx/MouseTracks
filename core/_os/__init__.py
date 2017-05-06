@@ -21,12 +21,13 @@ if current_os == 'Mac':
 
 try:
     get_resolution
-    get_refresh_rate
     get_cursor_pos
     get_mouse_click
     get_key_press
     remove_file
     rename_file
     create_folder
+    hide_file
+    get_running_processes
 except NameError:
     raise ImportError('missing modules for operating system')
