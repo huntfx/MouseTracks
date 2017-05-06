@@ -36,8 +36,8 @@ _config_defaults = [
     ('CompressTracks', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
                      'This stops the tracking image from becoming fully black with extended use.'],
-        'Frequency': (7200, int),
-        'Multiplier': (1.1, float)
+        'MaximumValue': (440000, int),
+        'Reduction': (1.1, float)
     }),
     ('Save', {
         'Frequency': (120, int),
