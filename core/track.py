@@ -1,5 +1,5 @@
 from __future__ import division
-from functions import calculate_line, RunningPrograms
+from functions import calculate_line, RunningPrograms, find_distance
 from messages import *
 from files import load_program, save_program
 from constants import CONFIG
@@ -95,8 +95,8 @@ def _background_process(q_send, received_data, store):
             store['Data']['Tracks'][store['Resolution']] = {}
         if store['Resolution'] not in store['Data']['Clicks']:
             store['Data']['Clicks'][store['Resolution']] = {}
-        if store['Resolution'] not in store['Data']['Acceleration']:
-            store['Data']['Acceleration'][store['Resolution']] = {}
+        if store['Resolution'] not in store['Data']['Speed']:
+            store['Data']['Speed'][store['Resolution']] = {}
     
     if 'Keys' in received_data:
         for key in received_data['Keys']:
@@ -116,25 +116,20 @@ def _background_process(q_send, received_data, store):
         start, end = received_data['MouseMove']
         if start is None:
             mouse_coordinates = [end]
+            speed = 0
         else:
             mouse_coordinates = [start, end] + calculate_line(start, end)
-        num_coordinates = len(mouse_coordinates)
+            speed = int(round(find_distance(start, end)))
+            
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
 
-            #Experimental fix for mouse snapping to top corner
-            #Limit movement to a certain amount
-            #Or make sure the mouse has only moved in a straight line
-            topr_start = start == (0, 0)
-            topr_end = end == (0, 0)
-            if (not topr_start and not topr_end or num_coordinates < 30
-                or topr_start and not topr_end and any(not c for c in end)
-                or topr_end and not topr_start and any(not c for c in start)):
-                try:
-                    if store['Data']['Acceleration'][store['Resolution']][pixel] < num_coordinates:
-                        raise KeyError()
-                except KeyError:
-                    store['Data']['Acceleration'][store['Resolution']][pixel] = num_coordinates
+            try:
+                if store['Data']['Speed'][store['Resolution']][pixel] < speed:
+                    raise KeyError()
+            except KeyError:
+                store['Data']['Speed'][store['Resolution']][pixel] = speed
+                #notify.queue(DEBUG, store['Data']['Speed'].keys)
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
@@ -142,8 +137,7 @@ def _background_process(q_send, received_data, store):
         compress_multplier = CONFIG.data['CompressTracks']['Multiplier']
         compress_limit = compress_frequency * CONFIG.data['Main']['UpdatesPerSecond']
         if store['Data']['Count'] > compress_limit:
-            notify.queue(MOUSE_TRACK_COMPRESS_START)
-            _notify_send(q_send, notify)
+            
             #Compress tracks
             tracks = store['Data']['Tracks']
             for resolution in tracks.keys():
@@ -152,14 +146,15 @@ def _background_process(q_send, received_data, store):
                 tracks[resolution] = {k: v for k, v in tracks[resolution].iteritems() if v}
                 if not tracks[resolution]:
                     del tracks[resolution]
-            #Compress acceleration
-            accel = store['Data']['Acceleration']
-            for resolution in accel.keys():
-                accel[resolution] = {k: int(v // compress_multplier)
-                                     for k, v in accel[resolution].iteritems()}
-                accel[resolution] = {k: v for k, v in accel[resolution].iteritems() if v}
-                if not accel[resolution]:
-                    del accel[resolution]
+                    
+            #Compress speed
+            speed = store['Data']['Speed']
+            for resolution in speed.keys():
+                speed[resolution] = {k: int(v // compress_multplier)
+                                     for k, v in speed[resolution].iteritems()}
+                speed[resolution] = {k: v for k, v in speed[resolution].iteritems() if v}
+                if not speed[resolution]:
+                    del speed[resolution]
             store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
