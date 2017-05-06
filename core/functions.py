@@ -2,7 +2,7 @@ from __future__ import division
 from threading import Thread
 import time
 import os
-from _os import get_cursor_pos
+from _os import get_cursor_pos, get_running_processes
 from multiprocessing import Process, Queue
 
 
@@ -201,11 +201,8 @@ class RunningPrograms(object):
                 exe_name = exe_name.strip() + '.app'
             self.programs[exe_name] = friendly_name
             
-            
     def refresh(self):
-        task_list = os.popen("tasklist").read().splitlines()
-        self.processes = {line.strip().split('.exe')[0] + '.exe': i
-                          for i, line in enumerate(task_list) if '.exe' in line}
+        self.processes = get_running_processes()
         
     def check(self):
         """Check for any programs in the list that are currently loaded.
