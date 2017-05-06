@@ -55,20 +55,21 @@ _config_defaults = [
         'FileType': ('jpg', str)
     }),
     ('GenerateHeatmap', {
-        'NameFormat': ('Result\\[FriendlyName] - Heatmap', str, 'Variables: [UResX], [UResY],'
-                                                                ' [ResX], [ResY], [ExpMult],'
-                                                                ' [GaussianSize], [ColourProfile]'),
+        'NameFormat': ('Result\\[FriendlyName] Heatmap - [ColourProfile]', str),
         'GaussianBlurSize': (20, int),
         'ExponentialMultiplier': (1.0, float),
-        'ColourProfile': ('HeatMap', str),
+        'ColourProfile': ('Heatmap', str),
         'SetMaxRange': (0, int, 'Manually set the highest value.'
                                 ' Set to 0 to use auto, otherwise use trial and error'
                                 ' to get it right.')
     }),
     ('GenerateTracks', {
-        'NameFormat': ('Result\\[FriendlyName] - Tracks', str, 'Variables: [UResX], [UResY],'
-                                                               ' [ResX], [ResY], [ColourProfile]'),
+        'NameFormat': ('Result\\[FriendlyName] Tracks - [ColourProfile]', str),
         'ColourProfile': ('BlackToWhite', str)
+    }),
+    ('GenerateSpeedMap', {
+        'NameFormat': ('Result\\[FriendlyName] Speed - [ColourProfile]', str),
+        'ColourProfile': ('Sunburst', str)
     })
 ]
 
