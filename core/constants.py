@@ -1,6 +1,6 @@
 from functions import SimpleConfig
-VERSION = '2.0.1b'
-       
+
+
 COLOURS_MAIN = {
     'red': (255, 0, 0),
     'green': (0, 255, 0),
