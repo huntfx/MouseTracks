@@ -146,10 +146,8 @@ def _background_process(q_send, received_data, store):
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
-        compress_frequency = CONFIG.data['CompressTracks']['Frequency']
-        compress_multplier = CONFIG.data['CompressTracks']['Multiplier']
-        compress_limit = compress_frequency * CONFIG.data['Main']['UpdatesPerSecond']
-        if store['Data']['Count'] > compress_limit:
+        if store['Data']['Count'] > CONFIG.data['CompressTracks']['MaximumValue']:
+            compress_multplier = CONFIG.data['CompressTracks']['Reduction']
             
             #Compress tracks
             tracks = store['Data']['Tracks']
