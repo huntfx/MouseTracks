@@ -14,6 +14,28 @@ def _notify_send(q_send, notify):
         q_send.put(output)
 
 
+def _save_wrapper(q_send, store):
+    notify.queue(SAVE_START)
+    _notify_send(q_send, notify)
+    saved = False
+    for i in xrange(CONFIG.data['Save']['MaximumAttempts']):
+        if save_program(store['Programs']['Current'], store['Data']):
+            notify.queue(SAVE_SUCCESS)
+            _notify_send(q_send, notify)
+            saved = True
+            break
+        else:
+            if CONFIG.data['Save']['MaximumAttempts'] == 1:
+                notify.queue(SAVE_FAIL)
+                return
+            notify.queue(SAVE_FAIL_RETRY, CONFIG.data['Save']['WaitAfterFail'],
+                         i, CONFIG.data['Save']['MaximumAttempts'])
+            _notify_send(q_send, notify)
+            time.sleep(CONFIG.data['Save']['WaitAfterFail'])
+    if not saved:
+        notify.queue(SAVE_FAIL_END)
+
+
 def background_process(q_recv, q_send):
     try:
         notify.queue(START_THREAD)
@@ -44,14 +66,8 @@ def _background_process(q_send, received_data, store):
 
     check_resolution = False
     if 'Save' in received_data:
-        notify.queue(SAVE_START)
-        _notify_send(q_send, notify)
-        if save_program(store['Programs']['Current'], store['Data']):
-            notify.queue(SAVE_SUCCESS)
-        else:
-            notify.queue(SAVE_FAIL)
-        _notify_send(q_send, notify)
-    
+        _save_wrapper(q_send, store)
+
     if 'Programs' in received_data:
         if received_data['Programs']:
             store['Programs']['Class'].reload_file()
@@ -70,11 +86,7 @@ def _background_process(q_send, received_data, store):
                 _notify_send(q_send, notify)
                 
                 check_resolution = True
-                if save_program(store['Programs']['Previous'], store['Data']):
-                    notify.queue(SAVE_SUCCESS)
-                else:
-                    notify.queue(SAVE_FAIL)
-                _notify_send(q_send, notify)
+                _save_wrapper(q_send, store)
     
                 store['Programs']['Previous'] = store['Programs']['Current']
                     
@@ -114,22 +126,23 @@ def _background_process(q_send, received_data, store):
 
     if 'MouseMove' in received_data:
         start, end = received_data['MouseMove']
+        distance = find_distance(end, start)
+        
         if start is None:
             mouse_coordinates = [end]
-            speed = 0
         else:
             mouse_coordinates = [start, end] + calculate_line(start, end)
-            speed = int(round(find_distance(start, end)))
+
             
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
 
             try:
-                if store['Data']['Speed'][store['Resolution']][pixel] < speed:
+                if store['Data']['Speed'][store['Resolution']][pixel] < distance:
                     raise KeyError()
             except KeyError:
-                store['Data']['Speed'][store['Resolution']][pixel] = speed
-                #notify.queue(DEBUG, store['Data']['Speed'].keys)
+                store['Data']['Speed'][store['Resolution']][pixel] = distance
+                
         store['Data']['Count'] += 1
         
         #Compress tracks if the count gets too high
