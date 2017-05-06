@@ -33,7 +33,7 @@ def background_process(q_recv, q_send):
             try:
                 messages = _background_process(q_send, received_data, store)
             except Exception as e:
-                q_send.put('{}: line {}'.format(sys.exc_info()[2].tb_lineno, e))
+                q_send.put('Error: {}: line {}, {}'.format(e, sys.exc_info()[2].tb_lineno, sys.exc_info()[0]))
                 return
             
     except Exception as e:
