@@ -39,8 +39,13 @@ _config_defaults = [
         'Frequency': (7200, int),
         'Multiplier': (1.1, float)
     }),
+    ('Save', {
+        'Frequency': (120, int),
+        'MaximumAttempts': (5, int, 'Maximum number of failed save attempts'
+                                     ' before the tracking continues.'),
+        'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
+    }),
     ('Timer', {
-        'Save': (120, int),
         'CheckPrograms': (2, int),
         'CheckResolution': (1, int),
         'ReloadPrograms': (600, int)
