@@ -2,19 +2,29 @@
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
-This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `__init__.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process so that the tracking part shouldn't ever take a performance hit. Currently it only works on windows as it uses `pywin32` to get all the information, though it would be easy to add support for another operating system.
+This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `__init__.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process so that the tracking part will run constantly without any CPU spikes.
 
 <b>Current Features</b>:
- - Track movement, clicks and key presses, over multiple resolutions
- - Display mouse tracks and click heatmap
+ - Track position, speed, clicks and key presses over multiple resolutions
+ - Display mouse tracks, mouse speed and click heatmap
  - Fade old mouse tracks to keep recent tracks more visible
- - Change colours used to generate tracks and heatmap
- - Keep separate tracks for different applications defined in "Program List.txt"
+ - Change colours used to generate the images
+ - Automatically keep separate tracks for different applications defined in "Program List.txt"
  - Edit settings with config.ini
  
 <b>Known Issues:</b>
- - They keyboard stops being properly detected during full screen games.
- - No support (yet) for Linux or Mac
+ - (Windows) The keyboard stops being properly detected during full screen games
+ - (Linux) No support yet
+ - (Mac) No support yet
+ 
+ <b>Planned Updates:</b>
+  - Redesign colour map code to work with small ranges
+  - Detect if .data.old is more recent than .data and load that instead
+  - Add more optional variables to image name
+  - Write more robust code to save the image
+  - Add min/max values to config validation
+  - Export raw data for others to visualize
+  - Write a few extra functions to make it easier to use the `Config` class
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
