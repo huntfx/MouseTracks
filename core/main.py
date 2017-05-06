@@ -15,7 +15,7 @@ def start_tracking():
     updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
     timer = {'UpdateScreen': CONFIG.data['Timer']['CheckResolution'],
              'UpdatePrograms': CONFIG.data['Timer']['CheckPrograms'],
-             'Save': CONFIG.data['Timer']['Save'],
+             'Save': CONFIG.data['Save']['Frequency'],
              'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms']}
     timer = {k: v * updates_per_second for k, v in timer.iteritems()}
 
