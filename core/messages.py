@@ -25,7 +25,8 @@ SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
 SAVE_FAIL_RETRY = 67
-SAVE_SKIP = 68
+SAVE_FAIL_END = 68
+SAVE_SKIP = 69
 START_MAIN = 80
 START_THREAD = 81
 DATA_LOADED = 82
@@ -89,8 +90,12 @@ class Notify(object):
         if message_id == SAVE_FAIL:
             q2('Unable to save file, make sure this has the correct permissions.')
         if message_id == SAVE_FAIL_RETRY:
-            q2('Unable to save file,'
-               ' trying again in {} second{}.'.format(args[0], '' if args[0] == 1 else 's'))
+            q2('Unable to save file, trying again in {} second{}.'
+               ' (attempt {} of {})'.format(args[0], '' if args[0] == 1 else 's',
+                                           args[1] + 1, args[2]))
+        if message_id == SAVE_FAIL_END:
+            q2('Failed to save file (maximum attempts reached)'
+               ', make sure the correct permissions have been granted.')
         if message_id == SAVE_SKIP:
             q2('Skipping save, user inactive for {} second{}.'.format(args[0],
                                                                       '' if args[0] == 1 else 's'))
