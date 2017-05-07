@@ -5,8 +5,7 @@ import time
 import os
 
 from _os import remove_file, rename_file, create_folder, hide_file
-from constants import VERSION
-from versions import upgrade_version
+from versions import VERSION, upgrade_version
 
 
 def load_program(program_name=None):
@@ -26,7 +25,7 @@ def load_program(program_name=None):
             return {'Count': 0,
                     'Tracks': {},
                     'Clicks': {},
-                    'Acceleration': {},
+                    'Speed': {},
                     'Keys': {},
                     'LastSave': time.time(),
                     'Version': VERSION,
