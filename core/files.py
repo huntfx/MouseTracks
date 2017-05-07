@@ -27,6 +27,7 @@ def load_program(program_name=None):
                     'Clicks': {},
                     'Speed': {},
                     'Keys': {},
+                    'Combined': {},
                     'LastSave': time.time(),
                     'Version': VERSION,
                     'Ticks': 0,
