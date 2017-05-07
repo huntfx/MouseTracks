@@ -137,6 +137,9 @@ class ImageName(object):
         elif image_type.lower() == 'speed':
             name = CONFIG.data['GenerateSpeedMap']['NameFormat']
             name = name.replace('[ColourProfile]', self.speed_colour)
+        elif image_type.lower() == 'combined':
+            name = CONFIG.data['GenerateTracks']['NameFormat']
+            name = name.replace('[ColourProfile]', self.track_colour)
         else:
             raise ValueError('incorred image type: {}, '
                              'must be tracks, heatmap or speed'.format(image_type))
@@ -284,12 +287,14 @@ def _click_heatmap(numpy_arrays):
 
 def arrays_to_colour(value_range, numpy_arrays, image_type):
     image_type = image_type.lower()
-    if image_type not in ('tracks', 'speed'):
-        raise ValueError('image type must be given as either tracks or speed')
+    if image_type not in ('tracks', 'speed', 'combined'):
+        raise ValueError('image type must be given as either tracks, speed or combined')
     elif image_type == 'tracks':
         colour_map = CONFIG.data['GenerateTracks']['ColourProfile']
     elif image_type == 'speed':
         colour_map = CONFIG.data['GenerateSpeedMap']['ColourProfile']
+    elif image_type == 'combined':
+        colour_map = CONFIG.data['GenerateTracks']['ColourProfile']
 
     max_array = merge_array_max(numpy_arrays)
     colour_range = ColourRange(value_range[1] - value_range[0], ColourMap()[colour_map])
@@ -304,8 +309,8 @@ class RenderImage(object):
 
     def generate(self, image_type):
         image_type = image_type.lower()
-        if image_type not in ('tracks', 'speed', 'clicks'):
-            raise ValueError('image type must be given as either tracks, speed or clicks')
+        if image_type not in ('tracks', 'speed', 'clicks', 'combined'):
+            raise ValueError('image type must be given as either tracks, speed, clicks or combined')
         
         if image_type == 'tracks':
             value_range, numpy_arrays = merge_resolutions(self.data['Tracks'])
@@ -319,6 +324,10 @@ class RenderImage(object):
             value_range, numpy_arrays = merge_resolutions(self.data['Clicks'])
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks')
+        elif image_type == 'combined':
+            value_range, numpy_arrays = merge_resolutions(self.data['Combined'])
+            image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
+            image_name = self.name.generate('Combined')
         resolution = (CONFIG.data['GenerateImages']['OutputResolutionX'],
                       CONFIG.data['GenerateImages']['OutputResolutionY'])
         image_output = image_output.resize(resolution, Image.ANTIALIAS)
@@ -355,4 +364,3 @@ class ColourMap(object):
                 return generated_map
             else:
                 raise ValueError('unknown colour map')
-    
