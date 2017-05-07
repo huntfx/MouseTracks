@@ -86,9 +86,8 @@ def _background_process(q_send, received_data, store):
                     notify.queue(PROGRAM_QUIT)
                 else:
                     notify.queue(PROGRAM_STARTED, store['Programs']['Current'])
-                
-                notify.queue(SAVE_START)
                 _notify_send(q_send, notify)
+                
                 _save_wrapper(q_send, store, False)
                 
                 store['Programs']['Previous'] = store['Programs']['Current']
@@ -105,6 +104,7 @@ def _background_process(q_send, received_data, store):
         check_resolution = True
         store['Resolution'] = received_data['Resolution']
 
+    #Make sure resolution exists as a key
     if check_resolution:
         if store['Resolution'] not in store['Data']['Tracks']:
             store['Data']['Tracks'][store['Resolution']] = {}
@@ -112,6 +112,8 @@ def _background_process(q_send, received_data, store):
             store['Data']['Clicks'][store['Resolution']] = {}
         if store['Resolution'] not in store['Data']['Speed']:
             store['Data']['Speed'][store['Resolution']] = {}
+        if store['Resolution'] not in store['Data']['Combined']:
+            store['Data']['Combined'][store['Resolution']] = {}
     
     if 'Keys' in received_data:
         for key in received_data['Keys']:
@@ -127,24 +129,30 @@ def _background_process(q_send, received_data, store):
             except KeyError:
                 store['Data']['Clicks'][store['Resolution']][mouse_click] = 1
 
+    #Calculate and track mouse movement
     if 'MouseMove' in received_data:
         start, end = received_data['MouseMove']
         distance = find_distance(end, start)
+        combined = distance * store['Data']['Count']
         
         if start is None:
             mouse_coordinates = [end]
         else:
             mouse_coordinates = [start, end] + calculate_line(start, end)
 
-            
+        #Write each pixel to the dictionary
         for pixel in mouse_coordinates:
             store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
-
             try:
                 if store['Data']['Speed'][store['Resolution']][pixel] < distance:
                     raise KeyError()
             except KeyError:
                 store['Data']['Speed'][store['Resolution']][pixel] = distance
+            try:
+                if store['Data']['Combined'][store['Resolution']][pixel] < combined:
+                    raise KeyError()
+            except KeyError:
+                store['Data']['Combined'][store['Resolution']][pixel] = combined
                 
         store['Data']['Count'] += 1
         
@@ -169,6 +177,15 @@ def _background_process(q_send, received_data, store):
                 speed[resolution] = {k: v for k, v in speed[resolution].iteritems() if v}
                 if not speed[resolution]:
                     del speed[resolution]
+                    
+            #Compress combined
+            combined = store['Data']['Speed']
+            for resolution in combined.keys():
+                combined[resolution] = {k: int(v // compress_multplier)
+                                        for k, v in combined[resolution].iteritems()}
+                combined[resolution] = {k: v for k, v in combined[resolution].iteritems() if v}
+                if not combined[resolution]:
+                    del combined[resolution]
             store['Data']['Count'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
 
