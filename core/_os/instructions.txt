@@ -4,10 +4,6 @@ The current requirement is only that platform.system() will return the name of t
 get_resolution():
 Returns a tuple of the main monitors resolution - (1920, 1080)
 
-get_refresh_rate():
-Returns an integer of the main monitors refresh rate - 60
-Not currently used so isn't needed at this point, might be in the future though.
-
 get_cursor_pos():
 Returns the x, y coordinate of the cursor - (162, 585)
 There's a period, at least on windows, where if you leave the mouse long enough it'll stop returning its location.
@@ -32,6 +28,17 @@ Returns True or False if the file was deleted or not.
 create_folder(path):
 Create a folder with the given path, check for OS specific errors.
 Returns True or False if the file was deleted or not.
+
+hide_file(path):
+Set a file as hidden. If not possible on OS, just leave as an empty function.
+
+show_file(path):
+Set a file as not hidden. If not possible on OS, just leave as an empty function.
+
+get_running_processes():
+Read all running processes and return as a dictionary, where the values are the process ID.
+If multiple programs are detected, the highest ID is used to choose a program.
+If not possible on OS, return an empty dictionary.
 
 KEYS:
 Dictionary containing the ID of each key. The key is a friendly name, and the value is the ID.
