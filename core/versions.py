@@ -14,8 +14,13 @@ def upgrade_version(data):
     2.0.1b: Rename acceleration to speed, change tracking method
     """
     get_id = VERSION_HISTORY.index
+
+    #Make sure version is in history, otherwise set to lowest version
+    try:
+        current_version_id = get_id(str(data['Version']))
+    except ValueError:
+        current_version_id = 0
     
-    current_version_id = get_id(str(data['Version']))
     if current_version_id < get_id('2.0.1'):
         data['Acceleration'] = {}
     if current_version_id < get_id('2.0.1b'):
