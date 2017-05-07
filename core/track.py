@@ -14,12 +14,12 @@ def _notify_send(q_send, notify):
         q_send.put(output)
 
 
-def _save_wrapper(q_send, store):
+def _save_wrapper(q_send, store, current=True):
     notify.queue(SAVE_START)
     _notify_send(q_send, notify)
     saved = False
     for i in xrange(CONFIG.data['Save']['MaximumAttempts']):
-        if save_program(store['Programs']['Current'], store['Data']):
+        if save_program(store['Programs'][('Previous', 'Current')[current]], store['Data']):
             notify.queue(SAVE_SUCCESS)
             _notify_send(q_send, notify)
             saved = True
@@ -66,30 +66,33 @@ def _background_process(q_send, received_data, store):
 
     check_resolution = False
     if 'Save' in received_data:
-        _save_wrapper(q_send, store)
+        _save_wrapper(q_send, store, True)
 
     if 'Programs' in received_data:
+        
+        #Reload list of running programs
         if received_data['Programs']:
             store['Programs']['Class'].reload_file()
             notify.queue(PROGRAM_RELOAD)
+
+        #Switch profile
         else:
             store['Programs']['Class'].refresh()
             store['Programs']['Current'] = store['Programs']['Class'].check()
             if store['Programs']['Current'] != store['Programs']['Previous']:
 
+                check_resolution = True
                 if store['Programs']['Current'] is None:
                     notify.queue(PROGRAM_QUIT)
                 else:
                     notify.queue(PROGRAM_STARTED, store['Programs']['Current'])
-                    
+                
                 notify.queue(SAVE_START)
                 _notify_send(q_send, notify)
+                _save_wrapper(q_send, store, False)
                 
-                check_resolution = True
-                _save_wrapper(q_send, store)
-    
                 store['Programs']['Previous'] = store['Programs']['Current']
-                    
+
                 store['Data'] = load_program(store['Programs']['Current'])
                 if store['Data']['Count']:
                     notify.queue(DATA_LOADED)
