@@ -41,8 +41,8 @@ _config_defaults = [
     }),
     ('Save', {
         'Frequency': (120, int),
-        'MaximumAttempts': (5, int, 'Maximum number of failed save attempts'
-                                     ' before the tracking continues.'),
+        'MaximumAttempts': (8, int, 'Maximum number of failed save attempts'
+                                    ' before the tracking continues.'),
         'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
     }),
     ('Timer', {
@@ -70,11 +70,15 @@ _config_defaults = [
     }),
     ('GenerateTracks', {
         'NameFormat': ('Result\\[FriendlyName] Tracks - [ColourProfile]', str),
-        'ColourProfile': ('BlackToWhite', str)
+        'ColourProfile': ('WhiteToBlack', str)
     }),
     ('GenerateSpeedMap', {
         'NameFormat': ('Result\\[FriendlyName] Speed - [ColourProfile]', str),
-        'ColourProfile': ('Sunburst', str)
+        'ColourProfile': ('WhiteToBlack', str)
+    }),
+    ('GenerateCombined', {
+        'NameFormat': ('Result\\[FriendlyName] Combined - [ColourProfile]', str),
+        'ColourProfile': ('WhiteToBlack', str)
     })
 ]
 
