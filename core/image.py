@@ -9,20 +9,26 @@ from functions import ColourRange
 from files import load_program
 
 def merge_array_max(arrays):
-    if len(arrays) > 1:
+    array_len = len(arrays)
+    if not array_len:
+        return None
+    elif array_len > 1:
         return np.maximum.reduce(arrays)
     else:
         return arrays[0]
 
 
 def merge_array_add(arrays):
-    if len(arrays) > 1:
+    array_len = len(arrays)
+    if not array_len:
+        return None
+    elif array_len > 1:
         return np.add.reduce(arrays)
     else:
         return arrays[0]
 
 
-def merge_resolutions(main_data, max_resolution=None, interpolate=True):
+def merge_resolutions(main_data, max_resolution=None, interpolate=True, average=False):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -39,6 +45,8 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True):
         raise ValueError('incorrect resolutions')
 
     i = 0
+    count = 0
+    total = 0
     for current_resolution in resolutions:
         i += 1
         print ('Resizing {}x{} to {}x{}...'
@@ -54,7 +62,7 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True):
             lowest_value = _lowest_value
         _highest_value = max(all_values)
         if highest_value is None or highest_value < _highest_value:
-            highest_value = _highest_value    
+            highest_value = _highest_value
 
         #Build 2D array from data
         new_data = []
@@ -63,8 +71,10 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True):
         for y in height_range:
             new_data.append([])
             for x in width_range:
+                count += 1
                 try:
                     new_data[-1].append(data[(x, y)])
+                    total += data[(x, y)]
                 except KeyError:
                     new_data[-1].append(0)
 
@@ -76,7 +86,9 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True):
             numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
         else:
             numpy_arrays.append(np.array(new_data))
-
+            
+    if average:
+        highest_value = int(12 * total / count)
     return (lowest_value, highest_value), numpy_arrays
 
 
@@ -125,6 +137,8 @@ class ImageName(object):
 
         self.speed_colour = str(CONFIG.data['GenerateSpeedMap']['ColourProfile'])
 
+        self.combined_colour = str(CONFIG.data['GenerateCombined']['ColourProfile'])
+
     def generate(self, image_type):
         if image_type.lower() == 'clicks':
             name = CONFIG.data['GenerateHeatmap']['NameFormat']
@@ -138,8 +152,8 @@ class ImageName(object):
             name = CONFIG.data['GenerateSpeedMap']['NameFormat']
             name = name.replace('[ColourProfile]', self.speed_colour)
         elif image_type.lower() == 'combined':
-            name = CONFIG.data['GenerateTracks']['NameFormat']
-            name = name.replace('[ColourProfile]', self.track_colour)
+            name = CONFIG.data['GenerateCombined']['NameFormat']
+            name = name.replace('[ColourProfile]', self.combined_colour)
         else:
             raise ValueError('incorred image type: {}, '
                              'must be tracks, heatmap or speed'.format(image_type))
@@ -160,6 +174,8 @@ class ImageName(object):
 
 def parse_colour_text(colour_name):
     """Convert text into a colour map.
+    It could probably do with a rewrite to make it more efficient.
+
     Mixed Colour:
         Combine multiple colours.
         Examples: BlueRed, BlackYellowGreen
@@ -241,6 +257,8 @@ def _click_heatmap(numpy_arrays):
     #Add all arrays together
     print 'Merging arrays...'
     max_array = merge_array_add(numpy_arrays)
+    if max_array is None:
+        return None
 
     #Create a new numpy array and copy over the values
     #I'm not sure if there's a way to skip this step since it seems a bit useless
@@ -294,9 +312,11 @@ def arrays_to_colour(value_range, numpy_arrays, image_type):
     elif image_type == 'speed':
         colour_map = CONFIG.data['GenerateSpeedMap']['ColourProfile']
     elif image_type == 'combined':
-        colour_map = CONFIG.data['GenerateTracks']['ColourProfile']
+        colour_map = CONFIG.data['GenerateCombined']['ColourProfile']
 
     max_array = merge_array_max(numpy_arrays)
+    if max_array is None:
+        return None
     colour_range = ColourRange(value_range[1] - value_range[0], ColourMap()[colour_map])
     return Image.fromarray(convert_to_rgb(max_array, colour_range))
 
@@ -317,7 +337,7 @@ class RenderImage(object):
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Tracks')
             image_name = self.name.generate('Tracks')
         elif image_type == 'speed':
-            value_range, numpy_arrays = merge_resolutions(self.data['Speed'])
+            value_range, numpy_arrays = merge_resolutions(self.data['Speed'], average=True)
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
             image_name = self.name.generate('Speed')
         elif image_type == 'clicks':
@@ -325,15 +345,18 @@ class RenderImage(object):
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks')
         elif image_type == 'combined':
-            value_range, numpy_arrays = merge_resolutions(self.data['Combined'])
+            value_range, numpy_arrays = merge_resolutions(self.data['Combined'], average=True)
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
             image_name = self.name.generate('Combined')
         resolution = (CONFIG.data['GenerateImages']['OutputResolutionX'],
                       CONFIG.data['GenerateImages']['OutputResolutionY'])
-        image_output = image_output.resize(resolution, Image.ANTIALIAS)
-        print 'Saving image...'
-        image_output.save(image_name)
-        print 'Finished saving.'
+        if image_output is None:
+            print 'No image data for type "{}"'.format(image_type)
+        else:
+            image_output = image_output.resize(resolution, Image.ANTIALIAS)
+            print 'Saving image...'
+            image_output.save(image_name)
+            print 'Finished saving.'
 
 
 class ColourMap(object):
