@@ -28,7 +28,8 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, max_resolution=None, interpolate=True, average=False):
+def merge_resolutions(main_data, max_resolution=None,
+                      interpolate=True, average=False, multiple=False):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -44,51 +45,66 @@ def merge_resolutions(main_data, max_resolution=None, interpolate=True, average=
     if any(not isinstance(i, tuple) for i in resolutions) or any(len(i) != 2 for i in resolutions):
         raise ValueError('incorrect resolutions')
 
+    #Read total number of images that will need to be upscaled
+    max_count = 0
+    for current_resolution in resolutions:
+        if multiple:
+            max_count += len(main_data[current_resolution])
+        else:
+            max_count += 1
+            
     i = 0
     count = 0
     total = 0
     for current_resolution in resolutions:
-        i += 1
-        print ('Resizing {}x{} to {}x{}...'
-               '({}/{})'.format(*(current_resolution + max_resolution + (i, len(resolutions)))))
-        data = main_data[current_resolution]
-
-        #Try find the highest and lowest value
-        all_values = set(data.values())
-        if not all_values:
-            continue
-        _lowest_value = min(all_values)
-        if lowest_value is None or lowest_value > _lowest_value:
-            lowest_value = _lowest_value
-        _highest_value = max(all_values)
-        if highest_value is None or highest_value < _highest_value:
-            highest_value = _highest_value
-
-        #Build 2D array from data
-        new_data = []
-        width_range = range(current_resolution[0])
-        height_range = range(current_resolution[1])
-        for y in height_range:
-            new_data.append([])
-            for x in width_range:
-                count += 1
-                try:
-                    new_data[-1].append(data[(x, y)])
-                    total += data[(x, y)]
-                except KeyError:
-                    new_data[-1].append(0)
-
-        #Calculate the zoom level needed
-        if max_resolution != current_resolution:
-            zoom_factor = (max_resolution[1] / current_resolution[1],
-                           max_resolution[0] / current_resolution[0])
-            
-            numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
+        if multiple:
+            array_list = main_data[current_resolution]
         else:
-            numpy_arrays.append(np.array(new_data))
+            array_list = [main_data[current_resolution]]
+        for data in array_list:
+            i += 1
+            print ('Resizing {}x{} to {}x{}...'
+                   '({}/{})'.format(current_resolution[0], current_resolution[1],
+                                    max_resolution[0], max_resolution[1],
+                                    i, max_count))
+
+            #Try find the highest and lowest value
+            all_values = set(data.values())
+            if not all_values:
+                continue
+            _lowest_value = min(all_values)
+            if lowest_value is None or lowest_value > _lowest_value:
+                lowest_value = _lowest_value
+            _highest_value = max(all_values)
+            if highest_value is None or highest_value < _highest_value:
+                highest_value = _highest_value
+
+            #Build 2D array from data
+            new_data = []
+            width_range = range(current_resolution[0])
+            height_range = range(current_resolution[1])
+            for y in height_range:
+                new_data.append([])
+                for x in width_range:
+                    try:
+                        new_data[-1].append(data[(x, y)])
+                        total += data[(x, y)]
+                    except KeyError:
+                        new_data[-1].append(0)
+                    else:
+                        count += 1
+
+            #Calculate the zoom level needed
+            if max_resolution != current_resolution:
+                zoom_factor = (max_resolution[1] / current_resolution[1],
+                               max_resolution[0] / current_resolution[0])
+                
+                numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
+            else:
+                numpy_arrays.append(np.array(new_data))
             
-    if average:
-        highest_value = int(12 * total / count)
+    if average and count:
+        highest_value = int(2 * total / count)
     return (lowest_value, highest_value), numpy_arrays
 
 
@@ -341,7 +357,7 @@ class RenderImage(object):
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
             image_name = self.name.generate('Speed')
         elif image_type == 'clicks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Clicks'])
+            value_range, numpy_arrays = merge_resolutions(self.data['Clicks'], multiple=True)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks')
         elif image_type == 'combined':
@@ -362,9 +378,10 @@ class RenderImage(object):
 class ColourMap(object):
     """Look up default colours or generate one if the set doesn't exist."""
     _MAPS = {
-        'heatmap': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
+        'jet': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
                     'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
                     'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
+        'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey',
         'default': 'WhiteToBlack',
         'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow',
         'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite',
