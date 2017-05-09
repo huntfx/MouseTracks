@@ -52,15 +52,16 @@ def merge_resolutions(main_data, max_resolution=None,
             max_count += len(main_data[current_resolution])
         else:
             max_count += 1
-            
+    
     i = 0
     count = 0
     total = 0
     for current_resolution in resolutions:
         if multiple:
-            array_list = main_data[current_resolution]
+            array_list = [main_data[current_resolution][n] for n in multiple]
         else:
             array_list = [main_data[current_resolution]]
+            
         for data in array_list:
             i += 1
             print ('Resizing {}x{} to {}x{}...'
@@ -148,6 +149,9 @@ class ImageName(object):
         self.heatmap_gaussian = str(CONFIG.data['GenerateHeatmap']['GaussianBlurSize'])
         self.heatmap_exp = str(CONFIG.data['GenerateHeatmap']['ExponentialMultiplier'])
         self.heatmap_colour = str(CONFIG.data['GenerateHeatmap']['ColourProfile'])
+        self.heatmap_buttons = {'LMB': CONFIG.data['GenerateHeatmap']['MouseButtonLeft'],
+                                'MMB': CONFIG.data['GenerateHeatmap']['MouseButtonMiddle'],
+                                'RMB': CONFIG.data['GenerateHeatmap']['MouseButtonRight']}
 
         self.track_colour = str(CONFIG.data['GenerateTracks']['ColourProfile'])
 
@@ -161,6 +165,17 @@ class ImageName(object):
             name = name.replace('[ExpMult]', self.heatmap_exp)
             name = name.replace('[GaussianSize]', self.heatmap_gaussian)
             name = name.replace('[ColourProfile]', self.heatmap_colour)
+            
+            selected_buttons = [k for k, v in self.heatmap_buttons.iteritems() if v]
+            if all(self.heatmap_buttons.values()):
+                name = name.replace('[MouseButtons]', 'Combined')
+            elif len(selected_buttons) == 2:
+                name = name.replace('[MouseButtons]', '+'.join(selected_buttons))
+            elif len(selected_buttons) == 1:
+                name = name.replace('[MouseButtons]', selected_buttons[0])
+            else:
+                name = name.replace('[MouseButtons]', 'Empty')
+
         elif image_type.lower() == 'tracks':
             name = CONFIG.data['GenerateTracks']['NameFormat']
             name = name.replace('[ColourProfile]', self.track_colour)
@@ -347,7 +362,6 @@ class RenderImage(object):
         image_type = image_type.lower()
         if image_type not in ('tracks', 'speed', 'clicks', 'combined'):
             raise ValueError('image type must be given as either tracks, speed, clicks or combined')
-        
         if image_type == 'tracks':
             value_range, numpy_arrays = merge_resolutions(self.data['Tracks'])
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Tracks')
@@ -357,7 +371,11 @@ class RenderImage(object):
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
             image_name = self.name.generate('Speed')
         elif image_type == 'clicks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Clicks'], multiple=True)
+            lmb = CONFIG.data['GenerateHeatmap']['MouseButtonLeft']
+            mmb = CONFIG.data['GenerateHeatmap']['MouseButtonMiddle']
+            rmb = CONFIG.data['GenerateHeatmap']['MouseButtonRight']
+            mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
+            value_range, numpy_arrays = merge_resolutions(self.data['Clicks'], multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks')
         elif image_type == 'combined':
