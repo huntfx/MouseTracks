@@ -57,3 +57,7 @@ def get_resolution():
     d = display.Display().screen()
     return d.width_in_pixels, d.height_in_pixels
 
+# should always return a tuple
+def get_cursor_pos():
+    d = display.Display().screen().root.query_pointer()
+    return d.root_x, d.root_y
