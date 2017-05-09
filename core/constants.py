@@ -28,10 +28,10 @@ _config_defaults = [
     ('Main', {
         'UpdatesPerSecond': (60, int, 'This is probably best left at 60 even if'
                                       ' you have a higher refresh rate.'),
-        'RepeatKeyPress': (0.25, float, 'Record a new key press at this frequency'
-                                        ' if a key is being held down (set to 0 to disable).'),
+        'RepeatKeyPress': (0.0, float, 'Record a new key press at this frequency'
+                                        ' if a key is being held down (set to 0.0 to disable).'),
         'RepeatClicks': (0.18, float, 'Record a new click at this frequency'
-                                      ' if the mouse is being held down (set to 0 to disable).')
+                                      ' if the mouse is being held down (set to 0.0 to disable).')
     }),
     ('CompressTracks', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
@@ -41,8 +41,11 @@ _config_defaults = [
     }),
     ('Save', {
         'Frequency': (120, int),
-        'MaximumAttempts': (8, int, 'Maximum number of failed save attempts'
-                                    ' before the tracking continues.'),
+        'MaximumAttemptsNormal': (8, int, 'Maximum number of failed save attempts'
+                                          ' before the tracking continues.'),
+        'MaximumAttemptsSwitch': (24, int, 'Maximum number of failed save attempts'
+                                          ' when switching profile.'
+                                          ' If this fails then the latest data will be lost.'),
         'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
     }),
     ('Timer', {
