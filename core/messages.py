@@ -2,7 +2,7 @@ from datetime import datetime
 
 MESSAGE_LEVEL = 1
 
-DEBUG = -1
+MESSAGE_DEBUG = -1
 MOUSE_UNDETECTED = 0
 MOUSE_DETECTED = 1
 MOUSE_POSITION = 2
@@ -31,6 +31,7 @@ START_MAIN = 80
 START_THREAD = 81
 DATA_LOADED = 82
 DATA_NOTFOUND = 83
+QUEUE_SIZE = 96
 
 def _mb_text(id):
     return ('Left', 'Middle', 'Right')[id]
@@ -42,7 +43,7 @@ class Notify(object):
         q0 = self.message_queue[0].append
         q1 = self.message_queue[1].append
         q2 = self.message_queue[2].append
-        if message_id == DEBUG:
+        if message_id == MESSAGE_DEBUG:
             q2('Debug: {}'.format(args))
         if message_id == MOUSE_UNDETECTED:
             q2('Unable to read cursor position (usually happens when user is away).')
@@ -107,6 +108,8 @@ class Notify(object):
             q1('Finished loading data.')
         if message_id == DATA_NOTFOUND:
             q1('Started new data store.')
+        if message_id == QUEUE_SIZE:
+            q1('{} command{} queued for processing.'.format(args[0], '' if args[0] == 1 else 's'))
             
     def output(self):
         allowed_levels = range(MESSAGE_LEVEL, 3)
