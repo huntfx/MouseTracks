@@ -26,7 +26,6 @@ This was made with the intention of recording mouse movements over multiple reso
   - Add min/max values to config validation
   - Export raw data for others to visualize
   - Write a few extra functions to make it easier to use the `Config` class
-  - Move program detection to main thread
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
