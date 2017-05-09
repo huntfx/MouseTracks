@@ -1,5 +1,6 @@
 from functions import SimpleConfig
 
+DEFAULT_NAME = 'Default'
 
 COLOURS_MAIN = {
     'red': (255, 0, 0),
