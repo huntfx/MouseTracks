@@ -14,22 +14,26 @@ def _notify_send(q_send, notify):
         q_send.put(output)
 
 
-def _save_wrapper(q_send, store, current=True):
+def _save_wrapper(q_send, store, switch_profile=False):
     notify.queue(SAVE_START)
     _notify_send(q_send, notify)
     saved = False
-    for i in xrange(CONFIG.data['Save']['MaximumAttempts']):
-        if save_program(store['Programs'][('Previous', 'Current')[current]], store['Data']):
+    if switch_profile:
+        max_attempts = CONFIG.data['Save']['MaximumAttemptsSwitch']
+    else:
+        max_attempts = CONFIG.data['Save']['MaximumAttemptsNormal']
+    for i in xrange(max_attempts):
+        if save_program(store['Programs'][('Current', 'Previous')[switch_profile]], store['Data']):
             notify.queue(SAVE_SUCCESS)
             _notify_send(q_send, notify)
             saved = True
             break
         else:
-            if CONFIG.data['Save']['MaximumAttempts'] == 1:
+            if max_attempts == 1:
                 notify.queue(SAVE_FAIL)
                 return
             notify.queue(SAVE_FAIL_RETRY, CONFIG.data['Save']['WaitAfterFail'],
-                         i, CONFIG.data['Save']['MaximumAttempts'])
+                         i, max_attempts)
             _notify_send(q_send, notify)
             time.sleep(CONFIG.data['Save']['WaitAfterFail'])
     if not saved:
@@ -48,12 +52,13 @@ def background_process(q_recv, q_send):
                  'Resolution': None}
         
         notify.queue(DATA_LOADED)
+        notify.queue(QUEUE_SIZE, q_recv.qsize())
         _notify_send(q_send, notify)
         
         while True:
             received_data = q_recv.get()
             try:
-                messages = _background_process(q_send, received_data, store)
+                messages = _background_process(q_send, q_recv, received_data, store)
             except Exception as e:
                 q_send.put('Error: {}: line {}, {}'.format(e, sys.exc_info()[2].tb_lineno, sys.exc_info()[0]))
                 return
@@ -62,11 +67,12 @@ def background_process(q_recv, q_send):
         q_send.put('{}: {}'.format(sys.exc_info()[0], e))
 
 
-def _background_process(q_send, received_data, store):
+def _background_process(q_send, q_recv, received_data, store):
 
     check_resolution = False
     if 'Save' in received_data:
-        _save_wrapper(q_send, store, True)
+        _save_wrapper(q_send, store, False)
+        notify.queue(QUEUE_SIZE, q_recv.qsize())
 
     if 'Programs' in received_data:
         
@@ -93,12 +99,12 @@ def _background_process(q_send, received_data, store):
                 store['Programs']['Previous'] = store['Programs']['Current']
 
                 store['Data'] = load_program(store['Programs']['Current'])
-                if store['Data']['Count']:
+                if store['Data']['Ticks']['Total']:
                     notify.queue(DATA_LOADED)
                 else:
                     notify.queue(DATA_NOTFOUND)
+                notify.queue(QUEUE_SIZE, q_recv.qsize())
         _notify_send(q_send, notify)
-
 
     if 'Resolution' in received_data:
         check_resolution = True
@@ -109,31 +115,38 @@ def _background_process(q_send, received_data, store):
         if store['Resolution'] not in store['Data']['Tracks']:
             store['Data']['Tracks'][store['Resolution']] = {}
         if store['Resolution'] not in store['Data']['Clicks']:
-            store['Data']['Clicks'][store['Resolution']] = {}
+            store['Data']['Clicks'][store['Resolution']] = [{}, {}, {}]
         if store['Resolution'] not in store['Data']['Speed']:
             store['Data']['Speed'][store['Resolution']] = {}
         if store['Resolution'] not in store['Data']['Combined']:
             store['Data']['Combined'][store['Resolution']] = {}
     
-    if 'Keys' in received_data:
-        for key in received_data['Keys']:
+    if 'KeyPress' in received_data:
+        for key in received_data['KeyPress']:
             try:
-                store['Data']['Keys'][key] += 1
+                store['Data']['Keys']['Pressed'][key] += 1
             except KeyError:
-                store['Data']['Keys'][key] = 1
+                store['Data']['Keys']['Pressed'][key] = 1
+    
+    if 'KeyHeld' in received_data:
+        for key in received_data['KeyHeld']:
+            try:
+                store['Data']['Keys']['Held'][key] += 1
+            except KeyError:
+                store['Data']['Keys']['Held'][key] = 1
 
     if 'MouseClick' in received_data:
-        for mouse_click in received_data['MouseClick']:
+        for mouse_button, mouse_click in received_data['MouseClick']:
             try:
-                store['Data']['Clicks'][store['Resolution']][mouse_click] += 1
+                store['Data']['Clicks'][store['Resolution']][mouse_button][mouse_click] += 1
             except KeyError:
-                store['Data']['Clicks'][store['Resolution']][mouse_click] = 1
+                store['Data']['Clicks'][store['Resolution']][mouse_button][mouse_click] = 1
 
     #Calculate and track mouse movement
     if 'MouseMove' in received_data:
         start, end = received_data['MouseMove']
         distance = find_distance(end, start)
-        combined = distance * store['Data']['Count']
+        combined = distance * store['Data']['Ticks']['Current']
         
         if start is None:
             mouse_coordinates = [end]
@@ -142,7 +155,7 @@ def _background_process(q_send, received_data, store):
 
         #Write each pixel to the dictionary
         for pixel in mouse_coordinates:
-            store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Count']
+            store['Data']['Tracks'][store['Resolution']][pixel] = store['Data']['Ticks']['Current']
             try:
                 if store['Data']['Speed'][store['Resolution']][pixel] < distance:
                     raise KeyError()
@@ -154,10 +167,10 @@ def _background_process(q_send, received_data, store):
             except KeyError:
                 store['Data']['Combined'][store['Resolution']][pixel] = combined
                 
-        store['Data']['Count'] += 1
+        store['Data']['Ticks']['Current'] += 1
         
         #Compress tracks if the count gets too high
-        if store['Data']['Count'] > CONFIG.data['CompressTracks']['MaximumValue']:
+        if store['Data']['Ticks']['Current'] > CONFIG.data['CompressTracks']['MaximumValue']:
             compress_multplier = CONFIG.data['CompressTracks']['Reduction']
             
             #Compress tracks
@@ -186,11 +199,13 @@ def _background_process(q_send, received_data, store):
                 combined[resolution] = {k: v for k, v in combined[resolution].iteritems() if v}
                 if not combined[resolution]:
                     del combined[resolution]
-            store['Data']['Count'] //= compress_multplier
+            store['Data']['Ticks']['Current'] //= compress_multplier
             notify.queue(MOUSE_TRACK_COMPRESS_END)
-
+            notify.queue(QUEUE_SIZE, q_recv.qsize())
+        
     
     if 'Ticks' in received_data:
-        store['Data']['Ticks'] += received_data['Ticks']
+        store['Data']['Ticks']['Total'] += received_data['Ticks']
+    store['Data']['Ticks']['Recorded'] += 1
 
     _notify_send(q_send, notify)
