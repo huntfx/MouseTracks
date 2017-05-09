@@ -16,7 +16,8 @@ def start_tracking():
     timer = {'UpdateScreen': CONFIG.data['Timer']['CheckResolution'],
              'UpdatePrograms': CONFIG.data['Timer']['CheckPrograms'],
              'Save': CONFIG.data['Save']['Frequency'],
-             'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms']}
+             'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms'],
+             'UpdateQueuedCommands': 20}
     timer = {k: v * updates_per_second for k, v in timer.iteritems()}
 
     store = {'Resolution': {'Current': get_resolution(),
@@ -54,7 +55,6 @@ def start_tracking():
                     store['LastSent'] = i
             except NameError:
                 pass
-
             
             #Print any messages from previous loop
             notify_extra = ''
@@ -117,8 +117,10 @@ def start_tracking():
             #Mouse clicks
             click_repeat = CONFIG.data['Main']['RepeatClicks']
             for mouse_button, clicked in enumerate(get_mouse_click()):
+
+                mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
+                mb_data = (mouse_button, mouse_pos['Current'])
                 
-                mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)               
                 if clicked:
                     store['LastActivity'] = i
                     
@@ -128,9 +130,9 @@ def start_tracking():
                         if not store['Mouse']['OffScreen']:
                             notify.queue(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
                             try:
-                                frame_data['MouseClick'].append(mouse_pos['Current'])
+                                frame_data['MouseClick'].append(mb_data)
                             except KeyError:
-                                frame_data['MouseClick'] = [mouse_pos['Current']]
+                                frame_data['MouseClick'] = [mb_data]
                         else:
                             notify.queue(MOUSE_CLICKED_OFFSCREEN, mouse_button)
                             
@@ -140,22 +142,24 @@ def start_tracking():
                         if not store['Mouse']['OffScreen']:
                             notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
                             try:
-                                frame_data['MouseClick'].append(mouse_pos['Current'])
+                                frame_data['MouseClick'].append(mb_data)
                             except KeyError:
-                                frame_data['MouseClick'] = [mouse_pos['Current']]
+                                frame_data['MouseClick'] = [mb_data]
                 elif mb_clicked:
                     notify.queue(MOUSE_UNCLICKED)
                     del store['Mouse']['Clicked'][mouse_button]
                     store['LastActivity'] = i
  
-
+            
             #Key presses
             keys_pressed = []
+            keys_held = []
             key_status = store['Keyboard']['KeysPressed']
             key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
             for k in KEYS:
                 if get_key_press(KEYS[k]):
-
+                    keys_held.append(k)
+                    
                     #If key is currently being held down
                     if key_status[k]:
                         if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
@@ -174,7 +178,9 @@ def start_tracking():
                     key_status[k] = False
                     
             if keys_pressed:
-                frame_data['Keys'] = keys_pressed
+                frame_data['KeyPress'] = keys_pressed
+            if keys_held:
+                frame_data['KeyHeld'] = keys_held
                 store['LastActivity'] = i
 
 
@@ -197,7 +203,9 @@ def start_tracking():
             #Send request to reload program list
             if not i % timer['ReloadProgramList']:
                 frame_data['Programs'] = True
-            
+
+            if not i % timer['UpdateQueuedCommands']:
+                notify.queue(QUEUE_SIZE, q_send.qsize())
             
             #Send save request
             if i and not i % timer['Save']:
