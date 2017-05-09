@@ -1,16 +1,14 @@
-import pyxhook
+from pyxhook import HookManager
 
-class mouse_click(pyxhook.HookManager):
+
+class mouse_click(HookManager):
     def __init__(self, path):
         super().__init__()
-        self.path = path
+        self.points = []
         new_hook = pyxhook.HookManager()
         new_hook.MouseAllButtonsDown = self.click
         new_hook.start()
 
     def click(self,event):
-        file = open(self.path, 'a')
         x, y = event.Position
-        file.write('{},{}'.format(x, y))
-        file.write('\n')
-
+        self.points.append((x,y))
