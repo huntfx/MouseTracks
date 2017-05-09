@@ -2,7 +2,8 @@ VERSION_HISTORY = [
     '2.0',
     '2.0.1',
     '2.0.1b',
-    '2.0.2'
+    '2.0.2',
+    '2.0.3'
 ]
 VERSION = VERSION_HISTORY[-1]
 
@@ -14,6 +15,7 @@ def upgrade_version(data):
     2.0.1: Add acceleration tracking
     2.0.1b: Rename acceleration to speed, change tracking method
     2.0.2: Experimenting with combined speed and position tracks
+    2.0.3: Separate click maps, record both keys pressed and how long
     """
     get_id = VERSION_HISTORY.index
 
@@ -26,13 +28,13 @@ def upgrade_version(data):
     if current_version_id < get_id('2.0.1'):
         data['Acceleration'] = {}
     if current_version_id < get_id('2.0.1b'):
-        try:
-            del data['Acceleration']
-        except KeyError:
-            pass
+        del data['Acceleration']
         data['Speed'] = {}
     if current_version_id < get_id('2.0.2'):
         data['Combined'] = {}
+    if current_version_id < get_id('2.0.3'):
+        data['Clicks'] = {}
+        data['Keys'] = {'Pressed': {}, 'Held': {}}
     
     data['Version'] = VERSION
     return data
