@@ -18,16 +18,21 @@ def _save_wrapper(q_send, store, switch_profile=False):
     notify.queue(SAVE_START)
     _notify_send(q_send, notify)
     saved = False
+
+    #Get how many attempts to use
     if switch_profile:
         max_attempts = CONFIG.data['Save']['MaximumAttemptsSwitch']
     else:
         max_attempts = CONFIG.data['Save']['MaximumAttemptsNormal']
+
+    #Attempt to save
     for i in xrange(max_attempts):
         if save_program(store['Programs'][('Current', 'Previous')[switch_profile]], store['Data']):
             notify.queue(SAVE_SUCCESS)
             _notify_send(q_send, notify)
             saved = True
             break
+        
         else:
             if max_attempts == 1:
                 notify.queue(SAVE_FAIL)
@@ -36,6 +41,7 @@ def _save_wrapper(q_send, store, switch_profile=False):
                          i, max_attempts)
             _notify_send(q_send, notify)
             time.sleep(CONFIG.data['Save']['WaitAfterFail'])
+            
     if not saved:
         notify.queue(SAVE_FAIL_END)
 
@@ -84,7 +90,10 @@ def _background_process(q_send, q_recv, received_data, store):
         #Switch profile
         else:
             store['Programs']['Class'].refresh()
+            
+            # TODO: move this line into the main thread
             store['Programs']['Current'] = store['Programs']['Class'].check()
+            
             if store['Programs']['Current'] != store['Programs']['Previous']:
 
                 check_resolution = True
@@ -94,15 +103,16 @@ def _background_process(q_send, q_recv, received_data, store):
                     notify.queue(PROGRAM_STARTED, store['Programs']['Current'])
                 _notify_send(q_send, notify)
                 
-                _save_wrapper(q_send, store, False)
+                _save_wrapper(q_send, store, True)
                 
                 store['Programs']['Previous'] = store['Programs']['Current']
-
                 store['Data'] = load_program(store['Programs']['Current'])
+                
                 if store['Data']['Ticks']['Total']:
                     notify.queue(DATA_LOADED)
                 else:
                     notify.queue(DATA_NOTFOUND)
+                    
                 notify.queue(QUEUE_SIZE, q_recv.qsize())
         _notify_send(q_send, notify)
 
