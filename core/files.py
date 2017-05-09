@@ -22,15 +22,14 @@ def load_program(program_name=None):
             with open('Data/{}.data.old'.format(name_format), 'rb') as f:
                 loaded_data =  cPickle.loads(zlib.decompress(f.read()))
         except (IOError, zlib.error):
-            return {'Count': 0,
-                    'Tracks': {},
+            return {'Tracks': {},
                     'Clicks': {},
                     'Speed': {},
-                    'Keys': {},
+                    'Keys': {'Pressed': {}, 'Held': {}},
                     'Combined': {},
                     'LastSave': time.time(),
                     'Version': VERSION,
-                    'Ticks': 0,
+                    'Ticks': {'Current': 0, 'Total': 0, 'Recorded': 0},
                     'TimesLoaded': 0}
     else:
         loaded_data['TimesLoaded'] += 1
