@@ -35,6 +35,10 @@ def upgrade_version(data):
     if current_version_id < get_id('2.0.3'):
         data['Clicks'] = {}
         data['Keys'] = {'Pressed': {}, 'Held': {}}
+        data['Ticks'] = {'Current': data['Count'],
+                         'Total': data['Ticks'],
+                         'Recorded': data['Count']}
+        del data['Count']
     
     data['Version'] = VERSION
     return data
