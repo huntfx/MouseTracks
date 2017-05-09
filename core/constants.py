@@ -18,12 +18,10 @@ COLOURS_MAIN = {
     'purple': (127, 0, 255)
 }
 
-
 COLOUR_MODIFIERS = {
     'light': (128, 0.5),
     'dark': (0, 0.5)
 }
-
 
 _config_defaults = [
     ('Main', {
@@ -64,7 +62,10 @@ _config_defaults = [
         'FileType': ('jpg', str)
     }),
     ('GenerateHeatmap', {
-        'NameFormat': ('Result\\[FriendlyName] Heatmap - [ColourProfile]', str),
+        'NameFormat': ('Result\\[FriendlyName] [MouseButtons] Heatmap - [ColourProfile]', str),
+        'MouseButtonLeft': (True, bool),
+        'MouseButtonMiddle': (True, bool),
+        'MouseButtonRight': (True, bool),
         'GaussianBlurSize': (20, int),
         'ExponentialMultiplier': (1.0, float),
         'ColourProfile': ('Heatmap', str),
