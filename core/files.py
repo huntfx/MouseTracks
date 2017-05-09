@@ -6,11 +6,12 @@ import os
 
 from _os import remove_file, rename_file, create_folder, hide_file
 from versions import VERSION, upgrade_version
+from constants import DEFAULT_NAME
 
 
 def load_program(program_name=None):
     if program_name is None:
-        program_name = 'Default'
+        program_name = DEFAULT_NAME
     elif isinstance(program_name, (list, tuple)):
         program_name = program_name[0]
     name_format = re.sub('[^A-Za-z0-9]+', '', program_name).lower()
@@ -38,7 +39,7 @@ def load_program(program_name=None):
 
 def save_program(program_name, data):
     if program_name is None:
-        program_name = ['Default', 'Default']
+        program_name = [DEFAULT_NAME]
     name_format = re.sub('[^A-Za-z0-9]+', '', program_name[0]).lower()
     data['LastSave'] = time.time()
     data['Version'] = VERSION
