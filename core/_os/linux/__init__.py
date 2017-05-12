@@ -34,15 +34,14 @@ def create_folder(folder_path):
         return False
     return True
 
-# returns an array of all currently running processes - the pid reading function will have
-# to be added
 def get_running_processes():
     pids = []
     program_list = subprocess.Popen('ps -d', shell=True, stdout=subprocess.PIPE).communicate()[0]
     for line in program_list.splitlines():
         line_ = line.decode()
-        pids += line_
-    return pids
+        pids.append(line_)
+    output = {line.rsplit()[-1] : line.rsplit()[0] for line in pids}
+    return output
 
 # returns a string
 def get_refresh_rate():
