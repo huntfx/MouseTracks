@@ -6,6 +6,11 @@ from _os import get_cursor_pos, get_running_processes
 from multiprocessing import Process, Queue
 
 
+def error_output(trace, file_name = 'error.txt'):
+    with open(file_name, 'w') as f:
+        f.write(trace)
+
+    
 class RefreshRateLimiter(object):
     def __init__(self, ticks):
         self.time = time.time()
