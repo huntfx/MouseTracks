@@ -309,9 +309,6 @@ def _click_heatmap(numpy_arrays):
     gaussian_blur = CONFIG.data['GenerateHeatmap']['GaussianBlurSize']
     heatmap = gaussian_filter(heatmap, sigma=gaussian_blur)
 
-    #This part is temporary until the ColourRange function is fixed
-    heatmap *= 1000000
-
     #Calculate the average of all the points
     print 'Calculating average...'
     total = [0, 0]
@@ -330,7 +327,7 @@ def _click_heatmap(numpy_arrays):
     #Convert each point to an RGB tuple
     print 'Converting to RGB...'    
     colour_map = CONFIG.data['GenerateHeatmap']['ColourProfile']
-    colour_range = ColourRange(max_value - min_value, ColourMap()[colour_map])
+    colour_range = ColourRange(min_value, max_value, ColourMap()[colour_map])
     return Image.fromarray(convert_to_rgb(heatmap, colour_range))
 
 
@@ -348,7 +345,7 @@ def arrays_to_colour(value_range, numpy_arrays, image_type):
     max_array = merge_array_max(numpy_arrays)
     if max_array is None:
         return None
-    colour_range = ColourRange(value_range[1] - value_range[0], ColourMap()[colour_map])
+    colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
     return Image.fromarray(convert_to_rgb(max_array, colour_range))
 
 
@@ -362,6 +359,7 @@ class RenderImage(object):
         image_type = image_type.lower()
         if image_type not in ('tracks', 'speed', 'clicks', 'combined'):
             raise ValueError('image type must be given as either tracks, speed, clicks or combined')
+
         if image_type == 'tracks':
             value_range, numpy_arrays = merge_resolutions(self.data['Tracks'])
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Tracks')
@@ -382,6 +380,7 @@ class RenderImage(object):
             value_range, numpy_arrays = merge_resolutions(self.data['Combined'], average=True)
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
             image_name = self.name.generate('Combined')
+            
         resolution = (CONFIG.data['GenerateImages']['OutputResolutionX'],
                       CONFIG.data['GenerateImages']['OutputResolutionY'])
         if image_output is None:
