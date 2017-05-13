@@ -1,6 +1,15 @@
+from core.main import start_tracking
+from core.constants import CONFIG
+from core.functions import error_output
+import traceback
+    
 if __name__ == '__main__':
-    from core.main import start_tracking
-    from core.constants import CONFIG
     
     CONFIG.save() # Rewrite the config with validated values
-    start_tracking()
+
+    try:
+        error = start_tracking()
+        if error.startswith('Traceback (most recent call last)'):
+            error_output(error)
+    except Exception as e:
+        error_output(traceback.format_exc())
