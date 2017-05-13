@@ -6,7 +6,7 @@ from _os import get_cursor_pos, get_running_processes
 from multiprocessing import Process, Queue
 
 
-def error_output(trace, file_name = 'error.txt'):
+def error_output(trace, file_name='error.txt'):
     with open(file_name, 'w') as f:
         f.write(trace)
 
@@ -106,40 +106,42 @@ def calculate_line(start, end):
 
 
 class ColourRange(object):
-    """Make a transition between colours.
-
-    Note: This needs updating to work with small floats.
-    """
-    def __init__(self, amount, colours):
-        self.amount = amount - 1
+    """Make a transition between colours."""
+    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False):
+        self.amount = (min_amount, max_amount)
+        self.amount_diff = max_amount - min_amount
         self.colours = colours
-        self._colour_len = len(colours) - 1
-        if isinstance(colours, (tuple, list)):
-            if all(isinstance(i, (tuple, list)) for i in colours):
-                if len(set(len(i) for i in colours)) == 1:
-                    return
-        raise TypeError('invalid list of colours')
+        self.offset = offset
+        self.loop = loop
+        self._len = len(colours)
+        self._len_m = self._len - 1
 
-    def get_colour(self, n, as_int=True):
-        n = min(self.amount, max(n, 0))
-        
-        value = (n * self._colour_len) / self.amount
-        base_value = int(value)
+    def get_colour(self, n, loop=False, as_int=True):
+        offset = (n + self.offset) / self.amount_diff - self.amount[0]
+        index_f = self._len_m * offset
 
-        base_colour = self.colours[base_value]
-        try:
-            mix_colour = self.colours[base_value + 1]
-        except IndexError:
-            mix_colour = base_colour
-
-        difference = value - base_value
-        difference_reverse = 1 - difference
-        base_colour = [i * difference_reverse for i in base_colour]
-        mix_colour = [i * difference for i in mix_colour]
-        if as_int:
-            return tuple(int(i + j) for i, j in zip(base_colour, mix_colour))
+        #Calculate the indexes of colours to mix
+        index_base = int(index_f)
+        index_mix = index_base + 1
+        if self.loop:
+            index_base %= self._len
+            index_mix %= self._len
         else:
-            return tuple(i + j for i, j in zip(base_colour, mix_colour))
+            index_base = max(min(index_base, self._len_m), 0)
+            index_mix = max(min(index_mix, self._len_m), 0)
+
+        #Mix colours
+        base_colour = self.colours[index_base]
+        mix_colour = self.colours[index_mix]
+        mix_ratio = max(min(index_f - index_base, 1), 0)
+        mix_ratio_r = 1 - mix_ratio
+
+        #Generate as tuple
+        if as_int:
+            return tuple(int(i * mix_ratio_r + j * mix_ratio)
+                         for i, j in zip(base_colour, mix_colour))
+        else:
+            return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
 
 class RunningPrograms(object):
