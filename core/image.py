@@ -124,7 +124,7 @@ def convert_to_rgb(image_array, colour_range):
         if new_data[-1]:
             new_data.append([])
         for x in width_range:
-            new_data[-1].append(colour_range.get_colour(image_array[y][x]))
+            new_data[-1].append(colour_range[image_array[y][x]])
             count += 1
             if not count % one_percent:
                 print '{}% complete ({} pixels)'.format(int(round(100 * count / total)), count)
