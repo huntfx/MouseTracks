@@ -116,7 +116,22 @@ class ColourRange(object):
         self._len = len(colours)
         self._len_m = self._len - 1
 
-    def get_colour(self, n, loop=False, as_int=True):
+        self._step_max = 255 * self._len
+        self._step_size = self.amount_diff / self._step_max
+        
+        #Cache results for quick access
+        self.cache = []
+        for i in range(self._step_max + 1):
+            self.cache.append(self.calculate_colour(i * self._step_size))
+
+    def __getitem__(self, n):
+        value_index = int(n / self._step_size)
+        if self.loop:
+            if value_index != self._step_max:
+                return self.cache[value_index % self._step_max]
+        return self.cache[min(max(0, value_index), self._step_max)]
+    
+    def calculate_colour(self, n, as_int=True):
         offset = (n + self.offset) / self.amount_diff - self.amount[0]
         index_f = self._len_m * offset
 
