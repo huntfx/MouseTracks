@@ -1,12 +1,26 @@
 from __future__ import division
 from multiprocessing import Process, Queue
+from threading import Thread
 import time
 
 from _os import get_resolution, get_mouse_click, get_key_press, KEYS
 from messages import *
-from functions import RefreshRateLimiter
+from functions import RefreshRateLimiter, error_output, RunningPrograms
 from constants import *
-from track import background_process
+from track import background_process, running_processes
+
+
+class ThreadHelper(Thread):
+    """Run a function in a background thread."""
+    def __init__(self, function, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        Thread.__init__(self)
+        self.function = function
+
+    def run(self):
+        self.function(*self.args, **self.kwargs)
+
 
 def start_tracking():
     
@@ -36,9 +50,14 @@ def start_tracking():
     #Start threaded process
     q_send = Queue()
     q_recv = Queue()
-    p = Process(target=background_process, args=(q_send, q_recv))
-    p.daemon = True
-    p.start()
+    p1 = Process(target=background_process, args=(q_send, q_recv))
+    p1.daemon = True
+    p1.start()
+
+    q_send2 = Queue()
+    q_recv2 = Queue()
+    running_programs = ThreadHelper(running_processes, q_send2, q_recv2, q_send)
+    running_programs.start()
     
     i = 0
     notify.queue(START_MAIN)
@@ -47,20 +66,30 @@ def start_tracking():
             
             #Send data to thread
             try:
-                if frame_data:
+                if frame_data or frame_data_rp:
                     last_sent = i - store['LastSent']
-                    if last_sent:
-                        frame_data['Ticks'] = last_sent
-                    q_send.put(frame_data)
+                    if frame_data:
+                        if last_sent:
+                            frame_data['Ticks'] = last_sent
+                        q_send.put(frame_data)
+                    if frame_data_rp:
+                        q_send2.put(frame_data_rp)
                     store['LastSent'] = i
             except NameError:
                 pass
+            
+            while not q_recv2.empty():
+                print q_recv2.get()
             
             #Print any messages from previous loop
             notify_extra = ''
             received_data = []
             while not q_recv.empty():
-                received_data.append(q_recv.get())
+                received_message = q_recv.get()
+                if received_message.startswith('Traceback (most recent call last)'):
+                    print received_message
+                    return received_message
+                received_data.append(received_message)
             if received_data:
                 notify_extra = ' | '.join(received_data)
             notify_output = notify.output()
@@ -73,6 +102,7 @@ def start_tracking():
                 print '{} {}'.format(time_format(limiter.time), notify_output)
 
             frame_data = {}
+            frame_data_rp = {}
             mouse_pos['Current'] = limiter.mouse_pos()
 
 
@@ -197,12 +227,13 @@ def start_tracking():
 
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
-                frame_data['Programs'] = False
+                frame_data_rp['Update'] = True
             
             
             #Send request to reload program list
             if not i % timer['ReloadProgramList']:
-                frame_data['Programs'] = True
+                frame_data_rp['Reload'] = True
+
 
             if not i % timer['UpdateQueuedCommands']:
                 notify.queue(QUEUE_SIZE, q_send.qsize())
