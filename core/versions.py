@@ -4,7 +4,8 @@ VERSION_HISTORY = [
     '2.0.1b',
     '2.0.2',
     '2.0.3',
-    '2.0.4'
+    '2.0.4',
+    '2.0.5'
 ]
 VERSION = VERSION_HISTORY[-1]
 
@@ -18,6 +19,7 @@ def upgrade_version(data):
     2.0.2: Experimenting with combined speed and position tracks
     2.0.3: Separate click maps, record both keys pressed and how long
     2.0.4: Save creation date and rename modified date
+    2.0.5: Group maps and add extras for experimenting on
     """
     get_id = VERSION_HISTORY.index
 
@@ -45,6 +47,15 @@ def upgrade_version(data):
         data['Time'] = {'Created': data['LastSave'],
                         'Modified': data['LastSave']}
         del data['LastSave']
+    if current_version_id < get_id('2.0.5'):
+        data['Maps'] = {'Tracks': data['Tracks'], 'Clicks': data['Clicks'],
+                        'Speed': data['Speed'], 'Combined': data['Combined'],
+                        'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
+                        'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}}
+        del data['Tracks']
+        del data['Clicks']
+        del data['Speed']
+        del data['Combined']
     
     data['Version'] = VERSION
     return data
