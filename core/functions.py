@@ -108,6 +108,7 @@ def calculate_line(start, end):
 class ColourRange(object):
     """Make a transition between colours."""
     def __init__(self, min_amount, max_amount, colours, offset=0, loop=False):
+        print min_amount, max_amount, colours
         self.amount = (min_amount, max_amount)
         self.amount_diff = max_amount - min_amount
         self.colours = colours
@@ -123,7 +124,7 @@ class ColourRange(object):
         self.cache = []
         for i in range(self._step_max + 1):
             self.cache.append(self.calculate_colour(i * self._step_size))
-
+            
     def __getitem__(self, n):
         value_index = int(n / self._step_size)
         if self.loop:
@@ -132,7 +133,7 @@ class ColourRange(object):
         return self.cache[min(max(0, value_index), self._step_max)]
     
     def calculate_colour(self, n, as_int=True):
-        offset = (n + self.offset) / self.amount_diff - self.amount[0]
+        offset = (n + self.offset - self.amount[0]) / self.amount_diff
         index_f = self._len_m * offset
 
         #Calculate the indexes of colours to mix
