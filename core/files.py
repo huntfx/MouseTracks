@@ -36,7 +36,8 @@ def load_program(program_name=None):
                     'Speed': {},
                     'Keys': {'Pressed': {}, 'Held': {}},
                     'Combined': {},
-                    'LastSave': time.time(),
+                    'Time': {'Created': time.time(),
+                             'Modified': time.time()},
                     'Version': VERSION,
                     'Ticks': {'Current': 0, 'Total': 0, 'Recorded': 0},
                     'TimesLoaded': 0}
@@ -49,7 +50,7 @@ def save_program(program_name, data):
     if program_name is None:
         program_name = [DEFAULT_NAME]
     name_format = re.sub('[^A-Za-z0-9]+', '', program_name[0]).lower()
-    data['LastSave'] = time.time()
+    data['Time']['Modified'] = time.time()
     data['Version'] = VERSION
     compressed_data = zlib.compress(cPickle.dumps(data))
 
