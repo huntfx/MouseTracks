@@ -1,4 +1,5 @@
 from datetime import datetime
+from constants import DEFAULT_NAME
 
 MESSAGE_LEVEL = 1
 
@@ -21,6 +22,8 @@ KEYBOARD_PRESSES_HELD = 33
 PROGRAM_STARTED = 48
 PROGRAM_QUIT = 49
 PROGRAM_RELOAD = 50
+PROGRAM_LISTEN = 51
+PROGRAM_LOADING = 52
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
@@ -79,11 +82,23 @@ class Notify(object):
         if message_id == KEYBOARD_PRESSES_HELD:
             q1('Key Presses (held down): {}'.format(', '.join(*args)))
         if message_id == PROGRAM_STARTED:
-            q2('Program Loaded: {}'.format(args[0][0]))
+            q2('Program detected: {}'.format(args[0][0]))
+        if message_id == PROGRAM_LOADING:
+            default = False
+            try:
+                if args[0][0] is None:
+                    raise TypeError()
+            except (IndexError, TypeError):
+                profile = DEFAULT_NAME
+            else:
+                profile = args[0][0]
+            q2('Switching profile to {}.'.format(profile))
         if message_id == PROGRAM_QUIT:
             q2('Program quit.')
         if message_id == PROGRAM_RELOAD:
             q1('Finished reloading program list.')
+        if message_id == PROGRAM_LISTEN:
+            q1('Started checking for running programs.')
         if message_id == SAVE_START:
             q2('Saving the file...')
         if message_id == SAVE_SUCCESS:
@@ -93,7 +108,7 @@ class Notify(object):
         if message_id == SAVE_FAIL_RETRY:
             q2('Unable to save file, trying again in {} second{}.'
                ' (attempt {} of {})'.format(args[0], '' if args[0] == 1 else 's',
-                                           args[1] + 1, args[2]))
+                                            args[1] + 1, args[2]))
         if message_id == SAVE_FAIL_END:
             q2('Failed to save file (maximum attempts reached)'
                ', make sure the correct permissions have been granted.')
