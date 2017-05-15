@@ -47,6 +47,9 @@ _config_defaults = [
                                           ' If this fails then the latest data will be lost.'),
         'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
     }),
+    ('Paths', {
+        'Data': ('Data', str)
+    }),
     ('Timer', {
         'CheckPrograms': (2, int),
         'CheckResolution': (1, int),
