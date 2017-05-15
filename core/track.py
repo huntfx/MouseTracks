@@ -14,7 +14,6 @@ def running_processes(q_recv, q_send, background_send):
     and sends the currently running program to the backgrund process.
     """
     running = RunningPrograms()
-    current = None
     previous = None
         
     while True:
@@ -27,8 +26,15 @@ def running_processes(q_recv, q_send, background_send):
 
         if 'Update' in received_data:
             running.refresh()
-            loaded_program = running.check()
-            background_send.put({'Program': loaded_program})
+            current = running.check()
+            if current != previous:
+                if current is None:
+                    notify.queue(PROGRAM_QUIT)
+                else:
+                    notify.queue(PROGRAM_STARTED, current)
+                _notify_send(q_send, notify)
+                background_send.put({'Program': current})
+                previous = current
 
 
 def _notify_send(q_send, notify):
@@ -101,9 +107,9 @@ def background_process(q_recv, q_send):
 
                     check_resolution = True
                     if current_program is None:
-                        notify.queue(PROGRAM_QUIT)
+                        notify.queue(PROGRAM_LOADING)
                     else:
-                        notify.queue(PROGRAM_STARTED, current_program)
+                        notify.queue(PROGRAM_LOADING, current_program)
                     _notify_send(q_send, notify)
                         
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
