@@ -8,6 +8,29 @@ import sys
 import traceback
 
 
+def running_processes(q_recv, q_send, background_send):
+    """Check for running processes.
+    As refreshing the list takes some time but not CPU, this is put in its own thread
+    and sends the currently running program to the backgrund process.
+    """
+    running = RunningPrograms()
+    current = None
+    previous = None
+        
+    while True:
+            
+        received_data = q_recv.get()
+
+        if 'Reload' in received_data:
+            running.reload_file()
+            notify.queue(PROGRAM_RELOAD)
+
+        if 'Update' in received_data:
+            running.refresh()
+            loaded_program = running.check()
+            background_send.put({'Program': loaded_program})
+
+
 def _notify_send(q_send, notify):
     """Wrapper to the notify class to send non empty values."""
     output = notify.output()
@@ -15,21 +38,21 @@ def _notify_send(q_send, notify):
         q_send.put(output)
 
 
-def _save_wrapper(q_send, store, switch_profile=False):
+def _save_wrapper(q_send, program_name, data, new_program=False):
     
     notify.queue(SAVE_START)
     _notify_send(q_send, notify)
     saved = False
 
     #Get how many attempts to use
-    if switch_profile:
+    if new_program:
         max_attempts = CONFIG.data['Save']['MaximumAttemptsSwitch']
     else:
         max_attempts = CONFIG.data['Save']['MaximumAttemptsNormal']
 
     #Attempt to save
     for i in xrange(max_attempts):
-        if save_program(store['Programs'][('Current', 'Previous')[switch_profile]], store['Data']):
+        if save_program(program_name, data):
             notify.queue(SAVE_SUCCESS)
             _notify_send(q_send, notify)
             saved = True
@@ -47,19 +70,15 @@ def _save_wrapper(q_send, store, switch_profile=False):
     if not saved:
         notify.queue(SAVE_FAIL_END)
 
-
+        
 def background_process(q_recv, q_send):
-    """Wrapper function to call the main background process.
-    To get an accurate line number, the try/except block shouldn't be here.
-    """
+    """Function to handle all the data from the main thread."""
     try:
         notify.queue(START_THREAD)
         _notify_send(q_send, notify)
         
         store = {'Data': load_program(),
-                 'Programs': {'Class': RunningPrograms(),
-                              'Current': None,
-                              'Previous': None},
+                 'LastProgram': None,
                  'Resolution': None}
         
         notify.queue(DATA_LOADED)
@@ -72,41 +91,32 @@ def background_process(q_recv, q_send):
             check_resolution = False
             
             if 'Save' in received_data:
-                _save_wrapper(q_send, store, False)
+                _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
                 notify.queue(QUEUE_SIZE, q_recv.qsize())
 
-            if 'Programs' in received_data:
+            if 'Program' in received_data:
+                current_program = received_data['Program']
                 
-                #Reload list of running programs
-                if received_data['Programs']:
-                    store['Programs']['Class'].reload_file()
-                    notify.queue(PROGRAM_RELOAD)
+                if current_program != store['LastProgram']:
 
-                #Switch profile
-                else:
-                    store['Programs']['Class'].refresh()
-                    
-                    store['Programs']['Current'] = store['Programs']['Class'].check()
-                    if store['Programs']['Current'] != store['Programs']['Previous']:
-
-                        check_resolution = True
-                        if store['Programs']['Current'] is None:
-                            notify.queue(PROGRAM_QUIT)
-                        else:
-                            notify.queue(PROGRAM_STARTED, store['Programs']['Current'])
-                        _notify_send(q_send, notify)
+                    check_resolution = True
+                    if current_program is None:
+                        notify.queue(PROGRAM_QUIT)
+                    else:
+                        notify.queue(PROGRAM_STARTED, current_program)
+                    _notify_send(q_send, notify)
                         
-                        _save_wrapper(q_send, store, True)
+                    _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
                         
-                        store['Programs']['Previous'] = store['Programs']['Current']
-                        store['Data'] = load_program(store['Programs']['Current'])
+                    store['LastProgram'] = current_program
+                    store['Data'] = load_program(current_program)
                         
-                        if store['Data']['Ticks']['Total']:
-                            notify.queue(DATA_LOADED)
-                        else:
-                            notify.queue(DATA_NOTFOUND)
+                    if store['Data']['Ticks']['Total']:
+                        notify.queue(DATA_LOADED)
+                    else:
+                        notify.queue(DATA_NOTFOUND)
                             
-                        notify.queue(QUEUE_SIZE, q_recv.qsize())
+                    notify.queue(QUEUE_SIZE, q_recv.qsize())
                 _notify_send(q_send, notify)
 
             if 'Resolution' in received_data:
