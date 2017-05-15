@@ -8,6 +8,7 @@ from constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
 from functions import ColourRange
 from files import load_program
 
+
 def merge_array_max(arrays):
     array_len = len(arrays)
     if not array_len:
@@ -205,7 +206,8 @@ class ImageName(object):
 
 def parse_colour_text(colour_name):
     """Convert text into a colour map.
-    It could probably do with a rewrite to make it more efficient.
+    It could probably do with a rewrite to make it more efficient,
+    as it was first written to only use capitals.
 
     Mixed Colour:
         Combine multiple colours.
@@ -222,14 +224,15 @@ def parse_colour_text(colour_name):
         
     As an example, here are the values that would result in the heatmap:
         BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueToCyan
-        ... CyanCyanBlueToCyanCyanCyanYellowToCyanYellowToCyan
-        ... YellowYellowYellowToYellowToOrangeToRedOrangeToRed 
+        + CyanCyanBlueToCyanCyanCyanYellowToCyanYellowToCyan
+        + YellowYellowYellowToYellowToOrangeToRedOrangeToRed 
     """
     colours = {'Final': [],
                'Temp': [],
                'Mult': []}
     word = ''
     i = 0
+    
     #Loop letters until end of word has been reached
     while True:
         done_stuff = False
@@ -361,11 +364,11 @@ class RenderImage(object):
             raise ValueError('image type must be given as either tracks, speed, clicks or combined')
 
         if image_type == 'tracks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Tracks'])
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'])
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Tracks')
             image_name = self.name.generate('Tracks')
         elif image_type == 'speed':
-            value_range, numpy_arrays = merge_resolutions(self.data['Speed'], average=True)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Speed'], average=True)
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
             image_name = self.name.generate('Speed')
         elif image_type == 'clicks':
@@ -373,11 +376,11 @@ class RenderImage(object):
             mmb = CONFIG.data['GenerateHeatmap']['MouseButtonMiddle']
             rmb = CONFIG.data['GenerateHeatmap']['MouseButtonRight']
             mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
-            value_range, numpy_arrays = merge_resolutions(self.data['Clicks'], multiple=mb)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks')
         elif image_type == 'combined':
-            value_range, numpy_arrays = merge_resolutions(self.data['Combined'], average=True)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Combined'], average=True)
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
             image_name = self.name.generate('Combined')
             
@@ -418,6 +421,8 @@ class ColourMap(object):
         else:
             generated_map = parse_colour_text(colour_profile)
             if generated_map:
+                if len(generated_map) < 2:
+                    raise ValueError('not enough values input')
                 return generated_map
             else:
                 raise ValueError('unknown colour map')
