@@ -2,7 +2,7 @@
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
-This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `__init__.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process so that the tracking part will run constantly without any CPU spikes.
+This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `start_tracking.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process, so that the tracking part will be able to run constantly without any CPU spikes interfering with it.
 
 <b>Current Features</b>:
  - Track position, speed, both combined, clicks and key presses over multiple resolutions
@@ -19,13 +19,13 @@ This was made with the intention of recording mouse movements over multiple reso
  - (All) Image generation will crash if folder doesn't exist
  
  <b>To Do List:</b>
-  - Redesign colour map code to work with small ranges
   - Detect if .data.old is more recent than .data and load that instead
   - Add more optional variables to image name
   - Write more robust code to save the image
   - Add min/max values to config validation
   - Export raw data for others to visualize
   - Write a few extra functions to make it easier to use the `Config` class
+  - Move AFK detection to background process, since queued commands may not get saved
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
