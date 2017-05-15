@@ -31,9 +31,9 @@ def load_program(program_name=None):
             with open('{}/{}.data.old'.format(path, name_format), 'rb') as f:
                 loaded_data = cPickle.loads(zlib.decompress(f.read()))
         except (IOError, zlib.error):
-            return {'Tracks': {},
-                    'Clicks': {},
-                    'Speed': {},
+            return {'Maps': {'Tracks': {}, 'Clicks': {}, 'Speed': {}, 'Combined': {},
+                             'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
+                             'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}},
                     'Keys': {'Pressed': {}, 'Held': {}},
                     'Combined': {},
                     'Time': {'Created': time.time(),
