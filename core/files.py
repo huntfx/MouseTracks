@@ -1,12 +1,16 @@
-import cPickle
-import zlib
-import re
+from re import sub
+from sys import version_info
 import time
-import os
+import zlib
 
-from _os import remove_file, rename_file, create_folder, hide_file
-from versions import VERSION, upgrade_version
-from constants import DEFAULT_NAME, CONFIG
+from core.os import remove_file, rename_file, create_folder, hide_file
+from core.versions import VERSION, upgrade_version
+from core.constants import DEFAULT_NAME, CONFIG
+
+if version_info.major == 2:
+    import cPickle
+else:
+    import pickle as cPickle
 
 
 def format_folder_path(path):
@@ -21,7 +25,7 @@ def load_program(program_name=None):
         program_name = DEFAULT_NAME
     elif isinstance(program_name, (list, tuple)):
         program_name = program_name[0]
-    name_format = re.sub('[^A-Za-z0-9]+', '', program_name).lower()
+    name_format = sub('[^A-Za-z0-9]+', '', program_name).lower()
     path = CONFIG.data['Paths']['Data']
     try:
         with open('{}/{}.data'.format(path, name_format), 'rb') as f:
@@ -48,7 +52,7 @@ def load_program(program_name=None):
 def save_program(program_name, data):
     if program_name is None:
         program_name = [DEFAULT_NAME]
-    name_format = re.sub('[^A-Za-z0-9]+', '', program_name[0]).lower()
+    name_format = sub('[^A-Za-z0-9]+', '', program_name[0]).lower()
     data['Time']['Modified'] = time.time()
     data['Version'] = VERSION
     compressed_data = zlib.compress(cPickle.dumps(data))
