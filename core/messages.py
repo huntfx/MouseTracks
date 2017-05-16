@@ -143,7 +143,7 @@ class Notify(object):
         message = ' | '.join(i for i in output if i)
         return message
 
-    def queue_send(self, q):
+    def send(self, q):
         output = str(self)
         if output:
             q.put(output)
@@ -152,4 +152,37 @@ class Notify(object):
         self.message_queue = {0: [], 1: [], 2: []}
 
 
+def time_format(t):
+    return '[{}]'.format(datetime.fromtimestamp(t).strftime("%H:%M:%S"))
+
+
+def date_format(t):
+    dt = datetime.fromtimestamp(t)
+    hour = dt.hour
+    minute = dt.minute
+    if 0 <= hour < 12:
+        suffix = 'AM'
+    else:
+        suffix = 'PM'
+        hour %= 12
+    if not hour:
+        hour += 12
+    output_time = '{h}:{m}{s}'.format(h=hour, m=minute, s=suffix)
+    
+    day = str(dt.day)
+    if day.endswith('1'):
+        day += 'st'
+    elif day.endswith('2'):
+        day += 'nd'
+    elif day.endswith('3'):
+        day += 'rd'
+    else:
+        day += 'th'
+    month = dt.strftime("%B")
+    year = dt.year
+    output_date = '{d} {m} {y}'.format(d=day, m=month, y=year)
+
+    return '{}, {}'.format(output_time, output_date)
+
+    
 NOTIFY = Notify()
