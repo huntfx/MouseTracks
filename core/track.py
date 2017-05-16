@@ -1,12 +1,17 @@
 from __future__ import division
-from functions import calculate_line, RunningPrograms, find_distance
-from messages import *
-from files import load_program, save_program
-from constants import CONFIG
+from sys import version_info
 import time
 import sys
 import traceback
 
+from core.constants import CONFIG
+from core.files import load_program, save_program
+from core.functions import calculate_line, RunningPrograms, find_distance, get_items
+from core.messages import *
+
+if version_info == 2:
+    range = xrange
+    
 
 def running_processes(q_recv, q_send, background_send):
     """Check for running processes.
@@ -22,74 +27,67 @@ def running_processes(q_recv, q_send, background_send):
 
         if 'Reload' in received_data:
             running.reload_file()
-            notify.queue(PROGRAM_RELOAD)
+            NOTIFY(PROGRAM_RELOAD)
 
         if 'Update' in received_data:
             running.refresh()
             current = running.check()
             if current != previous:
                 if current is None:
-                    notify.queue(PROGRAM_QUIT)
+                    NOTIFY(PROGRAM_QUIT)
                 else:
-                    notify.queue(PROGRAM_STARTED, current)
-                _notify_send(q_send, notify)
+                    NOTIFY(PROGRAM_STARTED, current)
+                NOTIFY.send(q_send)
                 background_send.put({'Program': current})
                 previous = current
 
 
-def _notify_send(q_send, notify):
-    """Wrapper to the notify class to send non empty values."""
-    output = notify.output()
-    if output:
-        q_send.put(output)
-
-
 def _save_wrapper(q_send, program_name, data, new_program=False):
     
-    notify.queue(SAVE_START)
-    _notify_send(q_send, notify)
+    NOTIFY(SAVE_START)
+    NOTIFY.send(q_send)
     saved = False
 
     #Get how many attempts to use
     if new_program:
-        max_attempts = CONFIG.data['Save']['MaximumAttemptsSwitch']
+        max_attempts = CONFIG['Save']['MaximumAttemptsSwitch']
     else:
-        max_attempts = CONFIG.data['Save']['MaximumAttemptsNormal']
+        max_attempts = CONFIG['Save']['MaximumAttemptsNormal']
 
     #Attempt to save
-    for i in xrange(max_attempts):
+    for i in range(max_attempts):
         if save_program(program_name, data):
-            notify.queue(SAVE_SUCCESS)
-            _notify_send(q_send, notify)
+            NOTIFY(SAVE_SUCCESS)
+            NOTIFY.send(q_send)
             saved = True
             break
         
         else:
             if max_attempts == 1:
-                notify.queue(SAVE_FAIL)
+                NOTIFY(SAVE_FAIL)
                 return
-            notify.queue(SAVE_FAIL_RETRY, CONFIG.data['Save']['WaitAfterFail'],
+            NOTIFY(SAVE_FAIL_RETRY, CONFIG['Save']['WaitAfterFail'],
                          i, max_attempts)
-            _notify_send(q_send, notify)
-            time.sleep(CONFIG.data['Save']['WaitAfterFail'])
+            NOTIFY.send(q_send)
+            time.sleep(CONFIG['Save']['WaitAfterFail'])
             
     if not saved:
-        notify.queue(SAVE_FAIL_END)
+        NOTIFY(SAVE_FAIL_END)
 
         
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
     try:
-        notify.queue(START_THREAD)
-        _notify_send(q_send, notify)
+        NOTIFY(START_THREAD)
+        NOTIFY.send(q_send)
         
         store = {'Data': load_program(),
                  'LastProgram': None,
                  'Resolution': None}
         
-        notify.queue(DATA_LOADED)
-        notify.queue(QUEUE_SIZE, q_recv.qsize())
-        _notify_send(q_send, notify)
+        NOTIFY(DATA_LOADED)
+        NOTIFY(QUEUE_SIZE, q_recv.qsize())
+        NOTIFY.send(q_send)
 
         maps = store['Data']['Maps']
         tick_count = store['Data']['Ticks']['Current']
@@ -101,7 +99,7 @@ def background_process(q_recv, q_send):
             
             if 'Save' in received_data:
                 _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
-                notify.queue(QUEUE_SIZE, q_recv.qsize())
+                NOTIFY(QUEUE_SIZE, q_recv.qsize())
 
             if 'Program' in received_data:
                 current_program = received_data['Program']
@@ -110,10 +108,10 @@ def background_process(q_recv, q_send):
 
                     check_resolution = True
                     if current_program is None:
-                        notify.queue(PROGRAM_LOADING)
+                        NOTIFY(PROGRAM_LOADING)
                     else:
-                        notify.queue(PROGRAM_LOADING, current_program)
-                    _notify_send(q_send, notify)
+                        NOTIFY(PROGRAM_LOADING, current_program)
+                    NOTIFY.send(q_send)
                         
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
                         
@@ -123,12 +121,12 @@ def background_process(q_recv, q_send):
                     tick_count = store['Data']['Ticks']['Current']
                         
                     if store['Data']['Ticks']['Total']:
-                        notify.queue(DATA_LOADED)
+                        NOTIFY(DATA_LOADED)
                     else:
-                        notify.queue(DATA_NOTFOUND)
+                        NOTIFY(DATA_NOTFOUND)
                             
-                    notify.queue(QUEUE_SIZE, q_recv.qsize())
-                _notify_send(q_send, notify)
+                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                NOTIFY.send(q_send)
 
             if 'Resolution' in received_data:
                 check_resolution = True
@@ -199,45 +197,45 @@ def background_process(q_recv, q_send):
                 tick_count['Speed'] += 1
                 
                 #Compress tracks if the count gets too high
-                if tick_count['Tracks'] > CONFIG.data['CompressMaps']['TrackMaximum']:
-                    compress_multplier = CONFIG.data['CompressMaps']['TrackReduction']
-                    notify.queue(MOUSE_COMPRESS_START, 'track')
-                    _notify_send(q_send, notify)
+                if tick_count['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
+                    compress_multplier = CONFIG['CompressMaps']['TrackReduction']
+                    NOTIFY(MOUSE_COMPRESS_START, 'track')
+                    NOTIFY.send(q_send)
                     
                     tracks = maps['Tracks']
                     for resolution in tracks.keys():
                         tracks[resolution] = {k: int(v // compress_multplier)
-                                              for k, v in tracks[resolution].iteritems()}
-                        tracks[resolution] = {k: v for k, v in tracks[resolution].iteritems() if v}
+                                              for k, v in get_items(tracks[resolution])}
+                        tracks[resolution] = {k: v for k, v in get_items(tracks[resolution]) if v}
                         if not tracks[resolution]:
                             del tracks[resolution]
-                    notify.queue(MOUSE_COMPRESS_END, 'track')
-                    notify.queue(QUEUE_SIZE, q_recv.qsize())
+                    NOTIFY(MOUSE_COMPRESS_END, 'track')
+                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     tick_count['Tracks'] //= compress_multplier
 
                 #Compress speed map if the count gets too high
-                if tick_count['Speed'] > CONFIG.data['CompressMaps']['SpeedMaximum']:
-                    compress_multplier = CONFIG.data['CompressMaps']['SpeedReduction']
-                    notify.queue(MOUSE_COMPRESS_START, 'speed')
-                    _notify_send(q_send, notify)
+                if tick_count['Speed'] > CONFIG['CompressMaps']['SpeedMaximum']:
+                    compress_multplier = CONFIG['CompressMaps']['SpeedReduction']
+                    NOTIFY(MOUSE_COMPRESS_START, 'speed')
+                    NOTIFY.send(q_send)
                             
                     speed = maps['Speed']
                     for resolution in speed.keys():
                         speed[resolution] = {k: int(v // compress_multplier)
-                                             for k, v in speed[resolution].iteritems()}
-                        speed[resolution] = {k: v for k, v in speed[resolution].iteritems() if v}
+                                             for k, v in get_items(speed[resolution])}
+                        speed[resolution] = {k: v for k, v in get_items(speed[resolution]) if v}
                         if not speed[resolution]:
                             del speed[resolution]
                             
                     combined = maps['Combined']
                     for resolution in combined.keys():
                         combined[resolution] = {k: int(v // compress_multplier)
-                                                for k, v in combined[resolution].iteritems()}
-                        combined[resolution] = {k: v for k, v in combined[resolution].iteritems() if v}
+                                                for k, v in get_items(combined[resolution])}
+                        combined[resolution] = {k: v for k, v in get_items(combined[resolution]) if v}
                         if not combined[resolution]:
                             del combined[resolution]
-                    notify.queue(MOUSE_COMPRESS_END, 'speed')
-                    notify.queue(QUEUE_SIZE, q_recv.qsize())
+                    NOTIFY(MOUSE_COMPRESS_END, 'speed')
+                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     tick_count['Speed'] //= compress_multplier
                 
             #Increment the amount of time the script has been running for
@@ -245,7 +243,7 @@ def background_process(q_recv, q_send):
                 store['Data']['Ticks']['Total'] += received_data['Ticks']
             store['Data']['Ticks']['Recorded'] += 1
 
-            _notify_send(q_send, notify)
+            NOTIFY.send(q_send)
             
             
     except Exception as e:
