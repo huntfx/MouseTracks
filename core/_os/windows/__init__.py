@@ -1,9 +1,9 @@
 import os
 
 try:
-    from win_api import *
+    from core.os.windows.win_api import *
 except ImportError:
-    from win_ctypes import *
+    from core.os.windows.win_ctypes import *
 
 
 def remove_file(file_name):
@@ -49,7 +49,7 @@ def get_running_processes():
     task_list = os.popen("tasklist").read().splitlines()
     return {'{}.exe'.format(line.strip().split('.exe')[0]): i
             for i, line in enumerate(task_list) if '.exe' in line}
-    
+
 
 KEYS = {
     'BACK': 8,
