@@ -38,7 +38,7 @@ def load_program(program_name=None):
                     'Time': {'Created': time.time(),
                              'Modified': time.time()},
                     'Version': VERSION,
-                    'Ticks': {'Current': 0, 'Total': 0, 'Recorded': 0},
+                    'Ticks': {'Current': {'Tracks': 0, 'Speed': 0}, 'Total': 0, 'Recorded': 0},
                     'TimesLoaded': 0}
     else:
         loaded_data['TimesLoaded'] += 1
