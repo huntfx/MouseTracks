@@ -3,11 +3,11 @@ from multiprocessing import Process, Queue
 from threading import Thread
 import time
 
-from _os import get_resolution, get_mouse_click, get_key_press, KEYS
-from messages import *
-from functions import RefreshRateLimiter, error_output, RunningPrograms
-from constants import *
-from track import background_process, running_processes
+from core.os import get_resolution, get_mouse_click, get_key_press, KEYS
+from core.messages import *
+from core.functions import RefreshRateLimiter, error_output, RunningPrograms, get_items, print_override
+from core.constants import *
+from core.track import background_process, running_processes
 
 
 class ThreadHelper(Thread):
@@ -26,13 +26,13 @@ def start_tracking():
     
     mouse_inactive_delay = 2
 
-    updates_per_second = CONFIG.data['Main']['UpdatesPerSecond']
-    timer = {'UpdateScreen': CONFIG.data['Timer']['CheckResolution'],
-             'UpdatePrograms': CONFIG.data['Timer']['CheckPrograms'],
-             'Save': CONFIG.data['Save']['Frequency'],
-             'ReloadProgramList': CONFIG.data['Timer']['ReloadPrograms'],
+    updates_per_second = CONFIG['Main']['UpdatesPerSecond']
+    timer = {'UpdateScreen': CONFIG['Timer']['CheckResolution'],
+             'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
+             'Save': CONFIG['Save']['Frequency'],
+             'ReloadProgramList': CONFIG['Timer']['ReloadPrograms'],
              'UpdateQueuedCommands': 20}
-    timer = {k: v * updates_per_second for k, v in timer.iteritems()}
+    timer = {k: v * updates_per_second for k, v in get_items(timer)}
 
     store = {'Resolution': {'Current': get_resolution(),
                             'Previous': None},
@@ -60,7 +60,7 @@ def start_tracking():
     running_programs.start()
     
     i = 0
-    notify.queue(START_MAIN)
+    NOTIFY(START_MAIN)
     while True:
         with RefreshRateLimiter(updates_per_second) as limiter:
             
@@ -79,7 +79,7 @@ def start_tracking():
                 pass
             
             while not q_recv2.empty():
-                print q_recv2.get()
+                print_override('{} {}'.format(time_format(limiter.time), q_recv2.get()))
             
             #Print any messages from previous loop
             notify_extra = ''
@@ -87,19 +87,18 @@ def start_tracking():
             while not q_recv.empty():
                 received_message = q_recv.get()
                 if received_message.startswith('Traceback (most recent call last)'):
-                    print received_message
                     return received_message
                 received_data.append(received_message)
             if received_data:
                 notify_extra = ' | '.join(received_data)
-            notify_output = notify.output()
+            notify_output = str(NOTIFY)
             if notify_extra:
                 if notify_output:
                     notify_output = notify_extra + ' | ' + notify_output
                 else:
                     notify_output = notify_extra
             if notify_output:
-                print '{} {}'.format(time_format(limiter.time), notify_output)
+                print_override('{} {}'.format(time_format(limiter.time), notify_output))
 
             frame_data = {}
             frame_data_rp = {}
@@ -109,7 +108,7 @@ def start_tracking():
             #Check if mouse is inactive (such as in a screensaver)
             if mouse_pos['Current'] is None:
                 if not store['Mouse']['Inactive']:
-                    notify.queue(MOUSE_UNDETECTED)
+                    NOTIFY(MOUSE_UNDETECTED)
                     store['Mouse']['Inactive'] = True
                 time.sleep(mouse_inactive_delay)
                 continue
@@ -119,17 +118,17 @@ def start_tracking():
             elif (not 0 <= mouse_pos['Current'][0] < store['Resolution']['Current'][0]
                   or not 0 <= mouse_pos['Current'][1] < store['Resolution']['Current'][1]):
                 if not store['Mouse']['OffScreen']:
-                    notify.queue(MOUSE_OFFSCREEN)
+                    NOTIFY(MOUSE_OFFSCREEN)
                     store['Mouse']['OffScreen'] = True
             elif store['Mouse']['OffScreen']:
-                notify.queue(MOUSE_ONSCREEN)
+                NOTIFY(MOUSE_ONSCREEN)
                 store['Mouse']['OffScreen'] = False
 
 
             #Notify once if mouse is no longer inactive
             if store['Mouse']['Inactive']:
                 store['Mouse']['Inactive'] = False
-                notify.queue(MOUSE_DETECTED)
+                NOTIFY(MOUSE_DETECTED)
 
 
             #Check if mouse is in a duplicate position
@@ -140,12 +139,12 @@ def start_tracking():
             if not store['Mouse']['NotMoved']:
                 if not store['Mouse']['OffScreen']:
                     frame_data['MouseMove'] = (mouse_pos['Previous'], mouse_pos['Current'])
-                    notify.queue(MOUSE_POSITION, mouse_pos['Current'])
+                    NOTIFY(MOUSE_POSITION, mouse_pos['Current'])
                     store['LastActivity'] = i
 
 
             #Mouse clicks
-            click_repeat = CONFIG.data['Main']['RepeatClicks']
+            click_repeat = CONFIG['Main']['RepeatClicks']
             for mouse_button, clicked in enumerate(get_mouse_click()):
 
                 mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
@@ -158,25 +157,25 @@ def start_tracking():
                     if not mb_clicked:
                         store['Mouse']['Clicked'][mouse_button] = limiter.time
                         if not store['Mouse']['OffScreen']:
-                            notify.queue(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
+                            NOTIFY(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
                             try:
                                 frame_data['MouseClick'].append(mb_data)
                             except KeyError:
                                 frame_data['MouseClick'] = [mb_data]
                         else:
-                            notify.queue(MOUSE_CLICKED_OFFSCREEN, mouse_button)
+                            NOTIFY(MOUSE_CLICKED_OFFSCREEN, mouse_button)
                             
                     #Held clicks
                     elif click_repeat and mb_clicked < limiter.time - click_repeat:
                         store['Mouse']['Clicked'][mouse_button] = limiter.time
                         if not store['Mouse']['OffScreen']:
-                            notify.queue(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
+                            NOTIFY(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
                             try:
                                 frame_data['MouseClick'].append(mb_data)
                             except KeyError:
                                 frame_data['MouseClick'] = [mb_data]
                 elif mb_clicked:
-                    notify.queue(MOUSE_UNCLICKED)
+                    NOTIFY(MOUSE_UNCLICKED)
                     del store['Mouse']['Clicked'][mouse_button]
                     store['LastActivity'] = i
  
@@ -185,7 +184,7 @@ def start_tracking():
             keys_pressed = []
             keys_held = []
             key_status = store['Keyboard']['KeysPressed']
-            key_press_repeat = CONFIG.data['Main']['RepeatKeyPress']
+            key_press_repeat = CONFIG['Main']['RepeatKeyPress']
             for k in KEYS:
                 if get_key_press(KEYS[k]):
                     keys_held.append(k)
@@ -195,13 +194,13 @@ def start_tracking():
                         if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
                             keys_pressed.append(k)
                             key_status[k] = limiter.time
-                            notify.queue(KEYBOARD_PRESSES_HELD, keys_pressed)
+                            NOTIFY(KEYBOARD_PRESSES_HELD, keys_pressed)
 
                     #If key has been pressed
                     else:
                         keys_pressed.append(k)
                         key_status[k] = limiter.time
-                        notify.queue(KEYBOARD_PRESSES, keys_pressed)
+                        NOTIFY(KEYBOARD_PRESSES, keys_pressed)
 
                 #If key has been released
                 elif key_status[k]:
@@ -219,7 +218,7 @@ def start_tracking():
                 store['Resolution']['Current'] = get_resolution()
                 if store['Resolution']['Previous'] != store['Resolution']['Current']:
                     if store['Resolution']['Previous'] is not None:
-                        notify.queue(RESOLUTION_CHANGED, store['Resolution']['Previous'],
+                        NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'],
                                                          store['Resolution']['Current'])
                     frame_data['Resolution'] = store['Resolution']['Current']
                     store['Resolution']['Previous'] = store['Resolution']['Current']
@@ -236,14 +235,14 @@ def start_tracking():
 
 
             if not i % timer['UpdateQueuedCommands']:
-                notify.queue(QUEUE_SIZE, q_send.qsize())
+                NOTIFY(QUEUE_SIZE, q_send.qsize())
             
             #Send save request
             if i and not i % timer['Save']:
                 if store['LastActivity'] > i - timer['Save']:
                     frame_data['Save'] = True
                 else:
-                    notify.queue(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
+                    NOTIFY(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
 
             if store['Mouse']['OffScreen']:
                 mouse_pos['Previous'] = None
