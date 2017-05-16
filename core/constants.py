@@ -32,11 +32,13 @@ _config_defaults = [
         'RepeatClicks': (0.18, float, 'Record a new click at this frequency'
                                       ' if the mouse is being held down (set to 0.0 to disable).')
     }),
-    ('CompressTracks', {
+    ('CompressMaps', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
-                     'This stops the tracking image from becoming fully black with extended use.'],
-        'MaximumValue': (440000, int),
-        'Reduction': (1.1, float)
+                     'This helps keep the most recent data visibile.'],
+        'TrackMaximum': (432000, int),
+        'TrackReduction': (1.1, float),
+        'SpeedMaximum': (432000, int),
+        'SpeedReduction': (1.1, float)
     }),
     ('Save', {
         'Frequency': (120, int),
