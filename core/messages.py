@@ -1,5 +1,7 @@
 from datetime import datetime
-from constants import DEFAULT_NAME
+
+from core.constants import DEFAULT_NAME
+    
 
 MESSAGE_LEVEL = 1
 
@@ -183,6 +185,6 @@ def date_format(t):
     output_date = '{d} {m} {y}'.format(d=day, m=month, y=year)
 
     return '{}, {}'.format(output_time, output_date)
-
+    
     
 NOTIFY = Notify()
