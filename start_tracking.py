@@ -1,8 +1,11 @@
-from core.main import start_tracking
+import time
+import traceback
+
 from core.constants import CONFIG
 from core.functions import error_output
-import traceback
-    
+from core.main import start_tracking
+
+
 if __name__ == '__main__':
 
     #Rewrite the config with validated values
