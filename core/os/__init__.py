@@ -1,24 +1,39 @@
 # Determine which operating system is being used.
 # A quick check will be one to make sure all the required modules exist
 import platform
-current_os = platform.system()
+import os
 
+
+def get_modified_time(file_name):
+    return os.path.getmtime(file_name)
+
+
+def get_folder_contents(path):
+    return os.listdir(path)
+
+    
+#Load in modules from operating system
+current_os = platform.system()
 if current_os == 'Windows':
     try:
-        from windows import *
+        from core.os.windows import *
     except ImportError:
         raise ImportError('no module found for windows')
-if current_os == 'Linux':
+elif current_os == 'Linux':
     try:
-        from linux import *
+        from core.os.linux import *
     except ImportError:
         raise ImportError('no module found for linux')
-if current_os == 'Mac':
+elif current_os == 'Mac':
     try:
-        from mac import *
+        from core.os.mac import *
     except ImportError:
         raise ImportError('no module found for mac')
+else:
+    raise ImportError('unknown operating system: "{}"'.format(current_os))
 
+    
+#Check the functions exist
 try:
     get_resolution
     get_cursor_pos
