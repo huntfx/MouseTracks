@@ -1,4 +1,5 @@
-from functions import SimpleConfig
+from core.functions import SimpleConfig
+
 
 DEFAULT_NAME = 'Default'
 
@@ -37,8 +38,8 @@ _config_defaults = [
                      'This helps keep the most recent data visibile.'],
         'TrackMaximum': (432000, int),
         'TrackReduction': (1.1, float),
-        'SpeedMaximum': (432000, int),
-        'SpeedReduction': (1.1, float)
+        'SpeedMaximum': (108000, int),
+        'SpeedReduction': (1.3, float)
     }),
     ('Save', {
         'Frequency': (120, int),
