@@ -5,7 +5,8 @@ VERSION_HISTORY = [
     '2.0.2',
     '2.0.3',
     '2.0.4',
-    '2.0.5'
+    '2.0.5',
+    '2.0.5b'
 ]
 VERSION = VERSION_HISTORY[-1]
 
@@ -20,6 +21,7 @@ def upgrade_version(data):
     2.0.3: Separate click maps, record both keys pressed and how long
     2.0.4: Save creation date and rename modified date
     2.0.5: Group maps and add extras for experimenting on
+    2.0.5b: Separate tick counts for different maps
     """
     get_id = VERSION_HISTORY.index
 
@@ -56,6 +58,9 @@ def upgrade_version(data):
         del data['Clicks']
         del data['Speed']
         del data['Combined']
+    if current_version_id < get_id('2.0.5b'):
+        data['Ticks']['Current'] = {'Tracks': data['Ticks']['Current'],
+                                    'Speed': data['Ticks']['Current']}
     
     data['Version'] = VERSION
     return data
