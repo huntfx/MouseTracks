@@ -1,17 +1,46 @@
 from __future__ import division
 from threading import Thread
-import time
-import os
-from _os import get_cursor_pos, get_running_processes
 from multiprocessing import Process, Queue
+from sys import version_info
+import os
+import time
 
+from core.os import get_cursor_pos, get_running_processes
 
-def error_output(trace, file_name='error.txt'):
-    with open(file_name, 'w') as f:
-        f.write(trace)
+if version_info.major == 2:
+    range = xrange
 
     
+def print_override(text):
+    """Send everything here to print, so that it can easily be edited.
+    Defaults to Python 3 version as it'll refuse to even run the script otherwise.
+    """
+    print(text)
+        
+    
+def error_output(trace, file_name='error.txt'):
+    """Any errors are sent to here."""
+    with open(file_name, 'w') as f:
+        f.write(trace)
+    print_override(trace)
+    time.sleep(5)
+    
+
+def get_items(d):
+    """As Python 2 and 3 have different ways of getting items,
+    any attempt should be wrapped in this function.
+    """
+    if version_info.major == 2:
+        return d.iteritems()
+    else:
+        return d.items()
+
+
 class RefreshRateLimiter(object):
+    """Limit the loop to a fixed updates per second.
+    It works by detecting how long a frame should be,
+    and comparing it to how long it's already taken.
+    """
     def __init__(self, ticks):
         self.time = time.time()
         self.frame_time = 1 / ticks
@@ -43,18 +72,18 @@ def calculate_line(start, end):
     #Check if the points are on the same axis
     if not difference[0]:
         if difference[1] > 1:
-            for i in xrange(1, difference[1]):
+            for i in range(1, difference[1]):
                 result.append((start[0], start[1] + i))
         elif difference[1] < -1:
-            for i in xrange(1, -difference[1]):
+            for i in range(1, -difference[1]):
                 result.append((start[0], start[1] - i))
         return result
     if not difference[1]:
         if difference[0] > 1:
-            for i in xrange(1, difference[0]):
+            for i in range(1, difference[0]):
                 result.append((start[0] + i, start[1]))
         elif difference[0] < -1:
-            for i in xrange(1, -difference[0]):
+            for i in range(1, -difference[0]):
                 result.append((start[0] - i, start[1]))
         return result
     
@@ -108,7 +137,7 @@ def calculate_line(start, end):
 class ColourRange(object):
     """Make a transition between colours."""
     def __init__(self, min_amount, max_amount, colours, offset=0, loop=False):
-        print min_amount, max_amount, colours
+
         self.amount = (min_amount, max_amount)
         self.amount_diff = max_amount - min_amount
         self.colours = colours
@@ -256,7 +285,8 @@ class SimpleConfig(object):
                 config_lines = [i.strip() for i in f.readlines()]
         except IOError:
             config_lines = []
-
+        
+        #Read user values
         config_data = {}
         for line in config_lines:
             if not line:
@@ -294,9 +324,10 @@ class SimpleConfig(object):
                         value = default_type(value)
                 
                 config_data[current_group][name] = value
-
-        for group, variables in self.default_data.iteritems():
-            for variable, defaults in variables.iteritems():
+        
+        #Add any remaining default values
+        for group, variables in get_items(self.default_data):
+            for variable, defaults in get_items(variables):
                 try:
                     config_data[group][variable]
                 except KeyError:
@@ -333,7 +364,7 @@ class SimpleConfig(object):
 
     def __getitem__(self, item):
         return self.data[item]
-
+    
 
 def find_distance(p1, p2=None, decimal=False):
     """Find the distance between two (x, y) coordinates."""
@@ -343,4 +374,3 @@ def find_distance(p1, p2=None, decimal=False):
     if decimal:
         return distance
     return int(round(distance))
-    
