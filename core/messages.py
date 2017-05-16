@@ -142,7 +142,12 @@ class Notify(object):
         self.reset()
         message = ' | '.join(i for i in output if i)
         return message
-    
+
+    def queue_send(self, q):
+        output = str(self)
+        if output:
+            q.put(output)
+
     def reset(self):
         self.message_queue = {0: [], 1: [], 2: []}
 
