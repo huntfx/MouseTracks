@@ -1,13 +1,18 @@
 from __future__ import division
-import numpy as np
+from PIL import Image
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
-from PIL import Image
+from sys import version_info
+import numpy as np
 
-from constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
-from functions import ColourRange
-from files import load_program
+from core.constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
+from core.files import load_program
+from core.functions import ColourRange, get_items
+from core.messages import print_override
 
+if version_info == 2:
+    range = xrange
+    
 
 def merge_array_max(arrays):
     array_len = len(arrays)
@@ -35,8 +40,8 @@ def merge_resolutions(main_data, max_resolution=None,
     A list of arrays and range of data will be returned.
     """
     if max_resolution is None:
-        max_resolution = (CONFIG.data['GenerateImages']['UpscaleResolutionX'],
-                          CONFIG.data['GenerateImages']['UpscaleResolutionY'])
+        max_resolution = (CONFIG['GenerateImages']['UpscaleResolutionX'],
+                          CONFIG['GenerateImages']['UpscaleResolutionY'])
     
     numpy_arrays = []
     highest_value = None
@@ -65,10 +70,10 @@ def merge_resolutions(main_data, max_resolution=None,
             
         for data in array_list:
             i += 1
-            print ('Resizing {}x{} to {}x{}...'
-                   '({}/{})'.format(current_resolution[0], current_resolution[1],
-                                    max_resolution[0], max_resolution[1],
-                                    i, max_count))
+            print_override('Resizing {}x{} to {}x{}...'
+                           '({}/{})'.format(current_resolution[0], current_resolution[1],
+                                            max_resolution[0], max_resolution[1],
+                                            i, max_count))
 
             #Try find the highest and lowest value
             all_values = set(data.values())
@@ -128,7 +133,7 @@ def convert_to_rgb(image_array, colour_range):
             new_data[-1].append(colour_range[image_array[y][x]])
             count += 1
             if not count % one_percent:
-                print '{}% complete ({} pixels)'.format(int(round(100 * count / total)), count)
+                print_override('{}% complete ({} pixels)'.format(int(round(100 * count / total)), count))
             
     return np.array(new_data, dtype=np.uint8)
 
@@ -142,32 +147,32 @@ class ImageName(object):
         self.reload()
 
     def reload(self):
-        self.output_res_x = str(CONFIG.data['GenerateImages']['OutputResolutionX'])
-        self.output_res_y = str(CONFIG.data['GenerateImages']['OutputResolutionY'])
-        self.upscale_res_x = str(CONFIG.data['GenerateImages']['UpscaleResolutionX'])
-        self.upscale_res_y = str(CONFIG.data['GenerateImages']['UpscaleResolutionY'])
+        self.output_res_x = str(CONFIG['GenerateImages']['OutputResolutionX'])
+        self.output_res_y = str(CONFIG['GenerateImages']['OutputResolutionY'])
+        self.upscale_res_x = str(CONFIG['GenerateImages']['UpscaleResolutionX'])
+        self.upscale_res_y = str(CONFIG['GenerateImages']['UpscaleResolutionY'])
 
-        self.heatmap_gaussian = str(CONFIG.data['GenerateHeatmap']['GaussianBlurSize'])
-        self.heatmap_exp = str(CONFIG.data['GenerateHeatmap']['ExponentialMultiplier'])
-        self.heatmap_colour = str(CONFIG.data['GenerateHeatmap']['ColourProfile'])
-        self.heatmap_buttons = {'LMB': CONFIG.data['GenerateHeatmap']['MouseButtonLeft'],
-                                'MMB': CONFIG.data['GenerateHeatmap']['MouseButtonMiddle'],
-                                'RMB': CONFIG.data['GenerateHeatmap']['MouseButtonRight']}
+        self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
+        self.heatmap_exp = str(CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
+        self.heatmap_colour = str(CONFIG['GenerateHeatmap']['ColourProfile'])
+        self.heatmap_buttons = {'LMB': CONFIG['GenerateHeatmap']['MouseButtonLeft'],
+                                'MMB': CONFIG['GenerateHeatmap']['MouseButtonMiddle'],
+                                'RMB': CONFIG['GenerateHeatmap']['MouseButtonRight']}
 
-        self.track_colour = str(CONFIG.data['GenerateTracks']['ColourProfile'])
+        self.track_colour = str(CONFIG['GenerateTracks']['ColourProfile'])
 
-        self.speed_colour = str(CONFIG.data['GenerateSpeedMap']['ColourProfile'])
+        self.speed_colour = str(CONFIG['GenerateSpeedMap']['ColourProfile'])
 
-        self.combined_colour = str(CONFIG.data['GenerateCombined']['ColourProfile'])
+        self.combined_colour = str(CONFIG['GenerateCombined']['ColourProfile'])
 
     def generate(self, image_type):
         if image_type.lower() == 'clicks':
-            name = CONFIG.data['GenerateHeatmap']['NameFormat']
+            name = CONFIG['GenerateHeatmap']['NameFormat']
             name = name.replace('[ExpMult]', self.heatmap_exp)
             name = name.replace('[GaussianSize]', self.heatmap_gaussian)
             name = name.replace('[ColourProfile]', self.heatmap_colour)
             
-            selected_buttons = [k for k, v in self.heatmap_buttons.iteritems() if v]
+            selected_buttons = [k for k, v in get_items(self.heatmap_buttons) if v]
             if all(self.heatmap_buttons.values()):
                 name = name.replace('[MouseButtons]', 'Combined')
             elif len(selected_buttons) == 2:
@@ -178,13 +183,13 @@ class ImageName(object):
                 name = name.replace('[MouseButtons]', 'Empty')
 
         elif image_type.lower() == 'tracks':
-            name = CONFIG.data['GenerateTracks']['NameFormat']
+            name = CONFIG['GenerateTracks']['NameFormat']
             name = name.replace('[ColourProfile]', self.track_colour)
         elif image_type.lower() == 'speed':
-            name = CONFIG.data['GenerateSpeedMap']['NameFormat']
+            name = CONFIG['GenerateSpeedMap']['NameFormat']
             name = name.replace('[ColourProfile]', self.speed_colour)
         elif image_type.lower() == 'combined':
-            name = CONFIG.data['GenerateCombined']['NameFormat']
+            name = CONFIG['GenerateCombined']['NameFormat']
             name = name.replace('[ColourProfile]', self.combined_colour)
         else:
             raise ValueError('incorred image type: {}, '
@@ -201,7 +206,7 @@ class ImageName(object):
             if char in name:
                 name = name.replace(char, '')
         
-        return '{}.{}'.format(name, CONFIG.data['GenerateImages']['FileType'])
+        return '{}.{}'.format(name, CONFIG['GenerateImages']['FileType'])
 
 
 def parse_colour_text(colour_name):
@@ -289,31 +294,31 @@ def parse_colour_text(colour_name):
 def _click_heatmap(numpy_arrays):
 
     #Add all arrays together
-    print 'Merging arrays...'
+    print_override('Merging arrays...')
     max_array = merge_array_add(numpy_arrays)
     if max_array is None:
         return None
 
     #Create a new numpy array and copy over the values
     #I'm not sure if there's a way to skip this step since it seems a bit useless
-    print 'Converting to heatmap...'
+    print_override('Converting to heatmap...')
     h = len(max_array)
     w = len(max_array[0])
     heatmap = np.zeros(h * w).reshape((h, w))
     height_range = range(h)
     width_range = range(w)
-    exponential_multiplier = CONFIG.data['GenerateHeatmap']['ExponentialMultiplier']
+    exponential_multiplier = CONFIG['GenerateHeatmap']['ExponentialMultiplier']
     for x in width_range:
         for y in height_range:
             heatmap[y][x] = max_array[y][x] ** exponential_multiplier
 
     #Blur the array
-    print 'Applying gaussian blur...'
-    gaussian_blur = CONFIG.data['GenerateHeatmap']['GaussianBlurSize']
+    print_override('Applying gaussian blur...')
+    gaussian_blur = CONFIG['GenerateHeatmap']['GaussianBlurSize']
     heatmap = gaussian_filter(heatmap, sigma=gaussian_blur)
 
     #Calculate the average of all the points
-    print 'Calculating average...'
+    print_override('Calculating average...')
     total = [0, 0]
     for x in width_range:
         for y in height_range:
@@ -323,13 +328,13 @@ def _click_heatmap(numpy_arrays):
     #Set range of heatmap
     min_value = 0
     max_value = 10 * total[1] / total[0]
-    if CONFIG.data['GenerateHeatmap']['SetMaxRange']:
-        max_value = CONFIG.data['GenerateHeatmap']['SetMaxRange']
-        print 'Manually set highest range to {}'.format(max_value)
+    if CONFIG['GenerateHeatmap']['SetMaxRange']:
+        max_value = CONFIG['GenerateHeatmap']['SetMaxRange']
+        print_override('Manually set highest range to {}'.format(max_value))
     
     #Convert each point to an RGB tuple
-    print 'Converting to RGB...'    
-    colour_map = CONFIG.data['GenerateHeatmap']['ColourProfile']
+    print_override('Converting to RGB...')    
+    colour_map = CONFIG['GenerateHeatmap']['ColourProfile']
     colour_range = ColourRange(min_value, max_value, ColourMap()[colour_map])
     return Image.fromarray(convert_to_rgb(heatmap, colour_range))
 
@@ -339,11 +344,11 @@ def arrays_to_colour(value_range, numpy_arrays, image_type):
     if image_type not in ('tracks', 'speed', 'combined'):
         raise ValueError('image type must be given as either tracks, speed or combined')
     elif image_type == 'tracks':
-        colour_map = CONFIG.data['GenerateTracks']['ColourProfile']
+        colour_map = CONFIG['GenerateTracks']['ColourProfile']
     elif image_type == 'speed':
-        colour_map = CONFIG.data['GenerateSpeedMap']['ColourProfile']
+        colour_map = CONFIG['GenerateSpeedMap']['ColourProfile']
     elif image_type == 'combined':
-        colour_map = CONFIG.data['GenerateCombined']['ColourProfile']
+        colour_map = CONFIG['GenerateCombined']['ColourProfile']
 
     max_array = merge_array_max(numpy_arrays)
     if max_array is None:
@@ -372,9 +377,9 @@ class RenderImage(object):
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
             image_name = self.name.generate('Speed')
         elif image_type == 'clicks':
-            lmb = CONFIG.data['GenerateHeatmap']['MouseButtonLeft']
-            mmb = CONFIG.data['GenerateHeatmap']['MouseButtonMiddle']
-            rmb = CONFIG.data['GenerateHeatmap']['MouseButtonRight']
+            lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
+            mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
+            rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
             mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
             value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
@@ -384,15 +389,15 @@ class RenderImage(object):
             image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
             image_name = self.name.generate('Combined')
             
-        resolution = (CONFIG.data['GenerateImages']['OutputResolutionX'],
-                      CONFIG.data['GenerateImages']['OutputResolutionY'])
+        resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
+                      CONFIG['GenerateImages']['OutputResolutionY'])
         if image_output is None:
-            print 'No image data for type "{}"'.format(image_type)
+            print_override('No image data for type "{}"'.format(image_type))
         else:
             image_output = image_output.resize(resolution, Image.ANTIALIAS)
-            print 'Saving image...'
+            print_override('Saving image...')
             image_output.save(image_name)
-            print 'Finished saving.'
+            print_override('Finished saving.')
 
 
 class ColourMap(object):
