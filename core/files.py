@@ -35,7 +35,6 @@ def load_program(program_name=None):
                              'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
                              'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}},
                     'Keys': {'Pressed': {}, 'Held': {}},
-                    'Combined': {},
                     'Time': {'Created': time.time(),
                              'Modified': time.time()},
                     'Version': VERSION,
