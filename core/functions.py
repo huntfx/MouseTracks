@@ -308,7 +308,6 @@ class SimpleConfig(object):
         self.data = config_data        
         return self.data
 
-
     def save(self):
         output = []
         for group, variables in self._default_data:
@@ -331,6 +330,9 @@ class SimpleConfig(object):
                     pass
         with open(self.file_name, 'w') as f:
             f.write('\n'.join(output))
+
+    def __getitem__(self, item):
+        return self.data[item]
 
 
 def find_distance(p1, p2=None, decimal=False):
