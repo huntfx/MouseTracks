@@ -12,20 +12,20 @@ This was made with the intention of recording mouse movements over multiple reso
  - Automatically keep separate tracks for different applications defined in "Program List.txt"
  - Edit settings with config.ini
  
-<b>Known Issues:</b>
+<b>Known Issues (that I can't personally fix):</b>
  - (Windows) The keyboard stops being properly detected during full screen games
- - (Linux) No support yet
- - (Mac) No support yet
- - (All) Image generation will crash if folder doesn't exist
+ - (Linux) No support yet, but it's being worked on by Isometries
+ - (Mac) No support
  
  <b>To Do List:</b>
-  - Detect if .data.old is more recent than .data and load that instead
-  - Add more optional variables to image name
-  - Write more robust code to save the image
-  - Add min/max values to config validation
-  - Export raw data for others to visualize
-  - Write a few extra functions to make it easier to use the `Config` class
-  - Move AFK detection to background process, since queued commands may not get saved
+ - Find a nice reduction value for the speed and combined maps
+ - Detect if .data.old is more recent than .data and load that instead
+ - Add more optional variables to image name
+ - Write more robust code to save the image (so it doesn't crash if the folder doesn't exist)
+ - Improved path options (to allow things like %APPDATA% to be used)
+ - Add min/max values to config validation
+ - Export raw data for others to visualize
+ - Move AFK detection to background process, since queued commands may not get saved
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/rsugV3F.jpg">
