@@ -47,7 +47,7 @@ def load_program(program_name=None):
     else:
         loaded_data['TimesLoaded'] += 1
         return upgrade_version(loaded_data)
-    
+
 
 def save_program(program_name, data):
     if program_name is None:
@@ -58,9 +58,9 @@ def save_program(program_name, data):
     compressed_data = zlib.compress(cPickle.dumps(data))
 
     path = CONFIG.data['Paths']['Data']
-    old_name = '{}/{}.data.old'.format(path, name_format)
+    old_name = '{}/.{}.data'.format(path, name_format)
     new_name = '{}/{}.data'.format(path, name_format)
-    temp_name = '{}/{}.data.{}'.format(path, name_format, int(time.time()))
+    temp_name = '{}/.{}.data.{}.temp'.format(path, name_format, int(time.time()))
 
     create_folder(path)
     with open(temp_name, 'wb') as f:
