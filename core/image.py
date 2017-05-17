@@ -7,8 +7,7 @@ import numpy as np
 
 from core.constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
 from core.files import load_program
-from core.functions import ColourRange, get_items
-from core.messages import print_override
+from core.functions import ColourRange, get_items, print_override
 
 if version_info == 2:
     range = xrange
