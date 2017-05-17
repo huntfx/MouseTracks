@@ -17,7 +17,7 @@ if display is None and pyxhook is None:
     raise ImportError('pyxhook and xlib not found')
 elif display is None:
     raise ImportError('xlib not found')
-elif pyhook is None:
+elif pyxhook is None:
     raise ImportError('pyxhook not found')
 
     
