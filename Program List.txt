@@ -71,6 +71,7 @@ Blacklist_DX11_game.exe: Splinter Cell: Blacklist
 Blacklist_game.exe: Splinter Cell: Blacklist
 Blameless.exe: Blameless
 Blockland.exe
+BlockNLoad.exe: Block N Load
 Boid.exe
 Borderlands.exe: Borderlands
 Borderlands2.exe: Borderlands 2
@@ -114,7 +115,7 @@ DarknessII.exe: Darkness 2
 Darksiders2.exe: Darksiders 2
 DarksidersPC.exe: Darksiders
 DARKSOULS.exe: Dark Souls
-DarkSoulsII.exe: Dark Souls II
+DarkSoulsII.exe: Dark Souls 2
 DATA.exe: Dark Souls
 dave.exe: Dangerous Dave
 dayz.exe: Day Z
@@ -158,7 +159,7 @@ dota2.exe: DOTA 2
 dota_osx.app: DOTA 2
 DoubleDragon.exe: Double Dragon Neon
 DOW2.exe: Warhammer 40,000: Dawn of War 2
-DragonAge2.exe: Dragon Age II
+DragonAge2.exe: Dragon Age 2
 DragonAgeInquisition.exe: Dragon Age: Inquisition
 DragonNest.exe: Dragon Nest
 DrLangeskov.exe: Dr Langeskov, The Tiger, and The Terribly Cursed Emerald: A Whirlwind Heist
@@ -167,8 +168,8 @@ DuckGame.exe: Duck Game
 Duelyst.exe
 DUKE3D.EXE: Duke Nukem 3D
 DukeForever.exe: Duke Nukem Forever
-DunDefGame.exe: Dungeon Defenders II
-DunDefLauncher.exe: Dungeon Defenders II
+DunDefGame.exe: Dungeon Defenders 2
+DunDefLauncher.exe: Dungeon Defenders 2
 Dungeon Siege III.exe: Dungeon Siege 3
 dungeon.exe: Soda Dungeon
 DungeonoftheEndless.exe: Dungeon of the Endless
@@ -182,7 +183,7 @@ DXHRDC.exe: Deus Ex: Human Revolution
 EliteDangerous32.exe: Elite: Dangerous
 elsword.exe: Elsword
 Empire.exe: Empire Total War
-empires2.exe: Age of Empires II
+empires2.exe: Age of Empires 2
 EndlessLegend.exe: Endless Legend
 Enslaved.exe: Enslaved
 EoCApp.exe: Divinity: Original Sin
@@ -195,7 +196,7 @@ eu4.exe: Europa Universalis 4
 eurotrucks2.exe: Euro Truck Simulator 2
 event0.exe: Event[0]
 Everlasting%20Summer.app: Everlasting Summer
-EverQuest2.exe: EverQuest II
+EverQuest2.exe: EverQuest 2
 Evolve.exe: Evolve
 exefile.exe: Eve Online
 fable.exe: Fable: The Lost Chapters
@@ -208,7 +209,7 @@ fancy_skulls.exe: Fancy Skulls
 FarCry2.exe: Far Cry 2
 farcry3.exe: Far Cry 3
 FarmingSimulator2015Game.exe: Farming Simulator 15
-FEAR.exe: F. E. A. R.
+FEAR.exe: F.E.A.R.
 FEAR2.exe: F.E.A.R. 2: Project Origin
 FF3_Launcher.exe: Final Fantasy III
 ffxiiiimg.exe: Final Fantasy XIII
@@ -218,6 +219,8 @@ fifa15.exe: FIFA 15
 fifa16.exe: FIFA 16
 FirefallCLient.exe: Firefall
 fm.exe: Football Manager 2014
+forhonor.exe: For Honor
+FortniteClient-Win64-Shipping: Fortnite
 Fractured Space.exe: Fractured Space
 FreeStyle2.exe: Freestyle Basketball 2
 From_The_Depths.exe: From The Depths
@@ -230,7 +233,7 @@ gamemd.exe: Command & Conquer: Red Alert 2
 GameWin32RetailSteam.exe: Riptide GP2
 ge.exe: Granado Espada
 generals.exe: Command & Conquer Generals: Zero Hour
-gh3.exe: Guitar Hero III: Legends of Rock
+gh3.exe: Guitar Hero 3: Legends of Rock
 GHWT.exe: Guitar Hero World Tour
 GJL.exe: Galactic Junk League
 Glquake.exe: Quake
@@ -242,8 +245,8 @@ Grickle102.exe: Puzzle Agent 2
 grid2.exe: Grid 2
 GrimFandango.exe: Grim Fandango
 GrowHome.exe: Grow Home
-GTA5.exe: Grand Theft Auto 5
-GTAIV.exe: Grand Theft Auto 4
+GTA5.exe: Grand Theft Auto V
+GTAIV.exe: Grand Theft Auto IV
 gta_sa.exe: Grand Theft Auto: San Andreas
 guild-quest.exe: Guild Quest
 GunsofIcarusOnline.app: Guns of Icarus - Online
@@ -440,10 +443,11 @@ Pyrite Heart.exe
 quake.exe: Quake
 quake1.exe: Quake I
 quake2.exe: Quake 2
-quake3.exe: Quake III
+quake3.exe: Quake 3
 Quake4.exe: Quake 4
 quakelive.exe: Quake Live
 quakelive_steam.exe: Quake Live
+QuantumBreak.exe: Quantum Break
 RaceTheSun.exe: Race The Sun
 Rage.exe: RAGE
 ragexe.exe: Ragnarok Online
@@ -464,6 +468,7 @@ rift.exe: Rift
 rift_x64.exe: RiFT
 RimWorld914Win.exe: RimWorld
 Rising Angels - Reborn.app
+RisingStorm2.exe: Rising Storm 2
 Risk of Rain.exe
 RivalsofAether.exe: Rivals of Aether
 Roblox.exe
@@ -482,9 +487,9 @@ SaintsRowTheThird_DX11.exe: Saints Row 3
 Sakura Angels.exe
 Sakura Clicker.exe
 Sakura Spirit.exe
-SC2.exe: Starcraft II
+SC2.exe: Starcraft 2
 SC2VN.exe: SC2VN: The e-sport Visual Novel
-SC2_x64.exe: Starcraft II
+SC2_x64.exe: Starcraft 2
 screencheat.exe: Screencheat
 SecretPonchosD3D11.exe: Secret Ponchos
 ShadowComplex-Win32.exe: Shadow Complex
@@ -521,8 +526,8 @@ Starbound.app
 starbound.exe: Starbound
 starbound_opengl.exe: Starbound
 StarCitizen.exe: Star Citizen
-starcraft ii.exe: Starcraft II
-starcraft%20ii.app: Starcraft II
+starcraft ii.exe: Starcraft 2
+starcraft%20ii.app: Starcraft 2
 starcraft.exe: Starcraft
 Stardew Valley.exe
 starwarsbattlefront.exe: Star Wars Battlefront
@@ -589,6 +594,7 @@ th15e.exe: Touhou 15: Legacy of Lunatic Kingdom
 The Plan.exe
 The Sacred Tears TRUE.exe
 TheCrew.exe: The Crew
+thedivision.exe: The Division
 TheLab.exe: The Lab
 THEMOD 1.3.exe: Tony Hawk's Underground 2
 TheSecretWorld.exe: The Secret World
@@ -627,8 +633,10 @@ Trove.exe
 TS3.exe: The Sims 3
 ts3w.exe: The Sims 3
 TS4.exe: The Sims 4
+TslGame.exe: Player Unknown's Battlegrounds
 TTREngine.exe: Toontown
 TurbineLauncher.exe: Dungeons & Dragons Online
+UE4-Win64-Shipping.exe: Unreal Tournament 4
 UNDERTALE.exe: Undertale
 Unity.exe
 Unreal.exe
@@ -644,7 +652,7 @@ vindictus.exe: Vindictus
 Wakfu.app
 Wakfu.exe
 WALKINGDEAD101.EXE: The Walking Dead
-Warcraft II BNE.exe: Warcraft II
+Warcraft II BNE.exe: Warcraft 2
 Warcraft III.exe: Warcraft 3: Reign of Chaos
 Warframe.exe: Warframe
 Warframe.x64.exe: Warframe
@@ -673,3 +681,12 @@ XComGame.exe: XCOM: Enemy Unknown
 ygopro_vs.exe: Yu-gi-oh Pro
 ZenoClash.exe: Zeno Clash
 Ziggurat.exe
+
+3DMark.exe: Benchmark
+Heaven.exe: Benchmark
+Valley.exe: Benchmark
+VoxelFarmKit.exe: Voxel Farm
+VoxelCars3: Voxel Farm
+VoxelCars3-Win64-Shipping: Voxel Farm
+UnrealVoxelFarm: Voxel Farm
+UnrealVoxelFarm-Win64-Shipping: Voxel Farm
