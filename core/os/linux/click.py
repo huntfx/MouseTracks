@@ -1,5 +1,6 @@
 from pyxhook import HookManager
 
+
 class MouseClick(HookManager):
     def __init__(self):
         super().__init__()
@@ -21,7 +22,10 @@ class MouseClick(HookManager):
     def reset(self):
         """Mark buttons as unclicked."""
         self.clicks = [0]
-
-CLICKS = mouse_click()
+        
+        
 def get_mouse_click():
     return CLICKS.return_click()
+
+
+CLICKS = MouseClick()
