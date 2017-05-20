@@ -138,10 +138,6 @@ def background_process(q_recv, q_send):
                     maps['Tracks'][store['Resolution']] = {}
                 if store['Resolution'] not in maps['Clicks']:
                     maps['Clicks'][store['Resolution']] = [{}, {}, {}]
-                if store['Resolution'] not in maps['Speed']:
-                    maps['Speed'][store['Resolution']] = {}
-                if store['Resolution'] not in maps['Combined']:
-                    maps['Combined'][store['Resolution']] = {}
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -170,8 +166,7 @@ def background_process(q_recv, q_send):
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
                 start, end = received_data['MouseMove']
-                distance = find_distance(end, start)
-                combined = distance * tick_count['Speed']
+                #distance = find_distance(end, start)
                 
                 #Calculate the pixels in the line
                 if start is None:
@@ -182,19 +177,8 @@ def background_process(q_recv, q_send):
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
                     maps['Tracks'][store['Resolution']][pixel] = tick_count['Tracks']
-                    try:
-                        if maps['Speed'][store['Resolution']][pixel] < distance:
-                            raise KeyError()
-                    except KeyError:
-                        maps['Speed'][store['Resolution']][pixel] = distance
-                    try:
-                        if maps['Combined'][store['Resolution']][pixel] < combined:
-                            raise KeyError()
-                    except KeyError:
-                        maps['Combined'][store['Resolution']][pixel] = combined
-                        
+                
                 tick_count['Tracks'] += 1
-                tick_count['Speed'] += 1
                 
                 #Compress tracks if the count gets too high
                 if tick_count['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
@@ -212,31 +196,6 @@ def background_process(q_recv, q_send):
                     NOTIFY(MOUSE_COMPRESS_END, 'track')
                     NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     tick_count['Tracks'] //= compress_multplier
-
-                #Compress speed map if the count gets too high
-                if tick_count['Speed'] > CONFIG['CompressMaps']['SpeedMaximum']:
-                    compress_multplier = CONFIG['CompressMaps']['SpeedReduction']
-                    NOTIFY(MOUSE_COMPRESS_START, 'speed')
-                    NOTIFY.send(q_send)
-                            
-                    speed = maps['Speed']
-                    for resolution in speed.keys():
-                        speed[resolution] = {k: int(v // compress_multplier)
-                                             for k, v in get_items(speed[resolution])}
-                        speed[resolution] = {k: v for k, v in get_items(speed[resolution]) if v}
-                        if not speed[resolution]:
-                            del speed[resolution]
-                            
-                    combined = maps['Combined']
-                    for resolution in combined.keys():
-                        combined[resolution] = {k: int(v // compress_multplier)
-                                                for k, v in get_items(combined[resolution])}
-                        combined[resolution] = {k: v for k, v in get_items(combined[resolution]) if v}
-                        if not combined[resolution]:
-                            del combined[resolution]
-                    NOTIFY(MOUSE_COMPRESS_END, 'speed')
-                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
-                    tick_count['Speed'] //= compress_multplier
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
