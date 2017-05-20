@@ -12,6 +12,12 @@ if version_info.major == 2:
 else:
     import pickle as cPickle
 
+    
+DATA_FOLDER = CONFIG.data['Paths']['Data']
+DATA_NAME = '[PROGRAM].data'
+DATA_BACKUP_FOLDER = '.backup'
+DATA_TEMP_FOLDER = '.temp'
+
 
 def format_folder_path(path):
     parts = path.replace('\\', '/').split('/')
@@ -56,18 +62,22 @@ def save_program(program_name, data):
     data['Time']['Modified'] = time.time()
     data['Version'] = VERSION
     compressed_data = zlib.compress(cPickle.dumps(data))
-
-    path = CONFIG.data['Paths']['Data']
-    old_name = '{}/.{}.data'.format(path, name_format)
-    new_name = '{}/{}.data'.format(path, name_format)
-    temp_name = '{}/.{}.data.{}.temp'.format(path, name_format, int(time.time()))
-
-    create_folder(path)
+    
+    name = DATA_NAME.replace('[PROGRAM]', name_format)
+    new_name = '{}/{}'.format(DATA_FOLDER, name)
+    backup_folder = '{}/{}'.format(DATA_FOLDER, DATA_BACKUP_FOLDER)
+    backup_name = '{}/{}'.format(backup_folder, name)
+    temp_folder = '{}/{}'.format(DATA_FOLDER, DATA_TEMP_FOLDER)
+    temp_name = '{}/{}'.format(temp_folder, name)
+    
+    if create_folder(backup_folder):
+        hide_file(backup_folder)
+    if create_folder(temp_folder):
+        hide_file(temp_folder)
     with open(temp_name, 'wb') as f:
         f.write(compressed_data)
-    remove_file(old_name)
-    rename_file(new_name, old_name)
-    hide_file(old_name)
+    remove_file(backup_name)
+    rename_file(new_name, backup_name)
     if rename_file(temp_name, new_name):
         return True
     else:
