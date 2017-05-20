@@ -1,8 +1,7 @@
 from core.image import RenderImage
 
-profile = 'default'
+profile = 'Default'
 r = RenderImage(profile)
 
 r.generate('Tracks')
-r.generate('Speed')
 r.generate('Clicks')
