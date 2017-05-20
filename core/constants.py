@@ -37,15 +37,13 @@ _config_defaults = [
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
                      'This helps keep the most recent data visibile.'],
         'TrackMaximum': (432000, int),
-        'TrackReduction': (1.1, float),
-        'SpeedMaximum': (108000, int),
-        'SpeedReduction': (1.3, float)
+        'TrackReduction': (1.1, float)
     }),
     ('Save', {
-        'Frequency': (120, int),
+        'Frequency': (180, int),
         'MaximumAttemptsNormal': (8, int, 'Maximum number of failed save attempts'
                                           ' before the tracking continues.'),
-        'MaximumAttemptsSwitch': (24, int, 'Maximum number of failed save attempts'
+        'MaximumAttemptsSwitch': (32, int, 'Maximum number of failed save attempts'
                                           ' when switching profile.'
                                           ' If this fails then the latest data will be lost.'),
         'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
@@ -65,7 +63,7 @@ _config_defaults = [
         'UpscaleResolutionY': (2160, int),
         'OutputResolutionX': (1920, int),
         'OutputResolutionY': (1080, int),
-        'FileType': ('jpg', str)
+        'FileType': ('png', str)
     }),
     ('GenerateHeatmap', {
         'NameFormat': ('Result\\[FriendlyName] [MouseButtons] Heatmap - [ColourProfile]', str),
@@ -73,22 +71,17 @@ _config_defaults = [
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
         'GaussianBlurSize': (20, int),
-        'ExponentialMultiplier': (1.0, float),
+        'ExponentialMultiplier': (1.0, float, 'Multiply every pixel to the power of this number.'
+                                              ' It can produce better results, but not all the time,'
+                                              ' so it is best left at 1.0 normally.'),
         'ColourProfile': ('Jet', str),
-        'SetMaxRange': (0, int, 'Manually set the highest value.'
-                                ' Set to 0 to use auto, otherwise use trial and error'
-                                ' to get it right.')
+        'MaximumValueMultiplier': (7.5, float, 'Manually set the multiplier used to calculate the highest value.'),
+        'ForceMaximumValue': (0, int, 'Manually set the highest value.'
+                                      ' Set to 0 to use auto, otherwise use trial and error'
+                                      ' to get it right.')
     }),
     ('GenerateTracks', {
         'NameFormat': ('Result\\[FriendlyName] Tracks - [ColourProfile]', str),
-        'ColourProfile': ('WhiteToBlack', str)
-    }),
-    ('GenerateSpeedMap', {
-        'NameFormat': ('Result\\[FriendlyName] Speed - [ColourProfile]', str),
-        'ColourProfile': ('WhiteToBlack', str)
-    }),
-    ('GenerateCombined', {
-        'NameFormat': ('Result\\[FriendlyName] Combined - [ColourProfile]', str),
         'ColourProfile': ('WhiteToBlack', str)
     })
 ]
