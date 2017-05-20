@@ -9,11 +9,12 @@ from core.constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
 from core.files import load_program
 from core.functions import ColourRange, get_items, print_override
 
-if version_info == 2:
+if version_info.major == 2:
     range = xrange
     
 
 def merge_array_max(arrays):
+    """Find the maximum values of different arrays."""
     array_len = len(arrays)
     if not array_len:
         return None
@@ -24,6 +25,7 @@ def merge_array_max(arrays):
 
 
 def merge_array_add(arrays):
+    """Add the values of different arrays."""
     array_len = len(arrays)
     if not array_len:
         return None
@@ -33,14 +35,10 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, max_resolution=None,
-                      interpolate=True, average=False, multiple=False):
+def merge_resolutions(main_data, interpolate=True, multiple=False):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
-    if max_resolution is None:
-        max_resolution = (CONFIG['GenerateImages']['UpscaleResolutionX'],
-                          CONFIG['GenerateImages']['UpscaleResolutionY'])
     
     numpy_arrays = []
     highest_value = None
@@ -50,11 +48,18 @@ def merge_resolutions(main_data, max_resolution=None,
     if any(not isinstance(i, tuple) for i in resolutions) or any(len(i) != 2 for i in resolutions):
         raise ValueError('incorrect resolutions')
 
+    #Calculate upscale resolution
+    max_x = max(x for x, y in resolutions)
+    max_y = max(x for x, y in resolutions)
+    max_resolution = (max(max_x, CONFIG['GenerateImages']['UpscaleResolutionX']),
+                      max(max_y, CONFIG['GenerateImages']['UpscaleResolutionY']))
+    CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'] = max_resolution
+                      
     #Read total number of images that will need to be upscaled
     max_count = 0
     for current_resolution in resolutions:
         if multiple:
-            max_count += len(main_data[current_resolution])
+            max_count += len([n for n in main_data[current_resolution] if n])
         else:
             max_count += 1
     
@@ -63,7 +68,7 @@ def merge_resolutions(main_data, max_resolution=None,
     total = 0
     for current_resolution in resolutions:
         if multiple:
-            array_list = [main_data[current_resolution][n] for n in multiple]
+            array_list = [main_data[current_resolution][n] for n in multiple if main_data[current_resolution][n]]
         else:
             array_list = [main_data[current_resolution]]
             
@@ -108,9 +113,7 @@ def merge_resolutions(main_data, max_resolution=None,
                 numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
             else:
                 numpy_arrays.append(np.array(new_data))
-            
-    if average and count:
-        highest_value = int(2 * total / count)
+                
     return (lowest_value, highest_value), numpy_arrays
 
 
@@ -123,7 +126,7 @@ def convert_to_rgb(image_array, colour_range):
     new_data = [[]]
     total = len(image_array) * len(image_array[0])
     count = 0
-    one_percent = int(total / 100)
+    one_percent = int(round(total / 100))
     last_percent = -1
     for y in height_range:
         if new_data[-1]:
@@ -160,11 +163,11 @@ class ImageName(object):
 
         self.track_colour = str(CONFIG['GenerateTracks']['ColourProfile'])
 
-        self.speed_colour = str(CONFIG['GenerateSpeedMap']['ColourProfile'])
-
-        self.combined_colour = str(CONFIG['GenerateCombined']['ColourProfile'])
-
-    def generate(self, image_type):
+    def generate(self, image_type, reload=False):
+    
+        if reload:
+            self.reload()
+            
         if image_type.lower() == 'clicks':
             name = CONFIG['GenerateHeatmap']['NameFormat']
             name = name.replace('[ExpMult]', self.heatmap_exp)
@@ -184,15 +187,9 @@ class ImageName(object):
         elif image_type.lower() == 'tracks':
             name = CONFIG['GenerateTracks']['NameFormat']
             name = name.replace('[ColourProfile]', self.track_colour)
-        elif image_type.lower() == 'speed':
-            name = CONFIG['GenerateSpeedMap']['NameFormat']
-            name = name.replace('[ColourProfile]', self.speed_colour)
-        elif image_type.lower() == 'combined':
-            name = CONFIG['GenerateCombined']['NameFormat']
-            name = name.replace('[ColourProfile]', self.combined_colour)
         else:
             raise ValueError('incorred image type: {}, '
-                             'must be tracks, heatmap or speed'.format(image_type))
+                             'must be tracks or clicks'.format(image_type))
         name = name.replace('[UResX]', self.upscale_res_x)
         name = name.replace('[UResY]', self.upscale_res_y)
         name = name.replace('[ResX]', self.output_res_x)
@@ -306,10 +303,17 @@ def _click_heatmap(numpy_arrays):
     heatmap = np.zeros(h * w).reshape((h, w))
     height_range = range(h)
     width_range = range(w)
+    
+    #Make this part a little faster for the sake of a few extra lines
     exponential_multiplier = CONFIG['GenerateHeatmap']['ExponentialMultiplier']
-    for x in width_range:
-        for y in height_range:
-            heatmap[y][x] = max_array[y][x] ** exponential_multiplier
+    if exponential_multiplier != 1.0:
+        for x in width_range:
+            for y in height_range:
+                heatmap[y][x] = max_array[y][x] ** exponential_multiplier
+    else:
+        for x in width_range:
+            for y in height_range:
+                heatmap[y][x] = max_array[y][x]
 
     #Blur the array
     print_override('Applying gaussian blur...')
@@ -326,9 +330,9 @@ def _click_heatmap(numpy_arrays):
 
     #Set range of heatmap
     min_value = 0
-    max_value = 10 * total[1] / total[0]
-    if CONFIG['GenerateHeatmap']['SetMaxRange']:
-        max_value = CONFIG['GenerateHeatmap']['SetMaxRange']
+    max_value = CONFIG['GenerateHeatmap']['MaximumValueMultiplier'] * total[1] / total[0]
+    if CONFIG['GenerateHeatmap']['ForceMaximumValue']:
+        max_value = CONFIG['GenerateHeatmap']['ForceMaximumValue']
         print_override('Manually set highest range to {}'.format(max_value))
     
     #Convert each point to an RGB tuple
@@ -338,21 +342,13 @@ def _click_heatmap(numpy_arrays):
     return Image.fromarray(convert_to_rgb(heatmap, colour_range))
 
 
-def arrays_to_colour(value_range, numpy_arrays, image_type):
-    image_type = image_type.lower()
-    if image_type not in ('tracks', 'speed', 'combined'):
-        raise ValueError('image type must be given as either tracks, speed or combined')
-    elif image_type == 'tracks':
-        colour_map = CONFIG['GenerateTracks']['ColourProfile']
-    elif image_type == 'speed':
-        colour_map = CONFIG['GenerateSpeedMap']['ColourProfile']
-    elif image_type == 'combined':
-        colour_map = CONFIG['GenerateCombined']['ColourProfile']
+def arrays_to_colour(colour_range, numpy_arrays):
+    """Convert an array of floats or integers into an image object."""
 
     max_array = merge_array_max(numpy_arrays)
     if max_array is None:
         return None
-    colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
+    
     return Image.fromarray(convert_to_rgb(max_array, colour_range))
 
 
@@ -364,17 +360,16 @@ class RenderImage(object):
 
     def generate(self, image_type):
         image_type = image_type.lower()
-        if image_type not in ('tracks', 'speed', 'clicks', 'combined'):
-            raise ValueError('image type must be given as either tracks, speed, clicks or combined')
+        if image_type not in ('tracks', 'clicks'):
+            raise ValueError('image type must be given as either tracks or clicks')
 
         if image_type == 'tracks':
             value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'])
-            image_output = arrays_to_colour(value_range, numpy_arrays, 'Tracks')
-            image_name = self.name.generate('Tracks')
-        elif image_type == 'speed':
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Speed'], average=True)
-            image_output = arrays_to_colour(value_range, numpy_arrays, 'Speed')
-            image_name = self.name.generate('Speed')
+            colour_map = CONFIG['GenerateTracks']['ColourProfile']
+            colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
+            image_output = arrays_to_colour(colour_range, numpy_arrays)
+            image_name = self.name.generate('Tracks', reload=True)
+            
         elif image_type == 'clicks':
             lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
             mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
@@ -382,12 +377,8 @@ class RenderImage(object):
             mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
             value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
-            image_name = self.name.generate('Clicks')
-        elif image_type == 'combined':
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Combined'], average=True)
-            image_output = arrays_to_colour(value_range, numpy_arrays, 'Combined')
-            image_name = self.name.generate('Combined')
-            
+            image_name = self.name.generate('Clicks', reload=True)
+        
         resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
                       CONFIG['GenerateImages']['OutputResolutionY'])
         if image_output is None:
@@ -426,7 +417,7 @@ class ColourMap(object):
             generated_map = parse_colour_text(colour_profile)
             if generated_map:
                 if len(generated_map) < 2:
-                    raise ValueError('not enough values input')
+                    raise ValueError('not enough colours to generate colour map')
                 return generated_map
             else:
                 raise ValueError('unknown colour map')
