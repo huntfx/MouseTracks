@@ -33,29 +33,35 @@ This was made with the intention of recording mouse movements over multiple reso
 
  
 <b>Example Output:</b>
-<img src="http://i.imgur.com/rsugV3F.jpg">
-<img src="http://i.imgur.com/XuEY8yg.jpg">
+<img src="http://i.imgur.com/UJgf0up.jpg">
+<img src="http://i.imgur.com/HL023Cr.jpg">
 
 <b>Colour Maps:</b>
-<br/>Default:
-<img src="http://i.imgur.com/lTCByLO.png">
 <br/>Chalk:
-<img src="http://i.imgur.com/R8BDVyH.jpg">
-<br/>LimeZest:
-<img src="http://i.imgur.com/IFEneWZ.jpg">
+<img src="http://i.imgur.com/ReRbDnF.jpg">
+<br/>Citrus:
+<img src="http://i.imgur.com/wRRsFhn.jpg">
+<br/>Demon:
+<img src="http://i.imgur.com/IDLRgGn.jpg">
 <br/>Sunburst:
-<img src="http://i.imgur.com/AN1CYPD.jpg">
+<img src="http://i.imgur.com/HtVF8In.jpg">
 <br/>Ice:
-<img src="http://i.imgur.com/mXAEV1G.jpg">
+<img src="http://i.imgur.com/KniZy9q.jpg">
 <br/>Hazard:
-<img src="http://i.imgur.com/QftEuAF.png">
+<img src="http://i.imgur.com/zy9v3in.jpg">
+<br/>Spiderman:
+<img src="http://i.imgur.com/CwGlzfa.jpg">
 <br/>Sketch:
-<img src="http://i.imgur.com/IlMHRgg.jpg">
+<img src="http://i.imgur.com/z1s0iTg.jpg">
 <br/>Lightning:
-<img src="http://i.imgur.com/O4iqFau.png">
+<img src="http://i.imgur.com/yB5udPO.jpg">
 <br/>Razer:
-<img src="http://i.imgur.com/jxfdWJq.png">
+<img src="http://i.imgur.com/Xfu0i8E.jpg">
+<br/>BlackWidow:
+<img src="http://i.imgur.com/1AqOHxC.jpg">
 <br/>Grape:
-<img src="http://i.imgur.com/rye5VAw.png">
+<img src="http://i.imgur.com/fcOji6t.jpg">
 <br/>Neon:
-<img src="http://i.imgur.com/FAVmiK1.png">
+<img src="http://i.imgur.com/hd8oshz.jpg">
+<br/>Shroud:
+<img src="http://i.imgur.com/HmP4kSJ.jpg">
