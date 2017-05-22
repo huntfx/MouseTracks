@@ -65,3 +65,17 @@ This was made with the intention of recording mouse movements over multiple reso
 <img src="http://i.imgur.com/hd8oshz.jpg">
 <br/>Shroud:
 <img src="http://i.imgur.com/HmP4kSJ.jpg">
+
+<b>Game Genres:</b>
+<br/>Twin Stick:
+<img src="http://i.imgur.com/mjxqbg0.png">
+<img src="http://i.imgur.com/ZxBoz0i.jpg">
+<br/>FPS:
+<img src="http://i.imgur.com/Iocmy3N.jpg">
+<img src="http://i.imgur.com/ii3mhBA.jpg">
+<br/>RTS:
+<img src="http://i.imgur.com/FSeAHYK.jpg">
+<img src="http://i.imgur.com/Ct8A3tK.jpg">
+<br/>MOBA:
+<img src="http://i.imgur.com/X34ZrwQ.jpg">
+<img src="http://i.imgur.com/Y5tttVN.jpg">
