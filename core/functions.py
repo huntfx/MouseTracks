@@ -239,13 +239,13 @@ class RunningPrograms(object):
                     exe_name = program_info.split('.exe')[0]
                     friendly_name = exe_name
                     program_type = 1
-                if '.app' in program_info:
+                elif '.app' in program_info:
                     exe_name = program_info.split('.app')[0]
                     friendly_name = exe_name
                     program_type = 3
                 else:
                     continue
-                
+            
             friendly_name = friendly_name.strip()
             if program_type == 1:
                 exe_name = exe_name.strip() + '.exe'
