@@ -50,7 +50,7 @@ def merge_resolutions(main_data, interpolate=True, multiple=False):
 
     #Calculate upscale resolution
     max_x = max(x for x, y in resolutions)
-    max_y = max(x for x, y in resolutions)
+    max_y = max(y for x, y in resolutions)
     max_resolution = (max(max_x, CONFIG['GenerateImages']['UpscaleResolutionX']),
                       max(max_y, CONFIG['GenerateImages']['UpscaleResolutionY']))
     CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'] = max_resolution
@@ -364,7 +364,7 @@ class RenderImage(object):
             raise ValueError('image type must be given as either tracks or clicks')
 
         if image_type == 'tracks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'])
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True)
             colour_map = CONFIG['GenerateTracks']['ColourProfile']
             colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
             image_output = arrays_to_colour(colour_range, numpy_arrays)
@@ -375,7 +375,7 @@ class RenderImage(object):
             mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
             rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
             mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple=mb)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks', reload=True)
         
@@ -403,7 +403,7 @@ class ColourMap(object):
         'neon': 'BlackToPurpleToPinkToBlackToPink',
         'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow',
         'demon': 'WhiteToRedToBlackToWhite',
-        'chalk': 'BlackBlackToWhite',
+        'chalk': 'BlackToWhite',
         'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite',
         'hazard': 'WhiteToBlackToYellow',
         'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack',
