@@ -45,7 +45,7 @@ def _get_paths(program_name):
             'BackupFolder': backup_folder, 'TempFolder': temp_folder}
     
 
-def load_program(program_name=None):
+def load_program(program_name=None, _update_version=True):
 
     paths = _get_paths(program_name)
     
@@ -71,10 +71,9 @@ def load_program(program_name=None):
                     'Version': VERSION,
                     'Ticks': {'Current': {'Tracks': 0}, 'Total': 0, 'Recorded': 0},
                     'TimesLoaded': 0}
-                    
-    else:
-        loaded_data['TimesLoaded'] += 1
-        return upgrade_version(loaded_data)
+    
+    loaded_data['TimesLoaded'] += 1
+    return upgrade_version(loaded_data, _update_version_number=_update_version)
 
 
 def save_program(program_name, data):
