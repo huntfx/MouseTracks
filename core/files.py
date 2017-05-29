@@ -48,29 +48,37 @@ def _get_paths(program_name):
 def load_program(program_name=None, _update_version=True):
 
     paths = _get_paths(program_name)
+    new_file = False
     
+    #Load the main file
     try:
-        #Load the main file
         with open(paths['Main'], 'rb') as f:
             loaded_data = cPickle.loads(zlib.decompress(f.read()))
             
-    except (IOError, zlib.error):
-        #Load the backup file
+    #Load backup if file is corrupted
+    except zlib.error:
         try:
             with open(paths['Backup'], 'rb') as f:
                 loaded_data = cPickle.loads(zlib.decompress(f.read()))
                 
-        #Create a new file
         except (IOError, zlib.error):
-            return {'Maps': {'Tracks': {}, 'Clicks': {},
-                             'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
-                             'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}},
-                    'Keys': {'Pressed': {}, 'Held': {}},
-                    'Time': {'Created': time.time(),
-                             'Modified': time.time()},
-                    'Version': VERSION,
-                    'Ticks': {'Current': {'Tracks': 0}, 'Total': 0, 'Recorded': 0},
-                    'TimesLoaded': 0}
+            new_file = True
+    
+    #Don't load backup if file has been deleted
+    except IOError:
+        new_file = True
+    
+    #Create empty data
+    if new_file:
+        return {'Maps': {'Tracks': {}, 'Clicks': {},
+                         'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
+                         'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}},
+                'Keys': {'Pressed': {}, 'Held': {}},
+                'Time': {'Created': time.time(),
+                         'Modified': time.time()},
+                'Version': VERSION,
+                'Ticks': {'Current': {'Tracks': 0}, 'Total': 0, 'Recorded': 0},
+                'TimesLoaded': 0}
     
     loaded_data['TimesLoaded'] += 1
     return upgrade_version(loaded_data, _update_version_number=_update_version)
