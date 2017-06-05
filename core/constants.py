@@ -36,14 +36,14 @@ _config_defaults = [
     ('CompressMaps', {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
                      'This helps keep the most recent data visibile.'],
-        'TrackMaximum': (432000, int),
+        'TrackMaximum': (425000, int),
         'TrackReduction': (1.1, float)
     }),
     ('Save', {
         'Frequency': (180, int),
-        'MaximumAttemptsNormal': (8, int, 'Maximum number of failed save attempts'
+        'MaximumAttemptsNormal': (3, int, 'Maximum number of failed save attempts'
                                           ' before the tracking continues.'),
-        'MaximumAttemptsSwitch': (32, int, 'Maximum number of failed save attempts'
+        'MaximumAttemptsSwitch': (24, int, 'Maximum number of failed save attempts'
                                           ' when switching profile.'
                                           ' If this fails then the latest data will be lost.'),
         'WaitAfterFail': (5, int, 'How many seconds to wait before trying again.')
@@ -54,7 +54,7 @@ _config_defaults = [
     ('Timer', {
         'CheckPrograms': (2, int),
         'CheckResolution': (1, int),
-        'ReloadPrograms': (600, int)
+        'ReloadPrograms': (300, int)
     }),
     ('GenerateImages', {
         '__note__': ['For the best results, make sure the upscale resolution'
@@ -70,14 +70,14 @@ _config_defaults = [
         'MouseButtonLeft': (True, bool),
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
-        'GaussianBlurSize': (20, int),
+        'GaussianBlurSize': (28, int), #at 5k: 36, 4k: 28, 2k: possibly 17
         'ExponentialMultiplier': (1.0, float, 'Multiply every pixel to the power of this number.'
                                               ' It can produce better results, but not all the time,'
                                               ' so it is best left at 1.0 normally.'),
         'ColourProfile': ('Jet', str),
-        'MaximumValueMultiplier': (7.5, float, 'Manually set the multiplier used to calculate the highest value.'),
-        'ForceMaximumValue': (0, int, 'Manually set the highest value.'
-                                      ' Set to 0 to use auto, otherwise use trial and error'
+        'MaximumValueMultiplier': (7.5, float, 'A higher value increases the range of the heatmap.'),
+        'ForceMaximumValue': (0, int, 'Manually set the maximum value to limit the range.'
+                                      ' Set to 0 for automatic, otherwise use trial and error'
                                       ' to get it right.')
     }),
     ('GenerateTracks', {
