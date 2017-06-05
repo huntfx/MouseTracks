@@ -122,6 +122,6 @@ def _monitor_areas():
     return retval
 
 
-def get_monitor_info():
-    """Extract size and location from monitor functions."""
+def get_monitor_locations():
+    """Extract locations from monitor functions."""
     return [m[1] for m in _monitor_areas()]
