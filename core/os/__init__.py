@@ -4,14 +4,6 @@ import platform
 import os
 
 
-def get_modified_time(file_name):
-    return os.path.getmtime(file_name)
-
-
-def get_folder_contents(path):
-    return os.listdir(path)
-
-    
 #Load in modules from operating system
 current_os = platform.system()
 if current_os == 'Windows':
@@ -32,10 +24,9 @@ elif current_os == 'Mac':
 else:
     raise ImportError('unknown operating system: "{}"'.format(current_os))
 
-    
+
 #Check the functions exist
 try:
-    get_resolution
     get_cursor_pos
     get_mouse_click
     get_key_press
@@ -44,5 +35,23 @@ try:
     create_folder
     hide_file
     get_running_processes
+    
+    #Detect if code should use multiple monitors
+    #Don't check the length as it's possible a monitor can be plugged in later
+    try:
+        get_monitor_locations
+        MULTI_MONITOR = True
+    except NameError:
+        get_resolution
+        MULTI_MONITOR = False
+        
 except NameError:
     raise ImportError('missing modules for operating system')
+    
+
+def get_modified_time(file_name):
+    return os.path.getmtime(file_name)
+
+
+def get_folder_contents(path):
+    return os.listdir(path)
