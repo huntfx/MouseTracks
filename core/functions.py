@@ -190,8 +190,9 @@ class ColourRange(object):
 
 
 class RunningPrograms(object):
-    def __init__(self, program_list='Program List.txt'):
-        self.refresh()
+    def __init__(self, program_list='Program List.txt', list_only=False):
+        if not list_only:
+            self.refresh()
         self.program_list = program_list
         self.reload_file()
 
@@ -217,6 +218,7 @@ class RunningPrograms(object):
         for program_info in programs:
             if not program_info or program_info[0] in ('#', ';', '//'):
                 continue
+                
             try:
                 #If filename and name are given
                 friendly_name = None
