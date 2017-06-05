@@ -73,6 +73,7 @@ It'll record any monitors you have connected, and it'll merge the results with y
 <br/>Twin Stick:
 <img src="http://i.imgur.com/mjxqbg0.png">
 <img src="http://i.imgur.com/ZxBoz0i.jpg">
+<img src="http://i.imgur.com/rikwsUa.jpg">
 <br/>FPS:
 <img src="http://i.imgur.com/Iocmy3N.jpg">
 <img src="http://i.imgur.com/ii3mhBA.jpg">
