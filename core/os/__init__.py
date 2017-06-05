@@ -39,10 +39,10 @@ try:
     #Detect if code should use multiple monitors
     #Don't check the length as it's possible a monitor can be plugged in later
     try:
-        get_monitor_locations
+        monitor_info = get_monitor_locations
         MULTI_MONITOR = True
     except NameError:
-        get_resolution
+        monitor_info = get_resolution
         MULTI_MONITOR = False
         
 except NameError:
