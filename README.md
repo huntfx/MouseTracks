@@ -4,22 +4,25 @@ Track and display mouse movements/clicks over time. Old movements will get faded
 
 This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `start_tracking.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process, so that the tracking part will be able to run constantly without any CPU spikes interfering with it.
 
+It'll record any monitors you have connected, and it'll merge the results with your main monitor.
+
 <b>Current Features</b>:
- - Track position, clicks and key presses over multiple resolutions
+ - Track position, clicks and key presses over multiple resolutions and monitors
  - Generate colourful mouse tracks and a heatmap of clicks
  - Fade old mouse tracks to keep recent tracks more visible
  - Automatically keep separate tracks for different applications (defined in "Program List.txt")
  - Edit settings with config.ini
- - Works fully on Windows and mostly on Linux
+ - Full Windows support
+ - Some Linux support
  
 <b>Known Issues:</b>
  - (Windows) The keyboard tracking doesn't work on certain applications
- - Only tracks the main monitor (this was mostly a design choice)
+ - Heavy hard drive usage may cause the script to occasionally jump
  
  <b>Help Needed:</b>
  - Help decide on a more interesting name than "Mouse Tracks"
  - Mac support
- - Linux keyboard tracking
+ - Linux keyboard tracking/monitor coordinate limits
  
  <b>To Do List:</b>
  - Add more optional variables to image name
@@ -27,10 +30,10 @@ This was made with the intention of recording mouse movements over multiple reso
  - Improved path options (to allow things like %APPDATA% to be used)
  - Add min/max values to config validation
  - Export raw data for others to visualize
- - Move AFK detection to background process, since in a rare case queued commands may not get saved
+ - Move AFK detection to background process (I found one case where it may not save everything)
+ - Attempt to separate the background thread, so it'll fully complete before quitting
  - Save new image every x minutes to be used in a sequence
  - Simple analytics (with option to turn off)
-
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/UJgf0up.jpg">
