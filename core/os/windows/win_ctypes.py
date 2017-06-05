@@ -59,3 +59,84 @@ def get_key_press(key):
         True/False if the selected key has been pressed or not.
     """
     return ctypes.windll.user32.GetKeyState(key) > 1
+    
+
+class _RECT(ctypes.Structure):
+    _fields_ = [
+        ('left', ctypes.c_ulong),
+        ('top', ctypes.c_ulong),
+        ('right', ctypes.c_ulong),
+        ('bottom', ctypes.c_ulong)
+    ]
+  
+    def dump(self):
+        return map(int, (self.left, self.top, self.right, self.bottom))
+
+
+class _MONITORINFO(ctypes.Structure):
+    _fields_ = [
+        ('cbSize', ctypes.c_ulong),
+        ('rcMonitor', _RECT),
+        ('rcWork', _RECT),
+        ('dwFlags', ctypes.c_ulong)
+    ]
+
+
+def _get_monitors():
+    """Get a list of all monitors to further processing.
+    Copied from code.activestate.com/recipes/460509-get-the-actual-and-usable-sizes-of-all-the-monitor/
+    """
+    retval = []
+    CBFUNC = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+                                ctypes.POINTER(_RECT), ctypes.c_double)
+
+    def cb(hMonitor, hdcMonitor, lprcMonitor, dwData):
+        r = lprcMonitor.contents
+        data = [hMonitor]
+        data.append(r.dump())
+        retval.append(data)
+    return 1
+
+    cbfunc = CBFUNC(cb)
+    temp = ctypes.windll.user32.EnumDisplayMonitors(0, 0, cbfunc, 0)
+  
+  return retval
+
+
+def _monitor_areas():
+    """Find the active and working area of each monitor.
+    Copied from code.activestate.com/recipes/460509-get-the-actual-and-usable-sizes-of-all-the-monitor/
+    """
+  retval = []
+  monitors = _get_monitors()
+  for hMonitor, extents in monitors:
+    data = [hMonitor]
+    mi = _MONITORINFO()
+    mi.cbSize = ctypes.sizeof(_MONITORINFO)
+    mi.rcMonitor = _RECT()
+    mi.rcWork = _RECT()
+    res = ctypes.windll.user32.GetMonitorInfoA(hMonitor, ctypes.byref(mi))
+    data.append(mi.rcMonitor.dump())
+    data.append(mi.rcWork.dump())
+    retval.append(data)
+  return retval
+
+
+def get_monitor_info():
+    """Extract size and location from monitor functions."""
+    max_int = 2 ** 32
+    monitor_list = []
+    for monitor, actual, working in _monitor_areas():
+        x_min, y_min, x_max, y_max = actual
+        width = (x_max - x_min) % max_int
+        height = (y_max - y_min) % max_int
+        
+        if x_min > x_max:
+            x_min -= max_int
+        if y_min > y_max:
+            y_min -= max_int
+
+        monitor_info = {'Size': (width, height),
+                        'Location': {'X': (x_min, x_max), 'Y': (y_min, y_max)}}
+        monitor_list.append(monitor_info)
+    return monitor_list
