@@ -3,7 +3,7 @@ from multiprocessing import Process, Queue
 from threading import Thread
 import time
 
-from core.os import get_resolution, get_mouse_click, get_key_press, KEYS
+from core.os import monitor_info, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR
 from core.messages import *
 from core.functions import RefreshRateLimiter, error_output, RunningPrograms, get_items, print_override
 from core.constants import *
@@ -34,8 +34,9 @@ def start_tracking():
              'UpdateQueuedCommands': 20}
     timer = {k: v * updates_per_second for k, v in get_items(timer)}
 
-    store = {'Resolution': {'Current': get_resolution(),
-                            'Previous': None},
+    store = {'Resolution': {'Current': monitor_info(),
+                            'Previous': None,
+                            'Offset': (0, 0)},
              'Mouse': {'Position': {'Current': None,
                                     'Previous': None},
                        'NotMoved': 0,
@@ -115,8 +116,9 @@ def start_tracking():
 
 
             #Check if mouse left the monitor
-            elif (not 0 <= mouse_pos['Current'][0] < store['Resolution']['Current'][0]
-                  or not 0 <= mouse_pos['Current'][1] < store['Resolution']['Current'][1]):
+            elif (not MULTI_MONITOR
+                  and (not 0 <= mouse_pos['Current'][0] < store['Resolution']['Current'][0]
+                       or not 0 <= mouse_pos['Current'][1] < store['Resolution']['Current'][1])):
                 if not store['Mouse']['OffScreen']:
                     NOTIFY(MOUSE_OFFSCREEN)
                     store['Mouse']['OffScreen'] = True
@@ -215,14 +217,17 @@ def start_tracking():
 
             #Check if resolution has changed
             if not i % timer['UpdateScreen']:
-                store['Resolution']['Current'] = get_resolution()
-                if store['Resolution']['Previous'] != store['Resolution']['Current']:
-                    if store['Resolution']['Previous'] is not None:
-                        NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'],
-                                                         store['Resolution']['Current'])
-                    frame_data['Resolution'] = store['Resolution']['Current']
-                    store['Resolution']['Previous'] = store['Resolution']['Current']
-
+            
+                if MULTI_MONITOR:
+                    frame_data['MonitorLimits'] = monitor_info()
+                else:
+                    store['Resolution']['Current'] = monitor_info()
+                    if store['Resolution']['Previous'] != store['Resolution']['Current']:
+                        if store['Resolution']['Previous'] is not None:
+                            NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
+                        frame_data['Resolution'] = ['Resolution']['Current']
+                        store['Resolution']['Previous'] = store['Resolution']['Current']
+                    
 
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
@@ -233,8 +238,8 @@ def start_tracking():
             if not i % timer['ReloadProgramList']:
                 frame_data_rp['Reload'] = True
 
-
-            if not i % timer['UpdateQueuedCommands']:
+            #Update user about the queue size
+            if not i % timer['UpdateQueuedCommands'] and store['LastActivity'] > i - timer['Save']:
                 NOTIFY(QUEUE_SIZE, q_send.qsize())
             
             #Send save request
