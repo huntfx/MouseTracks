@@ -8,6 +8,7 @@ from core.constants import CONFIG
 from core.files import load_program, save_program
 from core.functions import calculate_line, RunningPrograms, find_distance, get_items
 from core.messages import *
+from core.os import MULTI_MONITOR
 
 if version_info == 2:
     range = xrange
@@ -74,6 +75,24 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
     if not saved:
         NOTIFY(SAVE_FAIL_END)
 
+
+def _monitor_offset(coordinate, monitor_limits):
+    if coordinate is None:
+        return
+    mx, my = coordinate
+    for x1, y1, x2, y2 in monitor_limits:
+        if x1 <= mx < x2 and y1 <= my < y2:
+            return ((x2 - x1, y2 - y1), (x1, y1))
+            
+            
+def _check_resolution(store, resolution):
+    if resolution is None:
+        return
+    if resolution not in store['Data']['Maps']['Tracks']:
+        store['Data']['Maps']['Tracks'][resolution] = {}
+    if resolution not in store['Data']['Maps']['Clicks']:
+        store['Data']['Maps']['Clicks'][resolution] = [{}, {}, {}]
+
         
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
@@ -83,7 +102,11 @@ def background_process(q_recv, q_send):
         
         store = {'Data': load_program(),
                  'LastProgram': None,
-                 'Resolution': None}
+                 'Resolution': None,
+                 'ResolutionTemp': None,
+                 'ResolutionList': set(),
+                 'Offset': (0, 0),
+                 'LastResolutionUpdate': -1}
         
         NOTIFY(DATA_LOADED)
         NOTIFY(QUEUE_SIZE, q_recv.qsize())
@@ -91,6 +114,7 @@ def background_process(q_recv, q_send):
 
         maps = store['Data']['Maps']
         tick_count = store['Data']['Ticks']['Current']
+        
         
         while True:
             
@@ -106,7 +130,8 @@ def background_process(q_recv, q_send):
                 
                 if current_program != store['LastProgram']:
 
-                    check_resolution = True
+                    _check_resolution(store, store['Resolution'])
+                    store['ResolutionList'] = set()
                     if current_program is None:
                         NOTIFY(PROGRAM_LOADING)
                     else:
@@ -129,15 +154,12 @@ def background_process(q_recv, q_send):
                 NOTIFY.send(q_send)
 
             if 'Resolution' in received_data:
-                check_resolution = True
                 store['Resolution'] = received_data['Resolution']
+                _check_resolution(store, store['Resolution'])
+            
+            if 'MonitorLimits' in received_data:
+                store['ResolutionTemp'] = received_data['MonitorLimits']
 
-            #Make sure resolution exists as a key
-            if check_resolution:
-                if store['Resolution'] not in maps['Tracks']:
-                    maps['Tracks'][store['Resolution']] = {}
-                if store['Resolution'] not in maps['Clicks']:
-                    maps['Clicks'][store['Resolution']] = [{}, {}, {}]
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -154,14 +176,6 @@ def background_process(q_recv, q_send):
                         store['Data']['Keys']['Held'][key] += 1
                     except KeyError:
                         store['Data']['Keys']['Held'][key] = 1
-
-            #Record mouse clicks
-            if 'MouseClick' in received_data:
-                for mouse_button, mouse_click in received_data['MouseClick']:
-                    try:
-                        maps['Clicks'][store['Resolution']][mouse_button][mouse_click] += 1
-                    except KeyError:
-                        maps['Clicks'][store['Resolution']][mouse_button][mouse_click] = 1
             
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
@@ -176,7 +190,15 @@ def background_process(q_recv, q_send):
 
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
-                    maps['Tracks'][store['Resolution']][pixel] = tick_count['Tracks']
+                    if MULTI_MONITOR:
+                        resolution, offset = _monitor_offset(pixel, store['ResolutionTemp'])
+                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        if resolution not in store['ResolutionList']:
+                            _check_resolution(store, resolution)
+                            store['ResolutionList'].add(resolution)
+                    else:
+                        resolution = store['Resolution']
+                    maps['Tracks'][resolution][pixel] = tick_count['Tracks']
                 
                 tick_count['Tracks'] += 1
                 
@@ -196,6 +218,19 @@ def background_process(q_recv, q_send):
                     NOTIFY(MOUSE_COMPRESS_END, 'track')
                     NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     tick_count['Tracks'] //= compress_multplier
+
+            #Record mouse clicks
+            if 'MouseClick' in received_data:
+                for mouse_button, pixel in received_data['MouseClick']:
+                    if MULTI_MONITOR:
+                        resolution, offset = _monitor_offset(pixel, store['ResolutionTemp'])
+                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                    else:
+                        resolution = store['Resolution']
+                    try:
+                        maps['Clicks'][resolution][mouse_button][pixel] += 1
+                    except KeyError:
+                        maps['Clicks'][resolution][mouse_button][pixel] = 1
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
