@@ -21,7 +21,7 @@ def _get_id(id):
     except ValueError:
         return 0
 
-def upgrade_version(data):
+def upgrade_version(data, _update_version_number=True):
     """Files from an older version will be run through this function.
 
     History:
@@ -47,7 +47,11 @@ def upgrade_version(data):
     if current_version_id < _get_id('2.0.2'):
         data['Combined'] = {}
     if current_version_id < _get_id('2.0.3'):
-        data['Clicks'] = {}
+        if _update_version_number:
+            data['Clicks'] = {}
+        else:
+            for resolution in data['Clicks']:
+                data['Clicks'][resolution] = [data['Clicks'][resolution], {}, {}]
         data['Keys'] = {'Pressed': {}, 'Held': {}}
         data['Ticks'] = {'Current': data['Count'],
                          'Total': data['Ticks'],
@@ -74,5 +78,6 @@ def upgrade_version(data):
         del data['Maps']['Combined']
         del data['Ticks']['Current']['Speed']
     
-    data['Version'] = VERSION
+    if _update_version_number:
+        data['Version'] = VERSION
     return data
