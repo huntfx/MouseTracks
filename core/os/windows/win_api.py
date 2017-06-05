@@ -25,7 +25,8 @@ def get_resolution():
     Returns:
         (x, y) resolution as a tuple.
     """
-    return (win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1))
+    return (win32api.GetSystemMetrics(win32con.SM_CXSCREEN), 
+            win32api.GetSystemMetrics(win32con.SM_CYSCREEN))
 
 
 def get_refresh_rate():
@@ -66,3 +67,8 @@ def get_key_press(key):
         True/False if the selected key has been pressed or not.
     """
     return win32api.GetAsyncKeyState(key)
+
+
+def get_monitor_locations():
+    """Return a list of (x[0], y[0], x[1], y[1]) coordinates for each monitor."""
+    return [m[2] for m in win32api.EnumDisplayMonitors()]
