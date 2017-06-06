@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 from re import sub
 from sys import version_info
+from os import listdir
 import time
 import zlib
 
@@ -19,6 +21,10 @@ DATA_BACKUP_FOLDER = '.backup'
 DATA_TEMP_FOLDER = '.temp'
 
 
+def format_name(name):
+    return sub('[^A-Za-z0-9]+', '', name).lower()
+    
+
 def format_folder_path(path):
     parts = path.replace('\\', '/').split('/')
     if '.' in parts[-1]:
@@ -32,7 +38,7 @@ def _get_paths(program_name):
         program_name = DEFAULT_NAME
     elif isinstance(program_name, (list, tuple)):
         program_name = program_name[0]
-    name_format = sub('[^A-Za-z0-9]+', '', program_name).lower()
+    name_format = format_name(program_name)
     
     name = DATA_NAME.replace('[PROGRAM]', name_format)
     new_name = '{}/{}'.format(DATA_FOLDER, name)
@@ -70,18 +76,9 @@ def load_program(program_name=None, _update_version=True):
     
     #Create empty data
     if new_file:
-        return {'Maps': {'Tracks': {}, 'Clicks': {},
-                         'Temp1': {}, 'Temp2': {}, 'Temp3': {}, 'Temp4': {},
-                         'Temp5': {}, 'Temp6': {}, 'Temp7': {}, 'Temp8': {}},
-                'Keys': {'Pressed': {}, 'Held': {}},
-                'Time': {'Created': time.time(),
-                         'Modified': time.time()},
-                'Version': VERSION,
-                'Ticks': {'Current': {'Tracks': 0}, 'Total': 0, 'Recorded': 0},
-                'TimesLoaded': 0}
-    
-    loaded_data['TimesLoaded'] += 1
-    return upgrade_version(loaded_data, _update_version_number=_update_version)
+        loaded_data = {}
+        
+    return upgrade_version(loaded_data, update_metadata=_update_version)
 
 
 def save_program(program_name, data):
@@ -105,3 +102,9 @@ def save_program(program_name, data):
     else:
         remove_file(paths['Temp'])
         return False
+
+        
+def list_files():
+    all_files = listdir(DATA_FOLDER)
+    extension = DATA_NAME.replace('[PROGRAM]', '')
+    return [i.replace(extension, '') for i in all_files if i.endswith(extension)]
