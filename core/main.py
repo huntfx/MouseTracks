@@ -126,12 +126,10 @@ def start_tracking():
                 NOTIFY(MOUSE_ONSCREEN)
                 store['Mouse']['OffScreen'] = False
 
-
             #Notify once if mouse is no longer inactive
             if store['Mouse']['Inactive']:
                 store['Mouse']['Inactive'] = False
                 NOTIFY(MOUSE_DETECTED)
-
 
             #Check if mouse is in a duplicate position
             if mouse_pos['Current'] is None or mouse_pos['Current'] == mouse_pos['Previous']:
@@ -143,7 +141,6 @@ def start_tracking():
                     frame_data['MouseMove'] = (mouse_pos['Previous'], mouse_pos['Current'])
                     NOTIFY(MOUSE_POSITION, mouse_pos['Current'])
                     store['LastActivity'] = i
-
 
             #Mouse clicks
             click_repeat = CONFIG['Main']['RepeatClicks']
@@ -187,6 +184,8 @@ def start_tracking():
             keys_held = []
             key_status = store['Keyboard']['KeysPressed']
             key_press_repeat = CONFIG['Main']['RepeatKeyPress']
+            _keys_held = []
+            _keys_pressed = []
             for k in KEYS:
                 if get_key_press(KEYS[k]):
                     keys_held.append(k)
@@ -195,14 +194,15 @@ def start_tracking():
                     if key_status[k]:
                         if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
                             keys_pressed.append(k)
+                            _keys_held.append(k)
                             key_status[k] = limiter.time
-                            NOTIFY(KEYBOARD_PRESSES_HELD, keys_pressed)
 
                     #If key has been pressed
                     else:
                         keys_pressed.append(k)
+                        _keys_pressed.append(k)
                         key_status[k] = limiter.time
-                        NOTIFY(KEYBOARD_PRESSES, keys_pressed)
+                        notify_key_press = list(keys_pressed)
 
                 #If key has been released
                 elif key_status[k]:
@@ -213,7 +213,10 @@ def start_tracking():
             if keys_held:
                 frame_data['KeyHeld'] = keys_held
                 store['LastActivity'] = i
-
+            if _keys_held:
+                NOTIFY(KEYBOARD_PRESSES_HELD, _keys_held)
+            if _keys_pressed:
+                NOTIFY(KEYBOARD_PRESSES, _keys_pressed)
 
             #Check if resolution has changed
             if not i % timer['UpdateScreen']:
