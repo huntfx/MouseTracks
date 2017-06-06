@@ -273,12 +273,13 @@ class RunningPrograms(object):
 
 
 class SimpleConfig(object):
-    def __init__(self, file_name, default_data):
+    def __init__(self, file_name, default_data, group_order=None):
         self.file_name = file_name
         self._default_data = default_data
         self.default_data = {}
-        for group, data in self._default_data:
-            self.default_data[group] = data
+        self.order = list(group_order) if group_order is not None else []
+        for group, data in self._default_data.iteritems():
+            self.default_data[group] = self._default_data[group]
         self.load()
     
     def load(self):
@@ -313,17 +314,30 @@ class SimpleConfig(object):
                             value = True
                         else:
                             value = default_value
-                    if default_type == int:
+                            
+                    elif default_type == int:
                         if '.' in value:
                             value = value.split('.')[0]
                         try:
                             value = int(value)
                         except ValueError:
                             value = default_value
-                    if default_type == str:
+                            
+                    elif default_type == str:
                         value = str(value).rstrip()
+                        
                     else:
                         value = default_type(value)
+                    
+                    #Handle min/max values
+                    if default_type in (int, float):
+                        no_text = [i for i in self.default_data[current_group][name] if not isinstance(i, str)]
+                        if len(no_text) >= 3:
+                            if no_text[2] is not None and no_text[2] > value:
+                                value = no_text[2]
+                            elif len(no_text) >= 4:
+                                if no_text[3] is not None and no_text[3] < value:
+                                    value = no_text[3]
                 
                 config_data[current_group][name] = value
         
@@ -342,8 +356,12 @@ class SimpleConfig(object):
         return self.data
 
     def save(self):
+    
+        extra_items = list(set(self._default_data.keys()) - set(self.order))
+        
         output = []
-        for group, variables in self._default_data:
+        for group in self.order + extra_items:
+            variables = self._default_data[group]
             if output:
                 output.append('')
             output.append('[{}]'.format(group))
@@ -358,7 +376,8 @@ class SimpleConfig(object):
                     value = defaults[0]
                 output.append('{} = {}'.format(variable, value))
                 try:
-                    output[-1] += '    // {}'.format(defaults[2])
+                    if isinstance(defaults[-1], str) and defaults[-1]:
+                        output[-1] += '    // {}'.format(defaults[-1])
                 except IndexError:
                     pass
         with open(self.file_name, 'w') as f:
