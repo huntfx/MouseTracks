@@ -1,4 +1,7 @@
+import time
+
 VERSION_HISTORY = [
+    '-1',
     '2.0',
     '2.0.1',
     '2.0.1b',
@@ -21,7 +24,7 @@ def _get_id(id):
     except ValueError:
         return 0
 
-def upgrade_version(data, _update_version_number=True):
+def upgrade_version(data, update_metadata=True):
     """Files from an older version will be run through this function.
 
     History:
@@ -37,8 +40,17 @@ def upgrade_version(data, _update_version_number=True):
     """
 
     #Make sure version is in history, otherwise set to lowest version
-    current_version_id = _get_id(data['Version'])
-    
+    current_version_id = _get_id(data.get('Version', '-1'))
+        
+    if current_version_id < _get_id('2.0'):
+        data['Count'] = 0
+        data['Tracks'] = {}
+        data['Clicks'] = {}
+        data['Keys'] = {}
+        data['Ticks'] = 0
+        data['LastSave'] = time.time()
+        data['TimesLoaded'] = -1
+        data['Version'] = '2.0'
     if current_version_id < _get_id('2.0.1'):
         data['Acceleration'] = {}
     if current_version_id < _get_id('2.0.1b'):
@@ -47,7 +59,7 @@ def upgrade_version(data, _update_version_number=True):
     if current_version_id < _get_id('2.0.2'):
         data['Combined'] = {}
     if current_version_id < _get_id('2.0.3'):
-        if _update_version_number:
+        if update_metadata:
             data['Clicks'] = {}
         else:
             for resolution in data['Clicks']:
@@ -78,6 +90,7 @@ def upgrade_version(data, _update_version_number=True):
         del data['Maps']['Combined']
         del data['Ticks']['Current']['Speed']
     
-    if _update_version_number:
+    if update_metadata:
         data['Version'] = VERSION
+        data['TimesLoaded'] += 1
     return data
