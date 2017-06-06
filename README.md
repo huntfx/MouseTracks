@@ -26,6 +26,7 @@ It'll record any monitors you have connected, and it'll merge the results with y
  
  <b>To Do List:</b>
  - Add more optional variables to image name
+ - Change guassian blur from an actual value to a multiplier
  - Write more robust code to save the image (so it doesn't crash if the folder doesn't exist)
  - Improved path options (to allow things like %APPDATA% to be used)
  - Export raw data for others to visualize
