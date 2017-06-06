@@ -71,15 +71,22 @@ _config_defaults = {
         'MouseButtonLeft': (True, bool),
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
-        'GaussianBlurSize': (28, int, 1), #at 5k: 36, 4k: 28, 2k: possibly 17
-        'ExponentialMultiplier': (1.0, float, 'Multiply every pixel to the power of this number.'
-                                              ' It can produce better results, but not all the time,'
-                                              ' so it is best left at 1.0 normally.'),
+        
+        #To get a consistent result -
+        #   36 at 2880p, 28 at 2160p, 18 at 1440p, 15 at 1080p, 10 at 720p
+        #Roughly that is a factor of 80, so it may be possible to give a consistent multiplier instead
+        'GaussianBlurSize': (28, float, 1),
+        
+        'ExponentialMultiplier': (1.0, float, 0.001, 'Multiply every pixel to the power of this number.'
+                                                     ' It can produce better results, but not all the time,'
+                                                     ' so it is best left at 1.0 normally.'),
         'ColourProfile': ('Jet', str),
-        'MaximumValueMultiplier': (7.5, float, 'A higher value increases the range of the heatmap.'),
-        'ForceMaximumValue': (0, int, 'Manually set the maximum value to limit the range.'
-                                      ' Set to 0 for automatic, otherwise use trial and error'
-                                      ' to get it right.')
+        'MaximumValueMultiplier': (7.5, float, 0.001, 'A lower value pushes more areas to the maximum.',
+                                                      ' Change this for each image to get the best heatmap results.'),
+        'ForceMaximumValue': (0.0, float, 0, 'Manually set the maximum value to limit the range'
+                                             ', which is generally between 0 and 1.'
+                                             ' Set to 0.0 for automatic, otherwise use trial and error'
+                                             ' to get it right.')
     },
     'GenerateTracks': {
         'NameFormat': ('Result\\[FriendlyName] Tracks - [ColourProfile]', str),
