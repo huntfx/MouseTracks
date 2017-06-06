@@ -17,7 +17,7 @@ It'll record any monitors you have connected, and it'll merge the results with y
  
 <b>Known Issues:</b>
  - (Windows) The keyboard tracking doesn't work on certain applications
- - Heavy hard drive usage may cause the script to occasionally jump
+ - Heavy hard drive usage where the page file is stored may cause the script to occasionally jump
  
  <b>Help Needed:</b>
  - Help decide on a more interesting name than "Mouse Tracks"
@@ -28,7 +28,6 @@ It'll record any monitors you have connected, and it'll merge the results with y
  - Add more optional variables to image name
  - Write more robust code to save the image (so it doesn't crash if the folder doesn't exist)
  - Improved path options (to allow things like %APPDATA% to be used)
- - Add min/max values to config validation
  - Export raw data for others to visualize
  - Move AFK detection to background process (I found one case where it may not save everything)
  - Attempt to separate the background thread, so it'll fully complete before quitting
