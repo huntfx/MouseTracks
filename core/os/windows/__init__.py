@@ -47,9 +47,18 @@ def get_running_processes():
     The ID is used to determine which process was most recently loaded.
     """
     task_list = os.popen("tasklist").read().splitlines()
-    return {'{}.exe'.format(line.strip().split('.exe')[0]): i
-            for i, line in enumerate(task_list) if '.exe' in line}
-
+    
+    running_processes = {}
+    for i, task_raw in enumerate(task_list):
+        if task_raw:
+            try:
+                image, name, pid, session, mem, usage = task_raw.split()
+            except ValueError:
+                pass
+            else:
+                if '.' in image:
+                    running_processes[image] = i
+    return running_processes
 
 KEYS = {
     'BACK': 8,
