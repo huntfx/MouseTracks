@@ -218,42 +218,23 @@ class RunningPrograms(object):
         for program_info in programs:
             if not program_info or program_info[0] in ('#', ';', '//'):
                 continue
+            
+            program_lc = program_info.lower()
+            if '.exe' in program_lc:
+                ext_len = len(program_lc.split('.exe')[0])
+                program_name = program_info[:ext_len + 4]
+            elif '.app' in program_lc:
+                ext_len = len(program_lc.split('.app')[0])
+                program_name = program_info[:ext_len + 4]
+            else:
+                continue
                 
             try:
-                #If filename and name are given
-                friendly_name = None
-                if '.exe' in program_info:
-                    while '.exe ' in program_info:
-                        program_info = program_info.replace('.exe ', '.exe')
-                    exe_name, friendly_name = program_info.split('.exe:', 1)
-                    program_type = 1
-                if '.app' in program_info:
-                    while '.app ' in program_info:
-                        program_info = program_info.replace('.app ', '.app')
-                    exe_name, friendly_name = program_info.split('.app:', 1)
-                    program_type = 3
-                if not friendly_name:
-                    raise ValueError()
-
-            #If name is same as filename
-            except ValueError:
-                if '.exe' in program_info:
-                    exe_name = program_info.split('.exe')[0]
-                    friendly_name = exe_name
-                    program_type = 1
-                elif '.app' in program_info:
-                    exe_name = program_info.split('.app')[0]
-                    friendly_name = exe_name
-                    program_type = 3
-                else:
-                    continue
+                friendly_name = program_info[ext_len:].split(':', 1)[1].strip()
+            except IndexError:
+                friendly_name = program_info[:ext_len]
             
-            friendly_name = friendly_name.strip()
-            if program_type == 1:
-                exe_name = exe_name.strip() + '.exe'
-            elif program_type == 3:
-                exe_name = exe_name.strip() + '.app'
-            self.programs[exe_name] = friendly_name
+            self.programs[program_name] = friendly_name
             
     def refresh(self):
         self.processes = get_running_processes()
