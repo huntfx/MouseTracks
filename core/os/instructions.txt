@@ -4,6 +4,11 @@ The current requirement is only that platform.system() will return the name of t
 get_resolution():
 Returns a tuple of the main monitors resolution - (1920, 1080)
 
+get_monitor_locations():
+Returns a list of the monitor coordinates, in the format (x[0], y[0], x[1], y[1]).
+For example, with a central 1440p monitor and 1080p attached to the left, the result is [(0, 0, 2560, 1440), (-1920, 360, 0, 1440)].
+If not provided, multi monitor support will be disabled and get_resolution will be used instead.
+
 get_cursor_pos():
 Returns the x, y coordinate of the cursor - (162, 585)
 There's a period, at least on windows, where if you leave the mouse long enough it'll stop returning its location.
