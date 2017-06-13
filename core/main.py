@@ -7,7 +7,7 @@ from core.os import monitor_info, get_mouse_click, get_key_press, KEYS, MULTI_MO
 from core.messages import *
 from core.functions import RefreshRateLimiter, error_output, RunningPrograms, get_items, print_override
 from core.constants import *
-from core.track import background_process, running_processes
+from core.track import background_process, running_processes, monitor_offset
 
 
 class ThreadHelper(Thread):
@@ -36,7 +36,7 @@ def start_tracking():
 
     store = {'Resolution': {'Current': monitor_info(),
                             'Previous': None,
-                            'Offset': (0, 0)},
+                            'Boundaries': None},
              'Mouse': {'Position': {'Current': None,
                                     'Previous': None},
                        'NotMoved': 0,
@@ -223,6 +223,7 @@ def start_tracking():
             
                 if MULTI_MONITOR:
                     frame_data['MonitorLimits'] = monitor_info()
+                    store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
                 else:
                     store['Resolution']['Current'] = monitor_info()
                     if store['Resolution']['Previous'] != store['Resolution']['Current']:
@@ -230,7 +231,22 @@ def start_tracking():
                             NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
                         frame_data['Resolution'] = ['Resolution']['Current']
                         store['Resolution']['Previous'] = store['Resolution']['Current']
+            
+            #Display message that mouse has switched monitors
+            if MULTI_MONITOR and 'MouseMove' in frame_data:
+            
+                try:
+                    res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
+                except TypeError:
+                    frame_data['MonitorLimits'] = monitor_info()
+                    store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
+                    res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
                     
+                store['Resolution']['Current'] = res
+                if store['Resolution']['Previous'] is not None:
+                    if store['Resolution']['Current'] != store['Resolution']['Previous']:
+                        NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
+                store['Resolution']['Previous'] = store['Resolution']['Current']
 
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
