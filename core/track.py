@@ -8,7 +8,7 @@ from core.constants import CONFIG
 from core.files import load_program, save_program
 from core.functions import calculate_line, RunningPrograms, find_distance, get_items
 from core.messages import *
-from core.os import MULTI_MONITOR
+from core.os import MULTI_MONITOR, monitor_info
 
 if version_info == 2:
     range = xrange
@@ -76,7 +76,7 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
         NOTIFY(SAVE_FAIL_END)
 
 
-def _monitor_offset(coordinate, monitor_limits):
+def monitor_offset(coordinate, monitor_limits):
     if coordinate is None:
         return
     mx, my = coordinate
@@ -106,7 +106,7 @@ def background_process(q_recv, q_send):
                  'ResolutionTemp': None,
                  'ResolutionList': set(),
                  'Offset': (0, 0),
-                 'LastResolutionUpdate': -1}
+                 'LastResolution': None}
         
         NOTIFY(DATA_LOADED)
         NOTIFY(QUEUE_SIZE, q_recv.qsize())
@@ -159,7 +159,6 @@ def background_process(q_recv, q_send):
             
             if 'MonitorLimits' in received_data:
                 store['ResolutionTemp'] = received_data['MonitorLimits']
-
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -183,6 +182,8 @@ def background_process(q_recv, q_send):
                 #distance = find_distance(end, start)
                 
                 #Calculate the pixels in the line
+                if end is None:
+                    raise TypeError('debug - mouse moved without coordinates')
                 if start is None:
                     mouse_coordinates = [end]
                 else:
@@ -191,13 +192,21 @@ def background_process(q_recv, q_send):
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
                     if MULTI_MONITOR:
-                        resolution, offset = _monitor_offset(pixel, store['ResolutionTemp'])
+                    
+                        try:
+                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                        except TypeError:
+                            store['ResolutionTemp'] = monitor_info()
+                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                        
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         if resolution not in store['ResolutionList']:
                             _check_resolution(store, resolution)
                             store['ResolutionList'].add(resolution)
+                            
                     else:
                         resolution = store['Resolution']
+                        
                     maps['Tracks'][resolution][pixel] = tick_count['Tracks']
                 
                 tick_count['Tracks'] += 1
@@ -223,10 +232,18 @@ def background_process(q_recv, q_send):
             if 'MouseClick' in received_data:
                 for mouse_button, pixel in received_data['MouseClick']:
                     if MULTI_MONITOR:
-                        resolution, offset = _monitor_offset(pixel, store['ResolutionTemp'])
+                    
+                        try:
+                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                        except TypeError:
+                            store['ResolutionTemp'] = monitor_info()
+                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        
                     else:
                         resolution = store['Resolution']
+                        
                     try:
                         maps['Clicks'][resolution][mouse_button][pixel] += 1
                     except KeyError:
