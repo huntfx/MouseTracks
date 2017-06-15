@@ -51,14 +51,14 @@ def merge_resolutions(main_data, interpolate=True, multiple=False):
     #Calculate upscale resolution
     max_x = max(x for x, y in resolutions)
     max_y = max(y for x, y in resolutions)
-    max_resolution = (max(max_x, CONFIG['GenerateImages']['UpscaleResolutionX']),
-                      max(max_y, CONFIG['GenerateImages']['UpscaleResolutionY']))
+    max_resolution = (CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'])
     CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'] = max_resolution
                       
     #Read total number of images that will need to be upscaled
     max_count = 0
     for current_resolution in resolutions:
         if multiple:
+            #max_count += len([None for n in multiple if main_data[current_resolution][n]])
             max_count += len([n for n in main_data[current_resolution] if n])
         else:
             max_count += 1
@@ -261,11 +261,13 @@ def parse_colour_text(colour_name):
             if word_mods:
                 colours['Mult'].append(COLOUR_MODIFIERS[word])
             elif word_colours:
-                colours['Temp'].append(COLOURS_MAIN[word])
+                colours['Temp'].append(list(COLOURS_MAIN[word]))
 
                 #Apply modifiers
                 for mult in colours['Mult'][::-1]:
+                    alpha = colours['Temp'][-1].pop()
                     colours['Temp'][-1] = [mult[0] + mult[1] * c for c in colours['Temp'][-1]]
+                    colours['Temp'][-1] += [min(255, alpha * mult[2])]
                 colours['Mult'] = []
 
             #Merge colours together
@@ -374,7 +376,7 @@ class RenderImage(object):
             lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
             mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
             rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
-            mb = (i for i, v in enumerate((lmb, mmb, rmb)) if v)
+            mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
             value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks', reload=True)
@@ -408,7 +410,10 @@ class ColourMap(object):
         'hazard': 'WhiteToBlackToYellow',
         'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack',
         'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue',
-        'grape': 'WhiteToBlackToMagenta'
+        'grape': 'WhiteToBlackToMagenta',
+        'spiderman': 'RedToBlackToWhite',
+        'shroud': 'GreyToBlackToLightPurple',
+        'blackwidow': 'PurpleToLightCyanWhiteToPurpleToBlack'
     }
     def __getitem__(self, colour_profile):
         if colour_profile.lower() in self._MAPS:
