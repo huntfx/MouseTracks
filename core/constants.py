@@ -4,24 +4,28 @@ from core.functions import SimpleConfig
 DEFAULT_NAME = 'Default'
 
 COLOURS_MAIN = {
-    'red': (255, 0, 0),
-    'green': (0, 255, 0),
-    'blue': (0, 0, 255),
-    'yellow': (255, 255, 0),
-    'cyan': (0, 255, 255),
-    'magenta': (255, 0, 255),
-    'white': (255, 255, 255),
-    'grey': (127, 127, 127),
-    'gray': (127, 127, 127),
-    'black': (0, 0, 0),
-    'orange': (255, 127, 0),
-    'pink': (255, 0, 127),
-    'purple': (127, 0, 255)
+    'red': (255, 0, 0, 255),
+    'green': (0, 255, 0, 255),
+    'blue': (0, 0, 255, 255),
+    'yellow': (255, 255, 0, 255),
+    'cyan': (0, 255, 255, 255),
+    'magenta': (255, 0, 255, 255),
+    'white': (255, 255, 255, 255),
+    'grey': (127, 127, 127, 255),
+    'gray': (127, 127, 127, 255),
+    'black': (0, 0, 0, 255),
+    'orange': (255, 127, 0, 255),
+    'pink': (255, 0, 127, 255),
+    'purple': (127, 0, 255, 255)
 }
 
 COLOUR_MODIFIERS = {
-    'light': (128, 0.5),
-    'dark': (0, 0.5)
+    #name: (add_base, multiplier, alpha_multiplier)
+    'light': (128, 0.5, 1.0),
+    'dark': (0, 0.5, 1.0),
+    'transparent': (0, 1.0, 0.0),
+    'translucent': (0, 1.0, 0.5),
+    'opaque': (0, 1.0, 2.0)
 }
 
 _config_defaults = {
