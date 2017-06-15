@@ -197,7 +197,11 @@ def background_process(q_recv, q_send):
                             resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                         except TypeError:
                             store['ResolutionTemp'] = monitor_info()
-                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            try:
+                                resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            except TypeError:
+                                raise TypeError('couldn\'t determine where {} was. monitor boundaries: {}'
+                                                '. please send me the above message'.format(pixel, store['ResolutionTemp']))
                         
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         if resolution not in store['ResolutionList']:
@@ -237,7 +241,11 @@ def background_process(q_recv, q_send):
                             resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                         except TypeError:
                             store['ResolutionTemp'] = monitor_info()
-                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            try:
+                                resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            except TypeError:
+                                raise TypeError('couldn\'t determine where {} was. monitor boundaries: {}'
+                                                '. please send me the above message'.format(pixel, store['ResolutionTemp']))
                             
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
