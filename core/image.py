@@ -396,9 +396,15 @@ class ColourMap(object):
     """Look up default colours or generate one if the set doesn't exist."""
     _MAPS = {
         'jet': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
-                    'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
-                    'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
+                'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
+                'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
+        'transparentjet': ('TransparentBlackToTranslucentTranslucentDarkBlueTo'
+                           'TranslucentBlueToTranslucentCyanTranslucentBlueBlueBlueTo'
+                           'CyanBlueToCyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellow'
+                           'ToCyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
         'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey',
+        'transparentradiation': ('TransparentBlackToTranslucentRedToYellowTo'
+                                 'WhiteToWhiteWhiteWhiteLightLightGrey'),
         'default': 'WhiteToBlack',
         'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow',
         'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite',
