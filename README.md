@@ -8,7 +8,7 @@ It'll record any monitors you have connected, and it'll merge the results with y
 
 <b>Current Features</b>:
  - Track position, clicks and key presses over multiple resolutions and monitors
- - Generate colourful mouse tracks and a heatmap of clicks
+ - Generate colourful mouse tracks and a heatmap of clicks (for everything or just the latest session)
  - Fade old mouse tracks to keep recent tracks more visible
  - Automatically keep separate tracks for different applications (defined in "Program List.txt")
  - Edit settings with config.ini
@@ -16,7 +16,7 @@ It'll record any monitors you have connected, and it'll merge the results with y
  - Some Linux support
  
 <b>Known Issues:</b>
- - (Windows) The keyboard tracking doesn't work on certain applications
+ - (Windows) The keyboard tracking doesn't work on certain applications (Steam I'm looking at you)
  - Heavy hard drive usage where the page file is stored may cause the script to occasionally jump
  
  <b>Help Needed:</b>
