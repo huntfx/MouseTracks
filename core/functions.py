@@ -388,15 +388,15 @@ _LENGTH = (
 )
 
 
-def ticks_to_seconds(amount, tick_rate, output_length=2):  
+def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True):  
 
     output = []
     time_elapsed = amount / tick_rate
     for name, length, limit, decimals in _LENGTH[::-1]:
-        if decimals is None:
+        if decimals is None or not allow_decimals:
             current = int(time_elapsed // length)
         else:
-            current = round(time_elapsed / length, 2)
+            current = round(time_elapsed / length, decimals)
         if limit is not None:
             current %= limit
 
