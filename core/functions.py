@@ -376,3 +376,38 @@ def find_distance(p1, p2=None, decimal=False):
     if decimal:
         return distance
     return int(round(distance))
+
+
+_LENGTH = (
+    ('second', 1, 60, 2),
+    ('minute', 60, 60, None),
+    ('hour', 60 * 60, 24, None),
+    ('day', 60 * 60 * 24, 7, None),
+    ('week', 60 * 60 * 24 * 7, 52, None),
+    ('year', 60 * 60 * 24 * 365, None, None)
+)
+
+
+def ticks_to_seconds(amount, tick_rate, output_length=2):  
+
+    output = []
+    time_elapsed = amount / tick_rate
+    for name, length, limit, decimals in _LENGTH[::-1]:
+        if decimals is None:
+            current = int(time_elapsed // length)
+        else:
+            current = round(time_elapsed / length, 2)
+        if limit is not None:
+            current %= limit
+
+        if current:
+            output.append('{} {}{}'.format(current, name, '' if current == 1 else 's'))
+            if len(output) == output_length:
+                break
+            
+    if len(output) > 1:
+        result = ' and '.join((', '.join(output[:-1]), output[-1]))
+    else:
+        result = output[-1]
+
+    return result
