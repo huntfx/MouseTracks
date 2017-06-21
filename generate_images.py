@@ -1,7 +1,10 @@
 from __future__ import division
-from core.functions import ticks_to_seconds
-from core.constants import CONFIG
+import time
+import sys
 
+from core.constants import CONFIG
+from core.files import list_files, format_name, load_program
+from core.functions import ticks_to_seconds, RunningPrograms
 
 def simple_bit_mask(selection, size, default_all=True):
     """Turn a range of numbers into True and False.
@@ -39,12 +42,10 @@ def round_up(n):
 
 
 print('Type profile to load, or type "list" to see them all:')
-#profile = raw_input()
-profile = 'Default'
+profile = raw_input()
 
 if profile == 'list':
     
-    from core.files import list_files, format_name
     from core.functions import RunningPrograms
     from core.constants import DEFAULT_NAME
 
@@ -97,6 +98,27 @@ if profile == 'list':
                 break
             except IndexError:
                 print('Number doesn\'t match any profiles')
+
+current_profile = format_name(RunningPrograms().check()[0])
+selected_profile = format_name(profile)
+if current_profile == selected_profile:
+    print('Warning: The profile you selected is currently running.')
+    
+    save_time = ticks_to_seconds(CONFIG['Save']['Frequency'], 1)
+    metadata = load_program(profile, _metadata_only=True)
+    if metadata['Modified'] is None:
+        print('It has not had a chance to save yet, please wait a short while before trying again.')
+        print('The saving frequency is currently set to {}.'.format(save_time))
+        print('Press enter to exit.')
+        raw_input()
+        sys.exit()
+    else:
+        last_save_time = time.time() - metadata['Modified']
+        next_save_time = CONFIG['Save']['Frequency'] - last_save_time
+        last_save = ticks_to_seconds(last_save_time, 1, allow_decimals=False)
+        next_save = ticks_to_seconds(next_save_time, 1, allow_decimals=False)
+        print('It was last saved {} ago, so any tracks more recent than this will not be shown.'.format(last_save))
+        print('The next save is due in roughly {}.'.format(next_save))
 
 
 generate_tracks = False
