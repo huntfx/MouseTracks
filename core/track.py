@@ -113,7 +113,6 @@ def background_process(q_recv, q_send):
         NOTIFY.send(q_send)
 
         maps = store['Data']['Maps']
-        tick_count = store['Data']['Ticks']['Current']
         
         
         while True:
@@ -129,21 +128,24 @@ def background_process(q_recv, q_send):
                 current_program = received_data['Program']
                 
                 if current_program != store['LastProgram']:
-
+                    
+                    #Check new resolution
                     _check_resolution(store, store['Resolution'])
                     store['ResolutionList'] = set()
+                    
                     if current_program is None:
                         NOTIFY(PROGRAM_LOADING)
                     else:
                         NOTIFY(PROGRAM_LOADING, current_program)
                     NOTIFY.send(q_send)
-                        
+                    
+                    #Save old profile
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
-                        
+                    
+                    #Load new profile
                     store['LastProgram'] = current_program
                     store['Data'] = load_program(current_program)
                     maps = store['Data']['Maps']
-                    tick_count = store['Data']['Ticks']['Current']
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -200,8 +202,7 @@ def background_process(q_recv, q_send):
                             try:
                                 resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                             except TypeError:
-                                raise TypeError('couldn\'t determine where {} was. monitor boundaries: {}'
-                                                '. please send me the above message'.format(pixel, store['ResolutionTemp']))
+                                continue
                         
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         if resolution not in store['ResolutionList']:
@@ -211,12 +212,12 @@ def background_process(q_recv, q_send):
                     else:
                         resolution = store['Resolution']
                         
-                    maps['Tracks'][resolution][pixel] = tick_count['Tracks']
+                    maps['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
                 
-                tick_count['Tracks'] += 1
+                store['Data']['Ticks']['Current']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
-                if tick_count['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
+                if store['Data']['Ticks']['Current']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
                     compress_multplier = CONFIG['CompressMaps']['TrackReduction']
                     NOTIFY(MOUSE_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
@@ -228,9 +229,11 @@ def background_process(q_recv, q_send):
                         tracks[resolution] = {k: v for k, v in get_items(tracks[resolution]) if v}
                         if not tracks[resolution]:
                             del tracks[resolution]
+                            
                     NOTIFY(MOUSE_COMPRESS_END, 'track')
                     NOTIFY(QUEUE_SIZE, q_recv.qsize())
-                    tick_count['Tracks'] //= compress_multplier
+                    store['Data']['Ticks']['Current']['Tracks'] //= compress_multplier
+                    store['Data']['Ticks']['Session']['Current'] //= compress_multplier
 
             #Record mouse clicks
             if 'MouseClick' in received_data:
@@ -244,8 +247,7 @@ def background_process(q_recv, q_send):
                             try:
                                 resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                             except TypeError:
-                                raise TypeError('couldn\'t determine where {} was. monitor boundaries: {}'
-                                                '. please send me the above message'.format(pixel, store['ResolutionTemp']))
+                                continue
                             
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
