@@ -35,6 +35,7 @@ try:
     create_folder
     hide_file
     get_running_processes
+    get_modified_time
     
     #Detect if code should use multiple monitors
     #Don't check the length as it's possible a monitor can be plugged in later
@@ -46,11 +47,7 @@ try:
         MULTI_MONITOR = False
         
 except NameError:
-    raise ImportError('missing modules for operating system')
-    
-
-def get_modified_time(file_name):
-    return os.path.getmtime(file_name)
+    raise ImportError('missing functions for operating system')
 
 
 def get_folder_contents(path):
