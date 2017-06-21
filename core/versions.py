@@ -10,7 +10,8 @@ VERSION_HISTORY = [
     '2.0.4',
     '2.0.5',
     '2.0.5b',
-    '2.0.6'
+    '2.0.6',
+    '2.0.6b'
 ]
 VERSION = VERSION_HISTORY[-1]
 
@@ -37,6 +38,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.5: Group maps and add extras for experimenting on
     2.0.5b: Separate tick counts for different maps
     2.0.6: Remove speed and combined maps as they don't look very interesting
+    2.0.6b: Record when session started
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -89,8 +91,13 @@ def upgrade_version(data, update_metadata=True):
         del data['Maps']['Speed']
         del data['Maps']['Combined']
         del data['Ticks']['Current']['Speed']
+    if current_version_id < _get_id('2.0.6b'):
+        data['Ticks']['Session'] = {'Current': data['Ticks']['Current']['Tracks'],
+                                    'Total': data['Ticks']['Total']}
     
     if update_metadata:
         data['Version'] = VERSION
         data['TimesLoaded'] += 1
+        data['Ticks']['Session']['Current'] = data['Ticks']['Current']['Tracks']
+        data['Ticks']['Session']['Total'] = data['Ticks']['Total']
     return data
