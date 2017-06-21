@@ -41,6 +41,13 @@ def create_folder(folder_path):
         return False
     return True
 
+    
+def get_modified_time(file_name):
+    try:
+        return os.path.getmtime(file_name)
+    except WindowsError:
+        return None
+    
 
 def get_running_processes():
     """Return a dictionary of running processes, with their ID as the value.
@@ -60,6 +67,7 @@ def get_running_processes():
                     running_processes[image] = i
     return running_processes
 
+    
 KEYS = {
     'BACK': 8,
     'TAB': 9,
