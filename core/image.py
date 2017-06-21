@@ -35,7 +35,7 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, interpolate=True, multiple=False):
+def merge_resolutions(main_data, interpolate=True, multiple=False, session_start=None):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -58,7 +58,6 @@ def merge_resolutions(main_data, interpolate=True, multiple=False):
     max_count = 0
     for current_resolution in resolutions:
         if multiple:
-            #max_count += len([None for n in multiple if main_data[current_resolution][n]])
             max_count += len([n for n in main_data[current_resolution] if n])
         else:
             max_count += 1
@@ -98,8 +97,11 @@ def merge_resolutions(main_data, interpolate=True, multiple=False):
                 new_data.append([])
                 for x in width_range:
                     try:
-                        new_data[-1].append(data[(x, y)])
-                        total += data[(x, y)]
+                        value = data[(x, y)]
+                        if session_start is not None:
+                            value = max(0, value - session_start)
+                        new_data[-1].append(value)
+                        total += value
                     except KeyError:
                         new_data[-1].append(0)
                     else:
@@ -113,7 +115,9 @@ def merge_resolutions(main_data, interpolate=True, multiple=False):
                 numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
             else:
                 numpy_arrays.append(np.array(new_data))
-                
+    
+    if session_start is not None:
+        highest_value -= session_start
     return (lowest_value, highest_value), numpy_arrays
 
 
@@ -357,16 +361,19 @@ def arrays_to_colour(colour_range, numpy_arrays):
 class RenderImage(object):
     def __init__(self, profile):
         self.profile = profile
-        self.data = load_program(profile)
+        self.data = load_program(profile, _update_version=False)
         self.name = ImageName(profile)
 
-    def generate(self, image_type):
+    def generate(self, image_type, last_session=False):
         image_type = image_type.lower()
         if image_type not in ('tracks', 'clicks'):
             raise ValueError('image type must be given as either tracks or clicks')
-
+        
+        session_start = self.data['Ticks']['Session']['Current'] if last_session else None
+        
         if image_type == 'tracks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True, 
+                                                          session_start=session_start)
             colour_map = CONFIG['GenerateTracks']['ColourProfile']
             colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
             image_output = arrays_to_colour(colour_range, numpy_arrays)
@@ -377,7 +384,8 @@ class RenderImage(object):
             mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
             rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
             mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb)
+            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb,
+                                                          session_start=session_start)
             image_output = _click_heatmap(numpy_arrays)
             image_name = self.name.generate('Clicks', reload=True)
         
