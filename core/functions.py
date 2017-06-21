@@ -152,10 +152,10 @@ class ColourRange(object):
         #Cache results for quick access
         self.cache = []
         for i in range(self._step_max + 1):
-            self.cache.append(self.calculate_colour(i * self._step_size))
+            self.cache.append(self.calculate_colour(self.amount[0] + i * self._step_size))
             
     def __getitem__(self, n):
-        value_index = int(n / self._step_size)
+        value_index = int((n - self.amount[0]) / self._step_size)
         if self.loop:
             if value_index != self._step_max:
                 return self.cache[value_index % self._step_max]
