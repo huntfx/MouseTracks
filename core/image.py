@@ -371,26 +371,31 @@ class RenderImage(object):
         
         session_start = self.data['Ticks']['Session']['Current'] if last_session else None
         
-        if image_type == 'tracks':
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True, 
-                                                          session_start=session_start)
-            colour_map = CONFIG['GenerateTracks']['ColourProfile']
-            colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
-            image_output = arrays_to_colour(colour_range, numpy_arrays)
-            image_name = self.name.generate('Tracks', reload=True)
-            
-        elif image_type == 'clicks':
-            lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
-            mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
-            rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
-            mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
-            value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb,
-                                                          session_start=session_start)
-            image_output = _click_heatmap(numpy_arrays)
-            image_name = self.name.generate('Clicks', reload=True)
+        if not self.data['Ticks']['Total']:
+            image_output = None
         
-        resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
-                      CONFIG['GenerateImages']['OutputResolutionY'])
+        else:
+            if image_type == 'tracks':
+                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True, 
+                                                              session_start=session_start)
+                colour_map = CONFIG['GenerateTracks']['ColourProfile']
+                colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
+                image_output = arrays_to_colour(colour_range, numpy_arrays)
+                image_name = self.name.generate('Tracks', reload=True)
+                
+            elif image_type == 'clicks':
+                lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
+                mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
+                rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
+                mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
+                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb,
+                                                              session_start=session_start)
+                image_output = _click_heatmap(numpy_arrays)
+                image_name = self.name.generate('Clicks', reload=True)
+            
+            resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
+                          CONFIG['GenerateImages']['OutputResolutionY'])
+                          
         if image_output is None:
             print_override('No image data for type "{}"'.format(image_type))
         else:
