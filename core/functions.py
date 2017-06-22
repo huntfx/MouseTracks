@@ -404,7 +404,10 @@ def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True):
             output.append('{} {}{}'.format(current, name, '' if current == 1 else 's'))
             if len(output) == output_length:
                 break
-            
+    
+    if not output:
+        output.append('{} {}s'.format(current, name))
+    
     if len(output) > 1:
         result = ' and '.join((', '.join(output[:-1]), output[-1]))
     else:
