@@ -2,7 +2,7 @@ from __future__ import division
 import time
 import sys
 
-from core.constants import CONFIG
+from core.constants import CONFIG, DEFAULT_NAME
 from core.files import list_files, format_name, load_program
 from core.functions import ticks_to_seconds, RunningPrograms
 
@@ -41,23 +41,26 @@ def round_up(n):
     return i
 
 
+CONFIG.save()
 print('Type profile to load, or type "list" to see them all:')
 profile = raw_input()
 
 if profile == 'list':
-    
-    from core.functions import RunningPrograms
-    from core.constants import DEFAULT_NAME
 
     #Read the data folder and format names
     all_files = sorted(list_files())
+    if not all_files:
+        print('Sorry, nothing was found in the data folder.')
+        print('Press enter to exit.')
+        raw_input()
+        sys.exit()
     programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
     for program_name in RunningPrograms(list_only=True).programs.values():
         programs[format_name(program_name)] = program_name
     all_files = [f for f in all_files if f in programs or f == 'default']
 
     page = 1
-    limit = 6
+    limit = 10
     maximum = len(all_files)
     total_pages = round_up(maximum / limit)
 
@@ -77,10 +80,14 @@ if profile == 'list':
             try:
                 page = int(profile.split()[1])
                 if not 0 < page <= total_pages:
-                    page = last_page
                     raise ValueError
-            except (ValueError, IndexError):
+            except IndexError:
                 print('Invalid page number')
+            except ValueError:
+                if page > total_pages:
+                    page = total_pages
+                else:
+                    page = 1
         elif profile == '>':
             if page < total_pages:
                 page += 1
@@ -99,10 +106,14 @@ if profile == 'list':
             except IndexError:
                 print('Number doesn\'t match any profiles')
 
-running = RunningPrograms().check()
-if running is not None:
+
+try:
     current_profile = format_name(RunningPrograms().check()[0])
+except TypeError:
+    pass
+else:
     selected_profile = format_name(profile)
+    
     if current_profile == selected_profile:
         print('Warning: The profile you selected is currently running.')
         
@@ -151,6 +162,7 @@ if result[1]:
     CONFIG['GenerateHeatmap']['MouseButtonRight'] = heatmap_buttons[2]
     if not heatmap_buttons:
         generate_heatmap = False
+
 
 if generate_tracks or generate_heatmap:
     print('Importing modules...')
