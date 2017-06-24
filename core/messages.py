@@ -19,6 +19,7 @@ MOUSE_HELD = 12
 MOUSE_COMPRESS_START = 13
 MOUSE_COMPRESS_END = 14
 RESOLUTION_CHANGED = 16
+MONITOR_CHANGED = 17
 KEYBOARD_PRESSES = 32
 KEYBOARD_PRESSES_HELD = 33
 PROGRAM_STARTED = 48
@@ -89,6 +90,8 @@ class Notify(object):
         if message_id == RESOLUTION_CHANGED:
             q2('Resolution changed from {}x{} to {}x{}'.format(args[0][0], args[0][1],
                                                                args[1][0], args[1][1]))
+        if message_id == MONITOR_CHANGED:
+            q1('Recording resolution switched to {}p.'.format(args[1][1]))
         if message_id == KEYBOARD_PRESSES:
             q1('Key Presses: {}'.format(', '.join(*args)))
         if message_id == KEYBOARD_PRESSES_HELD:
