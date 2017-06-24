@@ -4,41 +4,7 @@ import sys
 
 from core.constants import CONFIG, DEFAULT_NAME
 from core.files import list_files, format_name, load_program
-from core.functions import ticks_to_seconds, RunningPrograms
-
-def simple_bit_mask(selection, size, default_all=True):
-    """Turn a range of numbers into True and False.
-    For example, [1, 3, 4] would result in [True, False, True, True].
-    I'm aware it's probably a bit overkill, kinda liked the idea though.
-    """
-    
-    #Calculate total
-    total = 0
-    for n in selection:
-        try:
-            total += pow(2, int(n) - 1)
-        except ValueError:
-            pass
-    
-    #Convert to True or False
-    values = map(bool, list(map(int, str(bin(total))[2:]))[::-1])
-    size_difference = max(0, size - len(values))
-    if size_difference:
-        values += [False] * size_difference
-    
-    #Set to use everything if an empty selection is given
-    if default_all:
-        if not any(values):
-            values = [True] * size
-    
-    return values
-
-
-def round_up(n):
-    i = int(n)
-    if float(n) - i:
-        i += 1
-    return i
+from core.functions import ticks_to_seconds, RunningPrograms, simple_bit_mask, round_up
 
 
 CONFIG.save()
@@ -148,7 +114,6 @@ if result[0]:
     generate_tracks = True
     
 if result[1]:
-    from core.constants import CONFIG
     
     generate_heatmap = True
     print('Which mouse buttons should be included in the heatmap?.')
