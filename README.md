@@ -15,26 +15,6 @@ It'll record any monitors you have connected, and it'll merge the results with y
  - Full Windows support
  - Some Linux support
  
-<b>Known Issues:</b>
- - (Windows) The keyboard tracking doesn't work on certain applications (Steam I'm looking at you)
- - Heavy hard drive usage where the page file is stored may cause the script to occasionally jump
- 
- <b>Help Needed:</b>
- - Help decide on a more interesting name than "Mouse Tracks"
- - Mac support
- - Linux keyboard tracking/monitor coordinate limits
- 
- <b>To Do List:</b>
- - Add more optional variables to image name
- - Change guassian blur from an actual value to a multiplier
- - Write more robust code to save the image (so it doesn't crash if the folder doesn't exist)
- - Improved path options (to allow things like %APPDATA% to be used)
- - Export raw data for others to visualize
- - Move AFK detection to background process (I found one case where it may not save everything)
- - Attempt to separate the background thread, so it'll fully complete before quitting
- - Save new image every x minutes to be used in a sequence
- - Simple analytics (with option to turn off)
- 
 <b>Example Output:</b>
 <img src="http://i.imgur.com/UJgf0up.jpg">
 <img src="http://i.imgur.com/HL023Cr.jpg">
