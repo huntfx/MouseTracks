@@ -414,3 +414,38 @@ def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True):
         result = output[-1]
 
     return result
+    
+
+def simple_bit_mask(selection, size, default_all=True):
+    """Turn a range of numbers into True and False.
+    For example, [1, 3, 4] would result in [True, False, True, True].
+    I'm aware it's probably a bit overkill, kinda liked the idea though.
+    """
+    
+    #Calculate total
+    total = 0
+    for n in selection:
+        try:
+            total += pow(2, int(n) - 1)
+        except ValueError:
+            pass
+    
+    #Convert to True or False
+    values = map(bool, list(map(int, str(bin(total))[2:]))[::-1])
+    size_difference = max(0, size - len(values))
+    if size_difference:
+        values += [False] * size_difference
+    
+    #Set to use everything if an empty selection is given
+    if default_all:
+        if not any(values):
+            values = [True] * size
+    
+    return values
+
+
+def round_up(n):
+    i = int(n)
+    if float(n) - i:
+        i += 1
+    return i
