@@ -48,6 +48,13 @@ def get_modified_time(file_name):
     except WindowsError:
         return None
     
+    
+def list_directory(folder):
+    try:
+        return os.listdir(folder)
+    except WindowsError:
+        return None
+        
 
 def get_running_processes():
     """Return a dictionary of running processes, with their ID as the value.
