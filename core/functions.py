@@ -8,6 +8,7 @@ import time
 from core.constants import PROGRAM_LIST_URL, CONFIG
 from core.online import get_url_contents
 from core.os import get_cursor_pos, get_running_processes
+from core.messages import *
 
 if sys.version_info.major == 2:
     range = xrange
@@ -191,7 +192,8 @@ class RunningPrograms(object):
                  ', "Game.exe" by itself will use "Game" as its name.',
                  '']
 
-    def __init__(self, program_list='Program List.txt', list_only=False):
+    def __init__(self, program_list='Program List.txt', list_only=False, queue=None):
+        self.q = queue
         if not list_only:
             self.refresh()
         self.program_list = program_list
@@ -211,8 +213,12 @@ class RunningPrograms(object):
         internet_allowed = CONFIG['Internet']['Enable']
         last_updated = CONFIG['SavedSettings']['ProgramListUpdate']
         update_frequency = CONFIG['Internet']['UpdatePrograms']
-        if internet_allowed and (not last_updated or last_updated > update_frequency + time.time()):
-            print_override('Updating programs list from internet...')
+        if internet_allowed and (not last_updated or last_updated < time.time() - update_frequency):
+        
+            if self.q is not None:
+                NOTIFY(PROGRAM_UPDATE_START)
+                NOTIFY.send(self.q)
+                
             download_program_list = get_url_contents(PROGRAM_LIST_URL)
             if download_program_list is not None:
                 downloaded_programs = self._format_programs(download_program_list)
@@ -222,6 +228,15 @@ class RunningPrograms(object):
                 CONFIG['SavedSettings']['ProgramListUpdate'] = int(time.time())
                 CONFIG.save()
                 self.save_file()
+                
+                if self.q is not None:
+                    NOTIFY(PROGRAM_UPDATE_END_SUCCESS)
+                    NOTIFY.send(self.q)
+            else:
+            
+                if self.q is not None:
+                    NOTIFY(PROGRAM_UPDATE_END_FAIL)
+                    NOTIFY.send(self.q)
                 
     def _format_programs(self, program_lines):
     
