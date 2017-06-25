@@ -208,15 +208,15 @@ class RunningPrograms(object):
 
         self.programs = self._format_programs(lines)
         
+        internet_allowed = CONFIG['Internet']['Enable']
         last_updated = CONFIG['SavedSettings']['ProgramListUpdate']
-        if not last_updated or last_updated < time.time():
+        update_frequency = CONFIG['Internet']['UpdatePrograms']
+        if internet_allowed and (not last_updated or last_updated > update_frequency + time.time()):
             print_override('Updating programs list from internet...')
             download_program_list = get_url_contents(PROGRAM_LIST_URL)
             if download_program_list is not None:
                 downloaded_programs = self._format_programs(download_program_list)
                 for k, v in downloaded_programs.iteritems():
-                    if 'ggu' in k:
-                        print k
                     if k not in self.programs:
                         self.programs[k] = v
                 CONFIG['SavedSettings']['ProgramListUpdate'] = int(time.time())
