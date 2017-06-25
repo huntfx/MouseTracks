@@ -54,7 +54,8 @@ _config_defaults = {
         'WaitAfterFail': (5, int, 1, 'How many seconds to wait before trying again.')
     },
     'Paths': {
-        'Data': ('Data', str)
+        '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
+        'Data': ('%DOCUMENTS%\\Mouse Tracks\Data', str)
     },
     'Timer': {
         'CheckPrograms': (2, int, 1),
@@ -71,7 +72,7 @@ _config_defaults = {
         'FileType': ('png', str)
     },
     'GenerateHeatmap': {
-        'NameFormat': ('Result\\[FriendlyName] [MouseButtons] Heatmap - [ColourProfile]', str),
+        'NameFormat': ('%DOCUMENTS%\\Mouse Tracks\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]', str),
         'MouseButtonLeft': (True, bool),
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
@@ -93,7 +94,7 @@ _config_defaults = {
                                              ' to get it right.')
     },
     'GenerateTracks': {
-        'NameFormat': ('Result\\[FriendlyName] Tracks - [ColourProfile]', str),
+        'NameFormat': ('%DOCUMENTS%\\Mouse Tracks\\Images\\[FriendlyName] Tracks - [ColourProfile]', str),
         'ColourProfile': ('WhiteToBlack', str)
     }
 }
@@ -101,3 +102,5 @@ _config_defaults = {
 _config_order = ['Main', 'Paths', 'CompressMaps', 'Save', 'Timer', 'GenerateImages', 'GenerateHeatmap', 'GenerateTracks']
 
 CONFIG = SimpleConfig('config.ini', _config_defaults, _config_order)
+
+PROGRAM_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/Program%20List.txt'
