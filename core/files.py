@@ -5,7 +5,8 @@ import sys
 import time
 import zlib
 
-from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
+from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time
+from core.os import list_directory, get_documents_path, read_env_var
 from core.versions import VERSION, upgrade_version
 from core.constants import DEFAULT_NAME, CONFIG
 
@@ -13,12 +14,6 @@ if sys.version_info.major == 2:
     import cPickle
 else:
     import pickle as cPickle
-
-    
-DATA_FOLDER = CONFIG['Paths']['Data']
-DATA_NAME = '[PROGRAM].data'
-DATA_BACKUP_FOLDER = '.backup'
-DATA_TEMP_FOLDER = '.temp'
 
 
 def format_name(name):
@@ -29,7 +24,14 @@ def format_folder_path(path):
     parts = path.replace('\\', '/').split('/')
     if '.' in parts[-1]:
         del parts[-1]
-    return '/'.join(i for i in parts if i)
+    for i, part in enumerate(parts):
+        if part == '%DOCUMENTS%':
+            parts[i] = get_documents_path()
+        else:
+            env_var = read_env_var(part)
+            if env_var is not None:
+                parts[i] = env_var
+    return '/'.join(i.replace('\\', '/') for i in parts if i)
 
     
 def _get_paths(program_name):
@@ -113,3 +115,9 @@ def list_files():
         return []
     extension = DATA_NAME.replace('[PROGRAM]', '')
     return [i.replace(extension, '') for i in all_files if i.endswith(extension)]
+
+    
+DATA_FOLDER = format_folder_path(CONFIG['Paths']['Data'])
+DATA_NAME = '[PROGRAM].data'
+DATA_BACKUP_FOLDER = '.backup'
+DATA_TEMP_FOLDER = '.temp'
