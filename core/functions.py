@@ -1,13 +1,15 @@
 from __future__ import division
 from threading import Thread
 from multiprocessing import Process, Queue
-from sys import version_info
+import sys
 import os
 import time
 
+from core.constants import PROGRAM_LIST_URL, CONFIG
+from core.online import get_url_contents
 from core.os import get_cursor_pos, get_running_processes
 
-if version_info.major == 2:
+if sys.version_info.major == 2:
     range = xrange
 
     
@@ -24,16 +26,6 @@ def error_output(trace, file_name='error.txt'):
         f.write(trace)
     print_override(trace)
     time.sleep(5)
-    
-
-def get_items(d):
-    """As Python 2 and 3 have different ways of getting items,
-    any attempt should be wrapped in this function.
-    """
-    if version_info.major == 2:
-        return d.iteritems()
-    else:
-        return d.items()
 
 
 class RefreshRateLimiter(object):
@@ -190,6 +182,15 @@ class ColourRange(object):
 
 
 class RunningPrograms(object):
+
+    HELP_TEXT = ['// Type any apps you want to be tracked here.',
+                 '// Two separate apps may have the same name, and will be tracked under the same file.',
+                 '// Put each app on a new line, in the format "Game.exe: Name".'
+                 ' The executable file is case sensitive.',
+                 '// Alternatively if the app is already named with the correct name'
+                 ', "Game.exe" by itself will use "Game" as its name.',
+                 '']
+
     def __init__(self, program_list='Program List.txt', list_only=False):
         if not list_only:
             self.refresh()
@@ -201,22 +202,35 @@ class RunningPrograms(object):
             with open(self.program_list, 'r') as f:
                 lines = f.readlines()
         except IOError:
+            lines = self.HELP_TEXT + ['// game.exe: Name']
             with open(self.program_list, 'w') as f:
-                lines = ['# Type any programs you want to be tracked here.',
-                         '# It is done in the format "CaseSensitive.exe: name"'
-                         ', where two can have the same name.',
-                         '# If no name is given it\'ll default to the filename.',
-                         '# In the case of multiple programs loaded at the same time'
-                         ', the program will try select the most recently loaded.',
-                         '',
-                         'game.exe: Name']
                 f.write('\r\n'.join(lines))
 
-        programs = tuple(i.strip() for i in lines)
-        self.programs = {}
-        program_type = None #1: windows, 2: linux, 3: mac
-        for program_info in programs:
-            if not program_info or program_info[0] in ('#', ';', '//'):
+        self.programs = self._format_programs(lines)
+        
+        last_updated = CONFIG['SavedSettings']['ProgramListUpdate']
+        if not last_updated or last_updated < time.time():
+            print_override('Updating programs list from internet...')
+            download_program_list = get_url_contents(PROGRAM_LIST_URL)
+            if download_program_list is not None:
+                downloaded_programs = self._format_programs(download_program_list)
+                for k, v in downloaded_programs.iteritems():
+                    if 'ggu' in k:
+                        print k
+                    if k not in self.programs:
+                        self.programs[k] = v
+                CONFIG['SavedSettings']['ProgramListUpdate'] = int(time.time())
+                CONFIG.save()
+                self.save_file()
+                
+    def _format_programs(self, program_lines):
+    
+        program_dict = {}
+        for program_info in program_lines:
+        
+            program_info = program_info.strip()
+            
+            if not program_info or any(program_info.startswith(i) for i in ('#', ';', '/')):
                 continue
             
             program_lc = program_info.lower()
@@ -234,11 +248,41 @@ class RunningPrograms(object):
             except IndexError:
                 friendly_name = program_info[:ext_len]
             
-            self.programs[program_name] = friendly_name
-            
+            program_dict[program_name] = friendly_name
+        
+        return program_dict
+        
     def refresh(self):
         self.processes = get_running_processes()
+    
+    def save_file(self):
+        lines = self.HELP_TEXT
         
+        sorted_program_list = sorted(self.programs.keys(), key=lambda s: s.lower())
+        for program_info in sorted_program_list:
+            friendly_name = self.programs[program_info]
+        
+            if not program_info or any(program_info.startswith(i) for i in ('#', ';', '/')):
+                continue
+            
+            program_lc = program_info.lower()
+            if '.exe' in program_lc:
+                ext_len = len(program_lc.split('.exe')[0])
+                program_name = program_info[:ext_len]
+            elif '.app' in program_lc:
+                ext_len = len(program_lc.split('.app')[0])
+                program_name = program_info[:ext_len]
+            else:
+                continue
+            
+            if program_name == friendly_name:
+                lines.append(program_info)
+            else:
+                lines.append('{}: {}'.format(program_info, friendly_name))
+        
+        with open(self.program_list, 'w') as f:
+            f.write('\r\n'.join(lines))
+    
     def check(self):
         """Check for any programs in the list that are currently loaded.
         Choose the one with the highest ID as it'll likely be the most recent one.
@@ -251,121 +295,6 @@ class RunningPrograms(object):
             return None
         latest_program = matching_programs[max(matching_programs.keys())]
         return (self.programs[latest_program], latest_program)
-
-
-class SimpleConfig(object):
-    def __init__(self, file_name, default_data, group_order=None):
-        self.file_name = file_name
-        self._default_data = default_data
-        self.default_data = {}
-        self.order = list(group_order) if group_order is not None else []
-        for group, data in self._default_data.iteritems():
-            self.default_data[group] = self._default_data[group]
-        self.load()
-    
-    def load(self):
-        try:
-            with open(self.file_name, 'r') as f:
-                config_lines = [i.strip() for i in f.readlines()]
-        except IOError:
-            config_lines = []
-        
-        #Read user values
-        config_data = {}
-        for line in config_lines:
-            if not line:
-                continue
-            if line.startswith('['):
-                current_group = line[1:].split(']', 1)[0]
-                config_data[current_group] = {}
-            elif line[0] in (';', '/', '#'):
-                pass
-            else:
-                name, value = [i.strip() for i in line.split('=')]
-                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
-                try:
-                    default_value, default_type = self.default_data[current_group][name][:2]
-                except KeyError:
-                    pass
-                else:
-                    if default_type == bool:
-                        if value.lower() in ('0', 'false'):
-                            value = False
-                        elif value.lower() in ('1', 'true'):
-                            value = True
-                        else:
-                            value = default_value
-                            
-                    elif default_type == int:
-                        if '.' in value:
-                            value = value.split('.')[0]
-                        try:
-                            value = int(value)
-                        except ValueError:
-                            value = default_value
-                            
-                    elif default_type == str:
-                        value = str(value).rstrip()
-                        
-                    else:
-                        value = default_type(value)
-                    
-                    #Handle min/max values
-                    if default_type in (int, float):
-                        no_text = [i for i in self.default_data[current_group][name] if not isinstance(i, str)]
-                        if len(no_text) >= 3:
-                            if no_text[2] is not None and no_text[2] > value:
-                                value = no_text[2]
-                            elif len(no_text) >= 4:
-                                if no_text[3] is not None and no_text[3] < value:
-                                    value = no_text[3]
-                
-                config_data[current_group][name] = value
-        
-        #Add any remaining default values
-        for group, variables in get_items(self.default_data):
-            for variable, defaults in get_items(variables):
-                try:
-                    config_data[group][variable]
-                except KeyError:
-                    try:
-                        config_data[group][variable] = defaults[0]
-                    except KeyError:
-                        config_data[group] = {variable: defaults[0]}
-
-        self.data = config_data        
-        return self.data
-
-    def save(self):
-    
-        extra_items = list(set(self._default_data.keys()) - set(self.order))
-        
-        output = []
-        for group in self.order + extra_items:
-            variables = self._default_data[group]
-            if output:
-                output.append('')
-            output.append('[{}]'.format(group))
-            if '__note__' in variables:
-                for note in variables.pop('__note__'):
-                    output.append('// {}'.format(note))
-            for variable in sorted(variables.keys()):
-                defaults = variables[variable]
-                try:
-                    value = self.data[group][variable]
-                except KeyError:
-                    value = defaults[0]
-                output.append('{} = {}'.format(variable, value))
-                try:
-                    if isinstance(defaults[-1], str) and defaults[-1]:
-                        output[-1] += '    // {}'.format(defaults[-1])
-                except IndexError:
-                    pass
-        with open(self.file_name, 'w') as f:
-            f.write('\n'.join(output))
-
-    def __getitem__(self, item):
-        return self.data[item]
     
 
 def find_distance(p1, p2=None, decimal=False):
@@ -442,10 +371,3 @@ def simple_bit_mask(selection, size, default_all=True):
             values = [True] * size
     
     return values
-
-
-def round_up(n):
-    i = int(n)
-    if float(n) - i:
-        i += 1
-    return i
