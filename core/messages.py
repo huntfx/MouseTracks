@@ -27,6 +27,9 @@ PROGRAM_QUIT = 49
 PROGRAM_RELOAD = 50
 PROGRAM_LISTEN = 51
 PROGRAM_LOADING = 52
+PROGRAM_UPDATE_START = 53
+PROGRAM_UPDATE_END_SUCCESS = 54
+PROGRAM_UPDATE_END_FAIL = 55
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
@@ -114,6 +117,12 @@ class Notify(object):
             q1('Finished reloading program list.')
         if message_id == PROGRAM_LISTEN:
             q1('Started checking for running programs.')
+        if message_id == PROGRAM_UPDATE_START:
+            q1('Updating programs list from internet...')
+        if message_id == PROGRAM_UPDATE_END_SUCCESS:
+            q1('Finished updating.')
+        if message_id == PROGRAM_UPDATE_END_FAIL:
+            q1('Failed to establish a connection.')
         if message_id == SAVE_START:
             q2('Saving the file...')
         if message_id == SAVE_SUCCESS:
