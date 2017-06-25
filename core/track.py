@@ -1,16 +1,16 @@
 from __future__ import division
-from sys import version_info
 import time
 import sys
 import traceback
 
 from core.constants import CONFIG
 from core.files import load_program, save_program
-from core.functions import calculate_line, RunningPrograms, find_distance, get_items
+from core.functions import calculate_line, RunningPrograms, find_distance
+from core.simple import get_items
 from core.messages import *
 from core.os import MULTI_MONITOR, monitor_info
 
-if version_info == 2:
+if sys.version_info == 2:
     range = xrange
     
 
@@ -19,7 +19,7 @@ def running_processes(q_recv, q_send, background_send):
     As refreshing the list takes some time but not CPU, this is put in its own thread
     and sends the currently running program to the backgrund process.
     """
-    running = RunningPrograms()
+    
     previous = None
         
     while True:
@@ -27,7 +27,10 @@ def running_processes(q_recv, q_send, background_send):
         received_data = q_recv.get()
 
         if 'Reload' in received_data:
-            running.reload_file()
+            try:
+                running.reload_file()
+            except NameError:
+                running = RunningPrograms()
             NOTIFY(PROGRAM_RELOAD)
 
         if 'Update' in received_data:
