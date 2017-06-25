@@ -1,5 +1,6 @@
 import win32api
 import win32con
+from win32com.shell import shell, shellcon
 
 
 def hide_file(file_name):
@@ -75,4 +76,4 @@ def get_monitor_locations():
     
     
 def get_documents_path():
-    return win32com.shell.shell.SHGetFolderPath(0, win32com.shell.shellcon.CSIDL_PERSONAL, None, 0)
+    return shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
