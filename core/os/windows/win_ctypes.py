@@ -30,7 +30,7 @@ def get_refresh_rate():
 
 
 class _POINT(ctypes.Structure):
-    _fields_ = [("x", ctypes.c_ulong), ("y", ctypes.c_ulong)]
+    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
 
 
 def get_cursor_pos():
