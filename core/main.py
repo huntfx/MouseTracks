@@ -5,7 +5,8 @@ import time
 
 from core.os import monitor_info, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR
 from core.messages import *
-from core.functions import RefreshRateLimiter, error_output, RunningPrograms, get_items, print_override
+from core.functions import RefreshRateLimiter, error_output, print_override
+from core.simple import get_items
 from core.constants import *
 from core.track import background_process, running_processes, monitor_offset
 
@@ -234,19 +235,22 @@ def start_tracking():
             
             #Display message that mouse has switched monitors
             if MULTI_MONITOR and 'MouseMove' in frame_data:
-            
+                
                 try:
-                    res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
+                    try:
+                        res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
+                    except TypeError:
+                        frame_data['MonitorLimits'] = monitor_info()
+                        store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
+                        res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
                 except TypeError:
-                    frame_data['MonitorLimits'] = monitor_info()
-                    store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
-                    res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
-                    
-                store['Resolution']['Current'] = res
-                if store['Resolution']['Previous'] is not None:
-                    if store['Resolution']['Current'] != store['Resolution']['Previous']:
-                        NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
-                store['Resolution']['Previous'] = store['Resolution']['Current']
+                    pass
+                else:
+                    store['Resolution']['Current'] = res
+                    if store['Resolution']['Previous'] is not None:
+                        if store['Resolution']['Current'] != store['Resolution']['Previous']:
+                            NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
+                    store['Resolution']['Previous'] = store['Resolution']['Current']
 
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
