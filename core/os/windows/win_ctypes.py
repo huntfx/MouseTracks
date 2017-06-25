@@ -1,4 +1,5 @@
 import ctypes
+import ctypes.wintypes
 
 
 def hide_file(file_name):
@@ -125,3 +126,9 @@ def _monitor_areas():
 def get_monitor_locations():
     """Extract locations from monitor functions."""
     return [m[1] for m in _monitor_areas()]
+
+    
+def get_documents_path():
+    buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+    ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
+    return buf.value
