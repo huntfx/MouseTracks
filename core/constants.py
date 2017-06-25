@@ -1,32 +1,121 @@
-from core.functions import SimpleConfig
+from __future__ import division
 
+from core.simple import get_items
 
-DEFAULT_NAME = 'Default'
+class SimpleConfig(object):
+    def __init__(self, file_name, default_data, group_order=None):
+        self.file_name = file_name
+        self._default_data = default_data
+        self.default_data = {}
+        self.order = list(group_order) if group_order is not None else []
+        for group, data in self._default_data.iteritems():
+            self.default_data[group] = self._default_data[group]
+        self.load()
+    
+    def load(self):
+        try:
+            with open(self.file_name, 'r') as f:
+                config_lines = [i.strip() for i in f.readlines()]
+        except IOError:
+            config_lines = []
+        
+        #Read user values
+        config_data = {}
+        for line in config_lines:
+            if not line:
+                continue
+            if line.startswith('['):
+                current_group = line[1:].split(']', 1)[0]
+                config_data[current_group] = {}
+            elif line[0] in (';', '/', '#'):
+                pass
+            else:
+                name, value = [i.strip() for i in line.split('=')]
+                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
+                try:
+                    default_value, default_type = self.default_data[current_group][name][:2]
+                except KeyError:
+                    pass
+                else:
+                    if default_type == bool:
+                        if value.lower() in ('0', 'false'):
+                            value = False
+                        elif value.lower() in ('1', 'true'):
+                            value = True
+                        else:
+                            value = default_value
+                            
+                    elif default_type == int:
+                        if '.' in value:
+                            value = value.split('.')[0]
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            value = default_value
+                            
+                    elif default_type == str:
+                        value = str(value).rstrip()
+                        
+                    else:
+                        value = default_type(value)
+                    
+                    #Handle min/max values
+                    if default_type in (int, float):
+                        no_text = [i for i in self.default_data[current_group][name] if not isinstance(i, str)]
+                        if len(no_text) >= 3:
+                            if no_text[2] is not None and no_text[2] > value:
+                                value = no_text[2]
+                            elif len(no_text) >= 4:
+                                if no_text[3] is not None and no_text[3] < value:
+                                    value = no_text[3]
+                
+                config_data[current_group][name] = value
+        
+        #Add any remaining default values
+        for group, variables in get_items(self.default_data):
+            for variable, defaults in get_items(variables):
+                try:
+                    config_data[group][variable]
+                except KeyError:
+                    try:
+                        config_data[group][variable] = defaults[0]
+                    except KeyError:
+                        config_data[group] = {variable: defaults[0]}
 
-COLOURS_MAIN = {
-    'red': (255, 0, 0, 255),
-    'green': (0, 255, 0, 255),
-    'blue': (0, 0, 255, 255),
-    'yellow': (255, 255, 0, 255),
-    'cyan': (0, 255, 255, 255),
-    'magenta': (255, 0, 255, 255),
-    'white': (255, 255, 255, 255),
-    'grey': (127, 127, 127, 255),
-    'gray': (127, 127, 127, 255),
-    'black': (0, 0, 0, 255),
-    'orange': (255, 127, 0, 255),
-    'pink': (255, 0, 127, 255),
-    'purple': (127, 0, 255, 255)
-}
+        self.data = config_data        
+        return self.data
 
-COLOUR_MODIFIERS = {
-    #name: (add_base, multiplier, alpha_multiplier)
-    'light': (128, 0.5, 1.0),
-    'dark': (0, 0.5, 1.0),
-    'transparent': (0, 1.0, 0.0),
-    'translucent': (0, 1.0, 0.5),
-    'opaque': (0, 1.0, 2.0)
-}
+    def save(self):
+    
+        extra_items = list(set(self._default_data.keys()) - set(self.order))
+        
+        output = []
+        for group in self.order + extra_items:
+            variables = self._default_data[group]
+            if output:
+                output.append('')
+            output.append('[{}]'.format(group))
+            if '__note__' in variables:
+                for note in variables.pop('__note__'):
+                    output.append('// {}'.format(note))
+            for variable in sorted(variables.keys()):
+                defaults = variables[variable]
+                try:
+                    value = self.data[group][variable]
+                except KeyError:
+                    value = defaults[0]
+                output.append('{} = {}'.format(variable, value))
+                try:
+                    if isinstance(defaults[-1], str) and defaults[-1]:
+                        output[-1] += '    // {}'.format(defaults[-1])
+                except IndexError:
+                    pass
+        with open(self.file_name, 'w') as f:
+            f.write('\n'.join(output))
+
+    def __getitem__(self, item):
+        return self.data[item]
+        
 
 _config_defaults = {
     'Main': {
@@ -45,9 +134,9 @@ _config_defaults = {
     },
     'Save': {
         'Frequency': (180, int, 20, 'Choose how often to save the file, don\'t set it too low'
-                                          ' or the program won\'t be able to keep up.'),
+                                    ' or the program won\'t be able to keep up.'),
         'MaximumAttemptsNormal': (3, int, 1, 'Maximum number of failed save attempts'
-                                          ' before the tracking continues.'),
+                                             ' before the tracking continues.'),
         'MaximumAttemptsSwitch': (24, int, 1, 'Maximum number of failed save attempts'
                                           ' when switching profile.'
                                           ' If this fails then the latest data will be lost.'),
@@ -56,6 +145,10 @@ _config_defaults = {
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
         'Data': ('%DOCUMENTS%\\Mouse Tracks\Data', str)
+    },
+    'Internet': {
+        'Enable': (True, bool),
+        'UpdatePrograms': (86400, int, 'How often to update the list from the internet. Set to 0 to disable.')
     },
     'Timer': {
         'CheckPrograms': (2, int, 1),
@@ -96,11 +189,53 @@ _config_defaults = {
     'GenerateTracks': {
         'NameFormat': ('%DOCUMENTS%\\Mouse Tracks\\Images\\[FriendlyName] Tracks - [ColourProfile]', str),
         'ColourProfile': ('WhiteToBlack', str)
+    },
+    'SavedSettings': {
+        'ProgramListUpdate': (0, int)
     }
 }
 
-_config_order = ['Main', 'Paths', 'CompressMaps', 'Save', 'Timer', 'GenerateImages', 'GenerateHeatmap', 'GenerateTracks']
+_config_order = [
+    'Main',
+    'Paths',
+    'Internet',
+    'Save',
+    'Timer',
+    'CompressMaps',
+    'GenerateImages',
+    'GenerateHeatmap',
+    'GenerateTracks',
+    'SavedSettings'
+]
+
 
 CONFIG = SimpleConfig('config.ini', _config_defaults, _config_order)
+
+DEFAULT_NAME = 'Default'
+
+COLOURS_MAIN = {
+    'red': (255, 0, 0, 255),
+    'green': (0, 255, 0, 255),
+    'blue': (0, 0, 255, 255),
+    'yellow': (255, 255, 0, 255),
+    'cyan': (0, 255, 255, 255),
+    'magenta': (255, 0, 255, 255),
+    'white': (255, 255, 255, 255),
+    'grey': (127, 127, 127, 255),
+    'gray': (127, 127, 127, 255),
+    'black': (0, 0, 0, 255),
+    'orange': (255, 127, 0, 255),
+    'pink': (255, 0, 127, 255),
+    'purple': (127, 0, 255, 255)
+}
+
+COLOUR_MODIFIERS = {
+    #name: (add_base, multiplier, alpha_multiplier)
+    'light': (128, 0.5, 1.0),
+    'dark': (0, 0.5, 1.0),
+    'transparent': (0, 1.0, 0.0),
+    'translucent': (0, 1.0, 0.5),
+    'opaque': (0, 1.0, 2.0)
+}
 
 PROGRAM_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/Program%20List.txt'
