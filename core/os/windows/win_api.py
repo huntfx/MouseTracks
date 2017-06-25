@@ -72,3 +72,7 @@ def get_key_press(key):
 def get_monitor_locations():
     """Return a list of (x[0], y[0], x[1], y[1]) coordinates for each monitor."""
     return [m[2] for m in win32api.EnumDisplayMonitors()]
+    
+    
+def get_documents_path():
+    return win32com.shell.shell.SHGetFolderPath(0, win32com.shell.shellcon.CSIDL_PERSONAL, None, 0)
