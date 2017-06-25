@@ -6,6 +6,17 @@ except ImportError:
     from core.os.windows.win_ctypes import *
 
 
+def read_env_var(text):
+    """Detect if text is an environment variable and read it.
+    Returns:
+        Value/None if successful or not.
+    """
+    if not text:
+        return None
+    if text[0] == text[-1] == '%':
+        return os.get_env(text)
+
+        
 def remove_file(file_name):
     """Delete a file.
     Returns:
