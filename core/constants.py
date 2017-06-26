@@ -1,6 +1,6 @@
 from __future__ import division
 
-from core.simple import get_items
+from core.simple import get_items, format_file_path
 
 class SimpleConfig(object):
     def __init__(self, file_name, default_data, group_order=None):
@@ -116,6 +116,7 @@ class SimpleConfig(object):
     def __getitem__(self, item):
         return self.data[item]
         
+DEFAULT_DIR = '%DOCUMENTS%\\Mouse Tracks'
 
 _config_defaults = {
     'Main': {
@@ -144,7 +145,7 @@ _config_defaults = {
     },
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
-        'Data': ('%DOCUMENTS%\\Mouse Tracks\Data', str)
+        'Data': ('{}\Data'.format(DEFAULT_DIR), str)
     },
     'Internet': {
         'Enable': (True, bool),
@@ -165,7 +166,7 @@ _config_defaults = {
         'FileType': ('png', str)
     },
     'GenerateHeatmap': {
-        'NameFormat': ('%DOCUMENTS%\\Mouse Tracks\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]', str),
+        'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_DIR), str),
         'MouseButtonLeft': (True, bool),
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
@@ -187,7 +188,7 @@ _config_defaults = {
                                              ' to get it right.')
     },
     'GenerateTracks': {
-        'NameFormat': ('%DOCUMENTS%\\Mouse Tracks\\Images\\[FriendlyName] Tracks - [ColourProfile]', str),
+        'NameFormat': ('{}\\Images\\[FriendlyName] Tracks - [ColourProfile]'.format(DEFAULT_DIR), str),
         'ColourProfile': ('WhiteToBlack', str)
     },
     'SavedSettings': {
@@ -209,7 +210,7 @@ _config_order = [
 ]
 
 
-CONFIG = SimpleConfig('config.ini', _config_defaults, _config_order)
+CONFIG = SimpleConfig('{}\\config.ini'.format(format_file_path(DEFAULT_DIR)), _config_defaults, _config_order)
 
 DEFAULT_NAME = 'Default'
 
