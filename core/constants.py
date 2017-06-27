@@ -101,6 +101,8 @@ class SimpleConfig(object):
                 for note in variables.pop('__note__'):
                     output.append('// {}'.format(note))
             for variable in sorted(variables.keys()):
+                if variable.startswith('_'):
+                    continue
                 defaults = variables[variable]
                 try:
                     value = self.data[group][variable]
@@ -180,9 +182,9 @@ _config_defaults = {
     },
     'GenerateHeatmap': {
         'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
-        'MouseButtonLeft': (True, bool),
-        'MouseButtonMiddle': (True, bool),
-        'MouseButtonRight': (True, bool),
+        '_MouseButtonLeft': (True, bool),
+        '_MouseButtonMiddle': (True, bool),
+        '_MouseButtonRight': (True, bool),
         
         #To get a consistent result -
         #   36 at 2880p, 28 at 2160p, 18 at 1440p, 15 at 1080p, 10 at 720p
