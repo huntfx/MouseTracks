@@ -1,6 +1,8 @@
 from __future__ import division
 
 from core.simple import get_items, format_file_path
+from core.os import get_resolution
+
 
 class SimpleConfig(object):
     def __init__(self, file_name, default_data, group_order=None):
@@ -8,7 +10,7 @@ class SimpleConfig(object):
         self._default_data = default_data
         self.default_data = {}
         self.order = list(group_order) if group_order is not None else []
-        for group, data in self._default_data.iteritems():
+        for group, data in get_items(self._default_data):
             self.default_data[group] = self._default_data[group]
         self.load()
     
@@ -118,6 +120,12 @@ class SimpleConfig(object):
         
 DEFAULT_DIR = '%DOCUMENTS%\\Mouse Tracks'
 
+try:
+    _res_x, _res_y = get_resolution()
+except TypeError:
+    _res_x = 1920
+    _res_y = 1080
+
 _config_defaults = {
     'Main': {
         'UpdatesPerSecond': (60, int, 1, 'It is recommended to leave at 60 even if'
@@ -159,10 +167,10 @@ _config_defaults = {
     'GenerateImages': {
         '__note__': ['For the best results, make sure the upscale resolution'
                      ' is higher than or equal to the highest recorded resolution.'],
-        'UpscaleResolutionX': (3840, int, 1),
-        'UpscaleResolutionY': (2160, int, 1),
-        'OutputResolutionX': (1920, int, 1),
-        'OutputResolutionY': (1080, int, 1),
+        'UpscaleResolutionX': (_res_x * 2, int, 1),
+        'UpscaleResolutionY': (_res_y * 2, int, 1),
+        'OutputResolutionX': (_res_x, int, 1),
+        'OutputResolutionY': (_res_y, int, 1),
         'FileType': ('png', str)
     },
     'GenerateHeatmap': {
