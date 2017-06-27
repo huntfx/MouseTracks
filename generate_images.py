@@ -7,6 +7,8 @@ from core.files import list_files, format_name, load_program
 from core.functions import ticks_to_seconds, RunningPrograms, simple_bit_mask
 from core.simple import round_up
 
+if sys.version_info.major != 2:
+    raw_input = input
 
 def user_generate():
     CONFIG.save()
@@ -25,8 +27,8 @@ def user_generate():
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
         for program_name in RunningPrograms(list_only=True).programs.values():
             programs[format_name(program_name)] = program_name
-        all_files = [f for f in all_files if f in programs or f == 'default']
-
+        #all_files = [f for f in all_files if f in programs or f == 'default']
+        
         page = 1
         limit = 10
         maximum = len(all_files)
@@ -38,7 +40,11 @@ def user_generate():
 
             results = all_files[offset:offset + limit]
             for i, r in enumerate(results):
-                print('{}: {}'.format(i + offset + 1, programs[r]))
+                try:
+                    program_name = programs[r]
+                except KeyError:
+                    program_name = r
+                print('{}: {}'.format(i + offset + 1, program_name))
             print('Page {} of {}. Type "page <number>" to switch.'.format(page, total_pages))
             print('You can type the number or name of a profile to load it.')
 
@@ -67,7 +73,10 @@ def user_generate():
                     num = int(profile) - 1
                     if not 0 <= num <= maximum:
                         raise IndexError
-                    profile = programs[all_files[num]]
+                    try:
+                        profile = programs[all_files[num]]
+                    except KeyError:
+                        profile = all_files[num]
                     break
                 except ValueError:
                     break
