@@ -5,10 +5,11 @@ import sys
 import os
 import time
 
-from core.constants import PROGRAM_LIST_URL, CONFIG, PROGRAM_LIST_PATH
+from core.constants import PROGRAM_LIST_URL, CONFIG
 from core.online import get_url_contents
 from core.os import get_cursor_pos, get_running_processes
 from core.messages import *
+from core.simple import format_file_path
 
 if sys.version_info.major == 2:
     range = xrange
@@ -192,7 +193,7 @@ class RunningPrograms(object):
                  ', "Game.exe" by itself will use "Game" as its name.',
                  '']
 
-    def __init__(self, program_list=PROGRAM_LIST_PATH, list_only=False, queue=None):
+    def __init__(self, program_list=format_file_path(CONFIG['Paths']['ProgramList']), list_only=False, queue=None):
         self.q = queue
         if not list_only:
             self.refresh()
