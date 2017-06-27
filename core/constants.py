@@ -118,7 +118,12 @@ class SimpleConfig(object):
     def __getitem__(self, item):
         return self.data[item]
         
-DEFAULT_DIR = '%DOCUMENTS%\\Mouse Tracks'
+
+DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
+
+DEFAULT_NAME = 'Default'
+
+PROGRAM_LIST_PATH = '{}\\Program List.txt'.format(format_file_path(DEFAULT_PATH))
 
 try:
     _res_x, _res_y = get_resolution()
@@ -153,7 +158,7 @@ _config_defaults = {
     },
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
-        'Data': ('{}\Data'.format(DEFAULT_DIR), str)
+        'Data': ('{}\Data'.format(DEFAULT_PATH), str)
     },
     'Internet': {
         'Enable': (True, bool),
@@ -174,7 +179,7 @@ _config_defaults = {
         'FileType': ('png', str)
     },
     'GenerateHeatmap': {
-        'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_DIR), str),
+        'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
         'MouseButtonLeft': (True, bool),
         'MouseButtonMiddle': (True, bool),
         'MouseButtonRight': (True, bool),
@@ -196,7 +201,7 @@ _config_defaults = {
                                              ' to get it right.')
     },
     'GenerateTracks': {
-        'NameFormat': ('{}\\Images\\[FriendlyName] Tracks - [ColourProfile]'.format(DEFAULT_DIR), str),
+        'NameFormat': ('{}\\Images\\[FriendlyName] Tracks - [ColourProfile]'.format(DEFAULT_PATH), str),
         'ColourProfile': ('WhiteToBlack', str)
     },
     'SavedSettings': {
@@ -218,9 +223,7 @@ _config_order = [
 ]
 
 
-CONFIG = SimpleConfig('{}\\config.ini'.format(format_file_path(DEFAULT_DIR)), _config_defaults, _config_order)
-
-DEFAULT_NAME = 'Default'
+CONFIG = SimpleConfig('{}\\config.ini'.format(format_file_path(DEFAULT_PATH)), _config_defaults, _config_order)
 
 COLOURS_MAIN = {
     'red': (255, 0, 0, 255),
