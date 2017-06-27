@@ -259,6 +259,9 @@ class RunningPrograms(object):
             elif '.app' in program_lc:
                 ext_len = len(program_lc.split('.app')[0])
                 program_name = program_info[:ext_len + 4]
+            elif '.bin' in program_lc:
+                ext_len = len(program_lc.split('.bin')[0])
+                program_name = program_info[:ext_len + 4]
             else:
                 continue
                 
@@ -291,6 +294,9 @@ class RunningPrograms(object):
             elif '.app' in program_lc:
                 ext_len = len(program_lc.split('.app')[0])
                 program_name = program_info[:ext_len]
+            elif '.bin' in program_lc:
+                ext_len = len(program_lc.split('.bin')[0])
+                program_name = program_info[:ext_len]
             else:
                 continue
             
@@ -300,7 +306,7 @@ class RunningPrograms(object):
                 lines.append('{}: {}'.format(program_info, friendly_name))
         
         with open(self.program_list, 'w') as f:
-            f.write('\r\n'.join(lines))
+            f.write('\n'.join(lines))
     
     def check(self):
         """Check for any programs in the list that are currently loaded.
