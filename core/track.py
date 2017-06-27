@@ -30,7 +30,7 @@ def running_processes(q_recv, q_send, background_send):
             try:
                 running.reload_file()
             except NameError:
-                running = RunningPrograms()
+                running = RunningPrograms(queue=q_send)
             NOTIFY(PROGRAM_RELOAD)
 
         if 'Update' in received_data:
