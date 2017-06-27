@@ -133,9 +133,9 @@ def user_generate():
         print('2: Middle Mouse Button')
         print('3: Right Mouse Button')
         heatmap_buttons = map(bool, simple_bit_mask(raw_input().split(), 3))
-        CONFIG['GenerateHeatmap']['MouseButtonLeft'] = heatmap_buttons[0]
-        CONFIG['GenerateHeatmap']['MouseButtonMiddle'] = heatmap_buttons[1]
-        CONFIG['GenerateHeatmap']['MouseButtonRight'] = heatmap_buttons[2]
+        CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
+        CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = heatmap_buttons[1]
+        CONFIG['GenerateHeatmap']['_MouseButtonRight'] = heatmap_buttons[2]
         if not heatmap_buttons:
             generate_heatmap = False
 
