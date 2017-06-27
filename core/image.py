@@ -2,14 +2,16 @@ from __future__ import division
 from PIL import Image
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
-from sys import version_info
+import sys
 import numpy as np
 
 from core.constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
 from core.files import load_program
-from core.functions import ColourRange, get_items, print_override
+from core.simple import format_file_path
+from core.functions import ColourRange, print_override
+from core.simple import get_items
 
-if version_info.major == 2:
+if sys.version_info.major == 2:
     range = xrange
     
 
@@ -206,7 +208,7 @@ class ImageName(object):
             if char in name:
                 name = name.replace(char, '')
         
-        return '{}.{}'.format(name, CONFIG['GenerateImages']['FileType'])
+        return '{}.{}'.format(format_file_path(name), CONFIG['GenerateImages']['FileType'])
 
 
 def parse_colour_text(colour_name):
@@ -397,7 +399,7 @@ class RenderImage(object):
                           CONFIG['GenerateImages']['OutputResolutionY'])
                           
         if image_output is None:
-            print_override('No image data for type "{}"'.format(image_type))
+            print_override('No image data was found for type "{}"'.format(image_type))
         else:
             image_output = image_output.resize(resolution, Image.ANTIALIAS)
             print_override('Saving image...')
