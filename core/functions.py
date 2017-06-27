@@ -5,7 +5,7 @@ import sys
 import os
 import time
 
-from core.constants import PROGRAM_LIST_URL, CONFIG
+from core.constants import PROGRAM_LIST_URL, CONFIG, PROGRAM_LIST_PATH
 from core.online import get_url_contents
 from core.os import get_cursor_pos, get_running_processes
 from core.messages import *
@@ -192,7 +192,7 @@ class RunningPrograms(object):
                  ', "Game.exe" by itself will use "Game" as its name.',
                  '']
 
-    def __init__(self, program_list='Program List.txt', list_only=False, queue=None):
+    def __init__(self, program_list=PROGRAM_LIST_PATH, list_only=False, queue=None):
         self.q = queue
         if not list_only:
             self.refresh()
@@ -210,10 +210,14 @@ class RunningPrograms(object):
 
         self.programs = self._format_programs(lines)
         
+        #Download from the internet and combine with the current list
         internet_allowed = CONFIG['Internet']['Enable']
         last_updated = CONFIG['SavedSettings']['ProgramListUpdate']
         update_frequency = CONFIG['Internet']['UpdatePrograms']
-        if internet_allowed and (not last_updated or last_updated < time.time() - update_frequency):
+        
+        if internet_allowed and (not self.programs 
+                                 or not last_updated 
+                                 or last_updated < time.time() - update_frequency):
         
             if self.q is not None:
                 NOTIFY(PROGRAM_UPDATE_START)
@@ -233,7 +237,6 @@ class RunningPrograms(object):
                     NOTIFY(PROGRAM_UPDATE_END_SUCCESS)
                     NOTIFY.send(self.q)
             else:
-            
                 if self.q is not None:
                     NOTIFY(PROGRAM_UPDATE_END_FAIL)
                     NOTIFY.send(self.q)
