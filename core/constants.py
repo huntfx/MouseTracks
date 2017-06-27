@@ -125,8 +125,6 @@ DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
 
 DEFAULT_NAME = 'Default'
 
-PROGRAM_LIST_PATH = '{}\\Program List.txt'.format(format_file_path(DEFAULT_PATH))
-
 try:
     _res_x, _res_y = get_resolution()
 except TypeError:
@@ -160,7 +158,9 @@ _config_defaults = {
     },
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
-        'Data': ('{}\Data'.format(DEFAULT_PATH), str)
+        'Data': ('{}\\Data\\'.format(DEFAULT_PATH), str),
+        'ProgramList': ('{}\\Program List.txt'.format(DEFAULT_PATH), str)
+        
     },
     'Internet': {
         'Enable': (True, bool),
