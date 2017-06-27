@@ -163,9 +163,9 @@ class ImageName(object):
         self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
         self.heatmap_exp = str(CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
         self.heatmap_colour = str(CONFIG['GenerateHeatmap']['ColourProfile'])
-        self.heatmap_buttons = {'LMB': CONFIG['GenerateHeatmap']['MouseButtonLeft'],
-                                'MMB': CONFIG['GenerateHeatmap']['MouseButtonMiddle'],
-                                'RMB': CONFIG['GenerateHeatmap']['MouseButtonRight']}
+        self.heatmap_buttons = {'LMB': CONFIG['GenerateHeatmap']['_MouseButtonLeft'],
+                                'MMB': CONFIG['GenerateHeatmap']['_MouseButtonMiddle'],
+                                'RMB': CONFIG['GenerateHeatmap']['_MouseButtonRight']}
 
         self.track_colour = str(CONFIG['GenerateTracks']['ColourProfile'])
 
@@ -386,9 +386,9 @@ class RenderImage(object):
                 image_name = self.name.generate('Tracks', reload=True)
                 
             elif image_type == 'clicks':
-                lmb = CONFIG['GenerateHeatmap']['MouseButtonLeft']
-                mmb = CONFIG['GenerateHeatmap']['MouseButtonMiddle']
-                rmb = CONFIG['GenerateHeatmap']['MouseButtonRight']
+                lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
+                mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
+                rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
                 mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
                 value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb,
                                                               session_start=session_start)
