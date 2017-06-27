@@ -22,7 +22,7 @@ def round_up(n):
     
 
 def format_file_path(path):
-    parts = path.replace('\\', '/').split('/')
+    parts = path.replace('\\', '/').rstrip('/').split('/')
     f = parts.pop(-1) if '.' in parts[-1] else None
     for i, part in enumerate(parts):
         if part == '%DOCUMENTS%':
