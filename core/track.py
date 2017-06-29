@@ -133,7 +133,8 @@ def background_process(q_recv, q_send):
                     store['SavesSkipped'] = 0
                 else:
                     store['SavesSkipped'] += 1
-                    NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'])
+                    NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'], q_recv.qsize())
+                q_send.put({'SaveFinished': None})
 
             if 'Program' in received_data:
                 current_program = received_data['Program']
