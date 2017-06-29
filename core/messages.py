@@ -137,8 +137,11 @@ class Notify(object):
             q2('Failed to save file (maximum attempts reached)'
                ', make sure the correct permissions have been granted.')
         if message_id == SAVE_SKIP:
-            q2('Skipping save, user inactive for {} second{}.'.format(args[0],
-                                                                      '' if args[0] == 1 else 's'))
+            if args[1] > 2:
+                q2('Skipping save due to no new activity recorded, however the script appears to be busy.')
+            else:
+                q2('Skipping save due to inactivity'
+                   '(last save was {} second{} ago).'.format(args[0], '' if args[0] == 1 else 's'))
         if message_id == START_MAIN:
             q2('Started main loop.')
         if message_id == START_THREAD:
