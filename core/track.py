@@ -96,7 +96,7 @@ def _check_resolution(store, resolution):
     if resolution not in store['Data']['Maps']['Clicks']:
         store['Data']['Maps']['Clicks'][resolution] = [{}, {}, {}]
 
-        
+
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
     try:
@@ -109,7 +109,9 @@ def background_process(q_recv, q_send):
                  'ResolutionTemp': None,
                  'ResolutionList': set(),
                  'Offset': (0, 0),
-                 'LastResolution': None}
+                 'LastResolution': None,
+                 'ActivitySinceLastSave': False,
+                 'SavesSkipped': 0}
         
         NOTIFY(DATA_LOADED)
         NOTIFY(QUEUE_SIZE, q_recv.qsize())
@@ -124,8 +126,14 @@ def background_process(q_recv, q_send):
             check_resolution = False
             
             if 'Save' in received_data:
-                _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
-                NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                if store['ActivitySinceLastSave']:
+                    _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
+                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    store['ActivitySinceLastSave'] = False
+                    store['SavesSkipped'] = 0
+                else:
+                    store['SavesSkipped'] += 1
+                    NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'])
 
             if 'Program' in received_data:
                 current_program = received_data['Program']
@@ -149,6 +157,7 @@ def background_process(q_recv, q_send):
                     store['LastProgram'] = current_program
                     store['Data'] = load_program(current_program)
                     maps = store['Data']['Maps']
+                    store['ActivitySinceLastSave'] = False
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -167,6 +176,8 @@ def background_process(q_recv, q_send):
             
             #Record key presses
             if 'KeyPress' in received_data:
+                store['ActivitySinceLastSave'] = True
+                
                 for key in received_data['KeyPress']:
                     try:
                         store['Data']['Keys']['Pressed'][key] += 1
@@ -175,6 +186,8 @@ def background_process(q_recv, q_send):
             
             #Record time keys are held down
             if 'KeyHeld' in received_data:
+                store['ActivitySinceLastSave'] = True
+                
                 for key in received_data['KeyHeld']:
                     try:
                         store['Data']['Keys']['Held'][key] += 1
@@ -183,6 +196,8 @@ def background_process(q_recv, q_send):
             
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
+                store['ActivitySinceLastSave'] = True
+                
                 start, end = received_data['MouseMove']
                 #distance = find_distance(end, start)
                 
@@ -240,6 +255,8 @@ def background_process(q_recv, q_send):
 
             #Record mouse clicks
             if 'MouseClick' in received_data:
+                store['ActivitySinceLastSave'] = True
+                
                 for mouse_button, pixel in received_data['MouseClick']:
                     if MULTI_MONITOR:
                     
