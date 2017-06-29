@@ -46,7 +46,10 @@ def start_tracking():
                        'OffScreen': False},
              'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
              'LastActivity': 0,
-             'LastSent': 0}
+             'LastSent': 0,
+             'Save': {'Finished': True,
+                      'Next': timer['Save']}
+            }
     mouse_pos = store['Mouse']['Position']
     
     #Start threaded process
@@ -87,10 +90,27 @@ def start_tracking():
             notify_extra = ''
             received_data = []
             while not q_recv.empty():
+            
                 received_message = q_recv.get()
-                if received_message.startswith('Traceback (most recent call last)'):
-                    return received_message
-                received_data.append(received_message)
+                
+                #Receive text messages
+                try:
+                    if received_message.startswith('Traceback (most recent call last)'):
+                        return received_message
+                except AttributeError:
+                    pass
+                else:
+                    received_data.append(received_message)
+                
+                #Get notification when saving is finished
+                try:
+                    received_message.pop('SaveFinished')
+                except (KeyError, AttributeError):
+                    pass
+                else:
+                    store['Save']['Finished'] = True
+                    store['Save']['Next'] = i + timer['Save']
+                
             if received_data:
                 notify_extra = ' | '.join(received_data)
             notify_output = str(NOTIFY)
@@ -266,8 +286,9 @@ def start_tracking():
                 NOTIFY(QUEUE_SIZE, q_send.qsize())
             
             #Send save request
-            if i and not i % timer['Save']:
+            if store['Save']['Finished'] and i and not i % store['Save']['Next']:
                 frame_data['Save'] = True
+                store['Save']['Finished'] = False
 
             if store['Mouse']['OffScreen']:
                 mouse_pos['Previous'] = None
