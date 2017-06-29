@@ -267,10 +267,7 @@ def start_tracking():
             
             #Send save request
             if i and not i % timer['Save']:
-                if store['LastActivity'] > i - timer['Save']:
-                    frame_data['Save'] = True
-                else:
-                    NOTIFY(SAVE_SKIP, (i - store['LastActivity']) // updates_per_second)
+                frame_data['Save'] = True
 
             if store['Mouse']['OffScreen']:
                 mouse_pos['Previous'] = None
