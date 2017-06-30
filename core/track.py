@@ -1,4 +1,5 @@
 from __future__ import division
+from queue import Empty
 import time
 import sys
 import traceback
@@ -111,7 +112,8 @@ def background_process(q_recv, q_send):
                  'Offset': (0, 0),
                  'LastResolution': None,
                  'ActivitySinceLastSave': False,
-                 'SavesSkipped': 0}
+                 'SavesSkipped': 0,
+                 'PingTimeout': CONFIG['Timer']['_Ping'] + 1}
         
         NOTIFY(DATA_LOADED)
         NOTIFY(QUEUE_SIZE, q_recv.qsize())
@@ -122,7 +124,14 @@ def background_process(q_recv, q_send):
         
         while True:
             
-            received_data = q_recv.get()
+            try:
+                received_data = q_recv.get(timeout=store['PingTimeout'])
+            except Empty:
+                break
+                 
+            #NOTIFY(MESSAGE_DEBUG, received_data)
+            #NOTIFY.send(q_send)
+            
             check_resolution = False
             
             if 'Save' in received_data:
@@ -286,7 +295,11 @@ def background_process(q_recv, q_send):
             store['Data']['Ticks']['Recorded'] += 1
 
             NOTIFY.send(q_send)
-            
+        
+        #Exit process (this shouldn't happen for now)
+        NOTIFY(THREAD_EXIT)
+        NOTIFY.send(q_send)
+        _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
             
     except Exception as e:
         q_send.put(traceback.format_exc())
