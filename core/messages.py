@@ -41,6 +41,7 @@ START_THREAD = 81
 DATA_LOADED = 82
 DATA_NOTFOUND = 83
 QUEUE_SIZE = 96
+THREAD_EXIT = 97
 
 
 def _mb_text(id):
@@ -141,7 +142,7 @@ class Notify(object):
                 q2('Skipping save due to no new activity recorded, however the script appears to be busy.')
             else:
                 q2('Skipping save due to inactivity'
-                   '(last save was {} second{} ago).'.format(args[0], '' if args[0] == 1 else 's'))
+                   ' (last save was {} second{} ago).'.format(args[0], '' if args[0] == 1 else 's'))
         if message_id == START_MAIN:
             q2('Started main loop.')
         if message_id == START_THREAD:
@@ -152,6 +153,8 @@ class Notify(object):
             q1('Started new data store.')
         if message_id == QUEUE_SIZE:
             q1('{} command{} queued for processing.'.format(args[0], '' if args[0] == 1 else 's'))
+        if message_id == THREAD_EXIT:
+            q1('Didn\'t receive ping from main thread, closing background thread...')
 
     def __str__(self):
         allowed_levels = range(MESSAGE_LEVEL, 3)
