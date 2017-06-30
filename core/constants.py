@@ -147,7 +147,7 @@ _config_defaults = {
         'TrackReduction': (1.1, float)
     },
     'Save': {
-        'Frequency': (180, int, 20, 'Choose how often to save the file, don\'t set it too low'
+        'Frequency': (180, int, 10, 'Choose how often to save the file, don\'t set it too low'
                                     ' or the program won\'t be able to keep up.'),
         'MaximumAttemptsNormal': (3, int, 1, 'Maximum number of failed save attempts'
                                              ' before the tracking continues.'),
@@ -169,7 +169,9 @@ _config_defaults = {
     'Timer': {
         'CheckPrograms': (2, int, 1),
         'CheckResolution': (1, int, 1),
-        'ReloadPrograms': (300, int, 1)
+        'ReloadPrograms': (300, int, 1),
+        '_ShowQueuedCommands': (20, int),
+        '_Ping': (5, int)
     },
     'GenerateImages': {
         '__note__': ['For the best results, make sure the upscale resolution'
