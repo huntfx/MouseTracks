@@ -32,7 +32,8 @@ def start_tracking():
              'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
              'Save': CONFIG['Save']['Frequency'],
              'ReloadProgramList': CONFIG['Timer']['ReloadPrograms'],
-             'UpdateQueuedCommands': 20}
+             'UpdateQueuedCommands': CONFIG['Timer']['_ShowQueuedCommands'],
+             'Ping': CONFIG['Timer']['_Ping']}
     timer = {k: v * updates_per_second for k, v in get_items(timer)}
 
     store = {'Resolution': {'Current': monitor_info(),
@@ -52,12 +53,12 @@ def start_tracking():
             }
     mouse_pos = store['Mouse']['Position']
     
-    #Start threaded process
+    #Start background process
     q_send = Queue()
     q_recv = Queue()
-    p1 = Process(target=background_process, args=(q_send, q_recv))
-    p1.daemon = True
-    p1.start()
+    p = Process(target=background_process, args=(q_send, q_recv))
+    #p.daemon = True
+    p.start()
 
     q_send2 = Queue()
     q_recv2 = Queue()
@@ -289,6 +290,10 @@ def start_tracking():
             if store['Save']['Finished'] and i and not i % store['Save']['Next']:
                 frame_data['Save'] = True
                 store['Save']['Finished'] = False
+                
+            #Send ping
+            if not i % timer['Ping']:
+                frame_data['Ping'] = None
 
             if store['Mouse']['OffScreen']:
                 mouse_pos['Previous'] = None
