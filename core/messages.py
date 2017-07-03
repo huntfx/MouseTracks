@@ -36,6 +36,7 @@ SAVE_FAIL = 66
 SAVE_FAIL_RETRY = 67
 SAVE_FAIL_END = 68
 SAVE_SKIP = 69
+SAVE_PREPARE = 70
 START_MAIN = 80
 START_THREAD = 81
 DATA_LOADED = 82
@@ -139,10 +140,12 @@ class Notify(object):
                ', make sure the correct permissions have been granted.')
         if message_id == SAVE_SKIP:
             if args[1] > 2:
-                q2('Skipping save due to no new activity recorded, however the script appears to be busy.')
+                q2('Skipping save - nothing has been processed yet since the last save.')
             else:
                 q2('Skipping save due to inactivity'
                    ' (last save was {} second{} ago).'.format(args[0], '' if args[0] == 1 else 's'))
+        if message_id == SAVE_PREPARE:
+            q2('Preparing data to save...')
         if message_id == START_MAIN:
             q2('Started main loop.')
         if message_id == START_THREAD:
