@@ -39,6 +39,19 @@ def _get_paths(program_name):
             'BackupFolder': backup_folder, 'TempFolder': temp_folder}
     
 
+
+def prepare_file(data):
+    """Prepare data for saving."""
+    data['Time']['Modified'] = time.time()
+    data['Version'] = VERSION
+    return zlib.compress(cPickle.dumps(data))
+
+
+def decode_file(data):
+    """Read compressed data."""
+    return cPickle.loads(zlib.decompress(data))
+    
+
 def load_program(program_name=None, _update_version=True, _metadata_only=False):
 
     paths = _get_paths(program_name)
@@ -50,13 +63,13 @@ def load_program(program_name=None, _update_version=True, _metadata_only=False):
     #Load the main file
     try:
         with open(paths['Main'], 'rb') as f:
-            loaded_data = cPickle.loads(zlib.decompress(f.read()))
+            loaded_data = decode_file(f.read())
             
     #Load backup if file is corrupted
     except zlib.error:
         try:
             with open(paths['Backup'], 'rb') as f:
-                loaded_data = cPickle.loads(zlib.decompress(f.read()))
+                loaded_data = decode_file(f.read())
                 
         except (IOError, zlib.error):
             new_file = True
@@ -70,13 +83,14 @@ def load_program(program_name=None, _update_version=True, _metadata_only=False):
         loaded_data = {}
         
     return upgrade_version(loaded_data, update_metadata=_update_version)
+    
 
+def save_program(program_name, data, compress=True):
 
-def save_program(program_name, data):
-
-    data['Time']['Modified'] = time.time()
-    data['Version'] = VERSION
-    compressed_data = zlib.compress(cPickle.dumps(data))
+    if compress:
+        compressed_data = prepare_file(data)
+    else:
+        compressed_data = data
     
     paths = _get_paths(program_name)
     
