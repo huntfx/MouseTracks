@@ -5,7 +5,7 @@ import sys
 import traceback
 
 from core.constants import CONFIG
-from core.files import load_program, save_program
+from core.files import load_program, save_program, prepare_file
 from core.functions import calculate_line, RunningPrograms, find_distance
 from core.simple import get_items
 from core.messages import *
@@ -49,7 +49,7 @@ def running_processes(q_recv, q_send, background_send):
 
 def _save_wrapper(q_send, program_name, data, new_program=False):
     
-    NOTIFY(SAVE_START)
+    NOTIFY(SAVE_PREPARE)
     NOTIFY.send(q_send)
     saved = False
 
@@ -58,10 +58,14 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
         max_attempts = CONFIG['Save']['MaximumAttemptsSwitch']
     else:
         max_attempts = CONFIG['Save']['MaximumAttemptsNormal']
-
+    
+    oompressed_data = prepare_file(data)
+    
     #Attempt to save
+    NOTIFY(SAVE_START)
+    NOTIFY.send(q_send)
     for i in range(max_attempts):
-        if save_program(program_name, data):
+        if save_program(program_name, oompressed_data, compress=False):
             NOTIFY(SAVE_SUCCESS)
             NOTIFY.send(q_send)
             saved = True
