@@ -128,10 +128,15 @@ def background_process(q_recv, q_send):
         
         while True:
             
+            received_data = q_recv.get()
+            '''
+            #Quit if data is not received by the ping interval
+            #Seems buggy so disabling for now
             try:
                 received_data = q_recv.get(timeout=store['PingTimeout'])
             except Empty:
                 break
+                '''
                  
             #NOTIFY(MESSAGE_DEBUG, received_data)
             #NOTIFY.send(q_send)
