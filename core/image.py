@@ -361,12 +361,15 @@ def arrays_to_colour(colour_range, numpy_arrays):
 
 
 class RenderImage(object):
-    def __init__(self, profile):
+    def __init__(self, profile, data=None):
         self.profile = profile
-        self.data = load_program(profile, _update_version=False)
+        if data is None:
+            self.data = load_program(profile, _update_version=False)
+        else:
+            self.data = data
         self.name = ImageName(profile)
 
-    def generate(self, image_type, last_session=False):
+    def generate(self, image_type, last_session=False, save_image=True):
         image_type = image_type.lower()
         if image_type not in ('tracks', 'clicks'):
             raise ValueError('image type must be given as either tracks or clicks')
@@ -402,11 +405,13 @@ class RenderImage(object):
             print_override('No image data was found for type "{}"'.format(image_type))
         else:
             image_output = image_output.resize(resolution, Image.ANTIALIAS)
-            print_override('Saving image...')
-            image_output.save(image_name)
-            print_override('Finished saving.')
+            if save_image:
+                print_override('Saving image...')
+                image_output.save(image_name)
+                print_override('Finished saving.')
+        return image_output
 
-
+        
 class ColourMap(object):
     """Look up default colours or generate one if the set doesn't exist."""
     _MAPS = {
