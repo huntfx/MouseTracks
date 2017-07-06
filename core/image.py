@@ -37,7 +37,7 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, interpolate=True, multiple=False, session_start=None):
+def merge_resolutions(main_data, interpolate=False, multiple=False, session_start=None):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -381,7 +381,7 @@ class RenderImage(object):
         
         else:
             if image_type == 'tracks':
-                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], interpolate=True, 
+                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
                                                               session_start=session_start)
                 colour_map = CONFIG['GenerateTracks']['ColourProfile']
                 colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
