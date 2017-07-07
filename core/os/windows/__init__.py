@@ -14,7 +14,7 @@ def read_env_var(text):
     if not text:
         return None
     if text[0] == text[-1] == '%':
-        return os.get_env(text)
+        return os.getenv(text[1:-1])
 
         
 def remove_file(file_name):
