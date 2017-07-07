@@ -122,8 +122,6 @@ def background_process(q_recv, q_send):
         NOTIFY(DATA_LOADED)
         NOTIFY(QUEUE_SIZE, q_recv.qsize())
         NOTIFY.send(q_send)
-
-        maps = store['Data']['Maps']
         
         
         while True:
@@ -159,10 +157,6 @@ def background_process(q_recv, q_send):
                 
                 if current_program != store['LastProgram']:
                     
-                    #Check new resolution
-                    _check_resolution(store, store['Resolution'])
-                    store['ResolutionList'] = set()
-                    
                     if current_program is None:
                         NOTIFY(PROGRAM_LOADING)
                     else:
@@ -175,8 +169,11 @@ def background_process(q_recv, q_send):
                     #Load new profile
                     store['LastProgram'] = current_program
                     store['Data'] = load_program(current_program)
-                    maps = store['Data']['Maps']
                     store['ActivitySinceLastSave'] = False
+                    
+                    #Check new resolution
+                    _check_resolution(store, store['Resolution'])
+                    store['ResolutionList'] = set()
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -249,7 +246,7 @@ def background_process(q_recv, q_send):
                     else:
                         resolution = store['Resolution']
                         
-                    maps['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
+                    store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
                 
                 store['Data']['Ticks']['Current']['Tracks'] += 1
                 
@@ -259,7 +256,7 @@ def background_process(q_recv, q_send):
                     NOTIFY(MOUSE_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
                     
-                    tracks = maps['Tracks']
+                    tracks = store['Data']['Maps']['Tracks']
                     for resolution in tracks.keys():
                         tracks[resolution] = {k: int(v // compress_multplier)
                                               for k, v in get_items(tracks[resolution])}
@@ -294,9 +291,9 @@ def background_process(q_recv, q_send):
                         resolution = store['Resolution']
                         
                     try:
-                        maps['Clicks'][resolution][mouse_button][pixel] += 1
+                        store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] += 1
                     except KeyError:
-                        maps['Clicks'][resolution][mouse_button][pixel] = 1
+                        store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] = 1
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
