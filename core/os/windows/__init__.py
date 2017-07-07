@@ -15,56 +15,7 @@ def read_env_var(text):
         return None
     if text[0] == text[-1] == '%':
         return os.getenv(text[1:-1])
-
-        
-def remove_file(file_name):
-    """Delete a file.
-    Returns:
-        True/False if successful or not.
-    """
-    try:
-        os.remove(file_name)
-    except WindowsError:
-        return False
-    return True
-
-
-def rename_file(old_name, new_name):
-    """Rename a file.
-    Return:
-        True/False if successful or not.
-    """
-    try:
-        os.rename(old_name, new_name)
-    except WindowsError:
-        return False
-    return True
-
-
-def create_folder(folder_path):
-    """Create a folder.
-    Return:
-        True/False if successful or not.
-    """
-    try:
-        os.makedirs(folder_path)
-    except WindowsError:
-        return False
-    return True
-
-    
-def get_modified_time(file_name):
-    try:
-        return os.path.getmtime(file_name)
-    except WindowsError:
-        return None
-    
-    
-def list_directory(folder):
-    try:
-        return os.listdir(folder)
-    except WindowsError:
-        return None
+    return None
         
 
 def get_running_processes():
