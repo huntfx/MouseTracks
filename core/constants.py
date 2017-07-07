@@ -121,9 +121,10 @@ class SimpleConfig(object):
         return self.data[item]
         
 
-DEFAULT_PATH = '%USERPROFILE%\\Documents\\Mouse Tracks'
-
 DEFAULT_NAME = 'Default'
+DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
+_CONFIG_PATH = '{}/config.ini'.format(format_file_path(DEFAULT_PATH))
+
 
 try:
     _res_x, _res_y = get_resolution()
@@ -231,7 +232,7 @@ _config_order = [
 ]
 
 
-CONFIG = SimpleConfig('{}\\config.ini'.format(format_file_path(DEFAULT_PATH)), _config_defaults, _config_order)
+CONFIG = SimpleConfig(_CONFIG_PATH, _config_defaults, _config_order)
 
 COLOURS_MAIN = {
     'red': (255, 0, 0, 255),
