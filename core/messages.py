@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from core.constants import DEFAULT_NAME
+from core.constants import DEFAULT_NAME, CONFIG
     
 
-MESSAGE_LEVEL = 1
+MESSAGE_LEVEL = CONFIG['Advanced']['MessageLevel']
 
 MESSAGE_DEBUG = -1
 MOUSE_UNDETECTED = 0
