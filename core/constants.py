@@ -121,7 +121,7 @@ class SimpleConfig(object):
         return self.data[item]
         
 
-DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
+DEFAULT_PATH = '%USERPROFILE%\\Documents\\Mouse Tracks'
 
 DEFAULT_NAME = 'Default'
 
@@ -210,6 +210,9 @@ _config_defaults = {
     },
     'SavedSettings': {
         'ProgramListUpdate': (0, int)
+    },
+    'Advanced': {
+        'MessageLevel': (1, int, 0, 2)
     }
 }
 
@@ -223,6 +226,7 @@ _config_order = [
     'GenerateImages',
     'GenerateHeatmap',
     'GenerateTracks',
+    'Advanced',
     'SavedSettings'
 ]
 
