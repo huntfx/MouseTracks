@@ -1,5 +1,7 @@
 import struct
 import cPickle
+import socket
+from select import select
 
 
 def send_msg(sock, msg):
@@ -8,11 +10,11 @@ def send_msg(sock, msg):
     msg = cPickle.dumps(msg)
     msg = struct.pack('>I', len(msg)) + msg
     sock.sendall(msg)
-
+    
     
 def recv_msg(sock):
     """Receive the message."""
-
+            
     #Read message length
     raw_msglen = recvall(sock, 4)
     if not raw_msglen:
@@ -33,3 +35,8 @@ def recvall(sock, n):
             return None
         data += packet
     return data
+
+
+def msg_empty(sock):
+    """Detect if socket is empty."""
+    return not select([sock],[],[],0)[0]
