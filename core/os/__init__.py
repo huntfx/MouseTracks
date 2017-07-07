@@ -30,15 +30,12 @@ try:
     get_cursor_pos
     get_mouse_click
     get_key_press
-    remove_file
-    rename_file
-    create_folder
     hide_file
     get_running_processes
-    get_modified_time
+    get_resolution
+    get_documents_path
     
-    #Detect if code should use multiple monitors
-    #Don't check the length as it's possible a monitor can be plugged in later
+    #Detect if multiple monitors can be used
     try:
         monitor_info = get_monitor_locations
         MULTI_MONITOR = True
@@ -50,5 +47,49 @@ except NameError:
     raise ImportError('missing functions for operating system')
 
 
-def get_folder_contents(path):
-    return os.listdir(path)
+#Make sure exceptions exist as they are platform specific
+#If mac is similar to linux then this can be cleaned later
+if not getattr(__builtins__, "WindowsError", None):
+    class WindowsError(OSError): pass
+if not getattr(__builtins__, "FileNotFoundError", None):
+    class FileNotFoundError(OSError): pass
+if not getattr(__builtins__, "FileExistsError", None):
+    class FileExistsError(OSError): pass
+
+
+#Define all platform independant functions
+def remove_file(file_name):
+    try:
+        os.remove(file_name)
+    except (FileNotFoundError, WindowsError):
+        return False
+    return True
+
+
+def rename_file(old_name, new_name):
+    try:
+        os.rename(old_name, new_name)
+    except (FileNotFoundError, WindowsError):
+        return False
+
+
+def create_folder(folder_path):
+    try:
+        os.makedirs(folder_path)
+    except (FileExistsError, WindowsError):
+        return False
+    return True
+
+    
+def get_modified_time(file_name):
+    try:
+        return os.path.getmtime(file_name)
+    except (FileNotFoundError, WindowsError):
+        return None
+    
+    
+def list_directory(folder):
+    try:
+        return os.listdir(folder)
+    except (FileNotFoundError, WindowsError):
+        return None
