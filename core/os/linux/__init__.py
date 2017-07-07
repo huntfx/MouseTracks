@@ -8,30 +8,6 @@ except ImportError:
     raise ImportError('required modules not found')
 
 
-def remove_file(file_name):
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        return False
-    return True
-
-
-def rename_file(old_name, new_name):
-    try:
-        os.replace(old_name, new_name)
-    except FileNotFoundError:
-        return False
-    return True
-
-
-def create_folder(folder_path):
-    try:
-        os.makedirs(folder_path)
-    except FileExistsError:
-        return False
-    return True
-
-
 def get_running_processes():
     pids = []
     program_list = subprocess.Popen('ps -d', shell=True, stdout=subprocess.PIPE).communicate()[0]
