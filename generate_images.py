@@ -3,7 +3,7 @@ import time
 import sys
 
 from core.constants import CONFIG, DEFAULT_NAME
-from core.files import list_files, format_name, load_program
+from core.files import list_directory, format_name, load_program
 from core.functions import ticks_to_seconds, RunningPrograms, simple_bit_mask
 from core.simple import round_up
 
@@ -18,7 +18,7 @@ def user_generate():
     if profile == 'list':
 
         #Read the data folder and format names
-        all_files = sorted(list_files())
+        all_files = sorted(list_directory())
         if not all_files:
             print('Sorry, nothing was found in the data folder.')
             print('Press enter to exit.')
