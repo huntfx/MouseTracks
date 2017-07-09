@@ -2,12 +2,15 @@ from __future__ import division
 import time
 import sys
 
+from core.basic import get_python_version
+from core.applications import RunningApplications, read_app_list
 from core.constants import CONFIG, DEFAULT_NAME
-from core.files import list_directory, format_name, load_program
-from core.functions import ticks_to_seconds, RunningPrograms, simple_bit_mask
-from core.simple import round_up
+from core.files import list_data_files, format_name, load_program
+from core.misc import simple_bit_mask
+from core.messages import ticks_to_seconds
+from core.maths import round_up
 
-if sys.version_info.major != 2:
+if get_python_version() != 2:
     raw_input = input
 
 def user_generate():
@@ -18,19 +21,19 @@ def user_generate():
     if profile == 'list':
 
         #Read the data folder and format names
-        all_files = sorted(list_directory())
+        all_files = sorted(list_data_files())
         if not all_files:
             print('Sorry, nothing was found in the data folder.')
             print('Press enter to exit.')
             raw_input()
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
-        for program_name in RunningPrograms(list_only=True).programs.values():
+        for program_name in read_app_list().values():
             programs[format_name(program_name)] = program_name
         #all_files = [f for f in all_files if f in programs or f == 'default']
         
         page = 1
-        limit = 10
+        limit = 15
         maximum = len(all_files)
         total_pages = round_up(maximum / limit)
 
@@ -85,7 +88,7 @@ def user_generate():
 
 
     try:
-        current_profile = format_name(RunningPrograms().check()[0])
+        current_profile = format_name(RunningApplications().check()[0])
     except TypeError:
         pass
     else:
