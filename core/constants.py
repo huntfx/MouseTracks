@@ -1,6 +1,6 @@
-from __future__ import division
+from __future__ import division, absolute_import
 
-from core.simple import get_items, format_file_path
+from core.basic import get_items, format_file_path
 from core.os import get_resolution
 
 
@@ -160,12 +160,12 @@ _config_defaults = {
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
         'Data': ('{}\\Data\\'.format(DEFAULT_PATH), str),
-        'ProgramList': ('{}\\Program List.txt'.format(DEFAULT_PATH), str)
+        'AppList': ('{}\\AppList.txt'.format(DEFAULT_PATH), str)
         
     },
     'Internet': {
         'Enable': (True, bool),
-        'UpdatePrograms': (86400, int, 'How often to update the list from the internet. Set to 0 to disable.')
+        'UpdateApplications': (86400, int, 'How often to update the list from the internet. Set to 0 to disable.')
     },
     'Timer': {
         'CheckPrograms': (2, int, 1),
@@ -210,7 +210,7 @@ _config_defaults = {
         'ColourProfile': ('WhiteToBlack', str)
     },
     'SavedSettings': {
-        'ProgramListUpdate': (0, int)
+        'AppListUpdate': (0, int)
     },
     'Advanced': {
         'MessageLevel': (1, int, 0, 2)
@@ -233,30 +233,3 @@ _config_order = [
 
 
 CONFIG = SimpleConfig(_CONFIG_PATH, _config_defaults, _config_order)
-
-COLOURS_MAIN = {
-    'red': (255, 0, 0, 255),
-    'green': (0, 255, 0, 255),
-    'blue': (0, 0, 255, 255),
-    'yellow': (255, 255, 0, 255),
-    'cyan': (0, 255, 255, 255),
-    'magenta': (255, 0, 255, 255),
-    'white': (255, 255, 255, 255),
-    'grey': (127, 127, 127, 255),
-    'gray': (127, 127, 127, 255),
-    'black': (0, 0, 0, 255),
-    'orange': (255, 127, 0, 255),
-    'pink': (255, 0, 127, 255),
-    'purple': (127, 0, 255, 255)
-}
-
-COLOUR_MODIFIERS = {
-    #name: (add_base, multiplier, alpha_multiplier)
-    'light': (128, 0.5, 1.0),
-    'dark': (0, 0.5, 1.0),
-    'transparent': (0, 1.0, 0.0),
-    'translucent': (0, 1.0, 0.5),
-    'opaque': (0, 1.0, 2.0)
-}
-
-PROGRAM_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/Program%20List.txt'
