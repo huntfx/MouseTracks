@@ -1,12 +1,15 @@
 import time
 import traceback
+from multiprocessing import freeze_support
 
 from core.constants import CONFIG
-from core.functions import error_output
+from core.misc import error_output
 from core.main import start_tracking
 
 
 if __name__ == '__main__':
+
+    freeze_support()
 
     #Rewrite the config with validated values
     CONFIG.save()
