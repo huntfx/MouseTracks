@@ -1,17 +1,17 @@
-from __future__ import division
+from __future__ import division, absolute_import
 from PIL import Image
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
 import sys
 import numpy as np
 
-from core.constants import CONFIG, COLOURS_MAIN, COLOUR_MODIFIERS
+from core.colours import ColourRange, ColourMap
+from core.constants import CONFIG
 from core.files import load_program
-from core.simple import format_file_path
-from core.functions import ColourRange, print_override
-from core.simple import get_items
+from core.basic import format_file_path, get_items, get_python_version
+from core.misc import print_override
 
-if sys.version_info.major == 2:
+if get_python_version() == 2:
     range = xrange
     
 
@@ -211,90 +211,6 @@ class ImageName(object):
         return '{}.{}'.format(format_file_path(name), CONFIG['GenerateImages']['FileType'])
 
 
-def parse_colour_text(colour_name):
-    """Convert text into a colour map.
-    It could probably do with a rewrite to make it more efficient,
-    as it was first written to only use capitals.
-
-    Mixed Colour:
-        Combine multiple colours.
-        Examples: BlueRed, BlackYellowGreen
-    Modified Colour:
-        Apply a modification to a colour.
-        If multiple ones are applied, they will work in reverse order.
-        Light and dark are not opposites so will not cancel each other out.
-        Examples: LightBlue, DarkLightYellow
-    Transition:
-        This ends the current colour mix and starts a new one.
-        Examples: BlackToWhite, RedToGreenToBlue
-    Any number of these features can be combined together to create different effects.
-        
-    As an example, here are the values that would result in the heatmap:
-        BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueToCyan
-        + CyanCyanBlueToCyanCyanCyanYellowToCyanYellowToCyan
-        + YellowYellowYellowToYellowToOrangeToRedOrangeToRed 
-    """
-    colours = {'Final': [],
-               'Temp': [],
-               'Mult': []}
-    word = ''
-    i = 0
-    
-    #Loop letters until end of word has been reached
-    while True:
-        done_stuff = False
-        skip = False
-        try:
-            letter = colour_name[i]
-        except IndexError:
-            try:
-                letter = colour_name[i - 1]
-            except IndexError:
-                break
-            skip = True
-
-        if letter in 'abcdefghijklmnopqrstuvwxyz':
-            word += letter
-            done_stuff = True
-
-        word_colours = word in COLOURS_MAIN
-        word_mods = word in COLOUR_MODIFIERS
-        word_to = word == 'to'
-        
-        #Build colours
-        if skip or word_colours or word_mods or word_to or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
-            
-            if word_mods:
-                colours['Mult'].append(COLOUR_MODIFIERS[word])
-            elif word_colours:
-                colours['Temp'].append(list(COLOURS_MAIN[word]))
-
-                #Apply modifiers
-                for mult in colours['Mult'][::-1]:
-                    alpha = colours['Temp'][-1].pop()
-                    colours['Temp'][-1] = [mult[0] + mult[1] * c for c in colours['Temp'][-1]]
-                    colours['Temp'][-1] += [min(255, alpha * mult[2])]
-                colours['Mult'] = []
-
-            #Merge colours together
-            if word_to or skip:
-                num_colours = len(colours['Temp'])
-                joined_colours = tuple(sum(c) / num_colours for c in zip(*colours['Temp']))
-                colours['Final'].append(joined_colours)
-                colours['Temp'] = []
-                
-            if not done_stuff:
-                word = letter.lower()
-            else:
-                word = ''
-            done_stuff = True
-                
-        i += 1
-        if not done_stuff:
-            raise ValueError('invalid characters in colour map')
-    return tuple(colours['Final'])
-
-
 def _click_heatmap(numpy_arrays):
 
     #Add all arrays together
@@ -410,45 +326,3 @@ class RenderImage(object):
                 image_output.save(image_name)
                 print_override('Finished saving.')
         return image_output
-
-        
-class ColourMap(object):
-    """Look up default colours or generate one if the set doesn't exist."""
-    _MAPS = {
-        'jet': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
-                'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
-                'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
-        'transparentjet': ('TransparentBlackToTranslucentTranslucentDarkBlueTo'
-                           'TranslucentBlueToTranslucentCyanTranslucentBlueBlueBlueTo'
-                           'CyanBlueToCyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellow'
-                           'ToCyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
-        'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey',
-        'transparentradiation': ('TransparentBlackToTranslucentRedToYellowTo'
-                                 'WhiteToWhiteWhiteWhiteLightLightGrey'),
-        'default': 'WhiteToBlack',
-        'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow',
-        'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite',
-        'neon': 'BlackToPurpleToPinkToBlackToPink',
-        'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow',
-        'demon': 'WhiteToRedToBlackToWhite',
-        'chalk': 'BlackToWhite',
-        'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite',
-        'hazard': 'WhiteToBlackToYellow',
-        'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack',
-        'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue',
-        'grape': 'WhiteToBlackToMagenta',
-        'spiderman': 'RedToBlackToWhite',
-        'shroud': 'GreyToBlackToLightPurple',
-        'blackwidow': 'PurpleToLightCyanWhiteToPurpleToBlack'
-    }
-    def __getitem__(self, colour_profile):
-        if colour_profile.lower() in self._MAPS:
-            return parse_colour_text(self._MAPS[colour_profile.lower()])
-        else:
-            generated_map = parse_colour_text(colour_profile)
-            if generated_map:
-                if len(generated_map) < 2:
-                    raise ValueError('not enough colours to generate colour map')
-                return generated_map
-            else:
-                raise ValueError('unknown colour map')
