@@ -1,16 +1,14 @@
 from __future__ import absolute_import
 from re import sub
-import os
-import sys
 import time
 import zlib
 
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
 from core.versions import VERSION, upgrade_version
 from core.constants import DEFAULT_NAME, CONFIG
-from core.simple import format_file_path
+from core.basic import format_file_path, get_python_version
 
-if sys.version_info.major == 2:
+if get_python_version() == 2:
     import cPickle
 else:
     import pickle as cPickle
@@ -109,7 +107,7 @@ def save_program(program_name, data, compress=True):
         return False
 
         
-def list_files():
+def list_data_files():
     all_files = list_directory(DATA_FOLDER)
     if all_files is None:
         return []
