@@ -49,15 +49,21 @@ except NameError:
 
 #Make sure exceptions exist as they are platform specific
 #If mac is similar to linux then this can be cleaned later
-if not getattr(__builtins__, "WindowsError", None):
+try:
+    WindowsError
+except NameError:
     class WindowsError(OSError): pass
-if not getattr(__builtins__, "FileNotFoundError", None):
+try:
+    FileNotFoundError
+except NameError:
     class FileNotFoundError(OSError): pass
-if not getattr(__builtins__, "FileExistsError", None):
+try:
+    FileExistsError
+except NameError:
     class FileExistsError(OSError): pass
 
 
-#Define all platform independant functions
+#Define any functions
 def remove_file(file_name):
     try:
         os.remove(file_name)
@@ -71,6 +77,7 @@ def rename_file(old_name, new_name):
         os.rename(old_name, new_name)
     except (FileNotFoundError, WindowsError):
         return False
+    return True
 
 
 def create_folder(folder_path):
