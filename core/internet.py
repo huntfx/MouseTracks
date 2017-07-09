@@ -8,7 +8,6 @@ except ImportError:
     
 def get_url_contents(url):
     """Get data from a URL."""
-    
     try:
         return urllib2.urlopen(url)
     except (urllib2.URLError, urllib2.HTTPError):
