@@ -1,8 +1,10 @@
 from __future__ import division
 from operator import itemgetter
+
 from core.files import load_program
 from core.messages import date_format
-from core.functions import ticks_to_seconds
+from core.misc import ticks_to_seconds
+
 
 print('Type profile name to load:')
 program = raw_input()
