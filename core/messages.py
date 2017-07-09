@@ -1,9 +1,7 @@
-from datetime import datetime
+from __future__ import absolute_import
 
 from core.constants import DEFAULT_NAME, CONFIG
     
-
-MESSAGE_LEVEL = CONFIG['Advanced']['MessageLevel']
 
 MESSAGE_DEBUG = -1
 MOUSE_UNDETECTED = 0
@@ -27,9 +25,6 @@ PROGRAM_QUIT = 49
 PROGRAM_RELOAD = 50
 PROGRAM_LISTEN = 51
 PROGRAM_LOADING = 52
-PROGRAM_UPDATE_START = 53
-PROGRAM_UPDATE_END_SUCCESS = 54
-PROGRAM_UPDATE_END_FAIL = 55
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
@@ -43,6 +38,9 @@ DATA_LOADED = 82
 DATA_NOTFOUND = 83
 QUEUE_SIZE = 96
 THREAD_EXIT = 97
+APPLIST_UPDATE_START = 53
+APPLIST_UPDATE_END_SUCCESS = 54
+APPLIST_UPDATE_END_FAIL = 55
 
 
 def _mb_text(id):
@@ -119,11 +117,11 @@ class Notify(object):
             q1('Finished reloading program list.')
         if message_id == PROGRAM_LISTEN:
             q1('Started checking for running programs.')
-        if message_id == PROGRAM_UPDATE_START:
+        if message_id == APPLIST_UPDATE_START:
             q1('Updating programs list from internet...')
-        if message_id == PROGRAM_UPDATE_END_SUCCESS:
+        if message_id == APPLIST_UPDATE_END_SUCCESS:
             q1('Finished updating.')
-        if message_id == PROGRAM_UPDATE_END_FAIL:
+        if message_id == APPLIST_UPDATE_END_FAIL:
             q1('Failed to establish a connection.')
         if message_id == SAVE_START:
             q2('Saving the file...')
@@ -160,7 +158,7 @@ class Notify(object):
             q1('Didn\'t receive ping from main thread, closing background thread...')
 
     def __str__(self):
-        allowed_levels = range(MESSAGE_LEVEL, 3)
+        allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
         output = [' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
         self.reset()
         message = ' | '.join(i for i in output if i)
@@ -174,38 +172,5 @@ class Notify(object):
     def reset(self):
         self.message_queue = {0: [], 1: [], 2: []}
 
-
-def time_format(t):
-    return '[{}]'.format(datetime.fromtimestamp(t).strftime("%H:%M:%S"))
-
-
-def date_format(t):
-    dt = datetime.fromtimestamp(t)
-    hour = dt.hour
-    minute = dt.minute
-    if 0 <= hour < 12:
-        suffix = 'AM'
-    else:
-        suffix = 'PM'
-        hour %= 12
-    if not hour:
-        hour += 12
-    output_time = '{h}:{m}{s}'.format(h=hour, m=minute, s=suffix)
-    
-    day = str(dt.day)
-    if day.endswith('1'):
-        day += 'st'
-    elif day.endswith('2'):
-        day += 'nd'
-    elif day.endswith('3'):
-        day += 'rd'
-    else:
-        day += 'th'
-    month = dt.strftime("%B")
-    year = dt.year
-    output_date = '{d} {m} {y}'.format(d=day, m=month, y=year)
-
-    return '{}, {}'.format(output_time, output_date)
-    
     
 NOTIFY = Notify()
