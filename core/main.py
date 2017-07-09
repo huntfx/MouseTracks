@@ -3,11 +3,12 @@ from multiprocessing import Process, Queue
 from threading import Thread
 import time
 
-from core.os import monitor_info, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR
-from core.messages import *
-from core.functions import RefreshRateLimiter, error_output, print_override
-from core.simple import get_items
+from core.basic import get_items
 from core.constants import *
+from core.misc import RefreshRateLimiter, error_output
+from core.messages import time_format, print_override
+from core.notify import *
+from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR
 from core.track import background_process, running_processes, monitor_offset
 
 
@@ -32,8 +33,7 @@ def start_tracking():
              'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
              'Save': CONFIG['Save']['Frequency'],
              'ReloadProgramList': CONFIG['Timer']['ReloadPrograms'],
-             'UpdateQueuedCommands': CONFIG['Timer']['_ShowQueuedCommands'],
-             'Ping': CONFIG['Timer']['_Ping']}
+             'UpdateQueuedCommands': CONFIG['Timer']['_ShowQueuedCommands']}
     timer = {k: v * updates_per_second for k, v in get_items(timer)}
 
     store = {'Resolution': {'Current': monitor_info(),
@@ -125,8 +125,7 @@ def start_tracking():
 
             frame_data = {}
             frame_data_rp = {}
-            mouse_pos['Current'] = limiter.mouse_pos()
-
+            mouse_pos['Current'] = get_cursor_pos()
 
             #Check if mouse is inactive (such as in a screensaver)
             if mouse_pos['Current'] is None:
@@ -135,7 +134,6 @@ def start_tracking():
                     store['Mouse']['Inactive'] = True
                 time.sleep(mouse_inactive_delay)
                 continue
-
 
             #Check if mouse left the monitor
             elif (not MULTI_MONITOR
@@ -290,10 +288,6 @@ def start_tracking():
             if store['Save']['Finished'] and i and not i % store['Save']['Next']:
                 frame_data['Save'] = True
                 store['Save']['Finished'] = False
-                
-            #Send ping
-            if not i % timer['Ping']:
-                frame_data['Ping'] = None
 
             if store['Mouse']['OffScreen']:
                 mouse_pos['Previous'] = None
