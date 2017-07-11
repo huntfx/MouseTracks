@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME
-from core.language import open_language_file
+from core.language import get_language
 
-_L = open_language_file()
+_L = get_language()
 MESSAGE_DEBUG = -1
 MOUSE_UNDETECTED = 0
 MOUSE_DETECTED = 1
@@ -55,6 +55,7 @@ class Notify(object):
         self.reset()
         
     def __call__(self, message_id, *args):
+        
         q0 = self.message_queue[0].append
         q1 = self.message_queue[1].append
         q2 = self.message_queue[2].append
@@ -93,11 +94,15 @@ class Notify(object):
             q1(_L['MONITOR_CHANGED'].format(X1=args[0][0], Y1=args[0][1],
                                             X2=args[1][0], Y2=args[1][1]))
         if message_id == KEYBOARD_PRESSES:
+            single = _L['PRESS_SINGLE']
+            plural = _L['PRESS_PLURAL']
             q1(_L['KEYBOARD_PRESSES'].format(K=', '.join(*args),
-                                             S='' if len(args[0]) == 1 else 'es'))
+                                             P=single if len(args[0]) == 1 else plural))
         if message_id == KEYBOARD_PRESSES_HELD:
+            single = _L['PRESS_SINGLE']
+            plural = _L['PRESS_PLURAL']
             q1(_L['KEYBOARD_PRESSES_HELD'].format(K=', '.join(*args),
-                                                  S='' if len(args[0]) == 1 else 'es'))
+                                                  P=single if len(args[0]) == 1 else plural))
         if message_id == APPLICATION_STARTED:
             q2(_L['APPLICATION_STARTED'].format(A=args[0][0]))
         if message_id == APPLICATION_LOADING:
@@ -129,7 +134,9 @@ class Notify(object):
         if message_id == SAVE_FAIL:
             q2(_L['SAVE_FAIL'])
         if message_id == SAVE_FAIL_RETRY:
-            q2(_L['SAVE_FAIL_RETRY'].format(T=args[0], S='' if args[0] == 1 else 's',
+            single = _L['SECOND_SINGLE']
+            plural = _L['SECOND_PLURAL']
+            q2(_L['SAVE_FAIL_RETRY'].format(T=args[0], S=single if args[0] == 1 else plural,
                               C=args[1] + 1, M=args[2]))
         if message_id == SAVE_FAIL_END:
                 q2(_L['SAVE_FAIL_END'])
@@ -137,7 +144,9 @@ class Notify(object):
             if args[1] > 2:
                 q2(_L['SAVE_SKIP_NO_CHANGE'])
             else:
-                q2(_L['SAVE_SKIP_INACTIVE'].format(T=args[0], S='' if args[0] == 1 else 's'))
+                single = _L['SECOND_SINGLE']
+                plural = _L['SECOND_PLURAL']
+                q2(_L['SAVE_SKIP_INACTIVE'].format(T=args[0], S=single if args[0] == 1 else plural))
         if message_id == SAVE_PREPARE:
             q2(_L['SAVE_PREPARE'])
         if message_id == START_MAIN:
@@ -149,18 +158,19 @@ class Notify(object):
         if message_id == DATA_NOTFOUND:
             q1(_L['DATA_NOTFOUND'])
         if message_id == QUEUE_SIZE:
-            message = _L['COMMAND_COUNT'].replace('[N]', '{n}').replace('[S]', '{s}')
-            q1(_L['COMMAND_COUNT'].format(N=args[0], S='' if args[0] == 1 else 's'))
+            single = _L['COMMAND_SINGLE']
+            plural = _L['COMMAND_PLURAL']
+            q1(_L['COMMAND_COUNT'].format(N=args[0], C=single if args[0] == 1 else plural))
 
-    def __str__(self):
+    def get_output(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
-        output = [' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
+        output = [u' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
         self.reset()
-        message = ' | '.join(i for i in output if i)
+        message = u' | '.join(i for i in output if i)
         return message
 
     def send(self, q):
-        output = str(self)
+        output = self.get_output()
         if output:
             q.put(output)
 
