@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from locale import getdefaultlocale
+import time
 
 from core.basic import get_items, format_file_path
 from core.constants import CONFIG_PATH, DEFAULT_PATH
@@ -35,19 +37,28 @@ class SimpleConfig(object):
         for line in config_lines:
             if not line:
                 continue
+            
+            #Start new heading
             if line.startswith('['):
                 current_group = line[1:].split(']', 1)[0]
                 config_data[current_group] = {}
+            
+            #Skip comment
             elif line[0] in (';', '/', '#'):
                 pass
+            
+            #Process value
             else:
                 name, value = [i.strip() for i in line.split('=', 1)]
                 value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
+                
+                #Compare value in file to default settings
                 try:
                     default_value, default_type = self.default_data[current_group][name][:2]
                 except KeyError:
                     pass
                 else:
+                    #Process differently depending on variable type
                     if default_type == bool:
                         if value.lower() in ('0', 'false'):
                             value = False
@@ -94,7 +105,7 @@ class SimpleConfig(object):
                             
                 config_data[current_group][name] = value
         
-        #Add any remaining default values
+        #Add any remaining values that weren't in the file
         for group, variables in get_items(self.default_data):
             for variable, defaults in get_items(variables):
                 try:
@@ -155,7 +166,9 @@ _config_defaults = {
         'RepeatKeyPress': (0.0, float, 0, 'Record a new key press at this frequency'
                                           ' if a key is being held down (set to 0.0 to disable).'),
         'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
-                                         ' if a mouse button is being held down (set to 0.0 to disable).')
+                                         ' if a mouse button is being held down (set to 0.0 to disable).'),
+        'Language': (getdefaultlocale()[0], str, 'Choose a language. If the files don\'t exit yet,'
+                                                 ' en_GB will be used.'.format(getdefaultlocale()[0]))
     },
     'CompressMaps': {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
@@ -229,7 +242,7 @@ _config_defaults = {
     },
     'SavedSettings': {
         '__note__': ['Anything put here is not for editing.'],
-        'AppListUpdate': (0, int)
+        'AppListUpdate': (0, int, None, int(time.time()))
     },
     'Advanced': {
         'MessageLevel': (1, int, 0, 3, 'Choose how many messages to show.'
