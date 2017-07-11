@@ -178,6 +178,8 @@ _config_defaults = {
         'UpscaleResolutionY': (_res_y * 2, int, 1),
         'OutputResolutionX': (_res_x, int, 1),
         'OutputResolutionY': (_res_y, int, 1),
+        'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
+                                       ' Set to 0 to use all available.'),
         'FileType': ('png', str)
     },
     'GenerateHeatmap': {
