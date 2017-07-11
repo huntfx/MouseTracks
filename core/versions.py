@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 VERSION_HISTORY = [
@@ -11,7 +12,8 @@ VERSION_HISTORY = [
     '2.0.5',
     '2.0.5b',
     '2.0.6',
-    '2.0.6b'
+    '2.0.6b',
+    '2.0.6c'
 ]
 VERSION = VERSION_HISTORY[-1]
 
@@ -39,6 +41,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.5b: Separate tick counts for different maps
     2.0.6: Remove speed and combined maps as they don't look very interesting
     2.0.6b: Record when session started
+    2.0.6c: Record key presses per session
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -94,10 +97,14 @@ def upgrade_version(data, update_metadata=True):
     if current_version_id < _get_id('2.0.6b'):
         data['Ticks']['Session'] = {'Current': data['Ticks']['Current']['Tracks'],
                                     'Total': data['Ticks']['Total']}
+    if current_version_id < _get_id('2.0.6c'):
+        data['Keys'] = {'All': data['Keys'], 'Session': {'Pressed': {}, 'Held': {}}}
     
     if update_metadata:
         data['Version'] = VERSION
         data['TimesLoaded'] += 1
         data['Ticks']['Session']['Current'] = data['Ticks']['Current']['Tracks']
         data['Ticks']['Session']['Total'] = data['Ticks']['Total']
+        data['Keys']['Session']['Pressed'] = {}
+        data['Keys']['Session']['Held'] = {}
     return data
