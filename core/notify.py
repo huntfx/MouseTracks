@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
-from core.constants import DEFAULT_NAME, CONFIG
+from core.config import CONFIG
+from core.constants import DEFAULT_NAME
     
 
 MESSAGE_DEBUG = -1
