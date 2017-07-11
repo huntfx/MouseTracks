@@ -115,7 +115,7 @@ def update_app_list(applications, downloaded_applications=None):
     
 
 class RunningApplications(object):
-    """Detect which programs are currently running."""
+    """Detect which applications are currently running."""
 
     def __init__(self, application_path=APP_LIST_PATH, queue=None):
         self.q = queue
@@ -149,10 +149,10 @@ class RunningApplications(object):
                 self.save_file()
                 
                 if self.q is not None:
-                    NOTIFY(APPLIST_UPDATE_END_SUCCESS)
+                    NOTIFY(APPLIST_UPDATE_SUCCESS)
             else:
                 if self.q is not None:
-                    NOTIFY(APPLIST_UPDATE_END_FAIL)
+                    NOTIFY(APPLIST_UPDATE_FAIL)
                     
             NOTIFY.send(self.q)
                 
@@ -162,13 +162,11 @@ class RunningApplications(object):
     def save_file(self):
         lines = _DEFAULT_TEXT
         
-        sorted_program_list = sorted(self.applications.keys(), key=lambda s: s.lower())
-        
-        for program_info in sorted_program_list:
+        for app_info in sorted(self.applications.keys(), key=lambda s: s.lower()):
             
-            friendly_name = self.applications[program_info]
+            friendly_name = self.applications[app_info]
             
-            new_line = _format_app_text(program_info, friendly_name)
+            new_line = _format_app_text(app_info, friendly_name)
             if new_line is not None:
                 lines.append(new_line)
         
@@ -176,14 +174,14 @@ class RunningApplications(object):
             f.write('\n'.join(lines))
     
     def check(self):
-        """Check for any programs in the list that are currently loaded.
+        """Check for any applications in the list that are currently loaded.
         Choose the one with the highest ID as it'll likely be the most recent one.
         """
-        matching_programs = {}
-        for program in self.applications:
-            if program in self.processes:
-                matching_programs[self.processes[program]] = program
-        if not matching_programs:
+        matching_applications = {}
+        for application in self.applications:
+            if application in self.processes:
+                matching_applications[self.processes[application]] = application
+        if not matching_applications:
             return None
-        latest_program = matching_programs[max(matching_programs.keys())]
-        return (self.applications[latest_program], latest_program)
+        latest_application = matching_applications[max(matching_applications.keys())]
+        return (self.applications[latest_application], latest_application)
