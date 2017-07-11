@@ -5,12 +5,15 @@ import sys
 import os
 import time
 
-from core.basic import format_file_path
-from core.constants import CONFIG, DEFAULT_PATH
+from core.basic import format_file_path, get_python_version
+from core.constants import DEFAULT_PATH
 from core.messages import print_override
 from core.notify import *
 from core.os import get_running_processes
         
+if get_python_version() != 2:
+    raw_input = input
+    
     
 def error_output(trace):
     """Any errors are sent to here."""
@@ -18,7 +21,7 @@ def error_output(trace):
     with open(file_name, 'w') as f:
         f.write(trace)
     print_override(trace)
-    time.sleep(5)
+    raw_input('Press enter to close.')
 
 
 class RefreshRateLimiter(object):
