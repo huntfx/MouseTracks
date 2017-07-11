@@ -1,5 +1,5 @@
 from __future__ import division, absolute_import
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
@@ -124,8 +124,16 @@ def merge_resolutions(main_data, interpolate=False, multiple=False, session_star
     return (lowest_value, highest_value), numpy_arrays
 
     
-def convert_to_rgb(image_array, colour_range, num_processes=8):
+def convert_to_rgb(image_array, colour_range):
     
+    print_override('Splitting up data for each process...')
+    
+    #Calculate how many processes to use
+    num_processes = CONFIG['GenerateImages']['AllowedCores']
+    max_cores = cpu_count()
+    if not 0 < num_processes <= 8:
+        num_processes = max_cores
+        
     if num_processes == 1:
         return _rgb_process_single(image_array, colour_range)
     
@@ -141,14 +149,12 @@ def convert_to_rgb(image_array, colour_range, num_processes=8):
                for i in range(num_processes)]
     
     #Setup the queue and load it with the larger items
-    print_override('Putting data in queue...')
     q_send = Queue()
     q_recv = Queue()
     for i in p:
         q_send.put((i, colour_range, image_array))
     
     #Spawn the processes
-    print_override('Starting processes...')
     width_range = range(width)
     for i in p:
         
@@ -157,7 +163,7 @@ def convert_to_rgb(image_array, colour_range, num_processes=8):
         process_args = (width_range, height_range, q_send, q_recv)
                         
         Process(target=_rgb_process_worker, args=process_args).start()
-        print_override('Started process {}'.format(i))
+        print_override('Started process {}.'.format(i + 1))
     
     print_override('Waiting for processes to finish...')
     
@@ -166,7 +172,7 @@ def convert_to_rgb(image_array, colour_range, num_processes=8):
     for i in p:
         data = q_recv.get()
         result_data[data[0]] = data[1]
-        print 'Got result from process {}.'.format(data[0])
+        print 'Got result from process {}.'.format(data[0] + 1)
     
     #Join results
     results = []
@@ -177,8 +183,9 @@ def convert_to_rgb(image_array, colour_range, num_processes=8):
 
     
 def _rgb_process_worker(width_range, height_range, q_recv, q_send):
-    """Convert pixel values to colours and send back the result.
-    This is meant to be used in conjunction with convert_to_rgb."""
+    """Turn each element in a 2D array to its corresponding colour.
+    This is a shortened version of _rgb_process_single meant for multiprocessing.
+    """
     i, colour_range, image_array = q_recv.get()
     result = [[]]
     for y in height_range:
