@@ -4,6 +4,7 @@ try:
     from core.os.windows.win_api import *
 except ImportError:
     from core.os.windows.win_ctypes import *
+import core.os.windows.codec_override
 
 
 def read_env_var(text):
