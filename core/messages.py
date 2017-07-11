@@ -6,7 +6,7 @@ def print_override(text):
     """Send everything here to print, so that it can easily be edited.
     Defaults to Python 3 version as it'll refuse to even run the script otherwise.
     """
-    print(text)
+    print(text.encode('utf-8').strip())
     
 
 def time_format(t):
