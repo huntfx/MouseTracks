@@ -1,4 +1,5 @@
 from __future__ import division, absolute_import
+from multiprocessing import Process, Queue
 from PIL import Image
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.filters import gaussian_filter
@@ -6,7 +7,7 @@ import sys
 import numpy as np
 
 from core.colours import ColourRange, ColourMap
-from core.constants import CONFIG
+from core.config import CONFIG
 from core.files import load_program
 from core.basic import format_file_path, get_items, get_python_version
 from core.misc import print_override
