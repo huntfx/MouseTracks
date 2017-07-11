@@ -2,17 +2,19 @@ from __future__ import division
 import time
 import sys
 
-from core.basic import get_python_version
 from core.applications import RunningApplications, read_app_list
-from core.constants import CONFIG, DEFAULT_NAME
+from core.basic import get_python_version
+from core.config import CONFIG
+from core.constants import DEFAULT_NAME
 from core.files import list_data_files, format_name, load_program
-from core.misc import simple_bit_mask
-from core.messages import ticks_to_seconds
 from core.maths import round_up
+from core.messages import ticks_to_seconds
+from core.misc import simple_bit_mask
 
 if get_python_version() != 2:
     raw_input = input
 
+    
 def user_generate():
     CONFIG.save()
     print('Type profile to load, or type "list" to see them all:')
@@ -30,7 +32,6 @@ def user_generate():
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
         for program_name in read_app_list().values():
             programs[format_name(program_name)] = program_name
-        #all_files = [f for f in all_files if f in programs or f == 'default']
         
         page = 1
         limit = 15
@@ -155,20 +156,25 @@ def user_generate():
         ups = CONFIG['Main']['UpdatesPerSecond']
         all_time = ticks_to_seconds(last_session_end, ups)
         last_session_time = ticks_to_seconds(last_session_end - last_session_start, ups)
-        while True:
-            print('Would you like to generate everything or just the last session?')
-            print('1: Everything ({}) [Default]'.format(all_time))
-            print('2: Last Session ({})'.format(last_session_time))
+        
+        if not last_session_time or last_session_time == all_time:
+            last_session = False
+        
+        else:
+            while True:
+                print('Would you like to generate everything or just the last session?')
+                print('1: Everything ({}) [Default]'.format(all_time))
+                print('2: Last Session ({})'.format(last_session_time))
 
-            result = simple_bit_mask(raw_input().split(), 2, default_all=False)
-            if result[0] and result[1]:
-                print('Please only select one option.')
-            elif result[1]:
-                last_session = True
-                break
-            else:
-                last_session = False
-                break
+                result = simple_bit_mask(raw_input().split(), 2, default_all=False)
+                if result[0] and result[1]:
+                    print('Please only select one option.')
+                elif result[1]:
+                    last_session = True
+                    break
+                else:
+                    last_session = False
+                    break
 
         #Generate
         if generate_tracks:
