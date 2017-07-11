@@ -122,8 +122,73 @@ def merge_resolutions(main_data, interpolate=False, multiple=False, session_star
         highest_value -= session_start
     return (lowest_value, highest_value), numpy_arrays
 
+    
+def convert_to_rgb(image_array, colour_range, num_processes=8):
+    
+    if num_processes == 1:
+        return _rgb_process_single(image_array, colour_range)
+    
+    p = range(num_processes)
+    
+    #Get actual image dimensions
+    height = len(image_array)
+    width = len(image_array[0])
+    
+    #Figure how to split for each process
+    height_per_process = height // num_processes
+    heights = [[i * height_per_process, (i + 1) * height_per_process] 
+               for i in range(num_processes)]
+    
+    #Setup the queue and load it with the larger items
+    print_override('Putting data in queue...')
+    q_send = Queue()
+    q_recv = Queue()
+    for i in p:
+        q_send.put((i, colour_range, image_array))
+    
+    #Spawn the processes
+    print_override('Starting processes...')
+    width_range = range(width)
+    for i in p:
+        
+        #Setup arguments to pass in
+        height_range = range(heights[i][0], heights[i][1])
+        process_args = (width_range, height_range, q_send, q_recv)
+                        
+        Process(target=_rgb_process_worker, args=process_args).start()
+        print_override('Started process {}'.format(i))
+    
+    print_override('Waiting for processes to finish...')
+    
+    #Wait for the results to come back
+    result_data = {}
+    for i in p:
+        data = q_recv.get()
+        result_data[data[0]] = data[1]
+        print 'Got result from process {}.'.format(data[0])
+    
+    #Join results
+    results = []
+    for i in p:
+        results += result_data[i]
+    
+    return np.array(results, dtype=np.uint8)
 
-def convert_to_rgb(image_array, colour_range):
+    
+def _rgb_process_worker(width_range, height_range, q_recv, q_send):
+    """Convert pixel values to colours and send back the result.
+    This is meant to be used in conjunction with convert_to_rgb."""
+    i, colour_range, image_array = q_recv.get()
+    result = [[]]
+    for y in height_range:
+        if result[-1]:
+            result.append([])
+        for x in width_range:
+            result[-1].append(colour_range[image_array[y][x]])
+    q_send.put((i, result))
+
+
+def _rgb_process_single(image_array, colour_range):
     """Turn each element in a 2D array to its corresponding colour."""
     
     height_range = range(len(image_array))
@@ -133,7 +198,6 @@ def convert_to_rgb(image_array, colour_range):
     total = len(image_array) * len(image_array[0])
     count = 0
     one_percent = int(round(total / 100))
-    last_percent = -1
     for y in height_range:
         if new_data[-1]:
             new_data.append([])
