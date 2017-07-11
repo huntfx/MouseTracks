@@ -62,7 +62,7 @@ class Notify(object):
         if message_id == MESSAGE_DEBUG:
             q2('Debug: {}'.format(args))
         if message_id == MOUSE_UNDETECTED:
-            q2(_L['MOUSE_UNDETECTED'])
+            q2(_L['MOUSE_NOT_DETECTED'])
         if message_id == MOUSE_DETECTED:
             q2(_L['MOUSE_DETECTED'])
         if message_id == MOUSE_OFFSCREEN:
