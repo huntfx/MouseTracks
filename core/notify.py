@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME
-    
+from core.language import open_language_file
 
+_L = open_language_file()
 MESSAGE_DEBUG = -1
 MOUSE_UNDETECTED = 0
 MOUSE_DETECTED = 1
@@ -15,17 +16,17 @@ MOUSE_UNCLICKED = 9
 MOUSE_CLICKED_OFFSCREEN = 10
 MOUSE_CLICKED_HELD = 11
 MOUSE_HELD = 12
-MOUSE_COMPRESS_START = 13
-MOUSE_COMPRESS_END = 14
+TRACK_COMPRESS_START = 13
+TRACK_COMPRESS_END = 14
 RESOLUTION_CHANGED = 16
 MONITOR_CHANGED = 17
 KEYBOARD_PRESSES = 32
 KEYBOARD_PRESSES_HELD = 33
-PROGRAM_STARTED = 48
-PROGRAM_QUIT = 49
-PROGRAM_RELOAD = 50
-PROGRAM_LISTEN = 51
-PROGRAM_LOADING = 52
+APPLICATION_STARTED = 48
+APPLICATION_QUIT = 49
+APPLICATION_RELOAD = 50
+APPLICATION_LISTEN = 51
+APPLICATION_LOADING = 52
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
@@ -40,12 +41,12 @@ DATA_NOTFOUND = 83
 QUEUE_SIZE = 96
 THREAD_EXIT = 97
 APPLIST_UPDATE_START = 53
-APPLIST_UPDATE_END_SUCCESS = 54
-APPLIST_UPDATE_END_FAIL = 55
+APPLIST_UPDATE_SUCCESS = 54
+APPLIST_UPDATE_FAIL = 55
 
 
 def _mb_text(id):
-    return ('Left', 'Middle', 'Right')[id]
+    return (_L['MOUSE_BUTTON_LEFT'], _L['MOUSE_BUTTON_MIDDLE'], _L['MOUSE_BUTTON_RIGHT'])[id]
 
 
 class Notify(object):
@@ -60,49 +61,46 @@ class Notify(object):
         if message_id == MESSAGE_DEBUG:
             q2('Debug: {}'.format(args))
         if message_id == MOUSE_UNDETECTED:
-            q2('Unable to read cursor position (usually happens when user is away).')
+            q2(_L['MOUSE_UNDETECTED'])
         if message_id == MOUSE_DETECTED:
-            q2('Cursor position has been detected again.')
+            q2(_L['MOUSE_DETECTED'])
         if message_id == MOUSE_OFFSCREEN:
-            q1('Cursor has left the main monitor.')
+            q1(_L['MOUSE_OFFSCREEN'])
         if message_id == MOUSE_ONSCREEN:
-            q1('Cursor has entered the main monitor.')
+            q1(_L['MOUSE_ONSCREEN'])
         if message_id == MOUSE_POSITION:
-            q0('Cursor position: ({}, {})'.format(args[0][0], args[0][1]))
+            q0(_L['MOUSE_POSITION'].format(X=args[0][0], Y=args[0][1]))
         if message_id == MOUSE_CLICKED:
-            q1('{} mouse button clicked at ({}, {})'.format(_mb_text(args[1]),
-                                                            args[0][0], args[0][1]))
+            q1(_L['MOUSE_CLICKED'].format(MB=_mb_text(args[1]),
+                                          X=args[0][0], Y=args[0][1]))
         if message_id == MOUSE_CLICKED_OFFSCREEN:
-            q1('{} mouse button clicked.'.format(_mb_text(args[0])))
+            q1(_L['MOUSE_CLICKED_OFFSCREEN'].format(MB=_mb_text(args[1])))
         if message_id == MOUSE_CLICKED_HELD:
-            q1('{} mouse button being held at ({}, {})'.format(_mb_text(args[1]),
-                                                               args[0][0], args[0][1]))
+            q1(_L['MOUSE_CLICKED_HELD'].format(MB=_mb_text(args[1]),
+                                               X=args[0][0], Y=args[0][1]))
         if message_id == MOUSE_UNCLICKED:
-            q0('Mouse button unclicked.')
+            q0(_L['MOUSE_UNCLICKED'])
         if message_id == MOUSE_HELD:
-            q1('Mouse button being held.')
-        if message_id == MOUSE_COMPRESS_START:
-            if args[0] == 'track':
-                q2('Tracking data is being compressed...')
-            elif args[0] == 'speed':
-                q2('Speed data is being compressed...')
-        if message_id == MOUSE_COMPRESS_END:
-            if args[0] == 'track':
-                q2('Finished compressing tracking data.')
-            elif args[0] == 'speed':
-                q2('Finished compressing speed data.')
+            q1(_L['MOUSE_HELD'])
+        if message_id == TRACK_COMPRESS_START:
+            q2(_L['TRACK_COMPRESS_START'])
+        if message_id == TRACK_COMPRESS_END:
+            q2(_L['TRACK_COMPRESS_END'])
         if message_id == RESOLUTION_CHANGED:
-            q2('Resolution changed from {}x{} to {}x{}'.format(args[0][0], args[0][1],
-                                                               args[1][0], args[1][1]))
+            q2(_L['RESOLUTION_CHANGED'].format(X1=args[0][0], Y1=args[0][1],
+                                               X2=args[1][0], Y2=args[1][1]))
         if message_id == MONITOR_CHANGED:
-            q1('Recording resolution switched to {}p.'.format(args[1][1]))
+            q1(_L['MONITOR_CHANGED'].format(X1=args[0][0], Y1=args[0][1],
+                                            X2=args[1][0], Y2=args[1][1]))
         if message_id == KEYBOARD_PRESSES:
-            q1('Key Presses: {}'.format(', '.join(*args)))
+            q1(_L['KEYBOARD_PRESSES'].format(K=', '.join(*args),
+                                             S='' if len(args[0]) == 1 else 'es'))
         if message_id == KEYBOARD_PRESSES_HELD:
-            q1('Key Presses (held down): {}'.format(', '.join(*args)))
-        if message_id == PROGRAM_STARTED:
-            q2('Program detected: {}'.format(args[0][0]))
-        if message_id == PROGRAM_LOADING:
+            q1(_L['KEYBOARD_PRESSES_HELD'].format(K=', '.join(*args),
+                                                  S='' if len(args[0]) == 1 else 'es'))
+        if message_id == APPLICATION_STARTED:
+            q2(_L['APPLICATION_STARTED'].format(A=args[0][0]))
+        if message_id == APPLICATION_LOADING:
             default = False
             try:
                 if args[0][0] is None:
@@ -111,52 +109,48 @@ class Notify(object):
                 profile = DEFAULT_NAME
             else:
                 profile = args[0][0]
-            q2('Switching profile to {}.'.format(profile))
-        if message_id == PROGRAM_QUIT:
-            q2('Program quit.')
-        if message_id == PROGRAM_RELOAD:
-            q1('Finished reloading program list.')
-        if message_id == PROGRAM_LISTEN:
-            q1('Started checking for running programs.')
+            q2(_L['APPLICATION_LOADING'].format(A=profile))
+        if message_id == APPLICATION_QUIT:
+            q2(_L['APPLICATION_QUIT'])
+        if message_id == APPLICATION_RELOAD:
+            q1(_L['APPLICATION_RELOAD'])
+        if message_id == APPLICATION_LISTEN:
+            q1(_L['APPLICATION_LISTEN'])
         if message_id == APPLIST_UPDATE_START:
-            q1('Updating programs list from internet...')
-        if message_id == APPLIST_UPDATE_END_SUCCESS:
-            q1('Finished updating.')
-        if message_id == APPLIST_UPDATE_END_FAIL:
-            q1('Failed to establish a connection.')
+            q1(_L['APPLIST_UPDATE_START'])
+        if message_id == APPLIST_UPDATE_SUCCESS:
+            q1(_L['APPLIST_UPDATE_SUCCESS'])
+        if message_id == APPLIST_UPDATE_FAIL:
+            q1(_L['APPLIST_UPDATE_FAIL'])
         if message_id == SAVE_START:
-            q2('Saving the file...')
+            q2(_L['SAVE_START'])
         if message_id == SAVE_SUCCESS:
-            q2('Finished saving.')
+            q2(_L['SAVE_SUCCESS'])
         if message_id == SAVE_FAIL:
-            q2('Unable to save file, make sure this has the correct permissions.')
+            q2(_L['SAVE_FAIL'])
         if message_id == SAVE_FAIL_RETRY:
-            q2('Unable to save file, trying again in {} second{}.'
-               ' (attempt {} of {})'.format(args[0], '' if args[0] == 1 else 's',
-                                            args[1] + 1, args[2]))
+            q2(_L['SAVE_FAIL_RETRY'].format(T=args[0], S='' if args[0] == 1 else 's',
+                              C=args[1] + 1, M=args[2]))
         if message_id == SAVE_FAIL_END:
-            q2('Failed to save file (maximum attempts reached)'
-               ', make sure the correct permissions have been granted.')
+                q2(_L['SAVE_FAIL_END'])
         if message_id == SAVE_SKIP:
             if args[1] > 2:
-                q2('Skipping save - nothing has been processed yet since the last save.')
+                q2(_L['SAVE_SKIP_NO_CHANGE'])
             else:
-                q2('Skipping save due to inactivity'
-                   ' (last save was {} second{} ago).'.format(args[0], '' if args[0] == 1 else 's'))
+                q2(_L['SAVE_SKIP_INACTIVE'].format(T=args[0], S='' if args[0] == 1 else 's'))
         if message_id == SAVE_PREPARE:
-            q2('Preparing data to save...')
+            q2(_L['SAVE_PREPARE'])
         if message_id == START_MAIN:
-            q2('Started main loop.')
+            q2(_L['START_MAIN'])
         if message_id == START_THREAD:
-            q2('Started background thread.')
+            q2(_L['START_THREAD'])
         if message_id == DATA_LOADED:
-            q1('Finished loading data.')
+            q1(_L['DATA_LOADED'])
         if message_id == DATA_NOTFOUND:
-            q1('Started new data store.')
+            q1(_L['DATA_NOTFOUND'])
         if message_id == QUEUE_SIZE:
-            q1('{} command{} queued for processing.'.format(args[0], '' if args[0] == 1 else 's'))
-        if message_id == THREAD_EXIT:
-            q1('Didn\'t receive ping from main thread, closing background thread...')
+            message = _L['COMMAND_COUNT'].replace('[N]', '{n}').replace('[S]', '{s}')
+            q1(_L['COMMAND_COUNT'].format(N=args[0], S='' if args[0] == 1 else 's'))
 
     def __str__(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
