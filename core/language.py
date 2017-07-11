@@ -1,21 +1,25 @@
 from __future__ import absolute_import
+import codecs
 
 from core.config import CONFIG
 
 
-def open_language_file(language):
-    try:
-        with open('loc\\{}.txt'.format(language), 'r') as f:
-            data = f.read()
-    except ImportError:
-        return None
+ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_'
 
+def open_language_file(language):
+
+    try:
+        with codecs.open('loc\\{}.txt'.format(language), 'r', 'utf-8') as f:
+            data = f.read()
+    except IOError:
+        return None
+    
     variables = {}
-    for line in data.split('\n'):
+    for line in data.strip().split('\n'):
         if '=' in line:
             variable_name, variable_string = line.split('=', 1)
-            variables[variable_name.strip()] = variable_string.strip()
-    
+            variable_name = ''.join(i for i in variable_name if i in ALLOWED_CHARACTERS)
+            variables[variable_name] = variable_string.strip()
     return variables
 
     
