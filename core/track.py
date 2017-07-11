@@ -32,16 +32,16 @@ def running_processes(q_recv, q_send, background_send):
                 running.reload_file()
             except NameError:
                 running = RunningApplications(queue=q_send)
-            NOTIFY(PROGRAM_RELOAD)
+            NOTIFY(APPLICATION_RELOAD)
 
         if 'Update' in received_data:
             running.refresh()
             current = running.check()
             if current != previous:
                 if current is None:
-                    NOTIFY(PROGRAM_QUIT)
+                    NOTIFY(APPLICATION_QUIT)
                 else:
-                    NOTIFY(PROGRAM_STARTED, current)
+                    NOTIFY(APPLICATION_STARTED, current)
                 NOTIFY.send(q_send)
                 background_send.put({'Program': current})
                 previous = current
@@ -137,9 +137,6 @@ def background_process(q_recv, q_send):
             except Empty:
                 break
                 '''
-                 
-            #NOTIFY(MESSAGE_DEBUG, received_data)
-            #NOTIFY.send(q_send)
             
             check_resolution = False
             
@@ -160,9 +157,9 @@ def background_process(q_recv, q_send):
                 if current_program != store['LastProgram']:
                     
                     if current_program is None:
-                        NOTIFY(PROGRAM_LOADING)
+                        NOTIFY(APPLICATION_LOADING)
                     else:
-                        NOTIFY(PROGRAM_LOADING, current_program)
+                        NOTIFY(APPLICATION_LOADING, current_program)
                     NOTIFY.send(q_send)
                     
                     #Save old profile
@@ -266,7 +263,7 @@ def background_process(q_recv, q_send):
                 #Compress tracks if the count gets too high
                 if store['Data']['Ticks']['Current']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
                     compress_multplier = CONFIG['CompressMaps']['TrackReduction']
-                    NOTIFY(MOUSE_COMPRESS_START, 'track')
+                    NOTIFY(TRACK_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
                     
                     tracks = store['Data']['Maps']['Tracks']
@@ -277,7 +274,7 @@ def background_process(q_recv, q_send):
                         if not tracks[resolution]:
                             del tracks[resolution]
                             
-                    NOTIFY(MOUSE_COMPRESS_END, 'track')
+                    NOTIFY(TRACK_COMPRESS_END, 'track')
                     NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     store['Data']['Ticks']['Current']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Session']['Current'] //= compress_multplier
