@@ -2,7 +2,7 @@ import time
 import traceback
 from multiprocessing import freeze_support
 
-from core.constants import CONFIG
+from core.config import CONFIG
 from core.misc import error_output
 from core.main import start_tracking
 
