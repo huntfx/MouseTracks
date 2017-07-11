@@ -16,7 +16,14 @@ class SimpleConfig(object):
         self.load()
     
     def load(self):
-        """Open config file and validate values."""
+        """Open config file and validate values.
+        
+        
+        Allowed formats:
+            value, type, [comment] 
+            value, int/float, [min, [max]], [comment]
+            value, str, [is case sensitive, item1, item2...], [comment]
+        """
         try:
             with open(self.file_name, 'r') as f:
                 config_lines = [i.strip() for i in f.readlines()]
@@ -34,7 +41,7 @@ class SimpleConfig(object):
             elif line[0] in (';', '/', '#'):
                 pass
             else:
-                name, value = [i.strip() for i in line.split('=')]
+                name, value = [i.strip() for i in line.split('=', 1)]
                 value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
                 try:
                     default_value, default_type = self.default_data[current_group][name][:2]
@@ -72,7 +79,19 @@ class SimpleConfig(object):
                             elif len(no_text) >= 4:
                                 if no_text[3] is not None and no_text[3] < value:
                                     value = no_text[3]
-                
+                    if default_type == str:
+                        if len(self.default_data[current_group][name]) >= 3:
+                            if isinstance(self.default_data[current_group][name][2], tuple):
+                                allowed_values = list(self.default_data[current_group][name][2])
+                                case_sensitive = allowed_values.pop(0)
+                                if case_sensitive:
+                                    if not any(value == i for i in allowed_values):
+                                        value = default_value
+                                else:
+                                    value_lower = value.lower()
+                                    if not any(value_lower == i.lower() for i in allowed_values):
+                                        value = default_value
+                            
                 config_data[current_group][name] = value
         
         #Add any remaining default values
@@ -180,7 +199,7 @@ _config_defaults = {
         'OutputResolutionY': (_res_y, int, 1),
         'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
                                        ' Set to 0 to use all available.'),
-        'FileType': ('png', str)
+        'FileType': ('png', str, (False, 'jpg', 'png'))
     },
     'GenerateHeatmap': {
         'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
@@ -209,10 +228,12 @@ _config_defaults = {
         'ColourProfile': ('WhiteToBlack', str)
     },
     'SavedSettings': {
+        '__note__': ['Anything put here is not for editing.'],
         'AppListUpdate': (0, int)
     },
     'Advanced': {
-        'MessageLevel': (1, int, 0, 2)
+        'MessageLevel': (1, int, 0, 3, 'Choose how many messages to show.'
+                                       ' 0 will show everything, and 3 will show nothing.')
     }
 }
 
