@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 import time
 
-from core.constants import CONFIG
+from core.config import CONFIG
+from core.constants import APP_LIST_URL
 from core.notify import *
 from core.files import format_file_path
 from core.os import get_running_processes
@@ -9,8 +10,6 @@ from core.internet import get_url_contents
 
 
 APP_LIST_PATH = format_file_path(CONFIG['Paths']['AppList'])
-
-APP_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/Program%20List.txt'
 
 _DEFAULT_TEXT = [
     '// Type any apps you want to be tracked here.',
