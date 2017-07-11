@@ -3,7 +3,7 @@ from queue import Empty
 import time
 import traceback
 
-from core.constants import CONFIG
+from core.config import CONFIG
 from core.files import load_program, save_program, prepare_file
 from core.applications import RunningApplications
 from core.basic import get_items, get_python_version
