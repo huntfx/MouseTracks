@@ -4,7 +4,7 @@ from threading import Thread
 import time
 
 from core.basic import get_items
-from core.constants import *
+from core.config import CONFIG
 from core.misc import RefreshRateLimiter, error_output
 from core.messages import time_format, print_override
 from core.notify import *
