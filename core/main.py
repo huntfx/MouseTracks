@@ -113,15 +113,16 @@ def start_tracking():
                     store['Save']['Next'] = i + timer['Save']
                 
             if received_data:
-                notify_extra = ' | '.join(received_data)
-            notify_output = str(NOTIFY)
+                notify_extra = u' | '.join(received_data)
+            notify_output = NOTIFY.get_output()
+            
             if notify_extra:
                 if notify_output:
                     notify_output = notify_extra + ' | ' + notify_output
                 else:
                     notify_output = notify_extra
             if notify_output:
-                print_override('{} {}'.format(time_format(limiter.time), notify_output))
+                print_override(u'{} {}'.format(time_format(limiter.time), notify_output))
 
             frame_data = {}
             frame_data_rp = {}
