@@ -195,9 +195,13 @@ def background_process(q_recv, q_send):
                 
                 for key in received_data['KeyPress']:
                     try:
-                        store['Data']['Keys']['Pressed'][key] += 1
+                        store['Data']['Keys']['All']['Pressed'][key] += 1
                     except KeyError:
-                        store['Data']['Keys']['Pressed'][key] = 1
+                        store['Data']['Keys']['All']['Pressed'][key] = 1
+                    try:
+                        store['Data']['Keys']['Session']['Pressed'][key] += 1
+                    except KeyError:
+                        store['Data']['Keys']['Session']['Pressed'][key] = 1
             
             #Record time keys are held down
             if 'KeyHeld' in received_data:
@@ -205,9 +209,13 @@ def background_process(q_recv, q_send):
                 
                 for key in received_data['KeyHeld']:
                     try:
-                        store['Data']['Keys']['Held'][key] += 1
+                        store['Data']['Keys']['All']['Held'][key] += 1
                     except KeyError:
-                        store['Data']['Keys']['Held'][key] = 1
+                        store['Data']['Keys']['All']['Held'][key] = 1
+                    try:
+                        store['Data']['Keys']['Session']['Held'][key] += 1
+                    except KeyError:
+                        store['Data']['Keys']['Session']['Held'][key] = 1
             
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
