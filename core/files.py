@@ -3,10 +3,11 @@ from re import sub
 import time
 import zlib
 
+from core.basic import format_file_path, get_python_version
+from core.config import CONFIG
+from core.constants import DEFAULT_NAME
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
 from core.versions import VERSION, upgrade_version
-from core.constants import DEFAULT_NAME, CONFIG
-from core.basic import format_file_path, get_python_version
 
 if get_python_version() == 2:
     import cPickle
