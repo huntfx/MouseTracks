@@ -85,6 +85,7 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
 
 
 def monitor_offset(coordinate, monitor_limits):
+    """Detect which monitor the mouse is currently over."""
     if coordinate is None:
         return
     mx, my = coordinate
@@ -94,6 +95,7 @@ def monitor_offset(coordinate, monitor_limits):
             
             
 def _check_resolution(store, resolution):
+    """Make sure resolution exists as a key for each map."""
     if resolution is None:
         return
     if resolution not in store['Data']['Maps']['Tracks']:
@@ -213,6 +215,8 @@ def background_process(q_recv, q_send):
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
                 store['ActivitySinceLastSave'] = True
+                resolution = 0
+                _resolution = -1
                 
                 start, end = received_data['MouseMove']
                 #distance = find_distance(end, start)
@@ -224,19 +228,28 @@ def background_process(q_recv, q_send):
                     mouse_coordinates = [end]
                 else:
                     mouse_coordinates = [start, end] + calculate_line(start, end)
-
+                    
+                    #Don't bother calculating offset for each pixel
+                    #if both start and end are on the same monitor
+                    try:
+                        resolution, offset = monitor_offset(start, store['ResolutionTemp'])
+                        _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
+                    except TypeError:
+                        pass
+                        
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
                     if MULTI_MONITOR:
-                    
-                        try:
-                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
-                        except TypeError:
-                            store['ResolutionTemp'] = monitor_info()
+                        
+                        if resolution != _resolution:
                             try:
                                 resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                             except TypeError:
-                                continue
+                                store['ResolutionTemp'] = monitor_info()
+                                try:
+                                    resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                                except TypeError:
+                                    continue
                         
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         if resolution not in store['ResolutionList']:
