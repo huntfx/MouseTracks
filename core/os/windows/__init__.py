@@ -1,10 +1,13 @@
 import os
 
+from core.compatibility import get_python_version
+
 try:
-    from core.os.windows.win_api import *
+    from core.os.windows._pywin32 import *
 except ImportError:
-    from core.os.windows.win_ctypes import *
-import core.os.windows.codec_override
+    from core.os.windows._ctypes import *
+if get_python_version() == 2:
+    import core.os.windows.py2_utf8_console
 
 
 def read_env_var(text):
