@@ -22,6 +22,7 @@ def error_output(trace):
         f.write(trace)
     print_override(trace)
     raw_input('Press enter to close.')
+    sys.exit()
 
 
 class RefreshRateLimiter(object):
@@ -56,7 +57,7 @@ def simple_bit_mask(selection, size, default_all=True):
             pass
     
     #Convert to True or False
-    values = map(bool, list(map(int, str(bin(total))[2:]))[::-1])
+    values = list(map(bool, list(map(int, str(bin(total))[2:]))[::-1]))
     size_difference = max(0, size - len(values))
     if size_difference:
         values += [False] * size_difference
