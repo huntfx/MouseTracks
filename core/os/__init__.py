@@ -10,17 +10,17 @@ if current_os == 'Windows':
     try:
         from core.os.windows import *
     except ImportError:
-        raise ImportError('no module found for windows')
+        raise ImportError('missing modules for windows')
 elif current_os == 'Linux':
     try:
         from core.os.linux import *
     except ImportError:
-        raise ImportError('no module found for linux')
-elif current_os == 'Mac':
+        raise ImportError('missing modules for linux')
+elif current_os == 'Darwin':
     try:
         from core.os.mac import *
     except ImportError:
-        raise ImportError('no module found for mac')
+        raise ImportError('missing modules for mac')
 else:
     raise ImportError('unknown operating system: "{}"'.format(current_os))
 
@@ -38,6 +38,8 @@ try:
     #Detect if multiple monitors can be used
     try:
         monitor_info = get_monitor_locations
+        if not monitor_info():
+            raise NameError
         MULTI_MONITOR = True
     except NameError:
         monitor_info = get_resolution
