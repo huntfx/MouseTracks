@@ -144,25 +144,19 @@ def convert_to_rgb(image_array, colour_range):
     width = len(image_array[0])
     
     #Figure how to split for each process
+    width_range = range(width)
     height_per_process = height // num_processes
     heights = [[i * height_per_process, (i + 1) * height_per_process] 
                for i in range(num_processes)]
     
-    #Setup the queue and load it with the larger items
+    #Setup the queue and send it to each process
     q_send = Queue()
     q_recv = Queue()
     for i in p:
-        q_send.put((i, colour_range, image_array))
-    
-    #Spawn the processes
-    width_range = range(width)
-    for i in p:
-        
-        #Setup arguments to pass in
         height_range = range(heights[i][0], heights[i][1])
-        process_args = (width_range, height_range, q_send, q_recv)
-                        
-        Process(target=_rgb_process_worker, args=process_args).start()
+        q_send.put((i, width_range, height_range, colour_range, image_array))
+        
+        Process(target=_rgb_process_worker, args=(q_send, q_recv)).start()
         print_override('Started process {}.'.format(i + 1))
     
     print_override('Waiting for processes to finish...')
@@ -182,11 +176,11 @@ def convert_to_rgb(image_array, colour_range):
     return np.array(results, dtype=np.uint8)
 
     
-def _rgb_process_worker(width_range, height_range, q_recv, q_send):
+def _rgb_process_worker(q_recv, q_send):
     """Turn each element in a 2D array to its corresponding colour.
     This is a shortened version of _rgb_process_single meant for multiprocessing.
     """
-    i, colour_range, image_array = q_recv.get()
+    i, width_range, height_range, colour_range, image_array = q_recv.get()
     result = [[]]
     for y in height_range:
         if result[-1]:
