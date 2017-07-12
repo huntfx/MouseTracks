@@ -71,7 +71,7 @@ class _RECT(ctypes.Structure):
     ]
   
     def dump(self):
-        return list(map(int, (self.left, self.top, self.right, self.bottom)))
+        return tuple(map(int, (self.left, self.top, self.right, self.bottom)))
 
 
 class _MONITORINFO(ctypes.Structure):
