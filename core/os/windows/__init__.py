@@ -1,12 +1,13 @@
+from __future__ import absolute_import
 import os
 
-from core.compatibility import get_python_version
+from core.compatibility import PYTHON_VERSION
 
 try:
     from core.os.windows._pywin32 import *
 except ImportError:
     from core.os.windows._ctypes import *
-if get_python_version() == 2:
+if PYTHON_VERSION == 2:
     import core.os.windows.py2_utf8_console
 
 
@@ -26,18 +27,13 @@ def get_running_processes():
     """Return a dictionary of running processes, with their ID as the value.
     The ID is used to determine which process was most recently loaded.
     """
-    task_list = os.popen("tasklist").read().splitlines()
+    task_list = os.popen("tasklist /NH /FO CSV").read().splitlines()
     
     running_processes = {}
     for i, task_raw in enumerate(task_list):
-        if task_raw:
-            try:
-                image, name, pid, session, mem, usage = task_raw.split()
-            except ValueError:
-                pass
-            else:
-                if '.' in image:
-                    running_processes[image] = i
+        image = task_raw.split(',', 1)[0][1:-1]
+        if '.' in image:
+            running_processes[image] = i
     return running_processes
 
     
