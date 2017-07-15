@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from locale import getdefaultlocale
 import time
 
-from core.basic import get_items, format_file_path
-from core.constants import CONFIG_PATH, DEFAULT_PATH
+from core.compatibility import get_items
+from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH
 from core.os import get_resolution
 
 
@@ -206,8 +206,9 @@ _config_defaults = {
     'GenerateImages': {
         '__note__': ['For the best results, make sure the upscale resolution'
                      ' is higher than or equal to the highest recorded resolution.'],
-        'UpscaleResolutionX': (_res_x * 2, int, 1),
-        'UpscaleResolutionY': (_res_y * 2, int, 1),
+        '_UpscaleResolutionX': (_res_x, int, 1),
+        '_UpscaleResolutionY': (_res_y, int, 1),
+        'HighPrecision': (False, bool),
         'OutputResolutionX': (_res_x, int, 1),
         'OutputResolutionY': (_res_y, int, 1),
         'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
