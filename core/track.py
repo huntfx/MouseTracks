@@ -1,18 +1,15 @@
 from __future__ import division, absolute_import
-from queue import Empty
+#from queue import Empty
 import time
 import traceback
 
+from core.compatibility import range, get_items
 from core.config import CONFIG
 from core.files import load_program, save_program, prepare_file
 from core.applications import RunningApplications
-from core.basic import get_items, get_python_version
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
-
-if get_python_version() == 2:
-    range = xrange
     
 
 def running_processes(q_recv, q_send, background_send):
