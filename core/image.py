@@ -7,13 +7,11 @@ import sys
 import numpy as np
 
 from core.colours import ColourRange, ColourMap
-from core.config import CONFIG
+from core.compatibility import range, get_items
+from core.config import CONFIG, _config_defaults
+from core.constants import format_file_path
 from core.files import load_program
-from core.basic import format_file_path, get_items, get_python_version
 from core.misc import print_override
-
-if get_python_version() == 2:
-    range = xrange
     
 
 def merge_array_max(arrays):
@@ -38,7 +36,8 @@ def merge_array_add(arrays):
         return arrays[0]
 
 
-def merge_resolutions(main_data, interpolate=False, multiple=False, session_start=None):
+def merge_resolutions(main_data, interpolate=False, multiple_selection=False, 
+                      session_start=None, high_precision=False, _find_range=True):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
     """
@@ -51,16 +50,30 @@ def merge_resolutions(main_data, interpolate=False, multiple=False, session_star
     if any(not isinstance(i, tuple) for i in resolutions) or any(len(i) != 2 for i in resolutions):
         raise ValueError('incorrect resolutions')
 
+            
+    output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
+                         CONFIG['GenerateImages']['OutputResolutionY'])
+        
     #Calculate upscale resolution
     max_x = max(x for x, y in resolutions)
     max_y = max(y for x, y in resolutions)
-    max_resolution = (CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'])
-    CONFIG['GenerateImages']['UpscaleResolutionX'], CONFIG['GenerateImages']['UpscaleResolutionY'] = max_resolution
+    if high_precision:
+        max_x *= 2
+        max_y *= 2
+    print max_x, max_y
+    
+    _max_height_x = int(round(max_x / output_resolution[0] * output_resolution[1]))
+    if _max_height_x > max_y:
+        max_resolution = (max_x, _max_height_x)
+    else:
+        _max_width_y = int(round(max_y / output_resolution[1] * output_resolution[0]))
+        max_resolution = (_max_width_y, max_y)
+    CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY'] = max_resolution
                       
     #Read total number of images that will need to be upscaled
     max_count = 0
     for current_resolution in resolutions:
-        if multiple:
+        if multiple_selection:
             max_count += len([n for n in main_data[current_resolution] if n])
         else:
             max_count += 1
@@ -68,29 +81,38 @@ def merge_resolutions(main_data, interpolate=False, multiple=False, session_star
     i = 0
     count = 0
     total = 0
+    
+    #Upscale each resolution to the same level
     for current_resolution in resolutions:
-        if multiple:
-            array_list = [main_data[current_resolution][n] for n in multiple if main_data[current_resolution][n]]
+        if multiple_selection:
+            array_list = [main_data[current_resolution][n] 
+                          for n in multiple_selection if main_data[current_resolution][n]]
         else:
             array_list = [main_data[current_resolution]]
             
         for data in array_list:
             i += 1
-            print_override('Resizing {}x{} to {}x{}...'
-                           '({}/{})'.format(current_resolution[0], current_resolution[1],
-                                            max_resolution[0], max_resolution[1],
-                                            i, max_count))
+            if current_resolution == max_resolution:
+                print_override('Processing {}x{}... ({}/{})'.format(current_resolution[0], 
+                                                                    current_resolution[1],
+                                                                    i, max_count))
+            else:
+                print_override('Processing {}x{} and resizing to {}x{}...'
+                               '({}/{})'.format(current_resolution[0], current_resolution[1],
+                                                max_resolution[0], max_resolution[1],
+                                                i, max_count))
 
             #Try find the highest and lowest value
-            all_values = set(data.values())
-            if not all_values:
-                continue
-            _lowest_value = min(all_values)
-            if lowest_value is None or lowest_value > _lowest_value:
-                lowest_value = _lowest_value
-            _highest_value = max(all_values)
-            if highest_value is None or highest_value < _highest_value:
-                highest_value = _highest_value
+            if _find_range:
+                all_values = set(data.values())
+                if not all_values:
+                    continue
+                _lowest_value = min(all_values)
+                if lowest_value is None or lowest_value > _lowest_value:
+                    lowest_value = _lowest_value
+                _highest_value = max(all_values)
+                if highest_value is None or highest_value < _highest_value:
+                    highest_value = _highest_value
 
             #Build 2D array from data
             new_data = []
@@ -119,19 +141,21 @@ def merge_resolutions(main_data, interpolate=False, multiple=False, session_star
             else:
                 numpy_arrays.append(np.array(new_data))
     
-    if session_start is not None:
-        highest_value -= session_start
-    return (lowest_value, highest_value), numpy_arrays
-
+    if _find_range:
+        if session_start is not None:
+            highest_value -= session_start
+        return (lowest_value, highest_value), numpy_arrays
+    return numpy_arrays
+    
     
 def convert_to_rgb(image_array, colour_range):
-    
-    print_override('Splitting up data for each process...')
+    """Convert an array into colours."""
     
     #Calculate how many processes to use
     num_processes = CONFIG['GenerateImages']['AllowedCores']
     max_cores = cpu_count()
-    if not 0 < num_processes <= 8:
+    if not 0 < num_processes <= max_cores:
+        print_override('Splitting up data for each process...')
         num_processes = max_cores
         
     if num_processes == 1:
@@ -223,8 +247,8 @@ class ImageName(object):
     def reload(self):
         self.output_res_x = str(CONFIG['GenerateImages']['OutputResolutionX'])
         self.output_res_y = str(CONFIG['GenerateImages']['OutputResolutionY'])
-        self.upscale_res_x = str(CONFIG['GenerateImages']['UpscaleResolutionX'])
-        self.upscale_res_y = str(CONFIG['GenerateImages']['UpscaleResolutionY'])
+        self.upscale_res_x = str(CONFIG['GenerateImages']['_UpscaleResolutionX'])
+        self.upscale_res_y = str(CONFIG['GenerateImages']['_UpscaleResolutionY'])
 
         self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
         self.heatmap_exp = str(CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
@@ -277,8 +301,8 @@ class ImageName(object):
         return '{}.{}'.format(format_file_path(name), CONFIG['GenerateImages']['FileType'])
 
 
-def _click_heatmap(numpy_arrays):
-
+def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
+    """Convert list of arrays into a heatmap."""
     #Add all arrays together
     print_override('Merging arrays...')
     max_array = merge_array_add(numpy_arrays)
@@ -294,21 +318,17 @@ def _click_heatmap(numpy_arrays):
     height_range = range(h)
     width_range = range(w)
     
-    #Make this part a little faster for the sake of a few extra lines
-    exponential_multiplier = CONFIG['GenerateHeatmap']['ExponentialMultiplier']
-    if exponential_multiplier != 1.0:
-        for x in width_range:
-            for y in height_range:
+    #Copy over values
+    for x in width_range:
+        for y in height_range:
+            if exponential_multiplier == 1.0:
                 heatmap[y][x] = max_array[y][x] ** exponential_multiplier
-    else:
-        for x in width_range:
-            for y in height_range:
+            else:
                 heatmap[y][x] = max_array[y][x]
 
     #Blur the array
     print_override('Applying gaussian blur...')
-    gaussian_blur = CONFIG['GenerateHeatmap']['GaussianBlurSize']
-    heatmap = gaussian_filter(heatmap, sigma=gaussian_blur)
+    heatmap = gaussian_filter(heatmap, sigma=gaussian_size)
 
     #Calculate the average of all the points
     print_override('Calculating average...')
@@ -318,18 +338,7 @@ def _click_heatmap(numpy_arrays):
             total[0] += 1
             total[1] += heatmap[y][x]
 
-    #Set range of heatmap
-    min_value = 0
-    max_value = CONFIG['GenerateHeatmap']['MaximumValueMultiplier'] * total[1] / total[0]
-    if CONFIG['GenerateHeatmap']['ForceMaximumValue']:
-        max_value = CONFIG['GenerateHeatmap']['ForceMaximumValue']
-        print_override('Manually set highest range to {}'.format(max_value))
-    
-    #Convert each point to an RGB tuple
-    print_override('Converting to RGB...')    
-    colour_map = CONFIG['GenerateHeatmap']['ColourProfile']
-    colour_range = ColourRange(min_value, max_value, ColourMap()[colour_map])
-    return Image.fromarray(convert_to_rgb(heatmap, colour_range))
+    return ((0, total[1] / total[0]), heatmap)
 
 
 def arrays_to_colour(colour_range, numpy_arrays):
@@ -362,22 +371,55 @@ class RenderImage(object):
             image_output = None
         
         else:
+            
+            high_precision = CONFIG['GenerateImages']['HighPrecision']
+            
+            #Generate mouse tracks image
             if image_type == 'tracks':
-                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
-                                                              session_start=session_start)
-                colour_map = CONFIG['GenerateTracks']['ColourProfile']
-                colour_range = ColourRange(value_range[0], value_range[1], ColourMap()[colour_map])
+                (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
+                                                                         session_start=session_start,
+                                                                         high_precision=high_precision)
+                try:
+                    colour_map = ColourMap()[CONFIG['GenerateTracks']['ColourProfile']]
+                except ValueError:
+                    default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
+                    colour_map = ColourMap()[default_colours]
+                colour_range = ColourRange(min_value,max_value, colour_map)
                 image_output = arrays_to_colour(colour_range, numpy_arrays)
                 image_name = self.name.generate('Tracks', reload=True)
-                
+            
+            #Generate click heatmap image
             elif image_type == 'clicks':
                 lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
                 mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
                 rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
                 mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
-                value_range, numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], interpolate=False, multiple=mb,
-                                                              session_start=session_start)
-                image_output = _click_heatmap(numpy_arrays)
+                numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple_selection=mb, 
+                                                 session_start=session_start, _find_range=False,
+                                                 high_precision=high_precision)
+
+                (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
+                            gaussian_size=CONFIG['GenerateHeatmap']['GaussianBlurSize'],
+                            exponential_multiplier=CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
+                
+                #Adjust range of heatmap            
+                if CONFIG['GenerateHeatmap']['ForceMaximumValue']:
+                    max_value = CONFIG['GenerateHeatmap']['ForceMaximumValue']
+                    print_override('Manually set highest range to {}'.format(max_value))
+                else:
+                    max_value *= CONFIG['GenerateHeatmap']['MaximumValueMultiplier']
+                
+                #Convert each point to an RGB tuple
+                print_override('Converting to RGB...')
+                try:
+                    colour_map = ColourMap()[CONFIG['GenerateHeatmap']['ColourProfile']]
+                except ValueError:
+                    default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
+                    colour_map = ColourMap()[default_colours]
+                colour_range = ColourRange(min_value, max_value, colour_map)
+                image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
+              
+              
                 image_name = self.name.generate('Clicks', reload=True)
             
             resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
