@@ -1,33 +1,47 @@
 from __future__ import absolute_import
 from re import sub
+from operator import itemgetter
 import time
 import zlib
+import os
 
-from core.basic import format_file_path, get_python_version
 from core.config import CONFIG
-from core.constants import DEFAULT_NAME
+from core.compatibility import PYTHON_VERSION, get_items
+from core.constants import DEFAULT_NAME, format_file_path
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
 from core.versions import VERSION, upgrade_version
 
-if get_python_version() == 2:
+if PYTHON_VERSION < 3:
     import cPickle
 else:
     import pickle as cPickle
 
 
+DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
+
+DATA_EXTENSION = 'data'
+
+DATA_NAME = '[PROGRAM]'
+
+DATA_BACKUP_FOLDER = '.backup'
+
+DATA_TEMP_FOLDER = '.temp'
+
+
 def format_name(name):
+    """Remove any invalid characters for file name."""
     return sub('[^A-Za-z0-9]+', '', name).lower()
 
     
 def _get_paths(program_name):
-
+    """Create file paths from the global variables."""
     if program_name is None:
         program_name = DEFAULT_NAME
     elif isinstance(program_name, (list, tuple)):
         program_name = program_name[0]
     name_format = format_name(program_name)
     
-    name = DATA_NAME.replace('[PROGRAM]', name_format)
+    name = '{}.{}'.format(DATA_NAME.replace('[PROGRAM]', name_format), DATA_EXTENSION)
     new_name = '{}/{}'.format(DATA_FOLDER, name)
     backup_folder = '{}/{}'.format(DATA_FOLDER, DATA_BACKUP_FOLDER)
     backup_name = '{}/{}'.format(backup_folder, name)
@@ -52,7 +66,7 @@ def decode_file(data):
     
 
 def load_program(program_name=None, _update_version=True, _metadata_only=False):
-
+    """Read a profile (or create new one) and run it through the update."""
     paths = _get_paths(program_name)
     new_file = False
     
@@ -85,7 +99,11 @@ def load_program(program_name=None, _update_version=True, _metadata_only=False):
     
 
 def save_program(program_name, data, compress=True):
-
+    """Handle the safe saving of profiles.
+    
+    Instead of overwriting, it will save as a temprary file and attempt to rename.
+    At any point in time there are two copies of the save.
+    """
     if compress:
         compressed_data = prepare_file(data)
     else:
@@ -109,14 +127,13 @@ def save_program(program_name, data, compress=True):
 
         
 def list_data_files():
+    """List the name of every saved profile in the data folder.
+    The extension is checked, but removed in the output list.
+    """
     all_files = list_directory(DATA_FOLDER)
     if all_files is None:
         return []
-    extension = DATA_NAME.replace('[PROGRAM]', '')
-    return [i.replace(extension, '') for i in all_files if i.endswith(extension)]
-
-    
-DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
-DATA_NAME = '[PROGRAM].data'
-DATA_BACKUP_FOLDER = '.backup'
-DATA_TEMP_FOLDER = '.temp'
+    extension = '.{}'.format(DATA_EXTENSION)
+    date_modified = {f: get_modified_time(os.path.join(DATA_FOLDER, f)) for f in all_files}
+    date_sort = sorted(get_items(date_modified), key=itemgetter(1))
+    return [k.replace(extension, '') for k, v in date_sort if k.endswith(DATA_EXTENSION)][::-1]
