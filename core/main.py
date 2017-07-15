@@ -3,7 +3,7 @@ from multiprocessing import Process, Queue
 from threading import Thread
 import time
 
-from core.basic import get_items
+from core.compatibility import get_items
 from core.config import CONFIG
 from core.misc import RefreshRateLimiter, error_output
 from core.messages import time_format, print_override
@@ -85,7 +85,7 @@ def start_tracking():
                 pass
             
             while not q_recv2.empty():
-                print_override('{} {}'.format(time_format(limiter.time), q_recv2.get()))
+                print_override(u'{} {}'.format(time_format(limiter.time), q_recv2.get()))
             
             #Print any messages from previous loop
             notify_extra = ''
@@ -239,12 +239,20 @@ def start_tracking():
             if _keys_pressed:
                 NOTIFY(KEYBOARD_PRESSES, _keys_pressed)
 
+            recalculate_mouse = False
+            
             #Check if resolution has changed
             if not i % timer['UpdateScreen']:
             
                 if MULTI_MONITOR:
-                    frame_data['MonitorLimits'] = monitor_info()
-                    store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
+                    try:
+                        old_resolution = list(store['Resolution']['Boundaries'])
+                    except TypeError:
+                        old_resolution = None
+                    store['Resolution']['Boundaries'] = monitor_info()
+                    frame_data['MonitorLimits'] = store['Resolution']['Boundaries']
+                    if old_resolution != store['Resolution']['Boundaries']:
+                        recalculate_mouse = True
                 else:
                     store['Resolution']['Current'] = monitor_info()
                     if store['Resolution']['Previous'] != store['Resolution']['Current']:
@@ -254,23 +262,30 @@ def start_tracking():
                         store['Resolution']['Previous'] = store['Resolution']['Current']
             
             #Display message that mouse has switched monitors
-            if MULTI_MONITOR and 'MouseMove' in frame_data:
-                
+            if MULTI_MONITOR:
                 try:
-                    try:
-                        res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
-                    except TypeError:
-                        frame_data['MonitorLimits'] = monitor_info()
-                        store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
-                        res = monitor_offset(frame_data['MouseMove'][1], store['Resolution']['Boundaries'])[0]
-                except TypeError:
-                    pass
+                    current_mouse_pos = frame_data['MouseMove'][1]
+                except KeyError:
+                    current_mouse_pos = mouse_pos['Current']
                 else:
-                    store['Resolution']['Current'] = res
-                    if store['Resolution']['Previous'] is not None:
-                        if store['Resolution']['Current'] != store['Resolution']['Previous']:
-                            NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
-                    store['Resolution']['Previous'] = store['Resolution']['Current']
+                    recalculate_mouse = True
+                
+                if recalculate_mouse:
+                    try:
+                        try:
+                            res = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                        except TypeError:
+                            frame_data['MonitorLimits'] = monitor_info()
+                            store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
+                            res = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                    except TypeError:
+                        pass
+                    else:
+                        store['Resolution']['Current'] = res
+                        if store['Resolution']['Previous'] is not None:
+                            if store['Resolution']['Current'] != store['Resolution']['Previous']:
+                                NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
+                        store['Resolution']['Previous'] = store['Resolution']['Current']
 
             #Send request to update programs
             if not i % timer['UpdatePrograms']:
