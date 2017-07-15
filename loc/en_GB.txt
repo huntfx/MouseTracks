@@ -1,3 +1,4 @@
+// Tracking
 COMMAND_SINGLE = command
 COMMAND_PLURAL = commands
 SECOND_SINGLE = second
@@ -45,3 +46,39 @@ START_THREAD = Background process started.
 DATA_LOADED = Finished loading data.
 DATA_NOTFOUND = Started recording to new file.
 COMMAND_COUNT = {N} {C} queued for processing.
+
+// Image generation
+ENTER_TO_EXIT = Press enter to exit.
+TYPE_OPTIONS = Separate options with a space, or hit enter for all.
+DEFAULT = Default
+TRACK_NAME = Tracks
+CLICK_NAME = Click Heatmap
+KEY_NAME = Keyboard Heatmap
+RAW_NAME = Raw Data
+PAGE = page
+LIST = list
+SORT = sort
+
+
+TYPE_PROFILE = Type profile to load, or type "{L}" to see them all:
+DATA_FOLDER_EMPTY = Sorry, nothing was found in the data folder.
+CURRENT_PAGE = Page {C} of {T}. Type "{P} <number>" to switch.
+CURRENT_SORT_DATE =  Type "{S}" to sort results by date.
+CURRENT_SORT_NAME = Type "{S}" to sort results by name.
+HOW_TO_LOAD = You can type the number or name of a profile to load it.
+PAGE_INVALID = Invalid page number.
+PROFILE_NUMBER_INVALID = Number doesn't match any profiles.
+PROFILE_SELECTED = Profile selection: {P}
+PROFILE_RUNNING_WARNING = Warning: The profile you selected is currently running.
+PROFILE_RUNNING_NOSAVE = It has not had a chance to save yet, please wait a short while before trying again.
+SAVE_FREQUENCY = The saving frequency is currently set to {T}
+PROFILE_RUNNING_SAVE = It was last saved {T} ago, so any tracks more recent than this will not be shown.
+NEXT_SAVE_DUE = The next save is due in roughly {T}.
+GENERATE_OPTIONS = What do you want to generate?
+IMPORT_MODULES = Importing modules...
+LOAD_PROFILE = Loading profile {P}...
+SESSION_OPTION = Would you like to generate everything or just the last session?
+SESSION_ALL = Everything ({T})
+SESSION_LAST = Last Session ({T})
+SELECT_ONE_OPTION = Please only select one option.
+NOTHING_CHOSEN = Nothing was set to generate.
