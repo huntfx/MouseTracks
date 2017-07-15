@@ -1,10 +1,7 @@
 from __future__ import division, absolute_import
 
-from core.basic import get_python_version
+from core.compatibility import range
 
-if get_python_version() == 2:
-    range = xrange
-    
 
 COLOURS_MAIN = {
     'red': (255, 0, 0, 255),
@@ -37,8 +34,11 @@ class ColourRange(object):
     All possible colours within the range are cached for quick access.
     """
     
-    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False):
-
+    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False, cache=None):
+        
+        if min_amount >= max_amount:
+            colours = [colours[0]]
+            max_amount = min_amount + 1
         self.amount = (min_amount, max_amount)
         self.amount_diff = max_amount - min_amount
         self.colours = colours
@@ -51,9 +51,12 @@ class ColourRange(object):
         self._step_size = self.amount_diff / self._step_max
         
         #Cache results for quick access
-        self.cache = []
-        for i in range(self._step_max + 1):
-            self.cache.append(self.calculate_colour(self.amount[0] + i * self._step_size))
+        if cache is None:
+            self.cache = []
+            for i in range(self._step_max + 1):
+                self.cache.append(self.calculate_colour(self.amount[0] + i * self._step_size))
+        else:
+            self.cache = cache
             
     def __getitem__(self, n):
         """Read an item from the cache."""
@@ -90,7 +93,6 @@ class ColourRange(object):
                          for i, j in zip(base_colour, mix_colour))
         else:
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
-
 
 def _parse_colour_text(colour_name):
     """Convert text into a colour map.
