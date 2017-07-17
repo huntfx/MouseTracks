@@ -1,5 +1,7 @@
 from PIL import Image, ImageFont, ImageDraw
 
+from core.colours import ColourRange, ColourMap
+
 
 class KeyboardButton(object):
     def __init__(self, x, y, x_len, y_len=None):
@@ -36,33 +38,47 @@ class KeyboardButton(object):
 class KeyboardGrid(object):
     FILL_COLOUR = (170, 170, 170)
     OUTLINE_COLOUR = (0, 0, 0)
-    def __init__(self, size, padding, edge):
+    def __init__(self, size, padding, edge, press_count={}):
         self.size = size
         self.padding = padding
         self.edge = edge
         self.grid = []
         self.new_row()
+        self.count = press_count
+        
     def new_row(self):
         self.grid.append([])
         self.row = self.grid[-1]
-    def add_button(self, name, amount, width=1, custom_colour=None):
+        
+    def add_button(self, display_name, key_name, width=1, custom_colour=None):
         pos_x = self.edge
-        self.row.append([name, amount, (int(round(self.size * width)), self.size), custom_colour])
+        _width = int(round(self.size * width))
+        _height = self.size
+        self.row.append([display_name, key_name, (_width, _height), custom_colour])
 
     def generate_coordinates(self):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
+
+        m = max(self.count.values())
+        c = ColourRange(0, m, ColourMap()['RedToGreen'])
         
         y_offset = self.edge
         for i, row in enumerate(self.grid):
             x_offset = self.edge
-            for j, (name, amount, (x, y), custom_colour) in enumerate(row):
+            for j, (display_name, key_name, (x, y), custom_colour) in enumerate(row):
 
-                image['Text'].append(((x_offset, y_offset), name))
+                image['Text'].append(((x_offset, y_offset), display_name))
                 
                 button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
                 image['Outline'] += button_coordinates.outline()
 
-                fill_colour = custom_colour if custom_colour is not None else self.FILL_COLOUR
+                if custom_colour is not None:
+                    fill_colour = custom_colour
+                else:
+                    try:
+                        fill_colour = c[self.count[key_name]]
+                    except KeyError:
+                        fill_colour = c[0]
                 try:
                     image['Fill'][fill_colour] += button_coordinates.fill()
                 except KeyError:
@@ -77,16 +93,18 @@ class KeyboardGrid(object):
                 y_offset += (self.size + self.padding) / 2
 
         return ((x_offset + self.edge, y_offset + self.edge), image)
-            
-k = KeyboardGrid(57, 5, 13)
-k.add_button('tab', 5, 1.5)
-k.add_button('q', 5, 1, (255, 150, 150))
-k.add_button('w', 5, 1)
+
+keys={'A': 50, 'TAB': 2, 'Q': 35, 'S': 15}
+
+k = KeyboardGrid(57, 5, 13, press_count=keys)
+k.add_button('tab', 'TAB', 1.5)
+k.add_button('q', 'Q', 1)
+k.add_button('w', 'W', 1)
 k.new_row()
 k.new_row()
-k.add_button('caps lock', 5, 1.6)
-k.add_button('a', 5, 1)
-k.add_button('s', 5, 1)
+k.add_button('caps lock', 'CAPSLOCK', 1.6)
+k.add_button('a', 'A', 1)
+k.add_button('s', 'S', 1)
 (width, height), coordinate_dict = k.generate_coordinates()
 
 #Create image object
