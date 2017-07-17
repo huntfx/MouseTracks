@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 
 
 class KeyboardButton(object):
@@ -50,13 +50,15 @@ class KeyboardGrid(object):
         self.row.append([name, amount, (int(round(self.size * width)), self.size), custom_colour])
 
     def generate_coordinates(self):
-        image = {'Fill': {}, 'Outline': []}
+        image = {'Fill': {}, 'Outline': [], 'Text': []}
         
         y_offset = self.edge
         for i, row in enumerate(self.grid):
             x_offset = self.edge
             for j, (name, amount, (x, y), custom_colour) in enumerate(row):
 
+                image['Text'].append(((x_offset, y_offset), name))
+                
                 button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
                 image['Outline'] += button_coordinates.outline()
 
@@ -96,5 +98,12 @@ for colour in coordinate_dict['Fill']:
         px[x, y] = colour
 for x, y in coordinate_dict['Outline']:
     px[x, y] = (0, 0, 0)
+
+draw = ImageDraw.Draw(im)
+font = ImageFont.truetype('arial.ttf', size=12)
+for (x, y), text in coordinate_dict['Text']:
+    x += 5
+    y += 5
+    draw.text((x, y), text, font=font)
 
 im.save('testimage.png', 'PNG')
