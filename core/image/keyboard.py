@@ -46,11 +46,12 @@ class KeyboardButton(object):
 class KeyboardGrid(object):
     FILL_COLOUR = (170, 170, 170)
     OUTLINE_COLOUR = (0, 0, 0)
-    def __init__(self, press_count={}, empty_width=None):
+    def __init__(self, keys_pressed=None, empty_width=None):
         self.grid = []
         self.empty_width = empty_width
         self.new_row()
-        self.count = press_count
+        self.count_press = keys_pressed['Pressed']
+        self.count_time = keys_pressed['Held']
         
     def new_row(self):
         self.grid.append([])
@@ -73,8 +74,17 @@ class KeyboardGrid(object):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
         max_offset = {'X': 0, 'Y': 0}
 
-        m = max(self.count.values())
-        c = ColourRange(0, m, ColourMap()['WhiteToGreen'])
+        m_time = max(self.count_time.values())
+        m_press = max(self.count_press.values())
+        '''
+        single:
+        WhiteToYellowLightOrangeToOrangeToOrangeRedToRedDarkRed
+        '''
+        maps = 'WhiteToBlue', 'WhiteToGreen'
+        #maps = 'WhiteToBlue', 'WhiteToYellow'
+        
+        c_time = ColourRange(0, m_time, ColourMap()[maps[0]])
+        c_press = ColourRange(0, m_press, ColourMap()[maps[1]])
         
         y_offset = KB_PADDING
         for i, row in enumerate(self.grid):
@@ -83,16 +93,20 @@ class KeyboardGrid(object):
 
 
                 if name is not None:
-                    amount = self.count.get(name, 0)
+                    count_press = self.count_press.get(name, 0)
+                    count_time = self.count_time.get(name, 0)
                     display_name = key_names.get(name, name)
 
-                    image['Text'].append(((x_offset, y_offset), display_name, amount))
+                    image['Text'].append(((x_offset, y_offset), display_name, count_press))
                     
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
                     if not hide_border:
                         image['Outline'] += button_coordinates.outline()
 
-                    fill_colour = c[amount]
+                    #fill_colour = c_press[count_press]
+                    fill_colour = c_time[count_time]
+                    fill_colour = tuple(int(round((i + j) / 2)) for i, j in zip(c_press[count_press], c_time[count_time]))
+                    #fill_colour = tuple(i * j // 255 for i, j in zip(c_press[count_press], c_time[count_time]))
                     try:
                         image['Fill'][fill_colour] += button_coordinates.fill()
                     except KeyError:
@@ -123,7 +137,11 @@ key_names = {
     'PAUSE': 'Pause\nBreak'
 }
 
-k = KeyboardGrid(keys, empty_width=0.624)
+from core.files import load_program
+profile_name = 'Default'
+p = load_program(profile_name)
+
+k = KeyboardGrid(p['Keys']['All'], empty_width=0.624)
 k.add_button('ESC')
 k.add_button(None)
 k.add_button('F1')
@@ -266,19 +284,20 @@ px = im.load()
 for colour in coordinate_dict['Fill']:
     for x, y in coordinate_dict['Fill'][colour]:
         px[x, y] = colour
+
+colour = (0, 0, 0)
 for x, y in coordinate_dict['Outline']:
-    px[x, y] = (0, 0, 0)
+    px[x, y] = colour
     
 draw = ImageDraw.Draw(im)
 font_key = ImageFont.truetype('arial.ttf', size=KB_TEXT_SIZE_KEY)
 font_amount = ImageFont.truetype('arial.ttf', size=KB_TEXT_SIZE_AMOUNT)
 for (x, y), text, amount in coordinate_dict['Text']:
-    colour = (0, 0, 0)
     if text == '__STATS__':
-        text = 'Overwatch:'
+        text = '{}:'.format(profile_name)
         draw.text((x, y), text, font=font_key, fill=colour)
         y += (KB_TEXT_SIZE_KEY + KB_TEXT_HEIGHT)
-        text = 'Time played: 2 hours and 45 minutes\nTotal key presses: {}\nColour based on how long keys were pressed for.'.format(sum(keys.values()))
+        text = 'Time played: 2 hours and 45 minutes (made up)\nTotal key presses: {}\nColour based on how long keys were pressed for.'.format(sum(p['Keys']['All']['Pressed'].values()))
         draw.text((x, y), text, font=font_amount, fill=colour)
     else:
         x += KB_TEXT_OFFSET
