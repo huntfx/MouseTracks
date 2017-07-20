@@ -13,9 +13,11 @@ VERSION_HISTORY = [
     '2.0.5b',
     '2.0.6',
     '2.0.6b',
-    '2.0.6c'
+    '2.0.6c',
+    '2.0.7'
 ]
 VERSION = VERSION_HISTORY[-1]
+
 
 def _get_id(id):
     """Read the ID for upgrading versions.
@@ -26,6 +28,7 @@ def _get_id(id):
         return VERSION_HISTORY.index(str(id))
     except ValueError:
         return 0
+
 
 def upgrade_version(data, update_metadata=True):
     """Files from an older version will be run through this function.
@@ -42,6 +45,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.6: Remove speed and combined maps as they don't look very interesting
     2.0.6b: Record when session started
     2.0.6c: Record key presses per session
+    2.0.7: Fixed some incorrect key names
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -99,6 +103,22 @@ def upgrade_version(data, update_metadata=True):
                                     'Total': data['Ticks']['Total']}
     if current_version_id < _get_id('2.0.6c'):
         data['Keys'] = {'All': data['Keys'], 'Session': {'Pressed': {}, 'Held': {}}}
+    if current_version_id < _get_id('2.0.7'):
+        changes = {'UNDERSCORE': 'HYPHEN',
+                   'MULTIPLY': 'ASTERISK',
+                   'AT': 'APOSTROPHE',
+                   'HASH': 'NUMBER'}
+        for old, new in changes.iteritems():
+            try:
+                data['Keys']['All']['Pressed'][new] = data['Keys']['All']['Pressed'].pop(old)
+                data['Keys']['All']['Held'][new] = data['Keys']['All']['Held'].pop(old)
+            except KeyError:
+                pass
+            try:
+                data['Keys']['Session']['Pressed'][new] = data['Keys']['Session']['Pressed'].pop(old)
+                data['Keys']['Session']['Held'][new] = data['Keys']['Session']['Held'].pop(old)
+            except KeyError:
+                pass
     
     if update_metadata:
         data['Version'] = VERSION
