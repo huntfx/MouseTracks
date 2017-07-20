@@ -8,26 +8,26 @@ from core.compatibility import input
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME
 from core.files import list_data_files, format_name, load_program
-from core.language import get_language
+from core.language import Language
 from core.maths import round_up
 from core.messages import ticks_to_seconds, print_override
 from core.misc import simple_bit_mask
-
-STRINGS = get_language()
     
     
 def user_generate():
     CONFIG.save()
-    print_override(STRINGS['TYPE_PROFILE'].format(L=STRINGS['LIST']))
+    
+    strings = Language().get_strings()
+    print_override(strings['TYPE_PROFILE'].format(L=strings['LIST']))
     profile = raw_input()
 
-    if profile.lower() == STRINGS['LIST'].lower():
+    if profile.lower() == strings['LIST'].lower():
     
         #Read the data folder and format names
         all_files = list_data_files()
         if not all_files:
-            print_override(STRINGS['DATA_FOLDER_EMPTY'])
-            print_override(STRINGS['ENTER_TO_EXIT'])
+            print_override(strings['DATA_FOLDER_EMPTY'])
+            print_override(strings['ENTER_TO_EXIT'])
             raw_input()
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
@@ -51,21 +51,21 @@ def user_generate():
                 except KeyError:
                     program_name = r
                 print_override('{}: {}'.format(i + offset + 1, program_name))
-            print_override(STRINGS['CURRENT_PAGE'].format(C=page, T=total_pages, P=STRINGS['PAGE']))
-            print_override(STRINGS[change_sort[0]].format(S='{} {}'.format(STRINGS['SORT'], change_sort[1])))
-            print_override(STRINGS['HOW_TO_LOAD'])
+            print_override(strings['CURRENT_PAGE'].format(C=page, T=total_pages, P=strings['PAGE']))
+            print_override(strings[change_sort[0]].format(S='{} {}'.format(strings['SORT'], change_sort[1])))
+            print_override(strings['HOW_TO_LOAD'])
 
             profile = raw_input()
             last_page = page
             
             #Change page
-            if profile.lower().startswith('{P} '.format(P=STRINGS['PAGE'])):
+            if profile.lower().startswith('{P} '.format(P=strings['PAGE'])):
                 try:
                     page = int(profile.split()[1])
                     if not 0 < page <= total_pages:
                         raise ValueError
                 except IndexError:
-                    print_override(STRINGS['PAGE_INVALID'])
+                    print_override(strings['PAGE_INVALID'])
                 except ValueError:
                     if page > total_pages:
                         page = total_pages
@@ -81,8 +81,8 @@ def user_generate():
                     page -= 1
             
             #Change sorting of profile list
-            elif (profile.lower().startswith('{} '.format(STRINGS['SORT'])) 
-                  or profile.lower() == STRINGS['SORT']):
+            elif (profile.lower().startswith('{} '.format(strings['SORT'])) 
+                  or profile.lower() == strings['SORT']):
                 try:
                     sort_level = int(profile.split()[1])
                 except ValueError:
@@ -117,13 +117,13 @@ def user_generate():
                 except ValueError:
                     break
                 except IndexError:
-                    print_override(STRINGS['PROFILE_NUMBER_INVALID'])
+                    print_override(strings['PROFILE_NUMBER_INVALID'])
 
         try:
             profile = programs[profile]
         except KeyError:
             pass
-    print_override(STRINGS['PROFILE_SELECTED'].format(P=profile))
+    print_override(strings['PROFILE_SELECTED'].format(P=profile))
     
     try:
         current_profile = format_name(RunningApplications().check()[0])
@@ -133,14 +133,14 @@ def user_generate():
         selected_profile = format_name(profile)
         
         if current_profile == selected_profile:
-            print_override(STRINGS['PROFILE_RUNNING_WARNING'])
+            print_override(strings['PROFILE_RUNNING_WARNING'])
             
             save_time = ticks_to_seconds(CONFIG['Save']['Frequency'], 1)
             metadata = load_program(profile, _metadata_only=True)
             if metadata['Modified'] is None:
-                print_override(STRINGS['PROFILE_RUNNING_NOSAVE'])
-                print_override(STRINGS['SAVE_FREQUENCY'].format(T=save_time))
-                print_override(STRINGS['ENTER_TO_EXIT'])
+                print_override(strings['PROFILE_RUNNING_NOSAVE'])
+                print_override(strings['SAVE_FREQUENCY'].format(T=save_time))
+                print_override(strings['ENTER_TO_EXIT'])
                 raw_input()
                 sys.exit()
             else:
@@ -148,19 +148,19 @@ def user_generate():
                 next_save_time = CONFIG['Save']['Frequency'] - last_save_time
                 last_save = ticks_to_seconds(last_save_time, 1, allow_decimals=False)
                 next_save = ticks_to_seconds(next_save_time, 1, allow_decimals=False)
-                print_override(STRINGS['PROFILE_RUNNING_SAVE'].format(T=last_save))
-                print_override(STRINGS['NEXT_SAVE_DUE'].format(T=next_save))
+                print_override(strings['PROFILE_RUNNING_SAVE'].format(T=last_save))
+                print_override(strings['NEXT_SAVE_DUE'].format(T=next_save))
 
 
     generate_tracks = False
     generate_heatmap = False
 
-    print_override(STRINGS['GENERATE_OPTIONS'])
-    print_override(STRINGS['TYPE_OPTIONS'])
-    print_override('1: {}'.format(STRINGS['TRACK_NAME']))
-    print_override('2: {}'.format(STRINGS['CLICK_NAME']))
-    print_override('3: {} (not working)'.format(STRINGS['KEY_NAME']))
-    print_override('4: {} (not working)'.format(STRINGS['RAW_NAME']))
+    print_override(strings['GENERATE_OPTIONS'])
+    print_override(strings['TYPE_OPTIONS'])
+    print_override('1: {}'.format(strings['TRACK_NAME']))
+    print_override('2: {}'.format(strings['CLICK_NAME']))
+    print_override('3: {} (not working)'.format(strings['KEY_NAME']))
+    print_override('4: {} (not working)'.format(strings['RAW_NAME']))
 
     result = simple_bit_mask(raw_input().split(), 2)
 
@@ -171,10 +171,10 @@ def user_generate():
         
         generate_heatmap = True
         print_override('Which mouse buttons should be included in the heatmap?.')
-        print_override(STRINGS['TYPE_OPTIONS'])
-        print_override('1: {}'.format(STRINGS['MOUSE_BUTTON_LEFT']))
-        print_override('2: {}'.format(STRINGS['MOUSE_BUTTON_MIDDLE']))
-        print_override('3: {}'.format(STRINGS['MOUSE_BUTTON_RIGHT']))
+        print_override(strings['TYPE_OPTIONS'])
+        print_override('1: {}'.format(strings['MOUSE_BUTTON_LEFT']))
+        print_override('2: {}'.format(strings['MOUSE_BUTTON_MIDDLE']))
+        print_override('3: {}'.format(strings['MOUSE_BUTTON_RIGHT']))
         heatmap_buttons = simple_bit_mask(raw_input().split(), 3)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
         CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = heatmap_buttons[1]
@@ -184,10 +184,10 @@ def user_generate():
 
 
     if generate_tracks or generate_heatmap:
-        print_override(STRINGS['IMPORT_MODULES'])
+        print_override(strings['IMPORT_MODULES'])
         from core.image import RenderImage
 
-        print_override(STRINGS['LOAD_PROFILE'].format(P=profile))
+        print_override(strings['LOAD_PROFILE'].format(P=profile))
         r = RenderImage(profile)
 
         last_session_start = r.data['Ticks']['Session']['Total']
@@ -201,13 +201,13 @@ def user_generate():
         
         else:
             while True:
-                print_override(STRINGS['SESSION_OPTION'])
-                print_override('1: {} [{}]'.format(STRINGS['SESSION_ALL'].format(T=all_time), STRINGS['DEFAULT']))
-                print_override('2: {}'.format(STRINGS['SESSION_LAST'].format(T=last_session_time)))
+                print_override(strings['SESSION_OPTION'])
+                print_override('1: {} [{}]'.format(strings['SESSION_ALL'].format(T=all_time), strings['DEFAULT']))
+                print_override('2: {}'.format(strings['SESSION_LAST'].format(T=last_session_time)))
 
                 result = simple_bit_mask(raw_input().split(), 2, default_all=False)
                 if result[0] and result[1]:
-                    print_override(STRINGS['SELECT_ONE_OPTION'])
+                    print_override(strings['SELECT_ONE_OPTION'])
                 elif result[1]:
                     last_session = True
                     break
@@ -221,7 +221,7 @@ def user_generate():
         if generate_heatmap:
             r.generate('Clicks', last_session)
     else:
-        print_override(STRINGS['NOTHING_CHOSEN'])
+        print_override(strings['NOTHING_CHOSEN'])
 
         
 if __name__ == '__main__':
