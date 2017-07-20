@@ -1,0 +1,1 @@
+STRINGS = el_GR
