@@ -1,0 +1,2 @@
+STRINGS = en_GB
+KEYBOARD_LAYOUT = en_US
