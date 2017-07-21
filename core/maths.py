@@ -94,3 +94,10 @@ def round_up(n):
     """Quick way to round numbers without importing the math library."""
     i = int(n)
     return i + 1 if i == n else i
+    
+
+def round_int(n):
+    """Round a number to an integer.
+    It saves having to use a ton of brackets in certain situations.
+    """
+    return int(round(n))
