@@ -100,7 +100,27 @@ def calculate_circle(radius, segments=(True, True, True, True)):
 
     if isinstance(segments, int):
         segments = [False if i != segments else True for i in range(4)]
+        
+    #Parse text input
+    elif isinstance(segments, str):
+        option = segments.lower()
+        count = [0, 0, 0, 0]
+        if 'top' in option:
+            count[0] += 1
+            count[3] += 1
+        if 'bottom' in option:
+            count[1] += 1
+            count[2] += 1
+        if 'left' in option:
+            count[2] += 1
+            count[3] += 1
+        if 'right' in option:
+            count[0] += 1
+            count[1] += 1
+        count_max = max(count)
+        segments = [i == count_max for i in count]
     
+    #Calculate the circle
     switch = 3 - (2 * radius)
     outline = set()
     area = set()
@@ -164,7 +184,7 @@ def calculate_circle(radius, segments=(True, True, True, True)):
             y = y - 1
         x = x + 1
         
-    return outline, area
+    return {'Outline': outline, 'Area': area}
     
         
 def round_up(n):
