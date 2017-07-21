@@ -88,7 +88,84 @@ def calculate_line(start, end):
         #and I can't figure out how to make it work
         if end[0] in (x-1, x, x+1) and end[1] in (y-1, y, y+1):
             return result
+
+            
+def calculate_circle(radius, segments=(True, True, True, True)):
+    """Get the area and outline of a circle as pixels.
+    Optionally pass in which segment is needed, as a tuple or number.
+    
+    Modified the bresenham complete circle algorithm from
+    daniweb.com/programming/software-development/threads/321181
+    """
+
+    if isinstance(segments, int):
+        segments = [False if i != segments else True for i in range(4)]
+    
+    switch = 3 - (2 * radius)
+    outline = set()
+    area = set()
+    x = 0
+    y = radius
+    i = 0
+    last_y = None
+    last_x = None
+    while x <= y:
         
+        #Calculate outline
+        if segments[0]:
+            outline.add((x, -y))
+            outline.add((y, -x))
+        if segments[1]:
+            outline.add((y, x))
+            outline.add((x, y))
+        if segments[2]:
+            outline.add((-x, y))
+            outline.add((-y, x))
+        if segments[3]:
+            outline.add((-y, -x))
+            outline.add((-x, -y))
+
+        #Add to area
+        if y != last_y:
+            last_y = y
+
+            if segments[0]:
+                for i in range(0, x):
+                    area.add((i, -y))
+            if segments[1]:
+                for i in range(0, x):
+                    area.add((i, y))
+            if segments[2]:
+                for i in range(-x, 1):
+                    area.add((i, y))
+            if segments[3]:
+                for i in range(-x, 1):
+                    area.add((i, -y))
+                    
+        if x != last_x:
+            last_x = x
+            if segments[0]:
+                for i in range(0, y):
+                    area.add((i, -x))
+            if segments[1]:
+                for i in range(0, y):
+                    area.add((i, x))
+            if segments[2]:
+                for i in range(-y, 1):
+                    area.add((i, x))
+            if segments[3]:
+                for i in range(-y, 1):
+                    area.add((i, -x))
+
+        if switch < 0:
+            switch += 4 * x + 6
+        else:
+            switch += 4 * (x - y) + 10
+            y = y - 1
+        x = x + 1
+        
+    return outline, area
+    
         
 def round_up(n):
     """Quick way to round numbers without importing the math library."""
