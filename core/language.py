@@ -5,7 +5,7 @@ import codecs
 from core.config import CONFIG
 
 
-ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_'
+ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
 LANGUAGE_FOLDER = 'loc'
 
@@ -63,7 +63,7 @@ class Language(object):
                     self.keyboard = link.split('=', 1)[1].strip()
                 
         
-    def get_keyboard_layout(self):
+    def get_keyboard_layout(self, extended=True):
         keyboard_layout = []
         
         try:
@@ -77,8 +77,23 @@ class Language(object):
             gap = 1
         else:
             del data[0]
+        
+        data_len = len(data)
+        for i, row in enumerate(data):
+            keyboard_layout.append([])
             
-        for row in data:
+            #Handle half rows
+            row = row.strip()
+            if not row:
+                continue
+            
+            #Remove second half of keyboard if required
+            if extended:
+                row = row.replace(':', '')
+            else:
+                row = row.split(':', 1)[0]
+                print row
+            
             for key in row.split('+'):
             
                 key_data = key.split('|')
@@ -87,7 +102,7 @@ class Language(object):
                 
                 #Get key name if set, otherwise change the width
                 try:
-                    name = key_data[0]
+                    name = str(key_data[0])
                     if not name:
                         name = None
                         raise IndexError
@@ -99,12 +114,18 @@ class Language(object):
                     width = float(key_data[1])
                 except (IndexError, ValueError):
                     width = default_width
+                else:
+                    width = max(0, width)
                 try:
-                    height = float(key_data[1])
+                    height = float(key_data[2])
                 except (IndexError, ValueError):
                     height = default_height
+                else:
+                    height = max(0, height)
+                    #if height > data_len - i - 1:
+                    #    height = data_len - i
                 
-                keyboard_layout.append([name, width, height])
+                keyboard_layout[-1].append([name, width, height])
                 
         return keyboard_layout
     
@@ -118,5 +139,6 @@ class Language(object):
             if '=' in line:
                 name, string = line.split('=', 1)
                 name = ''.join(i for i in name if i in ALLOWED_CHARACTERS)
-                strings[name] = string.strip()
+                if name:
+                    strings[str(name)] = string.strip()
         return strings
