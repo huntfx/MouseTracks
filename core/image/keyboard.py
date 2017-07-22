@@ -3,30 +3,31 @@ from PIL import Image, ImageFont, ImageDraw
 
 from core.colours import ColourRange, ColourMap
 from core.compatibility import get_items
+from core.config import CONFIG
 from core.language import Language
 from core.files import load_program
 from core.maths import round_int, calculate_circle
 
 
-MULTIPLIER = 1
+MULTIPLIER = CONFIG['GenerateKeyboard']['SizeMultiplier']
 
-KEY_SIZE = round_int(65 * MULTIPLIER)
+KEY_SIZE = round_int(CONFIG['GenerateKeyboard']['KeySize'] * MULTIPLIER)
 
-KEY_CORNER_RADIUS = round_int(3 * MULTIPLIER)
+KEY_CORNER_RADIUS = round_int(CONFIG['GenerateKeyboard']['KeyCornerRadius'] * MULTIPLIER)
 
-KEY_PADDING = round_int(8 * MULTIPLIER)
+KEY_PADDING = round_int(CONFIG['GenerateKeyboard']['KeyPadding'] * MULTIPLIER)
 
-IMAGE_PADDING = round_int(16 * MULTIPLIER)
+IMAGE_PADDING = round_int(CONFIG['GenerateKeyboard']['ImagePadding'] * MULTIPLIER)
 
-FONT_SIZE_MAIN = round_int(17 * MULTIPLIER)
+FONT_SIZE_MAIN = round_int(CONFIG['GenerateKeyboard']['FontSizeMain'] * MULTIPLIER)
 
-FONT_SIZE_STATS = round_int(13 * MULTIPLIER)
+FONT_SIZE_STATS = round_int(CONFIG['GenerateKeyboard']['FontSizeStats'] * MULTIPLIER)
 
-FONT_OFFSET_X = round_int(5 * MULTIPLIER)
+FONT_OFFSET_X = round_int(CONFIG['GenerateKeyboard']['FontWidthOffset'] * MULTIPLIER)
 
-FONT_OFFSET_Y = round_int(5 * MULTIPLIER)
+FONT_OFFSET_Y = round_int(CONFIG['GenerateKeyboard']['FontHeightOffset'] * MULTIPLIER)
 
-FONT_LINE_SPACING = round_int(5 * MULTIPLIER)
+FONT_LINE_SPACING = round_int(CONFIG['GenerateKeyboard']['FontSpacing'] * MULTIPLIER)
 
 _CIRCLE = {
     'TopRight': calculate_circle(KEY_CORNER_RADIUS, 'TopRight'),
@@ -87,30 +88,12 @@ class KeyboardButton(object):
     def fill(self):
         coordinates = []
         
-        #Middle point
-        for x in self._c_range['x']:
-            for y in self._c_range['y']:
-                coordinates.append((x, y))
-        
-        #Left chunk
-        for x in self._c_range['x_start']:
-            for y in self._c_range['y']:
-                coordinates.append((x, y))
-        
-        #Right chunk
-        for x in self._c_range['x_end']:
-            for y in self._c_range['y']:
-                coordinates.append((x, y))
-        
-        #Top chunk
-        for x in self._c_range['x']:
-            for y in self._c_range['y_start']:
-                coordinates.append((x, y))
-        
-        #Bottom chunk
-        for x in self._c_range['x']:
-            for y in self._c_range['y_end']:
-                coordinates.append((x, y))
+        #Squares
+        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x']]
+        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x_start']]
+        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x_end']]
+        coordinates += [(x, y) for y in self._c_range['y_start'] for x in self._c_range['x']]
+        coordinates += [(x, y) for y in self._c_range['y_end'] for x in self._c_range['x']]
                 
         #Corners
         coordinates += [self._circle_offset(x, y, 'TopLeft') for x, y in _CIRCLE['TopLeft']['Area']]
@@ -159,18 +142,17 @@ class KeyboardGrid(object):
         '''
         single:
         WhiteToYellowLightOrangeToOrangeToOrangeRedToRedDarkRed
-        aqua = WhiteToLightBlueCyanToCyanToBlue
         fire = WhiteToYellowToYellowOrangeToLightRedOrangeOrangeToRedToDarkRed
         radiationinverse = BlackDarkRedToRedToRedOrangeToYellowOrangeToYellowToWhite
         ivy = WhiteToBlueGreenGreenToBlack
         razer2 = BlackToBlackDarkGreenDarkDarkGreyToDarkGreenToGreen
         softgreen = WhiteToWhiteLightYellowLightGreenLightLightGreyToLightYellowGreenLightGreenToDarkGreen
-        softblue = WhiteToWhiteWhiteLightCyanSkyblueToSkyblueToSkyblueBlue
+        aqua = WhiteToWhiteWhiteLightCyanSkyToSkyToSkyBlue
         softred/fire2 = WhiteToWhiteWhiteLightYellowOrangeToOrangeToOrangeRedToDarkRed
         '''
         maps = 'WhiteToBlue', 'WhiteToGreen'
         maps = 'WhiteToLightBlue', 'WhiteToYellow'
-        time_colour = 'WhiteToWhiteWhiteLightCyanSkyToSkyToSkyBlue'
+        time_colour = 'WhiteToLightBlueCyanToCyanToBlue'
         press_colour = time_colour
 
         c_time = ColourRange(0, m_time, ColourMap()[time_colour])
@@ -242,7 +224,7 @@ class KeyboardGrid(object):
             y_current -= KEY_SIZE
         
         width = max_offset['X'] + IMAGE_PADDING - KEY_PADDING + 1
-        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING * 2 + 1
+        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING + 1
         return ((width, height), image)
 
 
