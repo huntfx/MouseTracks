@@ -159,6 +159,7 @@ except TypeError:
     _res_x = 1920
     _res_y = 1080
 
+_language = getdefaultlocale()[0]
 _config_defaults = {
     'Main': {
         'UpdatesPerSecond': (60, int, 1, 'It is recommended to leave at 60 even if'
@@ -167,8 +168,8 @@ _config_defaults = {
                                           ' if a key is being held down (set to 0.0 to disable).'),
         'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
                                          ' if a mouse button is being held down (set to 0.0 to disable).'),
-        'Language': (getdefaultlocale()[0], str, 'Choose a language. If the files don\'t exit yet,'
-                                                 ' en_GB will be used.'.format(getdefaultlocale()[0]))
+        'Language': (_language, str, 'Choose a language. If the files don\'t exit yet,'
+                                     ' en_GB will be used.'.format(_language))
     },
     'CompressMaps': {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
@@ -241,6 +242,21 @@ _config_defaults = {
         'NameFormat': ('{}\\Images\\[FriendlyName] Tracks - [ColourProfile]'.format(DEFAULT_PATH), str),
         'ColourProfile': ('WhiteToBlack', str)
     },
+    'GenerateKeyboard':{
+        'NameFormat': ('{}\\Images\\[FriendlyName] Keyboard Heatmap - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'ColourProfile': ('Aqua', str),
+        'ExtendedKeyboard': (True, bool, 'Set if the full keyboard should be shown.'),
+        'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
+        'KeySize': (65, int, 0),
+        'KeyCornerRadius': (3, int, 0),
+        'KeyPadding': (8, int, 0),
+        'ImagePadding': (16, int, 0),
+        'FontSizeMain': (17, int, 0),
+        'FontSizeStats': (13, int, 0),
+        'FontHeightOffset': (5, int),
+        'FontWidthOffset': (5, int),
+        'FontSpacing': (5, int)
+    },
     'SavedSettings': {
         '__note__': ['Anything put here is not for editing.'],
         'AppListUpdate': (0, int, None, int(time.time()))
@@ -259,8 +275,9 @@ _config_order = [
     'Timer',
     'CompressMaps',
     'GenerateImages',
-    'GenerateHeatmap',
     'GenerateTracks',
+    'GenerateHeatmap',
+    'GenerateKeyboard',
     'Advanced',
     'SavedSettings'
 ]
