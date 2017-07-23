@@ -16,7 +16,8 @@ COLOURS_MAIN = {
     'black': (0, 0, 0, 255),
     'orange': (255, 127, 0, 255),
     'pink': (255, 0, 127, 255),
-    'purple': (127, 0, 255, 255)
+    'purple': (127, 0, 255, 255),
+    'sky': (0, 164, 255, 255)
 }
 
 COLOUR_MODIFIERS = {
@@ -27,7 +28,7 @@ COLOUR_MODIFIERS = {
     'translucent': (0, 1.0, 0.5),
     'opaque': (0, 1.0, 2.0)
 }
-    
+
 
 class ColourRange(object):
     """Make a transition between colours.
@@ -184,29 +185,44 @@ class ColourMap(object):
     _MAPS = {
         'jet': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
                 'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
-                'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
+                'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'), #heatmap
         'transparentjet': ('TransparentBlackToTranslucentTranslucentDarkBlueTo'
                            'TranslucentBlueToTranslucentCyanTranslucentBlueBlueBlueTo'
                            'CyanBlueToCyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellow'
-                           'ToCyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'),
-        'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey',
+                           'ToCyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'), #heatmap
+        'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey', #heatmap
         'transparentradiation': ('TransparentBlackToTranslucentRedToYellowTo'
-                                 'WhiteToWhiteWhiteWhiteLightLightGrey'),
-        'default': 'WhiteToBlack',
-        'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow',
-        'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite',
-        'neon': 'BlackToPurpleToPinkToBlackToPink',
-        'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow',
-        'demon': 'WhiteToRedToBlackToWhite',
-        'chalk': 'BlackToWhite',
-        'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite',
-        'hazard': 'WhiteToBlackToYellow',
-        'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack',
-        'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue',
-        'grape': 'WhiteToBlackToMagenta',
-        'spiderman': 'RedToBlackToWhite',
-        'shroud': 'GreyToBlackToLightPurple',
-        'blackwidow': 'PurpleToLightCyanWhiteToPurpleToBlack'
+                                 'WhiteToWhiteWhiteWhiteLightLightGrey'), #heatmap
+        'default': 'WhiteToBlack', #tracks
+        'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow', #tracks
+        'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite', #tracks
+        'neon': 'BlackToPurpleToPinkToBlackToPink', #tracks
+        'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow', #tracks
+        'demon': 'WhiteToRedToBlackToWhite', #tracks
+        'chalk': 'BlackToWhite', #tracks
+        'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite', #tracks
+        'hazard': 'WhiteToBlackToYellow', #tracks
+        'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack', #tracks
+        'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue', #tracks
+        'grape': 'WhiteToBlackToMagenta', #tracks
+        'spiderman': 'RedToBlackToWhite', #tracks/keyboard
+        'shroud': 'GreyToBlackToLightPurple', #tracks
+        'blackwidow': 'PurpleToLightCyanWhiteToPurpleToBlack', #tracks
+        'aqua': 'WhiteToWhiteWhiteLightCyanSkyToSkyToSkyBlue', #keyboard
+        'fire': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellowOrangeTo'
+                 'WhiteLightYellowRedLightRedOrangeToYellowLightYellowRedDarkOrangeToRedDarkRedDarkRed'), #keyboard
+        'fire3': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellow'
+                 'OrangeToLightRedOrangeOrangeToLightYellowRedDarkOrangeToRedDarkRedDarkRed'), #keyboard
+        'fire2': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellow'
+                 'OrangeToLightRedOrangeOrangeToLightYellowRedRedDarkOrangeToDarkRed'), #keyboard
+        'ivy': 'WhiteToBlueGreenGreenToBlack', #keyboard
+        'matrix': ('BlackBlackBlackBlackDarkGreenDarkDarkGreyToBlackBlack'
+                   'BlackBlackBlackGreyGreenToBlackBlackDarkGreyGreenToGreen'), #keyboard/tracks
+        'nature': ('WhiteToWhiteLightYellowLightGreenLightLightGrey' #keyboard
+                   'ToLightYellowGreenLightGreenToDarkGreen'), #keyboard
+        'linearfire': 'WhiteToYellowLightOrangeToLightYellowOrangeRedDarkRedToDarkOrangeOrangeRedToBlackBlackOrangeRedDarkRedToRedDarkRedDarkRed',  #keyboard (linear) - need to make the process automatic
+        'linearmatrix': 'BlackBlackBlackBlackBlackDarkGreenDarkDarkGreyToGreen',
+        'linearnature': 'WhiteToDarkGreen'
     }
     def __getitem__(self, colour_profile):
         try:
