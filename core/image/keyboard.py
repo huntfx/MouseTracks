@@ -1,7 +1,7 @@
 from __future__ import division
 from PIL import Image, ImageFont, ImageDraw
 
-from core.colours import ColourRange, ColourMap
+from core.colours import ColourRange, ColourMap, get_luminance
 from core.compatibility import get_items
 from core.config import CONFIG
 from core.language import Language
@@ -135,41 +135,39 @@ class KeyboardGrid(object):
     def generate_coordinates(self, key_names={}):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
         max_offset = {'X': 0, 'Y': 0}
+        
+        use_linear = CONFIG['GenerateKeyboard']['LinearScale']
+        colours = ColourMap()[CONFIG['GenerateKeyboard']['ColourProfile']]
+        
+        use_time = CONFIG['GenerateKeyboard']['DataSet'] == 'time'
+        use_count = CONFIG['GenerateKeyboard']['DataSet'] == 'count'
+        
+        if use_linear:
+            exponential = CONFIG['GenerateKeyboard']['LinearExponential']
+            
+            if use_time:
+                colour_range = ColourRange(0, max(self.count_time.values()) ** exponential, colours)
+            elif use_count:
+                colour_range = ColourRange(0, max(self.count_press.values()) ** exponential, colours)
 
-        exp = 0.5
-        m_time = max(self.count_time.values()) ** exp
-        m_press = max(self.count_press.values()) ** exp
-        '''
-        single:
-        WhiteToYellowLightOrangeToOrangeToOrangeRedToRedDarkRed
-        fire = WhiteToYellowToYellowOrangeToLightRedOrangeOrangeToRedToDarkRed
-        radiationinverse = BlackDarkRedToRedToRedOrangeToYellowOrangeToYellowToWhite
-        ivy = WhiteToBlueGreenGreenToBlack
-        razer2 = BlackToBlackDarkGreenDarkDarkGreyToDarkGreenToGreen
-        softgreen = WhiteToWhiteLightYellowLightGreenLightLightGreyToLightYellowGreenLightGreenToDarkGreen
-        aqua = WhiteToWhiteWhiteLightCyanSkyToSkyToSkyBlue
-        softred/fire2 = WhiteToWhiteWhiteLightYellowOrangeToOrangeToOrangeRedToDarkRed
-        '''
-        maps = 'WhiteToBlue', 'WhiteToGreen'
-        maps = 'WhiteToLightBlue', 'WhiteToYellow'
-        time_colour = 'WhiteToLightBlueCyanToCyanToBlue'
-        press_colour = time_colour
-
-        c_time = ColourRange(0, m_time, ColourMap()[time_colour])
-        c_press = ColourRange(0, m_press, ColourMap()[press_colour])
-
-        image_type = 'Exponential'
-        if image_type == 'Exponential':
-            pools = sorted(self.count_time.values())
-            c_time = ColourRange(0, len(pools) + 1, ColourMap()[time_colour])
+        else:
+            pools = sorted(set(self.count_time.values()))
+            colour_range = ColourRange(0, len(pools) + 1, colours)
             lookup = {v: i for i, v in enumerate(pools)}
             lookup[0] = 0
+        
+        if get_luminance(*colours[0]) > 128:
+            image['Background'] = (255, 255, 255)
+        else:
+            image['Background'] = (0, 0, 0)
         
         y_offset = IMAGE_PADDING
         y_current = 0
         for i, row in enumerate(self.grid):
             x_offset = IMAGE_PADDING
             for name, (x, y), hide_border, custom_colour in row:
+            
+                hide_background = False
                 
                 if name is not None:
                     count_press = self.count_press.get(name, 0)
@@ -177,38 +175,34 @@ class KeyboardGrid(object):
                     display_name = key_names.get(name, name)
 
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
-                    button_coordinates_outline = KeyboardButton(x_offset - 1, y_offset - 1, x + 2, y + 2)
-
-                    if custom_colour is None:
-                        if image_type == 'Exponential':
-                            fill_colour = c_time[lookup[count_time]]
-                        else:
-                            fill_colour = c_time[count_time ** exp]
-                        #count_time **= exp
-                        #count_press **= exp
-                        #fill_colour = c_press[count_press]
-                        #fill_colour = c_time[count_time]
-                        #fill_colour = tuple(int(round((i + j) / 2)) for i, j in zip(c_press[count_press], c_time[count_time]))
-                        #fill_colour = tuple(i * j // 255 for i, j in zip(c_press[count_press], c_time[count_time]))
-                    else:
-                        fill_colour = custom_colour
                     
-                    luminance = (0.2126 * fill_colour[0]
-                                 + 0.7152 * fill_colour[1]
-                                 + 0.0722 * fill_colour[2])
-                    if luminance > 128:#sum(fill_colour) >= 128*5:
+                    #Calculate colour for key
+                    if custom_colour is None:
+                        if use_linear:
+                            fill_colour = colour_range[count_time ** exponential]
+                        else:
+                            fill_colour = colour_range[lookup[count_time]]
+                    else:
+                        if custom_colour == False:
+                            hide_background = True
+                        else:
+                            fill_colour = custom_colour
+                    
+                    #Calculate colour for border
+                    if get_luminance(*fill_colour) > 128:
                         text_colour = (0, 0, 0)
                     else:
                         text_colour = (255, 255, 255)
-                    image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
                     
+                    #Store values
+                    image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
                     if not hide_border:
                         image['Outline'] += button_coordinates.outline()
-
-                    try:
-                        image['Fill'][fill_colour] += button_coordinates.fill()
-                    except KeyError:
-                        image['Fill'][fill_colour] = button_coordinates.fill()
+                    if not hide_background:
+                        try:
+                            image['Fill'][fill_colour] += button_coordinates.fill()
+                        except KeyError:
+                            image['Fill'][fill_colour] = button_coordinates.fill()
                 
                 x_offset += KEY_PADDING + x
                 y_current = max(y_current, y)
@@ -244,7 +238,7 @@ for row in keyboard_layout:
     keyboard.new_row()
     for name, width, height in row:
         hide_border = name == '__STATS__'
-        custom_colour = background if name == '__STATS__' else None
+        custom_colour = False if name == '__STATS__' else None
         keyboard.add_key(name, width, height, hide_border=hide_border, custom_colour=custom_colour)
 
 key_names = {}
