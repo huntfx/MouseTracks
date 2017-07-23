@@ -235,3 +235,7 @@ class ColourMap(object):
                 return generated_map
             else:
                 raise ValueError('unknown colour map')
+
+
+def get_luminance(r, g, b, a=None):
+    return (0.2126*r + 0.7152*g + 0.0722*b)
