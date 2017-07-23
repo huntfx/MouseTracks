@@ -255,7 +255,13 @@ _config_defaults = {
         'FontSizeStats': (13, int, 0),
         'FontHeightOffset': (5, int),
         'FontWidthOffset': (5, int),
-        'FontSpacing': (5, int)
+        'FontSpacing': (5, int),
+        'LinearScale': (False, bool, ('If using linear, it is recommended to use a simple colour map such as'
+                                      ' "WhiteTo____".')),
+        'LinearExponential': (1.0, float, 0),
+        'DataSet': ('time', str, (False, 'time', 'count', 'Set if the colours should be determined by the'
+                                                          ' total time the key has been held (time), '
+                                                          ' or the number of presses (count).'))
     },
     'SavedSettings': {
         '__note__': ['Anything put here is not for editing.'],
