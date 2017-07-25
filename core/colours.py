@@ -239,3 +239,34 @@ class ColourMap(object):
 
 def get_luminance(r, g, b, a=None):
     return (0.2126*r + 0.7152*g + 0.0722*b)
+
+    
+def _new_colour_map_data():
+    return {'tracks': False, 'clicks': False, 'keyboard': False}
+
+    
+def parse_colour_file(path):
+    with open(path, 'r') as f:
+        data = f.read()
+        
+    colour_maps = {}
+    for line in data.splitlines():
+        var, value = [i.strip() for i in line.split('=', 1)]
+        var_parts = var.split('.')[1:]
+        map_name = var_parts[0].lower()
+        var_type = var_parts[1]
+
+        #Write values to dictionary
+        if map_name not in colour_maps:
+            colour_maps[map_name] = _new_colour_map_data()
+        if var_type in ('tracks', 'clicks', 'keyboard'):
+            value = True if value.lower() == 'true' else False
+        colour_maps[map_name][var_type] = value
+
+        #Link alternative names
+        if var_type == 'map':
+            alt_name = ''.join(var_parts[2:][::-1]).strip() + map_name
+            if alt_name:
+                colour_maps[alt_name] = colour_maps[map_name]
+
+    return colour_maps
