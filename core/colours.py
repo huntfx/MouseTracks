@@ -20,14 +20,36 @@ COLOURS_MAIN = {
     'sky': (0, 164, 255, 255)
 }
 
-COLOUR_MODIFIERS = {
-    #name: (add, multiply, alpha)
-    'light': (128, 0.5, 1.0),
-    'dark': (0, 0.5, 1.0),
-    'transparent': (0, 1.0, 0.0),
-    'translucent': (0, 1.0, 0.5),
-    'opaque': (0, 1.0, 2.0)
+MODIFIERS = {
+    'light': {'ColourOffset': 128,
+              'ColourShift': 1},
+    'dark': {'ColourShift': 1},
+    'transparent': {'AlphaShift': 8},
+    'translucent': {'AlphaShift': 1},
+    'opaque': {'AlphaShift': -1}
 }
+
+DUPLICATES = {
+    'single': 1,
+    'double': 2,
+    'triple': 3,
+    'quadruple': 4,
+    'quintuple': 5,
+    'pentuple': 5,
+    'sextuple': 6,
+    'hextuple': 6,
+    'septuple': 7,
+    'heptuple': 7,
+    'octuple': 8,
+    'nonuple': 9,
+    'decuple': 10,
+    'undecuple': 11,
+    'hendecuple': 11,
+    'duodecuple': 12,
+    'tredecuple': 13
+}
+
+SEPERATORS = ['to']
 
 
 class ColourRange(object):
@@ -95,7 +117,7 @@ class ColourRange(object):
         else:
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
-def _parse_colour_text(colour_name):
+def _parse_colour_text(colour_string):
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
     as it was first written to only use capitals.
@@ -103,6 +125,10 @@ def _parse_colour_text(colour_name):
     Mixed Colour:
         Combine multiple colours.
         Examples: BlueRed, BlackYellowGreen
+    Hexadecimal Colours:
+        As well as typing in words, you may also use hex.
+        All the same effects can apply to these.
+        Supported formats are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.
     Modified Colour:
         Apply a modification to a colour.
         If multiple ones are applied, they will work in reverse order.
@@ -111,73 +137,116 @@ def _parse_colour_text(colour_name):
     Transition:
         This ends the current colour mix and starts a new one.
         Examples: BlackToWhite, RedToGreenToBlue
+    Duplicate:
+        Avoid having to type out multiple versions of the same word.
+        Be careful as it has different effects based on its position.
+        It basically multiplies the next word, see below for usage.
+        Examples:
+            Before colour: DarkDoubleRed = DarkRedDarkRed
+            Before modifier: TripleDarkLightRed = DarkDarkDarkLightRed
+            Before transition: BlueDoubleToDarkRed = BlueToDarkRedToDarkRed
     Any number of these features can be combined together to create different effects.
         
     As an example, here are the values that would result in the heatmap:
-        BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueToCyan
-        + CyanCyanBlueToCyanCyanCyanYellowToCyanYellowToCyan
-        + YellowYellowYellowToYellowToOrangeToRedOrangeToRed 
+        BlackToDarkBlueToBlueToCyanTripleBlueToCyanBlueTo
+        + TripleCyanBlueToTripleCyanYellowToCyanYellowTo
+        + CyanTripleYellowToYellowToOrangeToRedOrangeToRed 
     """
-    colours = {'Final': [],
-               'Temp': [],
-               'Mult': []}
-    word = ''
-    i = 0
-    
-    #Loop letters until end of word has been reached
-    while True:
-        done_stuff = False
-        skip = False
-        try:
-            letter = colour_name[i]
-        except IndexError:
-            try:
-                letter = colour_name[i - 1]
-            except IndexError:
+    colour_string = colour_string.lower()
+
+    current_mix = [[]]
+    current_colour = {'Mod': [], 'Dup': 1}
+    while colour_string:
+        edited = False
+
+        #Check for modifiers (dark, light, transparent etc)
+        for i in MODIFIERS:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                edited = True
+                current_colour['Mod'] += [MODIFIERS[i]] * current_colour['Dup']
+                current_colour['Dup'] = 1
+
+        #Check for duplicates (double, triple, etc)
+        for i in DUPLICATES:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                edited = True
+                current_colour['Dup'] *= DUPLICATES[i]
+
+        #Check for colours
+        colour_selection = None
+        for i in COLOURS_MAIN:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                colour_selection = COLOURS_MAIN[i]
                 break
-            skip = True
 
-        if letter in 'abcdefghijklmnopqrstuvwxyz':
-            word += letter
-            done_stuff = True
+        #Check for hex codes
+        if colour_string.startswith('#'):
+            length, colour_selection = hex_to_colour(colour_string[1:9])
+            if colour_selection and length:
+                colour_string = colour_string[1 + length:]
 
-        word_colours = word in COLOURS_MAIN
-        word_mods = word in COLOUR_MODIFIERS
-        word_to = word == 'to'
+        colour = None
+        if colour_selection:
+            edited = True
+            
+            #Apply modifiers in reverse order
+            colour = list(colour_selection)
+            for modifier in current_colour['Mod']:
+                colour_offset = modifier.get('ColourOffset', 0)
+                colour_shift = modifier.get('ColourShift', 0)
+                alpha_offset = modifier.get('AlphaOffset', 0)
+                alpha_shift = modifier.get('AlphaShift', 0)
+                colour = [(colour[0] >> colour_shift) + colour_offset,
+                          (colour[1] >> colour_shift) + colour_offset,
+                          (colour[2] >> colour_shift) + colour_offset,
+                          (colour[3] >> alpha_shift) + alpha_offset]
+            current_colour['Mod'] = []
+            current_colour['Final'] = colour
+
+        #Commit the colour to the group
+        if colour:
+            current_mix[-1] += [current_colour['Final']] * current_colour['Dup']
+            current_colour['Dup'] = 1
+
+        #Start a new groups of colours
+        for i in SEPERATORS:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                edited = True
+
+                #Handle putting a duplicate before 'to'
+                new_list = []
+                list_len = current_colour['Dup']
+                if not current_mix[-1]:
+                    new_list = current_mix[-1]
+                    list_len -= 1
+
+                #Start the ew list
+                current_mix += [new_list] * list_len
+                current_colour['Dup'] = 1
+                break
+
+        #Remove the first letter and try again
+        if not edited:
+            colour_string = colour_string[1:]
+    
+    if not current_mix[0]:
+        raise ValueError('input colour map is not valid')
+
+    #Merge colours together
+    final_mix = []
+    for colours in current_mix:
         
-        #Build colours
-        if skip or word_colours or word_mods or word_to or letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+        result = colours[0]
+        for colour in colours[1:]:
+            result = [i + j for i, j in zip(result, colour)]
             
-            if word_mods:
-                colours['Mult'].append(COLOUR_MODIFIERS[word])
-            elif word_colours:
-                colours['Temp'].append(list(COLOURS_MAIN[word]))
-
-                #Apply modifiers
-                for mult in colours['Mult'][::-1]:
-                    alpha = colours['Temp'][-1].pop()
-                    colours['Temp'][-1] = [mult[0] + mult[1] * c for c in colours['Temp'][-1]]
-                    colours['Temp'][-1] += [min(255, alpha * mult[2])]
-                colours['Mult'] = []
-
-            #Merge colours together
-            if word_to or skip:
-                num_colours = len(colours['Temp'])
-                joined_colours = tuple(sum(c) / num_colours for c in zip(*colours['Temp']))
-                colours['Final'].append(joined_colours)
-                colours['Temp'] = []
-                
-            if not done_stuff:
-                word = letter.lower()
-            else:
-                word = ''
-            done_stuff = True
-                
-        i += 1
-        if not done_stuff:
-            raise ValueError('invalid characters in colour map')
-            
-    return tuple(colours['Final'])
+        num_colours = len(colours)
+        final_mix.append(tuple(i / num_colours for i in result))
+    return final_mix
 
 
 class ColourMap(object):
@@ -270,3 +339,34 @@ def parse_colour_file(path):
                 colour_maps[alt_name] = colour_maps[map_name]
 
     return colour_maps
+    
+    
+def hex_to_colour(h):
+    """Convert a hex string to colour.
+    Supports inputs as #RGB, #RGBA, #RRGGBB and #RRGGBBAA.
+    If a longer string is invalid, it will try lower lengths.
+    """
+    if h.startswith('#'):
+        h = h[:-1]
+    h_len = len(h)
+    if h_len >= 8:
+        try:
+            return (8, [int(h[i * 2:i * 2 + 2], 16) for i in range(4)])
+        except ValueError:
+            return hex_to_colour(h[:6])
+    elif h_len >= 6:
+        try:
+            return (6, [int(h[i * 2:i * 2 + 2], 16) for i in range(3)] + [255])
+        except ValueError:
+            return hex_to_colour(h[:4])
+    elif h_len >= 4:
+        try:
+            return (3, [16 * j + j for j in (int(h[i:i + 1], 16) for i in range(4))])
+        except ValueError:
+            return hex_to_colour(h[:3])
+    elif h_len >= 3:
+        try:
+            return (3, [16 * j + j for j in (int(h[i:i + 1], 16) for i in range(3))] + [255])
+        except ValueError:
+            pass
+    return (0, None)
