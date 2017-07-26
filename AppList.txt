@@ -40,6 +40,7 @@ armoredwarfare.exe: Armored Warfare
 AssassinsCreed_Game.exe: Assassin's Creed
 AssettoCorsa.exe: Assetto Corsa
 AstronautsGame-Win64-Shipping.exe: The Vanishing of Ethan Carter
+AtlasReactor.exe: Atlas Reactor
 audiosurf.exe: Audiosurf
 audiosurf2.exe: Audiosurf 2
 avalonlords.app: Avalon Lords
@@ -89,9 +90,11 @@ castle.exe: Castle Crashers
 cataclysm-tiles.exe: Cataclysm: Dark Days Ahead
 CelebrityPoker.exe: Poker Night at the Inventory
 Cities.exe: Cities: Skylines
-CivilizationBE_DX11.exe: Civilization Beyond Earth
-CivilizationBE_Mantle.exe: Civilization Beyond Earth
-CivilizationV_DX11.exe: Civilization V
+CivilizationBE_DX11.exe: Sid Meier's Civilization: Beyond Earth
+CivilizationBE_Mantle.exe: Sid Meier's Civilization: Beyond Earth
+CivilizationV.exe: Sid Meier's Civilization V
+CivilizationV_DX11.exe: Sid Meier's Civilization V
+CivilizationV_Tablet.exe: Sid Meier's Civilization V
 Clicker Heroes.exe
 Client_tos.exe: Tree of Savior
 client_x86.exe: Guardians of Ember
@@ -158,6 +161,7 @@ Dnlauncher.exe: Dragon Nest
 Dofus.exe
 Dolphin.exe
 dontstarve_steam.exe: Don't Starve
+DontTouchAnything.exe: Please, Don't Touch Anything
 DoorKickers.exe: Door Kickers
 dota.exe: DOTA
 dota2.exe: DOTA 2
@@ -194,6 +198,7 @@ EndlessLegend.exe: Endless Legend
 Enslaved.exe
 EoCApp.exe: Divinity: Original Sin
 eqgame.exe: EverQuest
+es.scr: Electric Sheep
 eso.exe: The Elder Scrolls Online
 ESSTEAM.exe: Elsword
 EternalCrusadeClient.exe: Warhammer 40,000: Eternal Crusade
@@ -266,6 +271,7 @@ H1Z1.exe
 HackerEvolution.exe: Hacker Evolution
 Hate%20Plus.app: Hate Plus
 hatoful.exe: Hatoful Boyfriend
+HCB.exe: Hyper Color Ball
 Hearthstone.app
 Hearthstone.exe
 Heaven.exe: Benchmark
@@ -289,7 +295,7 @@ Hon.exe: Heroes of Newerth
 HotlineMiami.exe: Hotline Miami
 Huniepop.app: Hunie Pop
 HuniePop.exe
-HydroPC.exe: Hydrophobia
+HydroPC.exe: Hydrophobia: Prophecy
 IAmWeaponRevival.exe: I am weapon: Revival
 ibbobb.exe: ibb & obb
 ImpossibleGame.exe: The Impossible Game
@@ -313,9 +319,11 @@ iwbtgbeta(slomo).exe: I Wanna Be The Guy
 JagexLauncher.exe: RuneScape
 JustCause.exe: Just Cause
 JustCause2.exe: Just Cause 2
+JustCause3.exe: Just Cause 3
 KAG.exe: King Arthur's Gold
 KanColleViewer.exe: KanColle
 kaneandlynch.exe: Kane and Lynch: Dead Men
+KeystonePublic.x64.exe: Keystone
 KFGame.exe: Killing Floor 2
 KillingFloor.exe: Killing Floor
 ksp.exe: Kerbal Space Program
@@ -469,6 +477,7 @@ RainbowSix.exe: Rainbow Six Siege
 Rayman Legends.exe
 RCT2.EXE: Rollercoaster Tycoon 2
 reactivedrop.exe: Alien Swarm: Reactive Drop
+redout.exe: Redout
 reflex.exe: Reflex
 RelicCOH.exe: Company of Heroes
 RelicCoH2.exe: Company of Heroes 2
@@ -481,6 +490,7 @@ ride.exe: $1 Ride
 rift.exe: Rift
 rift_x64.exe: RiFT
 RimWorld914Win.exe: RimWorld
+RimWorldWin.exe: RimWorld
 Rising Angels - Reborn.app
 RisingStorm2.exe: Rising Storm 2
 Risk of Rain.exe
@@ -544,6 +554,7 @@ starcraft ii.exe: Starcraft 2
 starcraft%20ii.app: Starcraft 2
 starcraft.exe: Starcraft
 Stardew Valley.exe
+StarForge.exe
 starwarsbattlefront.exe: Star Wars Battlefront
 StepMania.exe: Step Mania
 strife-ve.exe: Strife: Veteran Edition
@@ -669,6 +680,7 @@ VoxelFarmKit.exe: Voxel Farm
 Wakfu.app
 Wakfu.exe
 WALKINGDEAD101.EXE: The Walking Dead
+WalkingDead101.exe: The Walking Dead
 Warcraft II BNE.exe: Warcraft 2
 Warcraft III.exe: Warcraft 3: Reign of Chaos
 Warframe.exe
@@ -684,7 +696,7 @@ Winquake.exe: Quake
 witcher.exe: The Witcher
 witcher2.exe: The Witcher 2
 witcher3.exe: The Witcher 3
-wizard101.exe: Wzard101
+wizard101.exe: Wizard101
 WolfNewOrder_x64.exe: Wolfenstein: The New Order
 WolfOldBlood_x64.exe: Wolfenstein: The Old Blood
 WorldOfTanks.exe: World of Tanks
