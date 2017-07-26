@@ -21,6 +21,8 @@ _DEFAULT_TEXT = [
     ''
 ]
 
+ALLOWED_EXTENSIONS = ['.exe', '.bin', '.app', '.scr', '.com']
+
 
 def _format_app_text(app, friendly_name=None):
 
@@ -30,17 +32,13 @@ def _format_app_text(app, friendly_name=None):
         
     #Detect different extensions
     lowercase = app.lower()
-    if '.exe' in lowercase:
-        ext_len = len(lowercase.split('.exe')[0])
-        app_name = '{}.{}'.format(app[:ext_len], app[ext_len + 1:ext_len + 4])
-    elif '.app' in lowercase:
-        ext_len = len(lowercase.split('.app')[0])
-        app_name = '{}.{}'.format(app[:ext_len], app[ext_len + 1:ext_len + 4])
-    elif '.bin' in lowercase:
-        ext_len = len(lowercase.split('.bin')[0])
-        app_name = '{}.{}'.format(app[:ext_len], app[ext_len + 1:ext_len + 4])
-    else:
-        return None
+    for i in ALLOWED_EXTENSIONS + [None]:
+        if i is None:
+            return i
+        if i in lowercase:
+            ext_len = len(lowercase.split(i)[0])
+            app_name = '{}.{}'.format(app[:ext_len], app[ext_len + 1:ext_len + 4])
+            break
     
     #Determine if name has been provided in file, or generate if not
     if friendly_name is None:
@@ -52,7 +50,7 @@ def _format_app_text(app, friendly_name=None):
     
     #Format line to save
     else:
-        if app_name == friendly_name:
+        if app_name[:ext_len] == friendly_name:
             return app_name
         else:
             return '{}: {}'.format(app_name, friendly_name)
@@ -62,7 +60,9 @@ def _format_app_text(app, friendly_name=None):
     
 def _format_app_list(app_list):
     """Take a list of text inputs and sort them into a dictionary."""
-
+    if isinstance(app_list, str):
+        app_list = app_list.splitlines()
+        
     applications = {}
     for app in app_list:
         
