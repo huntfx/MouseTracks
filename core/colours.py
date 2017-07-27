@@ -159,21 +159,6 @@ def _parse_colour_text(colour_string):
     while colour_string:
         edited = False
 
-        #Check for modifiers (dark, light, transparent etc)
-        for i in MODIFIERS:
-            if colour_string.startswith(i):
-                colour_string = colour_string[len(i):]
-                edited = True
-                current_colour['Mod'] += [MODIFIERS[i]] * current_colour['Dup']
-                current_colour['Dup'] = 1
-
-        #Check for duplicates (double, triple, etc)
-        for i in DUPLICATES:
-            if colour_string.startswith(i):
-                colour_string = colour_string[len(i):]
-                edited = True
-                current_colour['Dup'] *= DUPLICATES[i]
-
         #Check for colours
         colour_selection = None
         for i in COLOURS_MAIN:
@@ -188,6 +173,7 @@ def _parse_colour_text(colour_string):
             if colour_selection and length:
                 colour_string = colour_string[1 + length:]
 
+        #Process colour with stored modifiers/duplicates
         colour = None
         if colour_selection:
             edited = True
@@ -203,13 +189,30 @@ def _parse_colour_text(colour_string):
                           (colour[1] >> colour_shift) + colour_offset,
                           (colour[2] >> colour_shift) + colour_offset,
                           (colour[3] >> alpha_shift) + alpha_offset]
+                          
             current_colour['Mod'] = []
-            current_colour['Final'] = colour
-
-        #Commit the colour to the group
-        if colour:
-            current_mix[-1] += [current_colour['Final']] * current_colour['Dup']
+            current_mix[-1] += [colour] * current_colour['Dup']
             current_colour['Dup'] = 1
+            continue
+
+        #Check for modifiers (dark, light, transparent etc)
+        for i in MODIFIERS:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                edited = True
+                current_colour['Mod'] += [MODIFIERS[i]] * current_colour['Dup']
+                current_colour['Dup'] = 1
+        if edited:
+            continue
+
+        #Check for duplicates (double, triple, etc)
+        for i in DUPLICATES:
+            if colour_string.startswith(i):
+                colour_string = colour_string[len(i):]
+                edited = True
+                current_colour['Dup'] *= DUPLICATES[i]
+        if edited:
+            continue
 
         #Start a new groups of colours
         for i in SEPERATORS:
@@ -228,10 +231,11 @@ def _parse_colour_text(colour_string):
                 current_mix += [new_list] * list_len
                 current_colour['Dup'] = 1
                 break
+        if edited:
+            continue
 
         #Remove the first letter and try again
-        if not edited:
-            colour_string = colour_string[1:]
+        colour_string = colour_string[1:]
     
     if not current_mix[0]:
         raise ValueError('input colour map is not valid')
@@ -341,7 +345,7 @@ def parse_colour_file(path):
     return colour_maps
     
     
-def hex_to_colour(h):
+def hex_to_colour(h, _try_alt=True):
     """Convert a hex string to colour.
     Supports inputs as #RGB, #RGBA, #RRGGBB and #RRGGBBAA.
     If a longer string is invalid, it will try lower lengths.
@@ -351,22 +355,25 @@ def hex_to_colour(h):
     h_len = len(h)
     if h_len >= 8:
         try:
-            return (8, [int(h[i * 2:i * 2 + 2], 16) for i in range(4)])
+            return (8, [int(h[i*2:i*2+2], 16) for i in range(4)])
         except ValueError:
-            return hex_to_colour(h[:6])
+            if _try_alt:
+                return hex_to_colour(h[:6])
     elif h_len >= 6:
         try:
-            return (6, [int(h[i * 2:i * 2 + 2], 16) for i in range(3)] + [255])
+            return (6, [int(h[i*2:i*2+2], 16) for i in range(3)] + [255])
         except ValueError:
-            return hex_to_colour(h[:4])
+            if _try_alt:
+                return hex_to_colour(h[:4])
     elif h_len >= 4:
         try:
-            return (3, [16 * j + j for j in (int(h[i:i + 1], 16) for i in range(4))])
+            return (3, [16*j+j for j in (int(h[i:i+1], 16) for i in range(4))])
         except ValueError:
-            return hex_to_colour(h[:3])
+            if _try_alt:
+                return hex_to_colour(h[:3])
     elif h_len >= 3:
         try:
-            return (3, [16 * j + j for j in (int(h[i:i + 1], 16) for i in range(3))] + [255])
+            return (3, [16*j+j for j in (int(h[i:i+1], 16) for i in range(3))] + [255])
         except ValueError:
             pass
     return (0, None)
