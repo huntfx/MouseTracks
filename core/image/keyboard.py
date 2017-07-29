@@ -19,6 +19,10 @@ KEY_PADDING = round_int(CONFIG['GenerateKeyboard']['KeyPadding'] * MULTIPLIER)
 
 KEY_BORDER = round_int(CONFIG['GenerateKeyboard']['KeyBorder'] * MULTIPLIER)
 
+DROP_SHADOW_X = round_int(CONFIG['GenerateKeyboard']['DropShadowX'] * MULTIPLIER)
+
+DROP_SHADOW_Y = round_int(CONFIG['GenerateKeyboard']['DropShadowY'] * MULTIPLIER)
+
 IMAGE_PADDING = round_int(CONFIG['GenerateKeyboard']['ImagePadding'] * MULTIPLIER)
 
 FONT_SIZE_MAIN = round_int(CONFIG['GenerateKeyboard']['FontSizeMain'] * MULTIPLIER)
@@ -70,7 +74,7 @@ class KeyboardButton(object):
         if direction == 'BottomRight':
             return (self.x + x + self.x_len - KEY_CORNER_RADIUS, self.y + y + self.y_len - KEY_CORNER_RADIUS)
             
-    def outline(self, border=0):
+    def outline(self, border=0, drop_shadow=1):
         coordinates = []
         if not border:
             return coordinates
@@ -93,14 +97,13 @@ class KeyboardButton(object):
         for x, y in bottom_right:
             coordinates += [(x+i, y+j) for i in r for j in r]
             
-        
         #Straight lines
         for i in r:
             coordinates += [(_x, self.y - i) for _x in self.cache['x']]
             coordinates += [(_x, self.y + self.y_len + i) for _x in self.cache['x']]
             coordinates += [(self.x - i, _y) for _y in self.cache['y']]
             coordinates += [(self.x + self.x_len + i, _y) for _y in self.cache['y']]
-
+                
         return coordinates
     
     def fill(self):
@@ -179,10 +182,12 @@ class KeyboardGrid(object):
         
         #Decide on background colour
         #For now the options are black or while
-        if get_luminance(*colours[0]) > 128:
+        if any(i > 128 for i in colours[0]):
             image['Background'] = COLOURS_MAIN['white']
+            image['Shadow'] = COLOURS_MAIN['black']
         else:
             image['Background'] = COLOURS_MAIN['black']
+            image['Shadow'] = COLOURS_MAIN['white']
         
         y_offset = IMAGE_PADDING
         y_current = 0
@@ -246,7 +251,7 @@ class KeyboardGrid(object):
             y_current -= KEY_SIZE
         
         width = max_offset['X'] + IMAGE_PADDING - KEY_PADDING + 1
-        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING + 1
+        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING * 2 + 1 + DROP_SHADOW_Y
         return ((width, height), image)
 
 
@@ -255,7 +260,7 @@ profile_name = 'Default'
 p = load_program(profile_name)
 key_counts = p['Keys']['All']
 
-
+print 'Building keyboard from layout...'
 keyboard_layout = Language().get_keyboard_layout()
 keyboard = KeyboardGrid(key_counts, _new_row=False)
 for row in keyboard_layout:
@@ -270,7 +275,8 @@ all_strings = Language().get_strings()
 for k, v in get_items(all_strings):
     if k.startswith('K_'):
         key_names[k.replace('K_', '')] = v.replace('\\n', '\n')
-#key_names = {}
+
+print 'Calculating pixels...'
 (width, height), coordinate_dict = keyboard.generate_coordinates(key_names)
 
 background = coordinate_dict['Background']
@@ -280,18 +286,28 @@ im = Image.new('RGB', (width, height))
 im.paste(background, (0, 0, width, height))
 px = im.load()
 
-#Fill colours
-for colour in coordinate_dict['Fill']:
-    if colour != background:
+#Add drop shadow
+if DROP_SHADOW_X or DROP_SHADOW_Y:
+    shadow_colour = tuple(int((i + 30)**0.9625) for i in coordinate_dict['Shadow'])
+    print 'Adding shadow...'
+    for colour in coordinate_dict['Fill']:
         for x, y in coordinate_dict['Fill'][colour]:
-            px[x, y] = colour
+            px[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = (0, 0, 0)
+
+#Fill colours
+print 'Colouring keys...'
+for colour in coordinate_dict['Fill']:
+    for x, y in coordinate_dict['Fill'][colour]:
+        px[x, y] = colour
 
 #Draw border
+print 'Drawing outlines...'
 border = tuple(255 - i for i in background)
 for x, y in coordinate_dict['Outline']:
     px[x, y] = border
     
 #Draw text
+print 'Adding text...'
 font = 'arial.ttf'
 draw = ImageDraw.Draw(im)
 font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
