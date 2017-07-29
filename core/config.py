@@ -250,6 +250,7 @@ _config_defaults = {
         'KeySize': (65, int, 0),
         'KeyCornerRadius': (3, int, 0),
         'KeyPadding': (8, int, 0),
+        'KeyBorder': (0.3, float, 0),
         'ImagePadding': (16, int, 0),
         'FontSizeMain': (17, int, 0),
         'FontSizeStats': (13, int, 0),
