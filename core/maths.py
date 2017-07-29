@@ -144,11 +144,10 @@ def calculate_circle(radius, segments=(True, True, True, True)):
         if segments[3]:
             outline.add((-y, -x))
             outline.add((-x, -y))
-
+        
         #Add to area
         if y != last_y:
             last_y = y
-
             if segments[0]:
                 for i in range(0, x):
                     area.add((i, -y))
@@ -156,10 +155,10 @@ def calculate_circle(radius, segments=(True, True, True, True)):
                 for i in range(0, x):
                     area.add((i, y))
             if segments[2]:
-                for i in range(-x, 1):
+                for i in range(1-x, 1):
                     area.add((i, y))
             if segments[3]:
-                for i in range(-x, 1):
+                for i in range(1-x, 1):
                     area.add((i, -y))
                     
         if x != last_x:
@@ -171,10 +170,10 @@ def calculate_circle(radius, segments=(True, True, True, True)):
                 for i in range(0, y):
                     area.add((i, x))
             if segments[2]:
-                for i in range(-y, 1):
+                for i in range(1-y, 1):
                     area.add((i, x))
             if segments[3]:
-                for i in range(-y, 1):
+                for i in range(1-y, 1):
                     area.add((i, -x))
 
         if switch < 0:
@@ -193,8 +192,13 @@ def round_up(n):
     return i + 1 if i == n else i
     
 
-def round_int(n):
+def round_int(n, min_value=None, max_value=None):
     """Round a number to an integer.
     It saves having to use a ton of brackets in certain situations.
     """
-    return int(round(n))
+    value = int(round(n))
+    if min_value is not None:
+        value = max(value, min_value)
+    if max_value is not None:
+        value = min(value, max_value)
+    return value
