@@ -1,7 +1,7 @@
 from __future__ import division
 from PIL import Image, ImageFont, ImageDraw
 
-from core.colours import ColourRange, ColourMap, get_luminance
+from core.colours import ColourRange, ColourMap, get_luminance, COLOURS_MAIN
 from core.compatibility import get_items
 from core.config import CONFIG
 from core.language import Language
@@ -16,6 +16,8 @@ KEY_SIZE = round_int(CONFIG['GenerateKeyboard']['KeySize'] * MULTIPLIER)
 KEY_CORNER_RADIUS = round_int(CONFIG['GenerateKeyboard']['KeyCornerRadius'] * MULTIPLIER)
 
 KEY_PADDING = round_int(CONFIG['GenerateKeyboard']['KeyPadding'] * MULTIPLIER)
+
+KEY_BORDER = round_int(CONFIG['GenerateKeyboard']['KeyBorder'] * MULTIPLIER)
 
 IMAGE_PADDING = round_int(CONFIG['GenerateKeyboard']['ImagePadding'] * MULTIPLIER)
 
@@ -51,12 +53,12 @@ class KeyboardButton(object):
         #Cache range (and fix error with radius of 0)
         i_start = KEY_CORNER_RADIUS + 1
         i_end = -KEY_CORNER_RADIUS or max(x + x_len, y + y_len)
-        self._c_range = {'x': x_range[i_start:i_end],
-                         'y': y_range[i_start:i_end],
-                         'x_start': x_range[:i_start],
-                         'y_start': y_range[:i_start],
-                         'x_end': x_range[i_end:],
-                         'y_end': y_range[i_end:]}
+        self.cache = {'x': x_range[i_start:i_end],
+                      'y': y_range[i_start:i_end],
+                      'x_start': x_range[1:i_start],
+                      'y_start': y_range[1:i_start],
+                      'x_end': x_range[i_end:],
+                      'y_end': y_range[i_end:]}
     
     def _circle_offset(self, x, y, direction):
         if direction == 'TopLeft':
@@ -68,20 +70,36 @@ class KeyboardButton(object):
         if direction == 'BottomRight':
             return (self.x + x + self.x_len - KEY_CORNER_RADIUS, self.y + y + self.y_len - KEY_CORNER_RADIUS)
             
-    def outline(self):
+    def outline(self, border=0):
         coordinates = []
+        if not border:
+            return coordinates
         
         #Rounded corners
-        coordinates += [self._circle_offset(x, y, 'TopLeft') for x, y in _CIRCLE['TopLeft']['Outline']]
-        coordinates += [self._circle_offset(x, y, 'TopRight') for x, y in _CIRCLE['TopRight']['Outline']]
-        coordinates += [self._circle_offset(x, y, 'BottomLeft') for x, y in _CIRCLE['BottomLeft']['Outline']]
-        coordinates += [self._circle_offset(x, y, 'BottomRight') for x, y in _CIRCLE['BottomRight']['Outline']]
+        top_left = [self._circle_offset(x, y, 'TopLeft') for x, y in _CIRCLE['TopLeft']['Outline']]
+        top_right = [self._circle_offset(x, y, 'TopRight') for x, y in _CIRCLE['TopRight']['Outline']]
+        bottom_left = [self._circle_offset(x, y, 'BottomLeft') for x, y in _CIRCLE['BottomLeft']['Outline']]
+        bottom_right = [self._circle_offset(x, y, 'BottomRight') for x, y in _CIRCLE['BottomRight']['Outline']]
+        
+        #Rounded corner thickness
+        #This is a little brute force but everything else I tried didn't work
+        r = range(border)
+        for x, y in top_left:
+            coordinates += [(x-i, y-j) for i in r for j in r]
+        for x, y in top_right:
+            coordinates += [(x+i, y-j) for i in r for j in r]
+        for x, y in bottom_left:
+            coordinates += [(x-i, y+j) for i in r for j in r]
+        for x, y in bottom_right:
+            coordinates += [(x+i, y+j) for i in r for j in r]
+            
         
         #Straight lines
-        coordinates += [(_x, self.y) for _x in self._c_range['x']]
-        coordinates += [(_x, self.y + self.y_len) for _x in self._c_range['x']]
-        coordinates += [(self.x, _y) for _y in self._c_range['y']]
-        coordinates += [(self.x + self.x_len, _y) for _y in self._c_range['y']]
+        for i in r:
+            coordinates += [(_x, self.y - i) for _x in self.cache['x']]
+            coordinates += [(_x, self.y + self.y_len + i) for _x in self.cache['x']]
+            coordinates += [(self.x - i, _y) for _y in self.cache['y']]
+            coordinates += [(self.x + self.x_len + i, _y) for _y in self.cache['y']]
 
         return coordinates
     
@@ -89,11 +107,11 @@ class KeyboardButton(object):
         coordinates = []
         
         #Squares
-        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x']]
-        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x_start']]
-        coordinates += [(x, y) for y in self._c_range['y'] for x in self._c_range['x_end']]
-        coordinates += [(x, y) for y in self._c_range['y_start'] for x in self._c_range['x']]
-        coordinates += [(x, y) for y in self._c_range['y_end'] for x in self._c_range['x']]
+        coordinates += [(x, y) for y in self.cache['y'] for x in self.cache['x']]
+        coordinates += [(x, y) for y in self.cache['y'] for x in self.cache['x_start']]
+        coordinates += [(x, y) for y in self.cache['y'] for x in self.cache['x_end']]
+        coordinates += [(x, y) for y in self.cache['y_start'] for x in self.cache['x']]
+        coordinates += [(x, y) for y in self.cache['y_end'] for x in self.cache['x']]
                 
         #Corners
         coordinates += [self._circle_offset(x, y, 'TopLeft') for x, y in _CIRCLE['TopLeft']['Area']]
@@ -137,29 +155,34 @@ class KeyboardGrid(object):
         max_offset = {'X': 0, 'Y': 0}
         
         use_linear = CONFIG['GenerateKeyboard']['LinearScale']
-        colours = ColourMap()[CONFIG['GenerateKeyboard']['ColourProfile']]
         
         use_time = CONFIG['GenerateKeyboard']['DataSet'] == 'time'
         use_count = CONFIG['GenerateKeyboard']['DataSet'] == 'count'
         
+        #Setup the colour range
+        if use_time:
+            values = self.count_time.values()
+        elif use_count:
+            values = self.count_press.values()
+            
         if use_linear:
             exponential = CONFIG['GenerateKeyboard']['LinearExponential']
-            
-            if use_time:
-                colour_range = ColourRange(0, max(self.count_time.values()) ** exponential, colours)
-            elif use_count:
-                colour_range = ColourRange(0, max(self.count_press.values()) ** exponential, colours)
-
+            max_range = pow(max(values), exponential)
         else:
-            pools = sorted(set(self.count_time.values()))
-            colour_range = ColourRange(0, len(pools) + 1, colours)
-            lookup = {v: i for i, v in enumerate(pools)}
+            pools = sorted(set(values))
+            max_range = len(pools) + 1
+            lookup = {v: i + 1 for i, v in enumerate(pools)}
             lookup[0] = 0
         
+        colours = ColourMap()[CONFIG['GenerateKeyboard']['ColourProfile']]
+        colour_range = ColourRange(0, max_range, colours)
+        
+        #Decide on background colour
+        #For now the options are black or while
         if get_luminance(*colours[0]) > 128:
-            image['Background'] = (255, 255, 255)
+            image['Background'] = COLOURS_MAIN['white']
         else:
-            image['Background'] = (0, 0, 0)
+            image['Background'] = COLOURS_MAIN['black']
         
         y_offset = IMAGE_PADDING
         y_current = 0
@@ -170,8 +193,12 @@ class KeyboardGrid(object):
                 hide_background = False
                 
                 if name is not None:
-                    count_press = self.count_press.get(name, 0)
                     count_time = self.count_time.get(name, 0)
+                    count_press = self.count_press.get(name, 0)
+                    if use_time:
+                        key_count = count_time
+                    elif use_count:
+                        key_count = count_press
                     display_name = key_names.get(name, name)
 
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
@@ -179,25 +206,26 @@ class KeyboardGrid(object):
                     #Calculate colour for key
                     if custom_colour is None:
                         if use_linear:
-                            fill_colour = colour_range[count_time ** exponential]
+                            fill_colour = colour_range[key_count ** exponential]
                         else:
-                            fill_colour = colour_range[lookup[count_time]]
+                            fill_colour = colour_range[lookup[key_count]]
                     else:
                         if custom_colour == False:
                             hide_background = True
+                            fill_colour = image['Background']
                         else:
                             fill_colour = custom_colour
                     
                     #Calculate colour for border
                     if get_luminance(*fill_colour) > 128:
-                        text_colour = (0, 0, 0)
+                        text_colour = COLOURS_MAIN['black']
                     else:
-                        text_colour = (255, 255, 255)
+                        text_colour = COLOURS_MAIN['white']
                     
                     #Store values
                     image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
                     if not hide_border:
-                        image['Outline'] += button_coordinates.outline()
+                        image['Outline'] += button_coordinates.outline(KEY_BORDER)
                     if not hide_background:
                         try:
                             image['Fill'][fill_colour] += button_coordinates.fill()
@@ -227,10 +255,6 @@ profile_name = 'Default'
 p = load_program(profile_name)
 key_counts = p['Keys']['All']
 
-background = (255, 255, 255)
-
-
-
 
 keyboard_layout = Language().get_keyboard_layout()
 keyboard = KeyboardGrid(key_counts, _new_row=False)
@@ -249,24 +273,26 @@ for k, v in get_items(all_strings):
 #key_names = {}
 (width, height), coordinate_dict = keyboard.generate_coordinates(key_names)
 
+background = coordinate_dict['Background']
 
 #Create image object
 im = Image.new('RGB', (width, height))
 im.paste(background, (0, 0, width, height))
 px = im.load()
 
+#Fill colours
 for colour in coordinate_dict['Fill']:
     if colour != background:
         for x, y in coordinate_dict['Fill'][colour]:
             px[x, y] = colour
 
+#Draw border
 border = tuple(255 - i for i in background)
 for x, y in coordinate_dict['Outline']:
-    #px[x, y] = border
     px[x, y] = border
     
+#Draw text
 font = 'arial.ttf'
-    
 draw = ImageDraw.Draw(im)
 font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
 font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
