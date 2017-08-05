@@ -10,7 +10,9 @@ DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
 CONFIG_PATH = '{}\\config.ini'.format(DEFAULT_PATH)
 
 APP_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/AppList.txt'
-    
+
+DEFAULT_LANGUAGE = 'en_US'
+
 
 def format_file_path(path):
     """Process an input path and follow any environment variables."""
