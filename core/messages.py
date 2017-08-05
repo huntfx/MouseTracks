@@ -1,12 +1,27 @@
 from __future__ import division, absolute_import
 from datetime import datetime
+    
+
+_LENGTH = (
+    #name, seconds, highest amount, number of decimals
+    ('second', 1, 60, 2),
+    ('minute', 60, 60, None),
+    ('hour', 60 * 60, 24, None),
+    ('day', 60 * 60 * 24, 7, None),
+    ('week', 60 * 60 * 24 * 7, 52, None),
+    ('year', 60 * 60 * 24 * 365, None, None)
+)
 
 
 def print_override(text):
     """Send everything here to print, so that it can easily be edited.
     Defaults to Python 3 version as it'll refuse to even run the script otherwise.
     """
-    print(text.encode('utf-8').strip())
+    for line in text.replace('\\n', '\n').split('\n'):
+        try:
+            print(line)
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            print(line.encode('utf-8').strip())
     
 
 def time_format(t):
@@ -40,21 +55,13 @@ def date_format(t):
     output_date = '{d} {m} {y}'.format(d=day, m=month, y=year)
 
     return '{}, {}'.format(output_time, output_date)
+
+
+def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True, short=False):  
+    """Simple function to convert ticks to a readable time for use in sentences.
     
-
-_LENGTH = (
-    #name, seconds, highest amount, number of decimals
-    ('second', 1, 60, 2),
-    ('minute', 60, 60, None),
-    ('hour', 60 * 60, 24, None),
-    ('day', 60 * 60 * 24, 7, None),
-    ('week', 60 * 60 * 24 * 7, 52, None),
-    ('year', 60 * 60 * 24 * 365, None, None)
-)
-
-
-def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True):  
-    """Simple function to convert ticks to a readable time for use in sentences."""
+    This needs fixing up to allow decimals at any point.
+    """
 
     output = []
     time_elapsed = amount / tick_rate
@@ -63,16 +70,23 @@ def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True):
             current = int(time_elapsed // length)
         else:
             current = round(time_elapsed / length, decimals)
+            
         if limit is not None:
             current %= limit
-
+        
         if current:
-            output.append('{} {}{}'.format(current, name, '' if current == 1 else 's'))
+            if short:
+                output.append('{}{}'.format(current, name[0]))
+            else:
+                output.append('{} {}{}'.format(current, name, '' if current == 1 else 's'))
             if len(output) == output_length:
                 break
     
     if not output:
-        output.append('{} {}s'.format(current, name))
+        if short:
+            output.append('{}{}'.format(current, name[0]))
+        else:
+            output.append('{} {}s'.format(current, name))
     
     if len(output) > 1:
         result = ' and '.join((', '.join(output[:-1]), output[-1]))
