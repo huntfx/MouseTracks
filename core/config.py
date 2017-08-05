@@ -3,7 +3,7 @@ from locale import getdefaultlocale
 import time
 
 from core.compatibility import get_items
-from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH
+from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE
 from core.os import get_resolution
 
 
@@ -159,7 +159,12 @@ except TypeError:
     _res_x = 1920
     _res_y = 1080
 
-_language = getdefaultlocale()[0]
+try:
+    _language = getdefaultlocale()[0]
+except ValueError:
+    #Fix for a mac error saying unknown locale
+    _language = DEFAULT_LANGUAGE
+    
 _config_defaults = {
     'Main': {
         'UpdatesPerSecond': (60, int, 1, 'It is recommended to leave at 60 even if'
@@ -169,7 +174,7 @@ _config_defaults = {
         'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
                                          ' if a mouse button is being held down (set to 0.0 to disable).'),
         'Language': (_language, str, 'Choose a language. If the files don\'t exit yet,'
-                                     ' en_GB will be used.'.format(_language))
+                                     ' {} will be used.'.format(_language, DEFAULT_LANGUAGE))
     },
     'CompressMaps': {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
