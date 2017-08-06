@@ -7,6 +7,7 @@ from core.config import CONFIG
 from core.language import Language
 from core.files import load_program
 from core.maths import round_int, calculate_circle
+from core.messages import ticks_to_seconds
 
 
 MULTIPLIER = CONFIG['GenerateKeyboard']['SizeMultiplier']
@@ -159,8 +160,8 @@ class KeyboardGrid(object):
         
         use_linear = CONFIG['GenerateKeyboard']['LinearScale']
         
-        use_time = CONFIG['GenerateKeyboard']['DataSet'] == 'time'
-        use_count = CONFIG['GenerateKeyboard']['DataSet'] == 'count'
+        use_time = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time'
+        use_count = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count'
         
         #Setup the colour range
         if use_time:
@@ -254,7 +255,46 @@ class KeyboardGrid(object):
         height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING * 2 + 1 + DROP_SHADOW_Y
         return ((width, height), image)
 
+def format_amount(value, value_type):
+    """Format the count for something that will fit on a key."""
+    if value_type == 'count':
+        return 'x{}'.format(shorten_number(value, limit=5))
+    elif value_type == 'time':
+        return ticks_to_seconds(value, 60, output_length=1, allow_decimals=False, short=True)
 
+def shorten_number(n, limit=5, max_decimals=2):
+    """Set a number over a certain length to something shorter.
+    For example, 2000000 can be shortened to 2m.
+    The numbers will be kept as long as possible, 
+    so "2000k" will override "2m" at a length of 5.
+    """
+    limits = [''] + list('kmbt')
+    i = 0
+    str_n = str(n)
+    max_length = max(limit, 4)
+    try:
+        while True:
+            prefix = limits[i]
+            num_length = len(str_n)
+            if num_length < max_length or not prefix and num_length <= max_length:
+                break
+            i += 1
+            str_n = str_n[:-3]
+        result = n / 10 ** (i*3)
+        if not prefix:
+            return str(int(result))
+        
+        decimals = min(max_decimals, max_length - (len(str(int(result))) + len(prefix)))
+        if max_decimals and decimals:
+            result = str(round(result, decimals))
+            #decimal_length = len(result.split('.')[1])
+            #extra_zeroes = min(max_decimals, decimals) - decimal_length
+            #result += '0' * extra_zeroes
+        else:
+            result = int(result)
+        return '{}{}'.format(result, prefix)
+    except IndexError:
+        return 'inf'
         
 profile_name = 'Default'
 p = load_program(profile_name)
@@ -317,7 +357,13 @@ for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Tex
         text = '{}:'.format(profile_name)
         draw.text((x, y), text, font=font_key, fill=text_colour)
         y += (FONT_SIZE_MAIN + FONT_LINE_SPACING)
-        text = 'Time played: 2 hours and 45 minutes (made up)\nTotal key presses: {}\nColour based on how long keys were pressed for.'.format(sum(key_counts['Pressed'].values()))
+        stats = ['Time played: {}'.format(ticks_to_seconds(p['Ticks']['Total'], 60))]
+        stats.append('Total key presses: {}'.format(sum(key_counts['Pressed'].values())))
+        if CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time':
+            stats.append('Colour based on how long keys were pressed for.')
+        elif CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count':
+            stats.append('Colour based on number of key presses.')
+        text = '\n'.join(stats)
         draw.text((x, y), text, font=font_amount, fill=text_colour)
     else:
         x += FONT_OFFSET_X
@@ -331,10 +377,13 @@ for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Tex
         y += (FONT_SIZE_MAIN + FONT_LINE_SPACING) * (1 + text.count('\n'))
         
         #Here either do count or percent, but not both as it won't fit
-        if amount_press > 99999:
-            amount_press /= 1000
-            amount_press = '{}k'.format(round(amount_press, 1))
-        draw.text((x, y), ' x{}'.format(amount_press), font=font_amount, fill=text_colour)
+        #I may pass in the key width into format_amount so it doesnt over-shorten things
+        output_type = 'count'
+        if output_type == 'count':
+            amount = amount_press
+        elif output_type == 'time':
+            amount = amount_time
+        draw.text((x, y), format_amount(amount, output_type), font=font_amount, fill=text_colour)
 
 im.save('testimage.png', 'PNG')
 #im.show()
