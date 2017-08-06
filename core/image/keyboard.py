@@ -152,7 +152,13 @@ class KeyboardGrid(object):
         pos_x = IMAGE_PADDING
         _width = int(round(KEY_SIZE * width + KEY_PADDING * max(0, width - 1)))
         _height = int(round(KEY_SIZE * height + KEY_PADDING * max(0, height - 1)))
-        self.row.append([name, (_width, _height), hide_border, custom_colour])
+        _values = {'Dimensions': (_width, _height),
+                   'DimensionMultipliers': (width, height),
+                   'Name': name,
+                   'CustomColour': custom_colour,
+                   'HideBorder': hide_border}
+        self.row.append(_values)
+        #self.row.append([name, (_width, _height), hide_border, custom_colour])
 
     def generate_coordinates(self, key_names={}):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
@@ -194,33 +200,35 @@ class KeyboardGrid(object):
         y_current = 0
         for i, row in enumerate(self.grid):
             x_offset = IMAGE_PADDING
-            for name, (x, y), hide_border, custom_colour in row:
+            #for name, (x, y), hide_border, custom_colour in row:
+            for values in row:
             
+                x, y = values['Dimensions']
                 hide_background = False
                 
-                if name is not None:
-                    count_time = self.count_time.get(name, 0)
-                    count_press = self.count_press.get(name, 0)
+                if values['Name'] is not None:
+                    count_time = self.count_time.get(values['Name'], 0)
+                    count_press = self.count_press.get(values['Name'], 0)
                     if use_time:
                         key_count = count_time
                     elif use_count:
                         key_count = count_press
-                    display_name = key_names.get(name, name)
+                    display_name = key_names.get(values['Name'], values['Name'])
 
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
                     
                     #Calculate colour for key
-                    if custom_colour is None:
+                    if values['CustomColour'] is None:
                         if use_linear:
                             fill_colour = colour_range[key_count ** exponential]
                         else:
                             fill_colour = colour_range[lookup[key_count]]
                     else:
-                        if custom_colour == False:
+                        if values['CustomColour'] == False:
                             hide_background = True
                             fill_colour = image['Background']
                         else:
-                            fill_colour = custom_colour
+                            fill_colour = values['CustomColour']
                     
                     #Calculate colour for border
                     if get_luminance(*fill_colour) > 128:
@@ -229,8 +237,14 @@ class KeyboardGrid(object):
                         text_colour = COLOURS_MAIN['white']
                     
                     #Store values
-                    image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
-                    if not hide_border:
+                    _values = {'Offset': (x_offset, y_offset),
+                               'KeyName': display_name,
+                               'Counts': {'count': count_press, 'time': count_time},
+                               'Colour': text_colour,
+                               'Dimensions': values['DimensionMultipliers']}
+                    image['Text'].append(_values)
+                    #image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
+                    if not values['HideBorder']:
                         image['Outline'] += button_coordinates.outline(KEY_BORDER)
                     if not hide_background:
                         try:
@@ -255,24 +269,32 @@ class KeyboardGrid(object):
         height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING * 2 + 1 + DROP_SHADOW_Y
         return ((width, height), image)
 
-def format_amount(value, value_type):
+
+def format_amount(value, value_type, max_length=5, min_length=None, decimal_units=False):
     """Format the count for something that will fit on a key."""
     if value_type == 'count':
-        return 'x{}'.format(shorten_number(value, limit=5))
+        return 'x{}'.format(shorten_number(value, limit=max_length, sig_figures=min_length, decimal_units=decimal_units))
     elif value_type == 'time':
         return ticks_to_seconds(value, 60, output_length=1, allow_decimals=False, short=True)
 
-def shorten_number(n, limit=5, max_decimals=2):
+        
+def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
     """Set a number over a certain length to something shorter.
     For example, 2000000 can be shortened to 2m.
     The numbers will be kept as long as possible, 
     so "2000k" will override "2m" at a length of 5.
+    Set a minimum length to ensure it has a certain number of digits.
+    Disable decimal_units if you do not want this enforced on units (such as 15.000000).
     """
-    limits = [''] + list('kmbt')
+    if sig_figures is None:
+        sig_figures = limit - 1
+    limits = [''] + list('kmbtq')
     i = 0
-    str_n = str(n)
+    str_n = str(int(n))
     max_length = max(limit, 4)
+    
     try:
+        #Reduce the number until it fits in the required space
         while True:
             prefix = limits[i]
             num_length = len(str_n)
@@ -281,20 +303,40 @@ def shorten_number(n, limit=5, max_decimals=2):
             i += 1
             str_n = str_n[:-3]
         result = n / 10 ** (i*3)
-        if not prefix:
+        
+        #Return whole number if decimal units are disabled
+        if not decimal_units and not prefix:
             return str(int(result))
         
-        decimals = min(max_decimals, max_length - (len(str(int(result))) + len(prefix)))
-        if max_decimals and decimals:
-            result = str(round(result, decimals))
-            #decimal_length = len(result.split('.')[1])
-            #extra_zeroes = min(max_decimals, decimals) - decimal_length
-            #result += '0' * extra_zeroes
+        #Convert to string if result is too large for a float
+        overflow = 'e+' in str(result)
+        if overflow:
+            result = str(int(result)) + '.0'
+            
+        #Format the decimals based on required significant figures
+        if overflow:
+            int_length = len(result)
         else:
-            result = int(result)
+            int_length = len(str(int(result)))
+        
+        #Set maximum (and minimum) number of decimal points)
+        max_decimals = max(0, sig_figures - int_length - bool(prefix))
+        if sig_figures and max_decimals:
+            result_parts = str(result).split('.')
+            decimal = str(round(float('0.{}'.format(result_parts[1])), max_decimals))[2:]
+            extra_zeroes = max_decimals - len(decimal)
+            result = '{}.{}{}'.format(result_parts[0], decimal, '0' * extra_zeroes)
+        else:
+            if overflow:
+                result = result.split('.')[0]
+            else:
+                result = int(result)
         return '{}{}'.format(result, prefix)
+    
+    #If the number goes out of limits, return that it's infinite
     except IndexError:
         return 'inf'
+
         
 profile_name = 'Default'
 p = load_program(profile_name)
@@ -327,12 +369,13 @@ im.paste(background, (0, 0, width, height))
 px = im.load()
 
 #Add drop shadow
-if DROP_SHADOW_X or DROP_SHADOW_Y:
+if (DROP_SHADOW_X or DROP_SHADOW_Y) and background == (255, 255, 255, 255):
     shadow_colour = tuple(int((i + 30)**0.9625) for i in coordinate_dict['Shadow'])
     print 'Adding shadow...'
+    n = 64
     for colour in coordinate_dict['Fill']:
         for x, y in coordinate_dict['Fill'][colour]:
-            px[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = (0, 0, 0)
+            px[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = (n, n, n)
 
 #Fill colours
 print 'Colouring keys...'
@@ -352,7 +395,18 @@ font = 'arial.ttf'
 draw = ImageDraw.Draw(im)
 font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
 font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
-for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Text']:
+#for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Text']:
+for values in coordinate_dict['Text']:
+    '''
+    {'Offset': (x_offset, y_offset),
+                              'KeyName': display_name,
+                              'Counts': (count_press, count_time),
+                              'Colour': text_colour,
+                              'Dimensions': (x, y)}
+                              '''
+    x, y = values['Offset']
+    text = values['KeyName']
+    text_colour = values['Colour']
     if text == '__STATS__':
         text = '{}:'.format(profile_name)
         draw.text((x, y), text, font=font_key, fill=text_colour)
@@ -378,12 +432,12 @@ for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Tex
         
         #Here either do count or percent, but not both as it won't fit
         #I may pass in the key width into format_amount so it doesnt over-shorten things
-        output_type = 'count'
-        if output_type == 'count':
-            amount = amount_press
-        elif output_type == 'time':
-            amount = amount_time
-        draw.text((x, y), format_amount(amount, output_type), font=font_amount, fill=text_colour)
+        output_type = 'count' #count or time
+        max_width = int(10 * values['Dimensions'][0] - 3)
+            
+        text = format_amount(values['Counts'][output_type], output_type,
+                             max_length=max_width, min_length=max_width-1, decimal_units=False)
+        draw.text((x, y), text, font=font_amount, fill=text_colour)
 
 im.save('testimage.png', 'PNG')
 #im.show()
