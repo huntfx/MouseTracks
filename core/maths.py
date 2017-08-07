@@ -189,7 +189,7 @@ def calculate_circle(radius, segments=(True, True, True, True)):
 def round_up(n):
     """Quick way to round numbers without importing the math library."""
     i = int(n)
-    return i + 1 if i == n else i
+    return i if i == n else i + 1
     
 
 def round_int(n, min_value=None, max_value=None):
