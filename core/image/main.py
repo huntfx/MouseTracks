@@ -1,21 +1,19 @@
 from __future__ import division, absolute_import
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
-from scipy.ndimage.interpolation import zoom
-from scipy.ndimage.filters import gaussian_filter
 import sys
-import numpy as np
 
+from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
+from core.image._scipy import blur, upscale
 from core.colours import ColourRange, ColourMap
 from core.compatibility import range, get_items
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
 from core.files import load_program
 from core.misc import print_override
-from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 
 
-def merge_resolutions(main_data, interpolate=False, multiple_selection=False, 
+def merge_resolutions(main_data, multiple_selection=False, 
                       session_start=None, high_precision=False, _find_range=True):
     """Upscale each resolution to make them all match.
     A list of arrays and range of data will be returned.
@@ -111,12 +109,9 @@ def merge_resolutions(main_data, interpolate=False, multiple_selection=False,
                         count += 1
 
             #Calculate the zoom level needed
-            if max_resolution != current_resolution:
-                zoom_factor = (max_resolution[1] / current_resolution[1],
-                               max_resolution[0] / current_resolution[0])
-                numpy_arrays.append(zoom(numpy_array(new_data), zoom_factor, order=interpolate))
-            else:
-                numpy_arrays.append(numpy_array(new_data))
+            zoom_factor = (max_resolution[1] / current_resolution[1],
+                           max_resolution[0] / current_resolution[0])
+            numpy_arrays.append(upscale(numpy_array(new_data), zoom_factor))
     
     if _find_range:
         if session_start is not None:
@@ -286,20 +281,15 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
     if max_array is None:
         return None
 
-    h = len(max_array)
-    w = len(max_array[0])
-    height_range = range(h)
-    width_range = range(w)
-
     #Blur the array
     print_override('Applying gaussian blur...')            
-    heatmap = gaussian_filter(max_array, sigma=gaussian_size)
+    heatmap = blur(max_array, gaussian_size)
 
     #Calculate the average of all the points
     print_override('Calculating average...')
-    total = numpy_sum(heatmap)
-
-    return ((0, total / (w * h)), heatmap)
+    average = numpy_sum(heatmap) / heatmap.size
+    
+    return ((0, average), heatmap)
 
 
 def arrays_to_colour(colour_range, numpy_arrays):
