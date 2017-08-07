@@ -1,8 +1,8 @@
 from __future__ import absolute_import
-from locale import getdefaultlocale
 import codecs
 
 from core.config import CONFIG
+from core.constants import DEFAULT_LANGUAGE
 
 
 ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
@@ -41,33 +41,34 @@ def follow_file_links(file_name, extension, path, visited=None):
 
 class Language(object):
 
-    def __init__(self, language=CONFIG['Main']['Language'], fallback_language='en_GB'):
+    def __init__(self, language=CONFIG['Main']['Language'], fallback_language=DEFAULT_LANGUAGE):
         self.strings = None
         self.keyboard = None
     
-        #Read from main file
-        links = follow_file_links(language, 'txt', LANGUAGE_FOLDER)
-        for link in links:
-            if link.startswith('STRINGS'):
-                self.strings = link.split('=', 1)[1].strip()
-            if link.startswith('KEYBOARD_LAYOUT'):
-                self.keyboard = link.split('=', 1)[1].strip()
+        #Read from chosen file, then backup file if needed
+        language_order = (language, fallback_language)
+        for language in language_order:
         
-        #Read from backup file
-        if self.strings is None or self.keyboard is None:
-            links = follow_file_links(fallback_language, 'txt', LANGUAGE_FOLDER)
+            links = follow_file_links(language, 'txt', LANGUAGE_FOLDER)
             for link in links:
-                if self.strings is None and link.startswith('STRINGS'):
-                    self.strings = link.split('=', 1)[1].strip()
-                if self.keyboard is None and link.startswith('KEYBOARD_LAYOUT'):
-                    self.keyboard = link.split('=', 1)[1].strip()
+                var, value = [i.strip() for i in link.split('=')]
+                link_parts = var.split('.')
+                if link_parts[0] == 'locale':
+                    if link_parts[1] == 'strings':
+                        self.strings = link.split('=', 1)[1].strip()
+                    elif link_parts[1] == 'keyboard':
+                        if link_parts[2] == 'layout':
+                            self.keyboard = link.split('=', 1)[1].strip()
+            if self.strings is not None and self.keyboard is not None:
+                break
                 
         
     def get_keyboard_layout(self, extended=True):
         keyboard_layout = []
         
+        keyboard_layout_folder = '{}/{}'.format(LANGUAGE_FOLDER, KEYBOARD_LAYOUT_FOLDER)
         try:
-            data = follow_file_links(self.keyboard, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, KEYBOARD_LAYOUT_FOLDER))
+            data = follow_file_links(self.keyboard, 'txt', keyboard_layout_folder)
         except AttributeError:
             return []
             
@@ -122,23 +123,55 @@ class Language(object):
                     height = default_height
                 else:
                     height = max(0, height)
-                    #if height > data_len - i - 1:
-                    #    height = data_len - i
                 
                 keyboard_layout[-1].append([name, width, height])
                 
         return keyboard_layout
     
-    def get_strings(self):
+    def get_strings(self, _new=False):
         try:
             data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, STRINGS_FOLDER))
         except AttributeError:
             return {}
         strings = {}
-        for line in data:
-            if '=' in line:
-                name, string = line.split('=', 1)
-                name = ''.join(i for i in name if i in ALLOWED_CHARACTERS)
-                if name:
-                    strings[str(name)] = string.strip()
+        
+        #New way (used by keyboard)
+        if _new:
+            for line in data:
+                try:
+                    var, value = [i.strip() for i in line.split('=', 1)]
+                except ValueError:
+                    pass
+                else:
+                    var_parts = var.split('.')
+                    var_len = len(var_parts)
+                    if var_len == 1:
+                        continue
+                        
+                    #Recursively look down dictionary
+                    _strings = strings
+                    for i, part in enumerate(var_parts[:-1]):
+                        last_loop = i == var_len - 2
+                        try:
+                            if not last_loop:
+                                _strings = _strings[part]
+                        except KeyError:
+                            _strings[part] = {}
+                            if not last_loop:
+                                _strings = _strings[part]
+                            
+                    try:
+                        _strings[part][var_parts[-1]] = value.replace('\\n', '\n')
+                    except KeyError:
+                        _strings[part] = {var_parts[-1]: value.replace('\\n', '\n')}
+                        
+        #Legacy way (will be removed once language files are updated
+        else:
+            for line in data:
+                if '=' in line:
+                    name, string = line.split('=', 1)
+                    name = ''.join(i for i in name if i in ALLOWED_CHARACTERS)
+                    if name:
+                        strings[str(name)] = string.strip()
+                        
         return strings
