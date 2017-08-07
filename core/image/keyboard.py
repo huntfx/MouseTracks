@@ -200,7 +200,7 @@ class KeyboardGrid(object):
         y_current = 0
         for i, row in enumerate(self.grid):
             x_offset = IMAGE_PADDING
-            #for name, (x, y), hide_border, custom_colour in row:
+            
             for values in row:
             
                 x, y = values['Dimensions']
@@ -239,11 +239,11 @@ class KeyboardGrid(object):
                     #Store values
                     _values = {'Offset': (x_offset, y_offset),
                                'KeyName': display_name,
-                               'Counts': {'count': count_press, 'time': count_time},
+                               'Counts': {'press': count_press, 'time': count_time},
                                'Colour': text_colour,
                                'Dimensions': values['DimensionMultipliers']}
                     image['Text'].append(_values)
-                    #image['Text'].append(((x_offset, y_offset), display_name, count_press, count_time, text_colour))
+
                     if not values['HideBorder']:
                         image['Outline'] += button_coordinates.outline(KEY_BORDER)
                     if not hide_background:
@@ -272,8 +272,8 @@ class KeyboardGrid(object):
 
 def format_amount(value, value_type, max_length=5, min_length=None, decimal_units=False):
     """Format the count for something that will fit on a key."""
-    if value_type == 'count':
-        return 'x{}'.format(shorten_number(value, limit=max_length, sig_figures=min_length, decimal_units=decimal_units))
+    if value_type == 'press':
+        return shorten_number(value, limit=max_length, sig_figures=min_length, decimal_units=decimal_units)
     elif value_type == 'time':
         return ticks_to_seconds(value, 60, output_length=1, allow_decimals=False, short=True)
 
@@ -338,120 +338,133 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
         return 'inf'
 
         
-profile_name = 'Default'
-p = load_program(profile_name)
-key_counts = p['Keys']['All']
-
-print 'Building keyboard from layout...'
-keyboard_layout = Language().get_keyboard_layout()
-keyboard = KeyboardGrid(key_counts, _new_row=False)
-for row in keyboard_layout:
-    keyboard.new_row()
-    for name, width, height in row:
-        hide_border = name == '__STATS__'
-        custom_colour = False if name == '__STATS__' else None
-        keyboard.add_key(name, width, height, hide_border=hide_border, custom_colour=custom_colour)
-
-key_names = {}
-all_strings = Language().get_strings()
-for k, v in get_items(all_strings):
-    if k.startswith('K_'):
-        key_names[k.replace('K_', '')] = v.replace('\\n', '\n')
-
-print 'Calculating pixels...'
-(width, height), coordinate_dict = keyboard.generate_coordinates(key_names)
-
-background = coordinate_dict['Background']
-
-#Create image object
-im = Image.new('RGB', (width, height))
-im.paste(background, (0, 0, width, height))
-px = im.load()
-
-#Add drop shadow
-if (DROP_SHADOW_X or DROP_SHADOW_Y) and background == (255, 255, 255, 255):
-    shadow_colour = tuple(int((i + 30)**0.9625) for i in coordinate_dict['Shadow'])
-    print 'Adding shadow...'
-    n = 64
-    for colour in coordinate_dict['Fill']:
-        for x, y in coordinate_dict['Fill'][colour]:
-            px[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = (n, n, n)
-
-#Fill colours
-print 'Colouring keys...'
-for colour in coordinate_dict['Fill']:
-    for x, y in coordinate_dict['Fill'][colour]:
-        px[x, y] = colour
-
-#Draw border
-print 'Drawing outlines...'
-border = tuple(255 - i for i in background)
-for x, y in coordinate_dict['Outline']:
-    px[x, y] = border
+class DrawKeyboard(object):
+    def __init__(self, profile_name):
+        self.name = profile_name
+        print 'Loading profile...'
+        self.reload()
     
-#Draw text
-print 'Adding text...'
-font = 'arial.ttf'
-draw = ImageDraw.Draw(im)
-font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
-font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
-#for (x, y), text, amount_press, amount_time, text_colour in coordinate_dict['Text']:
-for values in coordinate_dict['Text']:
-    '''
-    {'Offset': (x_offset, y_offset),
-                              'KeyName': display_name,
-                              'Counts': (count_press, count_time),
-                              'Colour': text_colour,
-                              'Dimensions': (x, y)}
-                              '''
-    x, y = values['Offset']
-    text = values['KeyName']
-    text_colour = values['Colour']
-    if text == '__STATS__':
-        text = '{}:'.format(profile_name)
-        draw.text((x, y), text, font=font_key, fill=text_colour)
-        y += (FONT_SIZE_MAIN + FONT_LINE_SPACING)
-        stats = ['Time played: {}'.format(ticks_to_seconds(p['Ticks']['Total'], 60))]
-        total_presses = sum(key_counts['Pressed'].values())
-        #25 length
+    def reload(self):
+        profile = load_program(self.name)
+        self.key_counts = profile['Keys']['All']
+        self.ticks = profile['Ticks']['Total']
+        self.keys = self._get_key_names()
+        self.grid = self._create_grid()
+    
+    def _create_grid(self):
+        print 'Building keyboard from layout...'
+        grid = KeyboardGrid(self.key_counts, _new_row=False)
+        layout = Language().get_keyboard_layout()
+        for row in layout:
+            grid.new_row()
+            for name, width, height in row:
+                if name == '__STATS__':
+                    hide_border = True
+                    custom_colour = False
+                else:
+                    hide_border = False
+                    custom_colour = None
+                grid.add_key(name, width, height, hide_border=hide_border, custom_colour=custom_colour)
+        return grid
+    
+    def _get_key_names(self):
+        all_strings = Language().get_strings(_new=True)
+        return all_strings['keyboard']['key']
+    
+    def calculate(self):
+        print 'Calculating pixels...'
+        (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
+        return {'Width': width,
+                'Height': height,
+                'Coordinates': coordinate_dict}
+    
+    def draw_image(self, file_path, font='arial.ttf'):
+        data = self.calculate()
+        
+        #Create image object
+        image = Image.new('RGB', (data['Width'], data['Height']))
+        image.paste(data['Coordinates']['Background'], (0, 0, data['Width'], data['Height']))
+        pixels = image.load()
+
+        #Add drop shadow
+        shadow = (64, 64, 64)
+        if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'] == (255, 255, 255, 255):
+            print 'Adding shadow...'
+            shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
+            for colour in data['Coordinates']['Fill']:
+                for x, y in data['Coordinates']['Fill'][colour]:
+                    pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
+    
+        #Fill colours
+        print 'Colouring keys...'
+        for colour in data['Coordinates']['Fill']:
+            for x, y in data['Coordinates']['Fill'][colour]:
+                pixels[x, y] = colour
+
+        #Draw border
+        print 'Drawing outlines...'
+        border = tuple(255 - i for i in data['Coordinates']['Background'])
+        for x, y in data['Coordinates']['Outline']:
+            pixels[x, y] = border
+    
+        #Draw text
+        print 'Adding text...'
+        draw = ImageDraw.Draw(image)
+        font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
+        font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
+        
+        #Generate stats
+        stats = ['Time elapsed: {}'.format(ticks_to_seconds(self.ticks, 60))]
+        total_presses = format_amount(sum(self.key_counts['Pressed'].values()), 'press', 
+                                      max_length=25, decimal_units=False)
         stats.append('Total key presses: {}'.format(total_presses))
         if CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time':
             stats.append('Colour based on how long keys were pressed for.')
         elif CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count':
             stats.append('Colour based on number of key presses.')
-        text = '\n'.join(stats)
-        draw.text((x, y), text, font=font_amount, fill=text_colour)
-    else:
+        stats_text = ['{}:'.format(self.name), '\n'.join(stats)]
         
-        x += FONT_OFFSET_X
-        
-        height_multiplier = max(0, values['Dimensions'][1] - 1)
-        if not height_multiplier:
-            y += FONT_OFFSET_Y
-        y += (KEY_SIZE - FONT_SIZE_MAIN) * height_multiplier + FONT_OFFSET_Y * height_multiplier
-        
-        #Ensure each key is at least at a constant height
-        if '\n' not in text:
-            text += '\n'
-        
-        draw.text((x, y), text, font=font_key, fill=text_colour)
-        
-        #Correctly place count at bottom of key
-        if height_multiplier:
-            y = values['Offset'][1] + (KEY_SIZE + KEY_PADDING) * height_multiplier + FONT_OFFSET_Y
-
-        y += (FONT_SIZE_MAIN + FONT_LINE_SPACING) * (1 + text.count('\n'))
-        
-        #Here either do count or percent, but not both as it won't fit
-        #I may pass in the key width into format_amount so it doesnt over-shorten things
-        output_type = 'count' #count or time
-        max_width = int(10 * values['Dimensions'][0] - 3)
+        #Write text to image
+        for values in data['Coordinates']['Text']:
+            x, y = values['Offset']
+            text = values['KeyName']
+            text_colour = values['Colour']
             
-        text = format_amount(values['Counts'][output_type], output_type,
-                             max_length=max_width, min_length=max_width-1, decimal_units=False)
-        draw.text((x, y), text, font=font_amount, fill=text_colour)
+            #Override for stats text
+            if text == '__STATS__':
+                draw.text((x, y), stats_text[0], font=font_key, fill=text_colour)
+                y += (FONT_SIZE_MAIN + FONT_LINE_SPACING)
+                draw.text((x, y), stats_text[1], font=font_amount, fill=text_colour)
+                continue
+            
+            height_multiplier = max(0, values['Dimensions'][1] - 1)
+            x += FONT_OFFSET_X
+            if not height_multiplier:
+                y += FONT_OFFSET_Y
+            y += (KEY_SIZE - FONT_SIZE_MAIN + FONT_OFFSET_Y) * height_multiplier
+            
+            #Ensure each key is at least at a constant height
+            if '\n' not in text:
+                text += '\n'
+                
+            draw.text((x, y), text, font=font_key, fill=text_colour)
+        
+            #Correctly place count at bottom of key
+            if height_multiplier:
+                y = values['Offset'][1] + (KEY_SIZE + KEY_PADDING) * height_multiplier + FONT_OFFSET_Y
 
-im.save('testimage.png', 'PNG')
-#im.show()
-print 'done'
+            y += (FONT_SIZE_MAIN + FONT_LINE_SPACING) * (1 + text.count('\n'))
+            
+            #Here either do count or percent, but not both as it won't fit
+            output_type = 'press' #press or time
+            max_width = int(10 * values['Dimensions'][0] - 3)
+                
+            text = format_amount(values['Counts'][output_type], output_type,
+                                 max_length=max_width, min_length=max_width-1, decimal_units=False)
+            draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
 
+        image.save(file_path, 'PNG')
+        print 'Saved image.'
+            
+            
+DrawKeyboard('Default').draw_image('testimage.png')
