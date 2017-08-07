@@ -412,7 +412,9 @@ for values in coordinate_dict['Text']:
         draw.text((x, y), text, font=font_key, fill=text_colour)
         y += (FONT_SIZE_MAIN + FONT_LINE_SPACING)
         stats = ['Time played: {}'.format(ticks_to_seconds(p['Ticks']['Total'], 60))]
-        stats.append('Total key presses: {}'.format(sum(key_counts['Pressed'].values())))
+        total_presses = sum(key_counts['Pressed'].values())
+        #25 length
+        stats.append('Total key presses: {}'.format(total_presses))
         if CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time':
             stats.append('Colour based on how long keys were pressed for.')
         elif CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count':
@@ -420,14 +422,24 @@ for values in coordinate_dict['Text']:
         text = '\n'.join(stats)
         draw.text((x, y), text, font=font_amount, fill=text_colour)
     else:
+        
         x += FONT_OFFSET_X
-        y += FONT_OFFSET_Y
+        
+        height_multiplier = max(0, values['Dimensions'][1] - 1)
+        if not height_multiplier:
+            y += FONT_OFFSET_Y
+        y += (KEY_SIZE - FONT_SIZE_MAIN) * height_multiplier + FONT_OFFSET_Y * height_multiplier
         
         #Ensure each key is at least at a constant height
         if '\n' not in text:
             text += '\n'
-            
-        draw.text((x, y), text, font=font_key, fill=text_colour)   
+        
+        draw.text((x, y), text, font=font_key, fill=text_colour)
+        
+        #Correctly place count at bottom of key
+        if height_multiplier:
+            y = values['Offset'][1] + (KEY_SIZE + KEY_PADDING) * height_multiplier + FONT_OFFSET_Y
+
         y += (FONT_SIZE_MAIN + FONT_LINE_SPACING) * (1 + text.count('\n'))
         
         #Here either do count or percent, but not both as it won't fit
