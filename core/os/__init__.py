@@ -83,6 +83,12 @@ def rename_file(old_name, new_name):
 
 
 def create_folder(folder_path):
+    
+    #Remove file from path
+    folders = folder_path.replace('\\', '/').split('/')
+    if not folders[-1] or '.' in folders[-1][1:]:
+        folder_path = '/'.join(folders[:-1])
+    
     try:
         os.makedirs(folder_path)
     except (FileExistsError, WindowsError):
