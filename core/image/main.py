@@ -12,28 +12,7 @@ from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
 from core.files import load_program
 from core.misc import print_override
-    
-
-def merge_array_max(arrays):
-    """Find the maximum values of different arrays."""
-    array_len = len(arrays)
-    if not array_len:
-        return None
-    elif array_len > 1:
-        return np.maximum.reduce(arrays)
-    else:
-        return arrays[0]
-
-
-def merge_array_add(arrays):
-    """Add the values of different arrays."""
-    array_len = len(arrays)
-    if not array_len:
-        return None
-    elif array_len > 1:
-        return np.add.reduce(arrays)
-    else:
-        return arrays[0]
+from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 
 
 def merge_resolutions(main_data, interpolate=False, multiple_selection=False, 
@@ -60,7 +39,6 @@ def merge_resolutions(main_data, interpolate=False, multiple_selection=False,
     if high_precision:
         max_x *= 2
         max_y *= 2
-    print max_x, max_y
     
     _max_height_x = int(round(max_x / output_resolution[0] * output_resolution[1]))
     if _max_height_x > max_y:
@@ -98,9 +76,9 @@ def merge_resolutions(main_data, interpolate=False, multiple_selection=False,
                                                                     i, max_count))
             else:
                 print_override('Processing {}x{} and resizing to {}x{}...'
-                               '({}/{})'.format(current_resolution[0], current_resolution[1],
-                                                max_resolution[0], max_resolution[1],
-                                                i, max_count))
+                               ' ({}/{})'.format(current_resolution[0], current_resolution[1],
+                                                 max_resolution[0], max_resolution[1],
+                                                 i, max_count))
 
             #Try find the highest and lowest value
             if _find_range:
@@ -136,10 +114,9 @@ def merge_resolutions(main_data, interpolate=False, multiple_selection=False,
             if max_resolution != current_resolution:
                 zoom_factor = (max_resolution[1] / current_resolution[1],
                                max_resolution[0] / current_resolution[0])
-                
-                numpy_arrays.append(zoom(np.array(new_data), zoom_factor, order=interpolate))
+                numpy_arrays.append(zoom(numpy_array(new_data), zoom_factor, order=interpolate))
             else:
-                numpy_arrays.append(np.array(new_data))
+                numpy_arrays.append(numpy_array(new_data))
     
     if _find_range:
         if session_start is not None:
@@ -197,7 +174,7 @@ def convert_to_rgb(image_array, colour_range):
     for i in p:
         results += result_data[i]
     
-    return np.array(results, dtype=np.uint8)
+    return numpy_array(results, dtype='uint8')
 
     
 def _rgb_process_worker(q_recv, q_send):
@@ -233,7 +210,7 @@ def _rgb_process_single(image_array, colour_range):
             if not count % one_percent:
                 print_override('{}% complete ({} pixels)'.format(int(round(100 * count / total)), count))
             
-    return np.array(new_data, dtype=np.uint8)
+    return numpy_array(new_data, dtype='uint8')
 
 
 class ImageName(object):
@@ -305,46 +282,30 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
     """Convert list of arrays into a heatmap."""
     #Add all arrays together
     print_override('Merging arrays...')
-    max_array = merge_array_add(numpy_arrays)
+    max_array = numpy_power(numpy_merge(numpy_arrays, 'add'), exponential_multiplier, dtype='float64')
     if max_array is None:
         return None
 
-    #Create a new numpy array and copy over the values
-    #I'm not sure if there's a way to skip this step since it seems a bit useless
-    print_override('Converting to heatmap...')
     h = len(max_array)
     w = len(max_array[0])
-    heatmap = np.zeros(h * w).reshape((h, w))
     height_range = range(h)
     width_range = range(w)
-    
-    #Copy over values
-    for x in width_range:
-        for y in height_range:
-            if exponential_multiplier == 1.0:
-                heatmap[y][x] = max_array[y][x] ** exponential_multiplier
-            else:
-                heatmap[y][x] = max_array[y][x]
 
     #Blur the array
-    print_override('Applying gaussian blur...')
-    heatmap = gaussian_filter(heatmap, sigma=gaussian_size)
+    print_override('Applying gaussian blur...')            
+    heatmap = gaussian_filter(max_array, sigma=gaussian_size)
 
     #Calculate the average of all the points
     print_override('Calculating average...')
-    total = [0, 0]
-    for x in width_range:
-        for y in height_range:
-            total[0] += 1
-            total[1] += heatmap[y][x]
+    total = numpy_sum(heatmap)
 
-    return ((0, total[1] / total[0]), heatmap)
+    return ((0, total / (w * h)), heatmap)
 
 
 def arrays_to_colour(colour_range, numpy_arrays):
     """Convert an array of floats or integers into an image object."""
 
-    max_array = merge_array_max(numpy_arrays)
+    max_array = numpy_merge(numpy_arrays, 'max')
     if max_array is None:
         return None
     
@@ -366,7 +327,6 @@ class RenderImage(object):
             raise ValueError('image type must be given as either tracks or clicks')
         
         session_start = self.data['Ticks']['Session']['Current'] if last_session else None
-        
         if not self.data['Ticks']['Total']:
             image_output = None
         
@@ -384,7 +344,7 @@ class RenderImage(object):
                 except ValueError:
                     default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
                     colour_map = ColourMap()[default_colours]
-                colour_range = ColourRange(min_value,max_value, colour_map)
+                colour_range = ColourRange(min_value, max_value, colour_map)
                 image_output = arrays_to_colour(colour_range, numpy_arrays)
                 image_name = self.name.generate('Tracks', reload=True)
             
@@ -394,6 +354,7 @@ class RenderImage(object):
                 mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
                 rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
                 mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
+                clicks = self.data['Maps']['Clicks']
                 numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple_selection=mb, 
                                                  session_start=session_start, _find_range=False,
                                                  high_precision=high_precision)
