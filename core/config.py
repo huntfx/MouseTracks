@@ -4,7 +4,7 @@ import time
 
 from core.compatibility import get_items
 from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE
-from core.os import get_resolution
+from core.os import get_resolution, create_folder
 
 
 class SimpleConfig(object):
@@ -146,9 +146,14 @@ class SimpleConfig(object):
                         output[-1] += '    // {}'.format(defaults[-1])
                 except IndexError:
                     pass
-        with open(self.file_name, 'w') as f:
-            f.write('\n'.join(output))
-
+        try:
+            with open(self.file_name, 'w') as f:
+                f.write('\n'.join(output))
+        except IOError:
+            create_folder(self.file_name)
+            with open(self.file_name, 'w') as f:
+                f.write('\n'.join(output))
+            
     def __getitem__(self, item):
         return self.data[item]
 
