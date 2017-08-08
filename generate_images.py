@@ -6,12 +6,12 @@ import sys
 from core.applications import RunningApplications, read_app_list
 from core.compatibility import input
 from core.config import CONFIG
-from core.constants import DEFAULT_NAME
+from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.files import list_data_files, format_name, load_program
 from core.language import Language
 from core.maths import round_up
 from core.messages import ticks_to_seconds, print_override
-from core.misc import simple_bit_mask
+from core.misc import value_select
     
     
 def user_generate():
@@ -37,6 +37,7 @@ def user_generate():
         page = 1
         limit = 15
         maximum = len(all_files)
+        print round_up(maximum / limit)
         total_pages = round_up(maximum / limit)
         change_sort = ['CURRENT_SORT_NAME', 2]
 
@@ -123,8 +124,15 @@ def user_generate():
             profile = programs[profile]
         except KeyError:
             pass
-    print_override(strings['PROFILE_SELECTED'].format(P=profile))
     
+    #Load functions
+    print_override(strings['IMPORT_MODULES'])
+    from core.image.main import RenderImage
+
+    print_override(strings['LOAD_PROFILE'].format(P=profile))
+    r = RenderImage(profile)
+    
+    #Check if profile is running
     try:
         current_profile = format_name(RunningApplications().check()[0])
     except TypeError:
@@ -154,15 +162,18 @@ def user_generate():
 
     generate_tracks = False
     generate_heatmap = False
-
+    
+    default_options = [True, True, True, False]
+    
     print_override(strings['GENERATE_OPTIONS'])
-    print_override(strings['TYPE_OPTIONS'])
+    default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
+    print_override(strings['TYPE_OPTIONS'].format(V=default_option_text))
     print_override('1: {}'.format(strings['TRACK_NAME']))
     print_override('2: {}'.format(strings['CLICK_NAME']))
     print_override('3: {} (not working)'.format(strings['KEY_NAME']))
     print_override('4: {} (not working)'.format(strings['RAW_NAME']))
-
-    result = simple_bit_mask(raw_input().split(), 2)
+    
+    result = value_select(raw_input().split(), default_options, start=1)
 
     if result[0]:
         generate_tracks = True
@@ -171,11 +182,17 @@ def user_generate():
         
         generate_heatmap = True
         print_override('Which mouse buttons should be included in the heatmap?.')
-        print_override(strings['TYPE_OPTIONS'])
+        
+        default_options = [CONFIG['GenerateHeatmap']['_MouseButtonLeft'], 
+                           CONFIG['GenerateHeatmap']['_MouseButtonMiddle'],
+                           CONFIG['GenerateHeatmap']['_MouseButtonRight']]
+        default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
+        print_override(strings['TYPE_OPTIONS'].format(V=default_option_text))
+        
         print_override('1: {}'.format(strings['MOUSE_BUTTON_LEFT']))
         print_override('2: {}'.format(strings['MOUSE_BUTTON_MIDDLE']))
         print_override('3: {}'.format(strings['MOUSE_BUTTON_RIGHT']))
-        heatmap_buttons = simple_bit_mask(raw_input().split(), 3)
+        heatmap_buttons = value_select(raw_input().split(), default_options, start=1)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
         CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = heatmap_buttons[1]
         CONFIG['GenerateHeatmap']['_MouseButtonRight'] = heatmap_buttons[2]
@@ -184,17 +201,11 @@ def user_generate():
 
 
     if generate_tracks or generate_heatmap:
-        print_override(strings['IMPORT_MODULES'])
-        from core.image import RenderImage
-
-        print_override(strings['LOAD_PROFILE'].format(P=profile))
-        r = RenderImage(profile)
 
         last_session_start = r.data['Ticks']['Session']['Total']
         last_session_end = r.data['Ticks']['Total']
-        ups = CONFIG['Main']['UpdatesPerSecond']
-        all_time = ticks_to_seconds(last_session_end, ups)
-        last_session_time = ticks_to_seconds(last_session_end - last_session_start, ups)
+        all_time = ticks_to_seconds(last_session_end, UPDATES_PER_SECOND)
+        last_session_time = ticks_to_seconds(last_session_end - last_session_start, UPDATES_PER_SECOND)
         
         if not last_session_time or last_session_time == all_time:
             last_session = False
@@ -202,10 +213,11 @@ def user_generate():
         else:
             while True:
                 print_override(strings['SESSION_OPTION'])
+                
                 print_override('1: {} [{}]'.format(strings['SESSION_ALL'].format(T=all_time), strings['DEFAULT']))
                 print_override('2: {}'.format(strings['SESSION_LAST'].format(T=last_session_time)))
 
-                result = simple_bit_mask(raw_input().split(), 2, default_all=False)
+                result = value_select(raw_input().split(), [True, False], start=1)
                 if result[0] and result[1]:
                     print_override(strings['SELECT_ONE_OPTION'])
                 elif result[1]:
