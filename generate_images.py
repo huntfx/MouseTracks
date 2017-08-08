@@ -162,6 +162,7 @@ def user_generate():
 
     generate_tracks = False
     generate_heatmap = False
+    generate_keyboard = False
     
     default_options = [True, True, True, False]
     
@@ -170,10 +171,12 @@ def user_generate():
     print_override(strings['TYPE_OPTIONS'].format(V=default_option_text))
     print_override('1: {}'.format(strings['TRACK_NAME']))
     print_override('2: {}'.format(strings['CLICK_NAME']))
-    print_override('3: {} (not working)'.format(strings['KEY_NAME']))
+    print_override('3: {}'.format(strings['KEY_NAME']))
     print_override('4: {} (not working)'.format(strings['RAW_NAME']))
     
-    result = value_select(raw_input().split(), default_options, start=1)
+    selection = map(int, raw_input().split())
+    result = value_select(selection, default_options, start=1)
+    print result
 
     if result[0]:
         generate_tracks = True
@@ -192,15 +195,18 @@ def user_generate():
         print_override('1: {}'.format(strings['MOUSE_BUTTON_LEFT']))
         print_override('2: {}'.format(strings['MOUSE_BUTTON_MIDDLE']))
         print_override('3: {}'.format(strings['MOUSE_BUTTON_RIGHT']))
-        heatmap_buttons = value_select(raw_input().split(), default_options, start=1)
+        selection = map(int, raw_input().split())
+        heatmap_buttons = value_select(selection, default_options, start=1)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
         CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = heatmap_buttons[1]
         CONFIG['GenerateHeatmap']['_MouseButtonRight'] = heatmap_buttons[2]
         if not any(heatmap_buttons):
             generate_heatmap = False
 
+    if result[2]:
+        generate_keyboard = True
 
-    if generate_tracks or generate_heatmap:
+    if generate_tracks or generate_heatmap or generate_keyboard:
 
         last_session_start = r.data['Ticks']['Session']['Total']
         last_session_end = r.data['Ticks']['Total']
@@ -217,7 +223,8 @@ def user_generate():
                 print_override('1: {} [{}]'.format(strings['SESSION_ALL'].format(T=all_time), strings['DEFAULT']))
                 print_override('2: {}'.format(strings['SESSION_LAST'].format(T=last_session_time)))
 
-                result = value_select(raw_input().split(), [True, False], start=1)
+                selection = map(int, raw_input().split())
+                result = value_select(selection, [True, False], start=1)
                 if result[0] and result[1]:
                     print_override(strings['SELECT_ONE_OPTION'])
                 elif result[1]:
@@ -232,6 +239,9 @@ def user_generate():
             r.generate('Tracks', last_session)
         if generate_heatmap:
             r.generate('Clicks', last_session)
+        if generate_keyboard:
+            r.generate('Keyboard', last_session)
+            
     else:
         print_override(strings['NOTHING_CHOSEN'])
 
