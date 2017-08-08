@@ -5,6 +5,7 @@ import sys
 
 from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 from core.image._scipy import blur, upscale
+from core.image.keyboard import DrawKeyboard
 from core.colours import ColourRange, ColourMap
 from core.compatibility import range, get_items
 from core.config import CONFIG, _config_defaults
@@ -213,7 +214,7 @@ class ImageName(object):
     Not implemented yet: creation time | modify time | exe name
     """
     def __init__(self, program_name):
-        self.name = program_name
+        self.name = program_name.replace('\\', '').replace('/', '')
         self.reload()
 
     def reload(self):
@@ -230,6 +231,8 @@ class ImageName(object):
                                 'RMB': CONFIG['GenerateHeatmap']['_MouseButtonRight']}
 
         self.track_colour = str(CONFIG['GenerateTracks']['ColourProfile'])
+
+        self.keyboard_colour = str(CONFIG['GenerateKeyboard']['ColourProfile'])
 
     def generate(self, image_type, reload=False):
     
@@ -255,14 +258,19 @@ class ImageName(object):
         elif image_type.lower() == 'tracks':
             name = CONFIG['GenerateTracks']['NameFormat']
             name = name.replace('[ColourProfile]', self.track_colour)
+            
+        elif image_type.lower() == 'keyboard':
+            name = CONFIG['GenerateKeyboard']['NameFormat']
+            name = name.replace('[ColourProfile]', self.keyboard_colour)
+        
         else:
             raise ValueError('incorred image type: {}, '
-                             'must be tracks or clicks'.format(image_type))
+                             'must be tracks, clicks or keyboard'.format(image_type))
         name = name.replace('[UResX]', self.upscale_res_x)
         name = name.replace('[UResY]', self.upscale_res_y)
         name = name.replace('[ResX]', self.output_res_x)
         name = name.replace('[ResY]', self.output_res_y)
-        name = name.replace('[FriendlyName]', self.name)
+        name = name.replace('[Name]', self.name)
 
         #Replace invalid characters
         invalid_chars = ':*?"<>|'
@@ -313,8 +321,8 @@ class RenderImage(object):
 
     def generate(self, image_type, last_session=False, save_image=True):
         image_type = image_type.lower()
-        if image_type not in ('tracks', 'clicks'):
-            raise ValueError('image type must be given as either tracks or clicks')
+        if image_type not in ('tracks', 'clicks', 'keyboard'):
+            raise ValueError('image type \'{}\' not supported'.format(image_type))
         
         session_start = self.data['Ticks']['Session']['Current'] if last_session else None
         if not self.data['Ticks']['Total']:
@@ -323,6 +331,7 @@ class RenderImage(object):
         else:
             
             high_precision = CONFIG['GenerateImages']['HighPrecision']
+            allow_resize = True
             
             #Generate mouse tracks image
             if image_type == 'tracks':
@@ -373,13 +382,20 @@ class RenderImage(object):
               
                 image_name = self.name.generate('Clicks', reload=True)
             
-            resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
-                          CONFIG['GenerateImages']['OutputResolutionY'])
-                          
+            elif image_type == 'keyboard':
+                allow_resize = False
+                kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
+                image_output = kb.draw_image()
+                image_name = self.name.generate('Keyboard', reload=True)
+            
+        resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
+                      CONFIG['GenerateImages']['OutputResolutionY'])
+            
         if image_output is None:
             print_override('No image data was found for type "{}"'.format(image_type))
         else:
-            image_output = image_output.resize(resolution, Image.ANTIALIAS)
+            if allow_resize:
+                image_output = image_output.resize(resolution, Image.ANTIALIAS)
             if save_image:
                 print_override('Saving image...')
                 image_output.save(image_name)
