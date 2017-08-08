@@ -3,7 +3,7 @@ from locale import getdefaultlocale
 import time
 
 from core.compatibility import get_items
-from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE
+from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT
 from core.os import get_resolution, create_folder
 
 
@@ -172,8 +172,6 @@ except ValueError:
     
 _config_defaults = {
     'Main': {
-        'UpdatesPerSecond': (60, int, 1, 'It is recommended to leave at 60 even if'
-                                         ' you have a higher refresh rate.'),
         'RepeatKeyPress': (0.0, float, 0, 'Record a new key press at this frequency'
                                           ' if a key is being held down (set to 0.0 to disable).'),
         'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
@@ -184,8 +182,8 @@ _config_defaults = {
     'CompressMaps': {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
                      'This helps keep the most recent data visibile.'],
-        'TrackMaximum': (425000, int, 1),
-        'TrackReduction': (1.1, float)
+        'TrackMaximum': (425000, int, 0, MAX_INT),
+        'TrackReduction': (1.1, float, 1.01)
     },
     'Save': {
         'Frequency': (180, int, 10, 'Choose how often to save the file, don\'t set it too low'
@@ -219,7 +217,8 @@ _config_defaults = {
                      ' is higher than or equal to the highest recorded resolution.'],
         '_UpscaleResolutionX': (_res_x, int, 1),
         '_UpscaleResolutionY': (_res_y, int, 1),
-        'HighPrecision': (False, bool),
+        'HighPrecision': (False, bool, 'Enable this for higher quality images'
+                                       ' that take longer to generate.'),
         'OutputResolutionX': (_res_x, int, 1),
         'OutputResolutionY': (_res_y, int, 1),
         'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
@@ -227,7 +226,7 @@ _config_defaults = {
         'FileType': ('png', str, (False, 'jpg', 'png'))
     },
     'GenerateHeatmap': {
-        'NameFormat': ('{}\\Images\\[FriendlyName] Heatmap ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Images\\[Name] Clicks ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
         '_MouseButtonLeft': (True, bool),
         '_MouseButtonMiddle': (True, bool),
         '_MouseButtonRight': (True, bool),
@@ -249,32 +248,32 @@ _config_defaults = {
                                              ' to get it right.')
     },
     'GenerateTracks': {
-        'NameFormat': ('{}\\Images\\[FriendlyName] Tracks - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Images\\[Name] Tracks - [ColourProfile]'.format(DEFAULT_PATH), str),
         'ColourProfile': ('WhiteToBlack', str)
     },
     'GenerateKeyboard':{
-        'NameFormat': ('{}\\Images\\[FriendlyName] Keyboard Heatmap - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Images\\[Name] Keyboard - [ColourProfile]'.format(DEFAULT_PATH), str),
         'ColourProfile': ('Aqua', str),
         'ExtendedKeyboard': (True, bool, 'Set if the full keyboard should be shown.'),
         'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
-        'KeySize': (65, int, 0),
-        'KeyCornerRadius': (3, int, 0),
-        'KeyPadding': (8, int, 0),
+        'KeySize': (65.0, float, 0),
+        'KeyCornerRadius': (3.0, float, 0),
+        'KeyPadding': (8.0, float, 0),
         'KeyBorder': (0.6, float, 0),
         'DropShadowX': (1.25, float, 0),
         'DropShadowY': (1.5, float, 0),
-        'ImagePadding': (16, int, 0),
-        'FontSizeMain': (17, int, 0),
-        'FontSizeStats': (13, int, 0),
-        'FontHeightOffset': (5, int),
-        'FontWidthOffset': (5, int),
-        'FontSpacing': (5, int),
-        'LinearScale': (False, bool, ('If using linear, it is recommended to use a simple colour map such as'
+        'ImagePadding': (16.0, float, 0),
+        'FontSizeMain': (17.0, float, 0),
+        'FontSizeStats': (13.0, float, 0),
+        'FontHeightOffset': (5.0, float),
+        'FontWidthOffset': (5.0, float),
+        'FontSpacing': (5.0, float),
+        'LinearScale': (False, bool, ('If enabled, it is recommended to use a simple colour map such as'
                                       ' "WhiteTo____".')),
         'LinearExponential': (1.0, float, 0),
-        'DataSet': ('time', str, (False, 'time', 'count', 'Set if the colours should be determined by the'
-                                                          ' total time the key has been held (time), '
-                                                          ' or the number of presses (count).'))
+        'DataSet': ('time', str, (False, 'time', 'press'), 'Set if the colours should be determined by the'
+                                                          ' total time the key has been held (time),'
+                                                          ' or the number of presses (press).')
     },
     'SavedSettings': {
         '__note__': ['Anything put here is not for editing.'],
