@@ -5,7 +5,7 @@ import sys
 import os
 import time
 
-from core.compatibility import input
+from core.compatibility import input, range
 from core.constants import DEFAULT_PATH, format_file_path
 from core.messages import print_override
 from core.notify import *
@@ -37,31 +37,14 @@ class RefreshRateLimiter(object):
     def __exit__(self, *args):
         time_difference = time.time() - self.time
         time.sleep(max(0, self.frame_time - time_difference))
-    
 
-def simple_bit_mask(selection, size, default_all=True):
-    """Turn a range of numbers into True and False.
-    For example, [1, 3, 4] would result in [True, False, True, True].
-    I'm aware it's probably a bit overkill, kinda liked the idea though.
-    """
-    
-    #Calculate total
-    total = 0
-    for n in selection:
-        try:
-            total += pow(2, int(n) - 1)
-        except ValueError:
-            pass
-    
-    #Convert to True or False
-    values = list(map(bool, list(map(int, str(bin(total))[2:]))[::-1]))
-    size_difference = max(0, size - len(values))
-    if size_difference:
-        values += [False] * size_difference
-    
-    #Set to use everything if an empty selection is given
-    if default_all:
-        if not any(values):
-            values = [True] * size
-    
-    return values
+        
+def value_select(selection, default, start=0):
+    """Convert a list of numbers into a range of True/False."""
+    result = []
+    for i, default_value in enumerate(default):
+        if i + start in selection:
+            result.append(True)
+        else:
+            result.append(default_value)
+    return result
