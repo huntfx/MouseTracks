@@ -12,6 +12,9 @@ from core.messages import ticks_to_seconds
 
 MULTIPLIER = CONFIG['GenerateKeyboard']['SizeMultiplier']
 
+if CONFIG['GenerateImages']['HighPrecision']:
+    MULTIPLIER = max(4, MULTIPLIER)
+
 KEY_SIZE = round_int(CONFIG['GenerateKeyboard']['KeySize'] * MULTIPLIER)
 
 KEY_CORNER_RADIUS = round_int(CONFIG['GenerateKeyboard']['KeyCornerRadius'] * MULTIPLIER)
@@ -339,15 +342,21 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
 
         
 class DrawKeyboard(object):
-    def __init__(self, profile_name):
+    def __init__(self, profile_name, data=None, last_session=False):
         self.name = profile_name
+        self.last_session = last_session
         print 'Loading profile...'
-        self.reload()
+        self.reload(data)
     
-    def reload(self):
-        profile = load_program(self.name)
-        self.key_counts = profile['Keys']['All']
-        self.ticks = profile['Ticks']['Total']
+    def reload(self, data=None):
+        if data is None:
+            data = load_program(self.name)
+        if self.last_session:
+            self.key_counts = data['Keys']['Session']
+            self.ticks = data['Ticks']['Total'] - data['Ticks']['Session']['Total']
+        else:
+            self.key_counts = data['Keys']['All']
+            self.ticks = data['Ticks']['Total']
         self.keys = self._get_key_names()
         self.grid = self._create_grid()
     
@@ -378,7 +387,7 @@ class DrawKeyboard(object):
                 'Height': height,
                 'Coordinates': coordinate_dict}
     
-    def draw_image(self, file_path, font='arial.ttf'):
+    def draw_image(self, file_path=None, font='arial.ttf'):
         data = self.calculate()
         
         #Create image object
@@ -463,8 +472,7 @@ class DrawKeyboard(object):
                                  max_length=max_width, min_length=max_width-1, decimal_units=False)
             draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
 
-        image.save(file_path, 'PNG')
-        print 'Saved image.'
-            
-            
-DrawKeyboard('Default').draw_image('testimage.png')
+        if file_path:
+            image.save(file_path, 'PNG')
+            print 'Saved image.'
+        return image
