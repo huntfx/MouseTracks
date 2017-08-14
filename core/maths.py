@@ -198,7 +198,8 @@ def round_int(n, min_value=None, max_value=None):
     """Round a number to an integer.
     It saves having to use a ton of brackets in certain situations.
     """
-    value = int(round(n))
+    if not isinstance(n, int):
+        value = int(round(float(n)))
     if min_value is not None:
         value = max(value, min_value)
     if max_value is not None:
