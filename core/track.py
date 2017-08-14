@@ -3,10 +3,11 @@ from __future__ import division, absolute_import
 import time
 import traceback
 
+from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
+from core.constants import MAX_INT
 from core.files import load_program, save_program, prepare_file
-from core.applications import RunningApplications
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
@@ -119,7 +120,10 @@ def background_process(q_recv, q_send):
                  'PingTimeout': CONFIG['Timer']['_Ping'] + 1}
         
         NOTIFY(DATA_LOADED)
-        NOTIFY(QUEUE_SIZE, q_recv.qsize())
+        try:
+            NOTIFY(QUEUE_SIZE, q_recv.qsize())
+        except NotImplementedError:
+            pass
         NOTIFY.send(q_send)
         
         
@@ -140,12 +144,20 @@ def background_process(q_recv, q_send):
             if 'Save' in received_data:
                 if store['ActivitySinceLastSave']:
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
-                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     store['ActivitySinceLastSave'] = False
                     store['SavesSkipped'] = 0
+                    
+                    try:
+                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    except NotImplementedError:
+                        pass
                 else:
                     store['SavesSkipped'] += 1
-                    NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'], q_recv.qsize())
+                    
+                    try:
+                        NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'], q_recv.qsize())
+                    except NotImplementedError:
+                        pass
                 q_send.put({'SaveFinished': None})
 
             if 'Program' in received_data:
@@ -175,8 +187,11 @@ def background_process(q_recv, q_send):
                         NOTIFY(DATA_LOADED)
                     else:
                         NOTIFY(DATA_NOTFOUND)
-                            
-                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    
+                    try:
+                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    except NotImplementedError:
+                        pass
                 NOTIFY.send(q_send)
 
             if 'Resolution' in received_data:
@@ -266,6 +281,9 @@ def background_process(q_recv, q_send):
                 store['Data']['Ticks']['Current']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
+                max_track_value = CONFIG['CompressMaps']['TrackMaximum']
+                if not max_track_value:
+                    max_track_value = MAX_INT
                 if store['Data']['Ticks']['Current']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
                     compress_multplier = CONFIG['CompressMaps']['TrackReduction']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
@@ -280,7 +298,10 @@ def background_process(q_recv, q_send):
                             del tracks[resolution]
                             
                     NOTIFY(TRACK_COMPRESS_END, 'track')
-                    NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    try:
+                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
+                    except NotImplementedError:
+                        pass
                     store['Data']['Ticks']['Current']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Session']['Current'] //= compress_multplier
 
@@ -299,7 +320,8 @@ def background_process(q_recv, q_send):
                                 resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
                             except TypeError:
                                 continue
-                            
+                        
+                        _check_resolution(store, resolution)
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
                     else:
