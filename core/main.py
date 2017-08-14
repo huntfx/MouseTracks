@@ -5,6 +5,7 @@ import time
 
 from core.compatibility import get_items
 from core.config import CONFIG
+from core.constants import UPDATES_PER_SECOND
 from core.misc import RefreshRateLimiter, error_output
 from core.messages import time_format, print_override
 from core.notify import *
@@ -28,13 +29,12 @@ def start_tracking():
     
     mouse_inactive_delay = 2
 
-    updates_per_second = CONFIG['Main']['UpdatesPerSecond']
     timer = {'UpdateScreen': CONFIG['Timer']['CheckResolution'],
              'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
              'Save': CONFIG['Save']['Frequency'],
              'ReloadProgramList': CONFIG['Timer']['ReloadPrograms'],
              'UpdateQueuedCommands': CONFIG['Timer']['_ShowQueuedCommands']}
-    timer = {k: v * updates_per_second for k, v in get_items(timer)}
+    timer = {k: v * UPDATES_PER_SECOND for k, v in get_items(timer)}
 
     store = {'Resolution': {'Current': monitor_info(),
                             'Previous': None,
@@ -68,7 +68,7 @@ def start_tracking():
     i = 0
     NOTIFY(START_MAIN)
     while True:
-        with RefreshRateLimiter(updates_per_second) as limiter:
+        with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
             
             #Send data to thread
             try:
@@ -298,7 +298,10 @@ def start_tracking():
 
             #Update user about the queue size
             if not i % timer['UpdateQueuedCommands'] and store['LastActivity'] > i - timer['Save']:
-                NOTIFY(QUEUE_SIZE, q_send.qsize())
+                try:
+                    NOTIFY(QUEUE_SIZE, q_send.qsize())
+                except NotImplementedError:
+                    pass
             
             #Send save request
             if store['Save']['Finished'] and i and not i % store['Save']['Next']:
