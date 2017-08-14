@@ -3,6 +3,8 @@ from __future__ import division, absolute_import
 from core.os import get_documents_path, read_env_var
 
 
+UPDATES_PER_SECOND = 60
+
 DEFAULT_NAME = 'Default'
 
 DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
@@ -12,6 +14,8 @@ CONFIG_PATH = '{}\\config.ini'.format(DEFAULT_PATH)
 APP_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/AppList.txt'
 
 DEFAULT_LANGUAGE = 'en_US'
+
+MAX_INT = 2**64 - 1
 
 
 def format_file_path(path):
