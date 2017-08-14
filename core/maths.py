@@ -16,6 +16,8 @@ def calculate_line(start, end):
     Does not include the start and end point.
     """
     result = []
+    start = round_int(start)
+    end = round_int(end)
     
     #Return nothing if the two points are the same
     if start == end:
@@ -187,10 +189,10 @@ def calculate_circle(radius, segments=(True, True, True, True)):
     
         
 def round_up(n):
-    """Quick way to round numbers without importing the math library."""
+    """Quick way to round up numbers without importing the math library."""
     i = int(n)
     return i if i == n else i + 1
-    
+
 
 def round_int(n, min_value=None, max_value=None):
     """Round a number to an integer.
