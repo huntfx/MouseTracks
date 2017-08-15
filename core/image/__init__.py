@@ -6,12 +6,11 @@ import sys
 from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 from core.image._scipy import blur, upscale
 from core.image.keyboard import DrawKeyboard
-from core.colours import ColourRange, ColourMap
-from core.compatibility import range, get_items
+from core.image.colours import ColourRange, ColourMap
+from core.compatibility import range, get_items, _print
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
 from core.files import load_program
-from core.misc import print_override
 
 
 def merge_resolutions(main_data, multiple_selection=False, 
@@ -70,11 +69,11 @@ def merge_resolutions(main_data, multiple_selection=False,
         for data in array_list:
             i += 1
             if current_resolution == max_resolution:
-                print_override('Processing {}x{}... ({}/{})'.format(current_resolution[0], 
+                _print('Processing {}x{}... ({}/{})'.format(current_resolution[0], 
                                                                     current_resolution[1],
                                                                     i, max_count))
             else:
-                print_override('Processing {}x{} and resizing to {}x{}...'
+                _print('Processing {}x{} and resizing to {}x{}...'
                                ' ({}/{})'.format(current_resolution[0], current_resolution[1],
                                                  max_resolution[0], max_resolution[1],
                                                  i, max_count))
@@ -128,7 +127,7 @@ def convert_to_rgb(image_array, colour_range):
     num_processes = CONFIG['GenerateImages']['AllowedCores']
     max_cores = cpu_count()
     if not 0 < num_processes <= max_cores:
-        print_override('Splitting up data for each process...')
+        _print('Splitting up data for each process...')
         num_processes = max_cores
         
     if num_processes == 1:
@@ -154,9 +153,9 @@ def convert_to_rgb(image_array, colour_range):
         q_send.put((i, width_range, height_range, colour_range, image_array))
         
         Process(target=_rgb_process_worker, args=(q_send, q_recv)).start()
-        print_override('Started process {}.'.format(i + 1))
+        _print('Started process {}.'.format(i + 1))
     
-    print_override('Waiting for processes to finish...')
+    _print('Waiting for processes to finish...')
     
     #Wait for the results to come back
     result_data = {}
@@ -204,7 +203,7 @@ def _rgb_process_single(image_array, colour_range):
             new_data[-1].append(colour_range[image_array[y][x]])
             count += 1
             if not count % one_percent:
-                print_override('{}% complete ({} pixels)'.format(int(round(100 * count / total)), count))
+                _print('{}% complete ({} pixels)'.format(int(round(100 * count / total)), count))
             
     return numpy_array(new_data, dtype='uint8')
 
@@ -284,17 +283,17 @@ class ImageName(object):
 def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
     """Convert list of arrays into a heatmap."""
     #Add all arrays together
-    print_override('Merging arrays...')
+    _print('Merging arrays...')
     max_array = numpy_power(numpy_merge(numpy_arrays, 'add'), exponential_multiplier, dtype='float64')
     if max_array is None:
         return None
 
     #Blur the array
-    print_override('Applying gaussian blur...')            
+    _print('Applying gaussian blur...')            
     heatmap = blur(max_array, gaussian_size)
 
     #Calculate the average of all the points
-    print_override('Calculating average...')
+    _print('Calculating average...')
     average = numpy_sum(heatmap) / heatmap.size
     
     return ((0, average), heatmap)
@@ -365,12 +364,12 @@ class RenderImage(object):
                 #Adjust range of heatmap            
                 if CONFIG['GenerateHeatmap']['ForceMaximumValue']:
                     max_value = CONFIG['GenerateHeatmap']['ForceMaximumValue']
-                    print_override('Manually set highest range to {}'.format(max_value))
+                    _print('Manually set highest range to {}'.format(max_value))
                 else:
                     max_value *= CONFIG['GenerateHeatmap']['MaximumValueMultiplier']
                 
                 #Convert each point to an RGB tuple
-                print_override('Converting to RGB...')
+                _print('Converting to RGB...')
                 try:
                     colour_map = ColourMap()[CONFIG['GenerateHeatmap']['ColourProfile']]
                 except ValueError:
@@ -392,12 +391,12 @@ class RenderImage(object):
                       CONFIG['GenerateImages']['OutputResolutionY'])
             
         if image_output is None:
-            print_override('No image data was found for type "{}"'.format(image_type))
+            _print('No image data was found for type "{}"'.format(image_type))
         else:
             if allow_resize:
                 image_output = image_output.resize(resolution, Image.ANTIALIAS)
             if save_image:
-                print_override('Saving image...')
+                _print('Saving image...')
                 image_output.save(image_name)
-                print_override('Finished saving.')
+                _print('Finished saving.')
         return image_output
