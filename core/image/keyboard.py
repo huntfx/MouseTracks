@@ -1,8 +1,8 @@
 from __future__ import division
 from PIL import Image, ImageFont, ImageDraw
 
-from core.colours import ColourRange, ColourMap, get_luminance, COLOURS_MAIN
-from core.compatibility import get_items
+from core.image.colours import ColourRange, ColourMap, get_luminance, COLOURS_MAIN
+from core.compatibility import get_items, range
 from core.config import CONFIG
 from core.language import Language
 from core.files import load_program
@@ -55,8 +55,8 @@ class KeyboardButton(object):
         self.y = y
         self.x_len = x_len
         self.y_len = y_len
-        x_range = range(x, x + x_len)
-        y_range = range(y, y + y_len)
+        x_range = tuple(range(x, x + x_len))
+        y_range = tuple(range(y, y + y_len))
         
         #Cache range (and fix error with radius of 0)
         i_start = KEY_CORNER_RADIUS + 1
@@ -91,7 +91,7 @@ class KeyboardButton(object):
         
         #Rounded corner thickness
         #This is a little brute force but everything else I tried didn't work
-        r = range(border)
+        r = tuple(range(border))
         for x, y in top_left:
             coordinates += [(x-i, y-j) for i in r for j in r]
         for x, y in top_right:
