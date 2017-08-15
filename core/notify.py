@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
 from core.config import CONFIG
-from core.constants import DEFAULT_NAME
+from core.constants import DEFAULT_NAME, DEFAULT_PATH, format_file_path
 from core.language import Language
+from core.os import get_documents_path
 
 STRINGS = Language().get_strings()
 MESSAGE_DEBUG = -1
@@ -27,6 +28,9 @@ APPLICATION_QUIT = 49
 APPLICATION_RELOAD = 50
 APPLICATION_LISTEN = 51
 APPLICATION_LOADING = 52
+APPLIST_UPDATE_START = 53
+APPLIST_UPDATE_SUCCESS = 54
+APPLIST_UPDATE_FAIL = 55
 SAVE_START = 64
 SAVE_SUCCESS = 65
 SAVE_FAIL = 66
@@ -38,11 +42,10 @@ START_MAIN = 80
 START_THREAD = 81
 DATA_LOADED = 82
 DATA_NOTFOUND = 83
+MT_PATH = 84
 QUEUE_SIZE = 96
-THREAD_EXIT = 97
-APPLIST_UPDATE_START = 53
-APPLIST_UPDATE_SUCCESS = 54
-APPLIST_UPDATE_FAIL = 55
+PROCESS_EXIT = 112
+THREAD_EXIT = 113
 
 
 def _mb_text(id):
@@ -157,10 +160,16 @@ class Notify(object):
             q1(STRINGS['DATA_LOADED'])
         if message_id == DATA_NOTFOUND:
             q1(STRINGS['DATA_NOTFOUND'])
+        if message_id == MT_PATH:
+            q2(STRINGS['MT_PATH'].format(P=format_file_path(DEFAULT_PATH)))
         if message_id == QUEUE_SIZE:
             single = STRINGS['COMMAND_SINGLE']
             plural = STRINGS['COMMAND_PLURAL']
             q1(STRINGS['COMMAND_COUNT'].format(N=args[0], C=single if args[0] == 1 else plural))
+        if message_id == PROCESS_EXIT:
+            q2(STRINGS['PROCESS_EXIT'])
+        if message_id == THREAD_EXIT:
+            q2(STRINGS['THREAD_EXIT'])
 
     def get_output(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
