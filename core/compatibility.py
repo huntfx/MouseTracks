@@ -37,7 +37,7 @@ class PythonVersion(object):
         return int(self.MAJOR)
     
     def __str__(self):
-        return '{}.{}.{}'.format(str, (self.MAJOR, self.MINOR, self.MICRO))
+        return '{}.{}.{}'.format(self.MAJOR, self.MINOR, self.MICRO)
     
     def _compare(self, value):
         try:
