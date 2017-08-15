@@ -19,13 +19,15 @@ else:
 
 DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
 
-DATA_EXTENSION = 'data'
+DATA_EXTENSION = '.data'
 
-DATA_NAME = '[PROGRAM]'
+DATA_NAME = '[PROGRAM]' + DATA_EXTENSION
 
 DATA_BACKUP_FOLDER = '.backup'
 
 DATA_TEMP_FOLDER = '.temp'
+
+DATA_SAVED_FOLDER = 'Saved'
 
 
 def format_name(name):
@@ -41,7 +43,7 @@ def _get_paths(program_name):
         program_name = program_name[0]
     name_format = format_name(program_name)
     
-    name = '{}.{}'.format(DATA_NAME.replace('[PROGRAM]', name_format), DATA_EXTENSION)
+    name = '{}'.format(DATA_NAME.replace('[PROGRAM]', name_format))
     new_name = '{}/{}'.format(DATA_FOLDER, name)
     backup_folder = '{}/{}'.format(DATA_FOLDER, DATA_BACKUP_FOLDER)
     backup_name = '{}/{}'.format(backup_folder, name)
@@ -50,7 +52,6 @@ def _get_paths(program_name):
     
     return {'Main': new_name, 'Backup': backup_name, 'Temp': temp_name,
             'BackupFolder': backup_folder, 'TempFolder': temp_folder}
-    
 
 
 def prepare_file(data):
@@ -133,7 +134,6 @@ def list_data_files():
     all_files = list_directory(DATA_FOLDER)
     if all_files is None:
         return []
-    extension = '.{}'.format(DATA_EXTENSION)
     date_modified = {f: get_modified_time(os.path.join(DATA_FOLDER, f)) for f in all_files}
     date_sort = sorted(get_items(date_modified), key=itemgetter(1))
-    return [k.replace(extension, '') for k, v in date_sort if k.endswith(DATA_EXTENSION)][::-1]
+    return [k.replace(DATA_EXTENSION, '') for k, v in date_sort if k.endswith(DATA_EXTENSION)][::-1]
