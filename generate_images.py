@@ -4,21 +4,21 @@ import time
 import sys
 
 from core.applications import RunningApplications, read_app_list
-from core.compatibility import input
+from core.compatibility import input, _print
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.files import list_data_files, format_name, load_program
+from core.input import value_select
 from core.language import Language
 from core.maths import round_up
-from core.messages import ticks_to_seconds, print_override
-from core.misc import value_select
+from core.messages import ticks_to_seconds
     
     
 def user_generate():
     CONFIG.save()
     
     strings = Language().get_strings()
-    print_override(strings['TYPE_PROFILE'].format(L=strings['LIST']))
+    _print(strings['TYPE_PROFILE'].format(L=strings['LIST']))
     profile = raw_input()
 
     if profile.lower() == strings['LIST'].lower():
@@ -26,8 +26,8 @@ def user_generate():
         #Read the data folder and format names
         all_files = list_data_files()
         if not all_files:
-            print_override(strings['DATA_FOLDER_EMPTY'])
-            print_override(strings['ENTER_TO_EXIT'])
+            _print(strings['DATA_FOLDER_EMPTY'])
+            _print(strings['ENTER_TO_EXIT'])
             raw_input()
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
@@ -37,7 +37,6 @@ def user_generate():
         page = 1
         limit = 15
         maximum = len(all_files)
-        print round_up(maximum / limit)
         total_pages = round_up(maximum / limit)
         change_sort = ['CURRENT_SORT_NAME', 2]
 
@@ -51,10 +50,10 @@ def user_generate():
                     program_name = programs[r]
                 except KeyError:
                     program_name = r
-                print_override('{}: {}'.format(i + offset + 1, program_name))
-            print_override(strings['CURRENT_PAGE'].format(C=page, T=total_pages, P=strings['PAGE']))
-            print_override(strings[change_sort[0]].format(S='{} {}'.format(strings['SORT'], change_sort[1])))
-            print_override(strings['HOW_TO_LOAD'])
+                _print('{}: {}'.format(i + offset + 1, program_name))
+            _print(strings['CURRENT_PAGE'].format(C=page, T=total_pages, P=strings['PAGE']))
+            _print(strings[change_sort[0]].format(S='{} {}'.format(strings['SORT'], change_sort[1])))
+            _print(strings['HOW_TO_LOAD'])
 
             profile = raw_input()
             last_page = page
@@ -66,7 +65,7 @@ def user_generate():
                     if not 0 < page <= total_pages:
                         raise ValueError
                 except IndexError:
-                    print_override(strings['PAGE_INVALID'])
+                    _print(strings['PAGE_INVALID'])
                 except ValueError:
                     if page > total_pages:
                         page = total_pages
@@ -118,7 +117,7 @@ def user_generate():
                 except ValueError:
                     break
                 except IndexError:
-                    print_override(strings['PROFILE_NUMBER_INVALID'])
+                    _print(strings['PROFILE_NUMBER_INVALID'])
 
         try:
             profile = programs[profile]
@@ -126,10 +125,10 @@ def user_generate():
             pass
     
     #Load functions
-    print_override(strings['IMPORT_MODULES'])
-    from core.image.main import RenderImage
+    _print(strings['IMPORT_MODULES'])
+    from core.image import RenderImage
 
-    print_override(strings['LOAD_PROFILE'].format(P=profile))
+    _print(strings['LOAD_PROFILE'].format(P=profile))
     r = RenderImage(profile)
     
     #Check if profile is running
@@ -141,14 +140,14 @@ def user_generate():
         selected_profile = format_name(profile)
         
         if current_profile == selected_profile:
-            print_override(strings['PROFILE_RUNNING_WARNING'])
+            _print(strings['PROFILE_RUNNING_WARNING'])
             
             save_time = ticks_to_seconds(CONFIG['Save']['Frequency'], 1)
             metadata = load_program(profile, _metadata_only=True)
             if metadata['Modified'] is None:
-                print_override(strings['PROFILE_RUNNING_NOSAVE'])
-                print_override(strings['SAVE_FREQUENCY'].format(T=save_time))
-                print_override(strings['ENTER_TO_EXIT'])
+                _print(strings['PROFILE_RUNNING_NOSAVE'])
+                _print(strings['SAVE_FREQUENCY'].format(T=save_time))
+                _print(strings['ENTER_TO_EXIT'])
                 raw_input()
                 sys.exit()
             else:
@@ -156,8 +155,8 @@ def user_generate():
                 next_save_time = CONFIG['Save']['Frequency'] - last_save_time
                 last_save = ticks_to_seconds(last_save_time, 1, allow_decimals=False)
                 next_save = ticks_to_seconds(next_save_time, 1, allow_decimals=False)
-                print_override(strings['PROFILE_RUNNING_SAVE'].format(T=last_save))
-                print_override(strings['NEXT_SAVE_DUE'].format(T=next_save))
+                _print(strings['PROFILE_RUNNING_SAVE'].format(T=last_save))
+                _print(strings['NEXT_SAVE_DUE'].format(T=next_save))
 
 
     generate_tracks = False
@@ -166,17 +165,16 @@ def user_generate():
     
     default_options = [True, True, True, False]
     
-    print_override(strings['GENERATE_OPTIONS'])
+    _print(strings['GENERATE_OPTIONS'])
     default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
-    print_override(strings['TYPE_OPTIONS'].format(V=default_option_text))
-    print_override('1: {}'.format(strings['TRACK_NAME']))
-    print_override('2: {}'.format(strings['CLICK_NAME']))
-    print_override('3: {}'.format(strings['KEY_NAME']))
-    print_override('4: {} (not working)'.format(strings['RAW_NAME']))
+    _print(strings['TYPE_OPTIONS'].format(V=default_option_text))
+    _print('1: {}'.format(strings['TRACK_NAME']))
+    _print('2: {}'.format(strings['CLICK_NAME']))
+    _print('3: {}'.format(strings['KEY_NAME']))
+    _print('4: {} (not working)'.format(strings['RAW_NAME']))
     
     selection = map(int, raw_input().split())
     result = value_select(selection, default_options, start=1)
-    print result
 
     if result[0]:
         generate_tracks = True
@@ -184,17 +182,17 @@ def user_generate():
     if result[1]:
         
         generate_heatmap = True
-        print_override('Which mouse buttons should be included in the heatmap?.')
+        _print('Which mouse buttons should be included in the heatmap?.')
         
         default_options = [CONFIG['GenerateHeatmap']['_MouseButtonLeft'], 
                            CONFIG['GenerateHeatmap']['_MouseButtonMiddle'],
                            CONFIG['GenerateHeatmap']['_MouseButtonRight']]
         default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
-        print_override(strings['TYPE_OPTIONS'].format(V=default_option_text))
+        _print(strings['TYPE_OPTIONS'].format(V=default_option_text))
         
-        print_override('1: {}'.format(strings['MOUSE_BUTTON_LEFT']))
-        print_override('2: {}'.format(strings['MOUSE_BUTTON_MIDDLE']))
-        print_override('3: {}'.format(strings['MOUSE_BUTTON_RIGHT']))
+        _print('1: {}'.format(strings['MOUSE_BUTTON_LEFT']))
+        _print('2: {}'.format(strings['MOUSE_BUTTON_MIDDLE']))
+        _print('3: {}'.format(strings['MOUSE_BUTTON_RIGHT']))
         selection = map(int, raw_input().split())
         heatmap_buttons = value_select(selection, default_options, start=1)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
@@ -218,15 +216,15 @@ def user_generate():
         
         else:
             while True:
-                print_override(strings['SESSION_OPTION'])
+                _print(strings['SESSION_OPTION'])
                 
-                print_override('1: {} [{}]'.format(strings['SESSION_ALL'].format(T=all_time), strings['DEFAULT']))
-                print_override('2: {}'.format(strings['SESSION_LAST'].format(T=last_session_time)))
+                _print('1: {} [{}]'.format(strings['SESSION_ALL'].format(T=all_time), strings['DEFAULT']))
+                _print('2: {}'.format(strings['SESSION_LAST'].format(T=last_session_time)))
 
                 selection = map(int, raw_input().split())
                 result = value_select(selection, [True, False], start=1)
                 if result[0] and result[1]:
-                    print_override(strings['SELECT_ONE_OPTION'])
+                    _print(strings['SELECT_ONE_OPTION'])
                 elif result[1]:
                     last_session = True
                     break
@@ -243,7 +241,7 @@ def user_generate():
             r.generate('Keyboard', last_session)
             
     else:
-        print_override(strings['NOTHING_CHOSEN'])
+        _print(strings['NOTHING_CHOSEN'])
 
         
 if __name__ == '__main__':
