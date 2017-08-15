@@ -18,32 +18,35 @@ def running_processes(q_recv, q_send, background_send):
     As refreshing the list takes some time but not CPU, this is put in its own thread
     and sends the currently running program to the backgrund process.
     """
-    
-    previous = None
-        
-    while True:
+    try:
+        previous = None
             
-        received_data = q_recv.get()
+        while True:
+                
+            received_data = q_recv.get()
 
-        if 'Reload' in received_data:
-            try:
-                running.reload_file()
-            except NameError:
-                running = RunningApplications(queue=q_send)
-            NOTIFY(APPLICATION_RELOAD)
+            if 'Reload' in received_data:
+                try:
+                    running.reload_file()
+                except NameError:
+                    running = RunningApplications(queue=q_send)
+                NOTIFY(APPLICATION_RELOAD)
 
-        if 'Update' in received_data:
-            running.refresh()
-            current = running.check()
-            if current != previous:
-                if current is None:
-                    NOTIFY(APPLICATION_QUIT)
-                else:
-                    NOTIFY(APPLICATION_STARTED, current)
-                NOTIFY.send(q_send)
-                background_send.put({'Program': current})
-                previous = current
-
+            if 'Update' in received_data:
+                running.refresh()
+                current = running.check()
+                if current != previous:
+                    if current is None:
+                        NOTIFY(APPLICATION_QUIT)
+                    else:
+                        NOTIFY(APPLICATION_STARTED, current)
+                    NOTIFY.send(q_send)
+                    background_send.put({'Program': current})
+                    previous = current
+    
+    #Catch error after KeyboardInterrupt
+    except EOFError:
+        return
 
 def _save_wrapper(q_send, program_name, data, new_program=False):
     
@@ -126,9 +129,7 @@ def background_process(q_recv, q_send):
             pass
         NOTIFY.send(q_send)
         
-        
         while True:
-            
             received_data = q_recv.get()
             '''
             #Quit if data is not received by the ping interval
@@ -336,6 +337,9 @@ def background_process(q_recv, q_send):
             if 'Ticks' in received_data:
                 store['Data']['Ticks']['Total'] += received_data['Ticks']
             store['Data']['Ticks']['Recorded'] += 1
+            
+            if 'Quit' in received_data or 'Exit' in received_data:
+                break
 
             NOTIFY.send(q_send)
         
@@ -346,4 +350,6 @@ def background_process(q_recv, q_send):
             
     except Exception as e:
         q_send.put(traceback.format_exc())
-        return
+        
+    except KeyboardInterrupt:
+        pass
