@@ -11,17 +11,6 @@ _LENGTH = (
     ('week', 60 * 60 * 24 * 7, 52, None),
     ('year', 60 * 60 * 24 * 365, None, None)
 )
-
-
-def print_override(text):
-    """Send everything here to print, so that it can easily be edited.
-    Defaults to Python 3 version as it'll refuse to even run the script otherwise.
-    """
-    for line in text.replace('\\n', '\n').split('\n'):
-        try:
-            print(line)
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            print(line.encode('utf-8').strip())
     
 
 def time_format(t):
