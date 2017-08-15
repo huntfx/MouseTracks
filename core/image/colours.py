@@ -57,11 +57,12 @@ class ColourRange(object):
     All possible colours within the range are cached for quick access.
     """
     
-    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False, cache=None):
+    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False, cache=None, background=None):
         
         if min_amount >= max_amount:
             colours = [colours[0]]
             max_amount = min_amount + 1
+        self.background = background
         self.amount = (min_amount, max_amount)
         self.amount_diff = max_amount - min_amount
         self.colours = colours
@@ -83,6 +84,8 @@ class ColourRange(object):
             
     def __getitem__(self, n):
         """Read an item from the cache."""
+        if self.background is not None and not n:
+            return self.background
         value_index = int((n - self.amount[0]) / self._step_size)
         if self.loop:
             if value_index != self._step_max:
@@ -313,37 +316,84 @@ class ColourMap(object):
 def get_luminance(r, g, b, a=None):
     return (0.2126*r + 0.7152*g + 0.0722*b)
 
-    
-def _new_colour_map_data():
-    return {'tracks': False, 'clicks': False, 'keyboard': False}
 
-    
 def parse_colour_file(path):
+    """Read the colours text file to get all the data.
+    
+    Returns a dictionary containing the keys 'Colours' and 'Maps'.
+    
+    Colours:
+        Syntax: colour.name=value
+        The value must be given as a hex code, where it will be converted 
+        into an RGBA list with the range of 0 to 255.
+        
+        Format:
+            {name.lower(): {'UpperCase': name, 
+                            'Colour': [r, 
+                                       g, 
+                                       b,
+                                       a]}}
+            
+    Maps:
+        Syntax: maps.name.type[.options]=value
+        
+        Set a colour scheme for a map with "maps.Name.colour=__________".
+        That will add a colour map that can be accessed with "Name".
+        Add alternative options with "maps.Name.colour.Alter.native=__________"
+        That will add a colour map that can be accessed with "nativeAlterName".
+        Set if it is allowed for tracks, clicks, or the keyboard 
+        with "maps.Name.tracks/clicks/keyboard=True".
+        It may be enabled for more than one.
+        
+        Format:
+            {name.lower(): {'Colour': value,
+                            'UpperCase': name,
+                            'Type': {'tracks': bool,
+                                     'clicks': bool,
+                                     'keyboard': bool}}}
+    """
     with open(path, 'r') as f:
         data = f.read()
-        
-    colour_maps = {}
-    for line in data.splitlines():
-        var, value = [i.strip() for i in line.split('=', 1)]
-        var_parts = var.split('.')[1:]
-        map_name = var_parts[0].lower()
-        var_type = var_parts[1]
-
-        #Write values to dictionary
-        if map_name not in colour_maps:
-            colour_maps[map_name] = _new_colour_map_data()
-        if var_type in ('tracks', 'clicks', 'keyboard'):
-            value = True if value.lower() == 'true' else False
-        colour_maps[map_name][var_type] = value
-
-        #Link alternative names
-        if var_type == 'map':
-            alt_name = ''.join(var_parts[2:][::-1]).strip() + map_name
-            if alt_name:
-                colour_maps[alt_name] = colour_maps[map_name]
-
-    return colour_maps
     
+    colours = {}
+    colour_maps = {}
+    for i, line in enumerate(data.splitlines()):
+        var, value = [i.strip() for i in line.split('=', 1)]
+        var_parts = var.split('.')
+        
+        #Parse colour part
+        if var_parts[0] == 'colour':
+            rgb = hex_to_colour(value)[1]
+            if rgb is not None:
+                colours[var_parts[1].lower()] = {'Uppercase': var_parts[1], 'Colour': rgb}
+        
+        #Parse colour map part
+        elif var_parts[0] == 'map':
+            map_name = var_parts[1]
+            map_name_l = map_name.lower()
+            var_type = var_parts[2].lower()
+            
+            if map_name not in colour_maps:
+                colour_maps[map_name_l] = {'Colour': None, 'UpperCase': map_name,
+                                         'Type': {'tracks': False, 'clicks': False, 'keyboard': False}}
+                                         
+            if var_type == 'colour':
+            
+                #Check if it is an alternative map, and if so, link to the main one
+                map_name_ext = ''.join(var_parts[3:][::-1]) + map_name
+                map_name_ext_l = map_name_ext.lower()
+                if map_name_l != map_name_ext_l:
+                    colour_maps[map_name_ext_l] = {'Colour': value, 'UpperCase': map_name_ext,
+                                                   'Type': colour_maps[map_name_l]['Type']}
+                else:
+                    colour_maps[map_name_l]['Colour'] = value
+                    
+            elif var_type in ('clicks', 'tracks', 'keyboard'):
+                if value.lower().startswith('t') or value.lower().startswith('y'):
+                    colour_maps[map_name_l]['Type'][var_type] = True
+                    
+    return {'Colours': colours, 'Maps': colour_maps}
+                
     
 def hex_to_colour(h, _try_alt=True):
     """Convert a hex string to colour.
@@ -351,7 +401,7 @@ def hex_to_colour(h, _try_alt=True):
     If a longer string is invalid, it will try lower lengths.
     """
     if h.startswith('#'):
-        h = h[:-1]
+        h = h[1:]
     h_len = len(h)
     if h_len >= 8:
         try:
