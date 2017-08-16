@@ -1,24 +1,10 @@
 from __future__ import division, absolute_import
 
-from core.compatibility import range
+from core.compatibility import range, get_items
+from core.files import format_name
 
 
-COLOURS_MAIN = {
-    'red': (255, 0, 0, 255),
-    'green': (0, 255, 0, 255),
-    'blue': (0, 0, 255, 255),
-    'yellow': (255, 255, 0, 255),
-    'cyan': (0, 255, 255, 255),
-    'magenta': (255, 0, 255, 255),
-    'white': (255, 255, 255, 255),
-    'grey': (127, 127, 127, 255),
-    'gray': (127, 127, 127, 255),
-    'black': (0, 0, 0, 255),
-    'orange': (255, 127, 0, 255),
-    'pink': (255, 0, 127, 255),
-    'purple': (127, 0, 255, 255),
-    'sky': (0, 164, 255, 255)
-}
+COLOUR_FILE = 'colours.txt'
 
 MODIFIERS = {
     'light': {'ColourOffset': 128,
@@ -49,7 +35,7 @@ DUPLICATES = {
     'tredecuple': 13
 }
 
-SEPERATORS = ['to']
+SEPERATORS = ['to', 'then']
 
 
 class ColourRange(object):
@@ -155,7 +141,8 @@ def _parse_colour_text(colour_string):
         + TripleCyanBlueToTripleCyanYellowToCyanYellowTo
         + CyanTripleYellowToYellowToOrangeToRedOrangeToRed 
     """
-    colour_string = colour_string.lower()
+    colour_string = format_name(colour_string)
+    colour_data = parse_colour_file(COLOUR_FILE)['Colours']
 
     current_mix = [[]]
     current_colour = {'Mod': [], 'Dup': 1}
@@ -164,10 +151,10 @@ def _parse_colour_text(colour_string):
 
         #Check for colours
         colour_selection = None
-        for i in COLOURS_MAIN:
-            if colour_string.startswith(i):
-                colour_string = colour_string[len(i):]
-                colour_selection = COLOURS_MAIN[i]
+        for colour, data in get_items(colour_data):
+            if colour_string.startswith(colour):
+                colour_string = colour_string[len(colour):]
+                colour_selection = data['Colour']
                 break
 
         #Check for hex codes
@@ -241,7 +228,7 @@ def _parse_colour_text(colour_string):
         colour_string = colour_string[1:]
     
     if not current_mix[0]:
-        raise ValueError('input colour map is not valid')
+        raise ValueError('invalid colour map')
 
     #Merge colours together
     final_mix = []
@@ -256,62 +243,18 @@ def _parse_colour_text(colour_string):
     return final_mix
 
 
-class ColourMap(object):
-    """Look up default colours or generate one if the set doesn't exist."""
-    _MAPS = {
-        'jet': ('BlackToDarkBlueToBlueToCyanBlueBlueBlueToCyanBlueTo'
-                'CyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellowTo'
-                'CyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'), #heatmap
-        'transparentjet': ('TransparentBlackToTranslucentTranslucentDarkBlueTo'
-                           'TranslucentBlueToTranslucentCyanTranslucentBlueBlueBlueTo'
-                           'CyanBlueToCyanCyanCyanBlueToCyanCyanCyanYellowToCyanYellow'
-                           'ToCyanYellowYellowYellowToYellowToOrangeToRedOrangeToRed'), #heatmap
-        'radiation': 'BlackToRedToYellowToWhiteToWhiteWhiteWhiteLightLightGrey', #heatmap
-        'transparentradiation': ('TransparentBlackToTranslucentRedToYellowTo'
-                                 'WhiteToWhiteWhiteWhiteLightLightGrey'), #heatmap
-        'default': 'WhiteToBlack', #tracks
-        'citrus': 'BlackToDarkDarkGreyToDarkGreenToYellow', #tracks
-        'ice': 'BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite', #tracks
-        'neon': 'BlackToPurpleToPinkToBlackToPink', #tracks
-        'sunburst': 'DarkDarkGrayToOrangeToBlackToOrangeToYellow', #tracks
-        'demon': 'WhiteToRedToBlackToWhite', #tracks
-        'chalk': 'BlackToWhite', #tracks
-        'lightning': 'DarkPurpleToLightMagentaToLightGrayToWhiteToWhite', #tracks
-        'hazard': 'WhiteToBlackToYellow', #tracks
-        'razer': 'BlackToDarkGreyToBlackToDarkGreenToGreenToBlack', #tracks
-        'sketch': 'LightGreyToBlackToDarkPurpleToWhiteToLightGreyToBlackToBlue', #tracks
-        'grape': 'WhiteToBlackToMagenta', #tracks
-        'spiderman': 'RedToBlackToWhite', #tracks/keyboard
-        'shroud': 'GreyToBlackToLightPurple', #tracks
-        'blackwidow': 'PurpleToLightCyanWhiteToPurpleToBlack', #tracks
-        'aqua': 'WhiteToWhiteWhiteLightCyanSkyToSkyToSkyBlue', #keyboard
-        'fire': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellowOrangeTo'
-                 'WhiteLightYellowRedLightRedOrangeToYellowLightYellowRedDarkOrangeToRedDarkRedDarkRed'), #keyboard
-        'fire3': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellow'
-                 'OrangeToLightRedOrangeOrangeToLightYellowRedDarkOrangeToRedDarkRedDarkRed'), #keyboard
-        'fire2': ('WhiteToWhiteWhiteYellowLightOrangeToWhiteYellowLightOrangeToWhiteYellow'
-                 'OrangeToLightRedOrangeOrangeToLightYellowRedRedDarkOrangeToDarkRed'), #keyboard
-        'ivy': 'WhiteToBlueGreenGreenToBlack', #keyboard
-        'matrix': ('BlackBlackBlackBlackDarkGreenDarkDarkGreyToBlackBlack'
-                   'BlackBlackBlackGreyGreenToBlackBlackDarkGreyGreenToGreen'), #keyboard/tracks
-        'nature': ('WhiteToWhiteLightYellowLightGreenLightLightGrey' #keyboard
-                   'ToLightYellowGreenLightGreenToDarkGreen'), #keyboard
-        'linearfire': 'WhiteToYellowLightOrangeToLightYellowOrangeRedDarkRedToDarkOrangeOrangeRedToBlackBlackOrangeRedDarkRedToRedDarkRedDarkRed',  #keyboard (linear) - need to make the process automatic
-        'linearmatrix': 'BlackBlackBlackBlackBlackDarkGreenDarkDarkGreyToGreen',
-        'linearnature': 'WhiteToDarkGreen'
-    }
-    def __getitem__(self, colour_profile):
-        try:
-            return _parse_colour_text(self._MAPS[colour_profile.lower()])
-        except KeyError:
-            generated_map = _parse_colour_text(colour_profile)
-            if generated_map:
-                if len(generated_map) < 2:
-                    raise ValueError('not enough colours to generate colour map')
-                return generated_map
-            else:
-                raise ValueError('unknown colour map')
-
+def calculate_colour_map(colour_map):
+    try:
+        return _parse_colour_text(parse_colour_file(COLOUR_FILE)['Maps'][format_name(colour_map)]['Colour'])
+    except KeyError:
+        generated_map = _parse_colour_text(colour_map)
+        if generated_map:
+            if len(generated_map) < 2:
+                raise ValueError('not enough colours to generate colour map')
+            return generated_map
+        else:
+            raise ValueError('unknown colour map')
+                
 
 def get_luminance(r, g, b, a=None):
     return (0.2126*r + 0.7152*g + 0.0722*b)
@@ -363,17 +306,17 @@ def parse_colour_file(path):
         
         #Parse colour part
         if var_parts[0] == 'colour':
-            rgb = hex_to_colour(value)[1]
+            rgb = tuple(hex_to_colour(value)[1])
             if rgb is not None:
-                colours[var_parts[1].lower()] = {'Uppercase': var_parts[1], 'Colour': rgb}
+                colours[format_name(var_parts[1])] = {'Uppercase': var_parts[1], 'Colour': rgb}
         
         #Parse colour map part
         elif var_parts[0] == 'map':
             map_name = var_parts[1]
-            map_name_l = map_name.lower()
+            map_name_l = format_name(map_name)
             var_type = var_parts[2].lower()
             
-            if map_name not in colour_maps:
+            if map_name_l not in colour_maps:
                 colour_maps[map_name_l] = {'Colour': None, 'UpperCase': map_name,
                                          'Type': {'tracks': False, 'clicks': False, 'keyboard': False}}
                                          
@@ -381,12 +324,12 @@ def parse_colour_file(path):
             
                 #Check if it is an alternative map, and if so, link to the main one
                 map_name_ext = ''.join(var_parts[3:][::-1]) + map_name
-                map_name_ext_l = map_name_ext.lower()
+                map_name_ext_l = format_name(map_name_ext)
                 if map_name_l != map_name_ext_l:
                     colour_maps[map_name_ext_l] = {'Colour': value, 'UpperCase': map_name_ext,
                                                    'Type': colour_maps[map_name_l]['Type']}
                 else:
-                    colour_maps[map_name_l]['Colour'] = value
+                    colour_maps[map_name_ext_l]['Colour'] = value
                     
             elif var_type in ('clicks', 'tracks', 'keyboard'):
                 if value.lower().startswith('t') or value.lower().startswith('y'):
