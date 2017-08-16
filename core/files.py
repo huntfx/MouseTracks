@@ -58,7 +58,7 @@ def prepare_file(data):
     """Prepare data for saving."""
     data['Time']['Modified'] = time.time()
     data['Version'] = VERSION
-    return zlib.compress(cPickle.dumps(data, cPickle.HIGHEST_PROTOCOL))
+    return zlib.compress(cPickle.dumps(data, 2))
 
 
 def decode_file(data):
