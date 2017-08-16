@@ -27,6 +27,8 @@ DATA_BACKUP_FOLDER = '.backup'
 
 DATA_TEMP_FOLDER = '.temp'
 
+DATA_CORRUPT_FOLDER = '.corrupted'
+
 DATA_SAVED_FOLDER = 'Saved'
 
 
@@ -49,16 +51,18 @@ def _get_paths(program_name):
     backup_name = '{}/{}'.format(backup_folder, name)
     temp_folder = '{}/{}'.format(DATA_FOLDER, DATA_TEMP_FOLDER)
     temp_name = '{}/{}'.format(temp_folder, name)
+    corrupted_folder = '{}/{}'.format(DATA_FOLDER, DATA_CORRUPT_FOLDER)
+    corrupted_name = '{}/{}'.format(corrupted_folder, name)
     
-    return {'Main': new_name, 'Backup': backup_name, 'Temp': temp_name,
-            'BackupFolder': backup_folder, 'TempFolder': temp_folder}
+    return {'Main': new_name, 'Backup': backup_name, 'Temp': temp_name, 'Corrupted': corrupted_name,
+            'BackupFolder': backup_folder, 'TempFolder': temp_folder, 'CorruptedFolder': corrupted_folder}
 
 
 def prepare_file(data):
     """Prepare data for saving."""
     data['Time']['Modified'] = time.time()
     data['Version'] = VERSION
-    return zlib.compress(cPickle.dumps(data, 2))
+    return zlib.compress(cPickle.dumps(data, min(cPickle.HIGHEST_PROTOCOL, 2)))
 
 
 def decode_file(data):
@@ -80,13 +84,18 @@ def load_program(program_name=None, _update_version=True, _metadata_only=False):
             loaded_data = decode_file(f.read())
             
     #Load backup if file is corrupted
-    except zlib.error:
+    except (zlib.error, ValueError):
         try:
             with open(paths['Backup'], 'rb') as f:
                 loaded_data = decode_file(f.read())
                 
-        except (IOError, zlib.error):
+        except (IOError, zlib.error, ValueError):
             new_file = True
+            
+            #Move corrupt file into a folder instead of just silently delete
+            if create_folder(paths['CorruptedFolder']):
+                hide_file(paths['CorruptedFolder'])
+            rename_file(paths['Main'], '{}.{}'.format(paths['Corrupted'], int(time.time())))
     
     #Don't load backup if file has been deleted
     except IOError:
