@@ -75,7 +75,7 @@ class PythonVersion(object):
         return v1 <= v2
 
 
-PYTHON_VERSION = PythonVersion
+PYTHON_VERSION = PythonVersion()
 
 if PYTHON_VERSION < 3:
     input = raw_input
