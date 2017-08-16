@@ -6,7 +6,7 @@ import sys
 from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 from core.image._scipy import blur, upscale
 from core.image.keyboard import DrawKeyboard
-from core.image.colours import ColourRange, ColourMap
+from core.image.colours import ColourRange, calculate_colour_map
 from core.compatibility import range, get_items, _print
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
@@ -338,10 +338,10 @@ class RenderImage(object):
                                                                          session_start=session_start,
                                                                          high_precision=high_precision)
                 try:
-                    colour_map = ColourMap()[CONFIG['GenerateTracks']['ColourProfile']]
+                    colour_map = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
                 except ValueError:
                     default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
-                    colour_map = ColourMap()[default_colours]
+                    colour_map = calculate_colour_map(default_colours)
                 colour_range = ColourRange(min_value, max_value, colour_map)
                 image_output = arrays_to_colour(colour_range, numpy_arrays)
                 image_name = self.name.generate('Tracks', reload=True)
@@ -371,10 +371,10 @@ class RenderImage(object):
                 #Convert each point to an RGB tuple
                 _print('Converting to RGB...')
                 try:
-                    colour_map = ColourMap()[CONFIG['GenerateHeatmap']['ColourProfile']]
+                    colour_map = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
                 except ValueError:
                     default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
-                    colour_map = ColourMap()[default_colours]
+                    colour_map = calculate_colour_map(default_colours)
                 colour_range = ColourRange(min_value, max_value, colour_map)
                 image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
               
