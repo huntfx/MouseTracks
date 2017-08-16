@@ -1,7 +1,7 @@
 from __future__ import division
 from PIL import Image, ImageFont, ImageDraw
 
-from core.image.colours import ColourRange, ColourMap, get_luminance, COLOURS_MAIN
+from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
 from core.compatibility import get_items, range
 from core.config import CONFIG
 from core.language import Language
@@ -139,6 +139,7 @@ class KeyboardGrid(object):
             self.new_row()
         self.count_press = keys_pressed['Pressed']
         self.count_time = keys_pressed['Held']
+        self.colours = parse_colour_file(COLOUR_FILE)['Colours']
         
     def new_row(self):
         self.grid.append([])
@@ -187,17 +188,17 @@ class KeyboardGrid(object):
             lookup = {v: i + 1 for i, v in enumerate(pools)}
             lookup[0] = 0
         
-        colours = ColourMap()[CONFIG['GenerateKeyboard']['ColourProfile']]
+        colours = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
         colour_range = ColourRange(0, max_range, colours)
         
         #Decide on background colour
         #For now the options are black or while
         if any(i > 128 for i in colours[0]):
-            image['Background'] = COLOURS_MAIN['white']
-            image['Shadow'] = COLOURS_MAIN['black']
+            image['Background'] = self.colours['white']['Colour']
+            image['Shadow'] = self.colours['black']['Colour']
         else:
-            image['Background'] = COLOURS_MAIN['black']
-            image['Shadow'] = COLOURS_MAIN['white']
+            image['Background'] = self.colours['black']['Colour']
+            image['Shadow'] = self.colours['white']['Colour']
         
         y_offset = IMAGE_PADDING
         y_current = 0
@@ -235,9 +236,9 @@ class KeyboardGrid(object):
                     
                     #Calculate colour for border
                     if get_luminance(*fill_colour) > 128:
-                        text_colour = COLOURS_MAIN['black']
+                        text_colour = self.colours['black']['Colour']
                     else:
-                        text_colour = COLOURS_MAIN['white']
+                        text_colour = self.colours['white']['Colour']
                     
                     #Store values
                     _values = {'Offset': (x_offset, y_offset),
