@@ -5,7 +5,7 @@ from core.config import CONFIG
 from core.constants import APP_LIST_URL
 from core.notify import *
 from core.files import format_file_path
-from core.os import get_running_processes
+from core.os import get_running_processes, WindowFocus
 from core.internet import get_url_contents
 
 
@@ -158,6 +158,10 @@ class RunningApplications(object):
                 
     def refresh(self):
         self.processes = get_running_processes()
+        if WindowFocus is not None:
+            self.focus = WindowFocus().exe()
+        else:
+            self.focus = None
     
     def save_file(self):
         lines = _DEFAULT_TEXT
@@ -173,15 +177,23 @@ class RunningApplications(object):
         with open(self.application_path, 'w') as f:
             f.write('\n'.join(lines))
     
+
     def check(self):
         """Check for any applications in the list that are currently loaded.
-        Choose the one with the highest ID as it'll likely be the most recent one.
+        Check if any of them match the currently focused window (if applicable),
+        or choose the one with the highest ID as it'll likely be the most recent one.
         """
-        matching_applications = {}
-        for application in self.applications:
-            if application in self.processes:
-                matching_applications[self.processes[application]] = application
-        if not matching_applications:
-            return None
-        latest_application = matching_applications[max(matching_applications.keys())]
-        return (self.applications[latest_application], latest_application)
+        if self.focus is not None:
+            try:
+                return (self.applications[self.focus], self.focus)
+            except KeyError:
+                return None
+        else:
+            matching_applications = {}
+            for application in self.applications:
+                if application in self.processes:
+                    matching_applications[self.processes[application]] = application
+            if not matching_applications:
+                return None
+            latest_application = matching_applications[max(matching_applications.keys())]
+            return (self.applications[latest_application], latest_application)
