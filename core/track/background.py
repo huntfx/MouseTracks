@@ -27,19 +27,23 @@ def running_processes(q_recv, q_send, background_send):
 
             if 'Reload' in received_data:
                 try:
-                    running.reload_file()
+                    running_apps.reload_file()
                 except NameError:
-                    running = RunningApplications(queue=q_send)
+                    running_apps = RunningApplications(queue=q_send)
                 NOTIFY(APPLICATION_RELOAD)
 
             if 'Update' in received_data:
-                running.refresh()
-                current = running.check()
+                running_apps.refresh()
+                
+                current = running_apps.check()
+                    
                 if current != previous:
                     if current is None:
-                        NOTIFY(APPLICATION_QUIT)
+                        NOTIFY(APPLICATION_UNFOCUSED if running_apps.focus else APPLICATION_QUIT, previous)
                     else:
-                        NOTIFY(APPLICATION_STARTED, current)
+                        if running_apps.focus and previous is not None:
+                            NOTIFY(APPLICATION_UNFOCUSED, previous)
+                        NOTIFY(APPLICATION_FOCUSED if running_apps.focus else APPLICATION_STARTED, current)
                     NOTIFY.send(q_send)
                     background_send.put({'Program': current})
                     previous = current
