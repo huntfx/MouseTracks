@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import time
 
+
 VERSION_HISTORY = [
     '-1',
     '2.0',
@@ -14,8 +15,10 @@ VERSION_HISTORY = [
     '2.0.6',
     '2.0.6b',
     '2.0.6c',
-    '2.0.7'
+    '2.0.7',
+    '2.0.8'
 ]
+
 VERSION = VERSION_HISTORY[-1]
 
 
@@ -46,10 +49,12 @@ def upgrade_version(data, update_metadata=True):
     2.0.6b: Record when session started
     2.0.6c: Record key presses per session
     2.0.7: Fixed some incorrect key names
+    2.0.8: Store each session start
     """
 
     #Make sure version is in history, otherwise set to lowest version
     current_version_id = _get_id(data.get('Version', '-1'))
+    current_time = time.time()
         
     if current_version_id < _get_id('2.0'):
         data['Count'] = 0
@@ -57,7 +62,7 @@ def upgrade_version(data, update_metadata=True):
         data['Clicks'] = {}
         data['Keys'] = {}
         data['Ticks'] = 0
-        data['LastSave'] = time.time()
+        data['LastSave'] = current_time
         data['TimesLoaded'] = -1
         data['Version'] = '2.0'
     if current_version_id < _get_id('2.0.1'):
@@ -119,12 +124,19 @@ def upgrade_version(data, update_metadata=True):
                 data['Keys']['Session']['Held'][new] = data['Keys']['Session']['Held'].pop(old)
             except KeyError:
                 pass
-    
+    if current_version_id < _get_id('2.0.8'):
+        data['SessionStarts'] = []
+        
     if update_metadata:
         data['Version'] = VERSION
-        data['TimesLoaded'] += 1
         data['Ticks']['Session']['Current'] = data['Ticks']['Current']['Tracks']
         data['Ticks']['Session']['Total'] = data['Ticks']['Total']
         data['Keys']['Session']['Pressed'] = {}
         data['Keys']['Session']['Held'] = {}
+        
+        #Only count as new session if last save was over 5 minutes ago
+        if not data['SessionStarts'] or current_time - 300 > data['Time']['Modified']:
+            data['TimesLoaded'] += 1
+            data['SessionStarts'].append(current_time)
+            
     return data
