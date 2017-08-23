@@ -50,11 +50,15 @@ APPLICATION_LISTEN = 51
 
 APPLICATION_LOADING = 52
 
-APPLIST_UPDATE_START = 53
+APPLICATION_FOCUSED = 53
 
-APPLIST_UPDATE_SUCCESS = 54
+APPLICATION_UNFOCUSED = 54
 
-APPLIST_UPDATE_FAIL = 55
+APPLIST_UPDATE_START = 55
+
+APPLIST_UPDATE_SUCCESS = 56
+
+APPLIST_UPDATE_FAIL = 57
 
 SAVE_START = 64
 
@@ -90,9 +94,9 @@ THREAD_EXIT = 113
 class Notify(object):
     
     def __init__(self):
-        all_strings = Language().get_strings(_new=True)
+        all_strings = Language().get_strings()
         self.string = all_strings['string']['track']
-        self.word = all_strings['word']['track']
+        self.word = all_strings['word']
         
         self.reset()
     
@@ -168,7 +172,6 @@ class Notify(object):
             q2(self.string['application']['start'].format(A=args[0][0]))
             
         if message_id == APPLICATION_LOADING:
-            default = False
             try:
                 if args[0][0] is None:
                     raise TypeError()
@@ -179,13 +182,40 @@ class Notify(object):
             q2(self.string['application']['load'].format(A=profile))
             
         if message_id == APPLICATION_QUIT:
-            q2(self.string['application']['quit'])
+            try:
+                if args[0][0] is None:
+                    raise TypeError()
+            except (IndexError, TypeError):
+                profile = DEFAULT_NAME
+            else:
+                profile = args[0][0]
+            q2(self.string['application']['quit'].format(A=profile))
             
         if message_id == APPLICATION_RELOAD:
             q1(self.string['application']['reload'])
             
         if message_id == APPLICATION_LISTEN:
             q1(self.string['application']['listen'])
+            
+        if message_id == APPLICATION_FOCUSED:
+            try:
+                if args[0][0] is None:
+                    raise TypeError()
+            except (IndexError, TypeError):
+                profile = DEFAULT_NAME
+            else:
+                profile = args[0][0]
+            q1(self.string['application']['focused'].format(A=profile))
+            
+        if message_id == APPLICATION_UNFOCUSED:
+            try:
+                if args[0][0] is None:
+                    raise TypeError()
+            except (IndexError, TypeError):
+                profile = DEFAULT_NAME
+            else:
+                profile = args[0][0]
+            q1(self.string['application']['unfocused'].format(A=profile))
             
         if message_id == APPLIST_UPDATE_START:
             q1(self.string['application']['update']['start'])
