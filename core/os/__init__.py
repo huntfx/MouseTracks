@@ -1,28 +1,32 @@
 # Determine which operating system is being used.
 # A quick check will be one to make sure all the required modules exist
 import platform
+import psutil
 import os
 
 
 #Load in modules from operating system
-current_os = platform.system()
-if current_os == 'Windows':
+OPERATING_SYSTEM = platform.system()
+if OPERATING_SYSTEM == 'Windows':
     try:
         from core.os.windows import *
     except ImportError:
-        raise ImportError('missing modules for windows')
-elif current_os == 'Linux':
+        raise ImportError('missing required modules for windows')
+    OS_DEBUG = False
+elif OPERATING_SYSTEM == 'Linux':
     try:
         from core.os.linux import *
     except ImportError:
-        raise ImportError('missing modules for linux')
-elif current_os == 'Darwin':
+        raise ImportError('missing required modules for linux')
+    OS_DEBUG = True
+elif OPERATING_SYSTEM == 'Darwin':
     try:
         from core.os.mac import *
     except ImportError:
-        raise ImportError('missing modules for mac')
+        raise ImportError('missing required modules for mac')
+    OS_DEBUG = True
 else:
-    raise ImportError('unknown operating system: "{}"'.format(current_os))
+    raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
 
 
 #Check the functions exist
@@ -44,6 +48,14 @@ try:
     except NameError:
         monitor_info = get_resolution
         MULTI_MONITOR = False
+    
+    #Detect if code exists to detect window focus
+    try:
+        WindowFocusData
+        FOCUS_DETECTION = True
+    except NameError:
+        FOCUS_DETECTION = False
+        
         
 except NameError:
     raise ImportError('missing functions for operating system')
@@ -69,7 +81,7 @@ except NameError:
 def remove_file(file_name):
     try:
         os.remove(file_name)
-    except (FileNotFoundError, WindowsError):
+    except (OSError, FileNotFoundError, WindowsError):
         return False
     return True
 
@@ -77,7 +89,7 @@ def remove_file(file_name):
 def rename_file(old_name, new_name):
     try:
         os.rename(old_name, new_name)
-    except (FileNotFoundError, WindowsError):
+    except (OSError, FileNotFoundError, WindowsError):
         return False
     return True
 
@@ -91,7 +103,7 @@ def create_folder(folder_path):
     
     try:
         os.makedirs(folder_path)
-    except (FileExistsError, WindowsError):
+    except (OSError, FileExistsError, WindowsError):
         return False
     return True
 
@@ -99,12 +111,46 @@ def create_folder(folder_path):
 def get_modified_time(file_name):
     try:
         return os.path.getmtime(file_name)
-    except (FileNotFoundError, WindowsError):
+    except (OSError, FileNotFoundError, WindowsError):
         return None
     
     
 def list_directory(folder):
     try:
         return os.listdir(folder)
-    except (FileNotFoundError, WindowsError):
+    except (OSError, FileNotFoundError, WindowsError):
         return None
+
+
+if FOCUS_DETECTION:
+    
+    class WindowFocus(object):
+        def __init__(self):
+            self.window_data = WindowFocusData()
+    
+        def pid(self):
+            """Get the process ID of the focused window."""
+            return self.window_data.get_pid()
+        
+        def exe(self):
+            """Get the name of the currently running process."""
+            try:
+                return self.window_data.get_exe()
+            except AttributeError:
+                return psutil.Process(self.pid()).name()
+        
+        def rect(self):
+            """Get the corner coordinates of the focused window."""
+            return self.window_data.get_rect()
+        
+        def resolution(self):
+            try:
+                return self.window_data.get_resolution()
+            except AttributeError:
+                x0, y0, x1, y1 = self.rect()
+                x_res = x1 - x0
+                y_res = y1 - y0
+                return (x_res, y_res)
+                
+else:
+    WindowFocus = None
