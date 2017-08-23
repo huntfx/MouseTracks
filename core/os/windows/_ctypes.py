@@ -133,3 +133,22 @@ def get_documents_path():
     buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
     ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
     return buf.value
+    
+    
+class WindowFocusData(object):
+
+    def __init__(self):
+        """Get the handle of the currently focused window."""
+        self.hwnd = ctypes.windll.user32.GetForegroundWindow()
+    
+    def get_pid(self):
+        """Get the process ID of a window."""
+        process_id = ctypes.c_int()
+        ctypes.windll.user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
+        return process_id.value
+        
+    def get_rect(self):
+        """Get the coordinates of a window."""
+        win_rect = _RECT()
+        ctypes.windll.user32.GetWindowRect(self.hwnd, ctypes.byref(win_rect))
+        return win_rect.dump()
