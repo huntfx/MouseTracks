@@ -1,5 +1,7 @@
 import win32api
 import win32con
+import win32gui
+import win32process
 from win32com.shell import shell, shellcon
 
 
@@ -78,3 +80,18 @@ def get_monitor_locations():
 def get_documents_path():
     """Return the path to documents."""
     return shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+
+    
+class WindowFocusData(object):
+
+    def __init__(self):
+        """Get the handle of the currently focused window."""
+        self.hwnd = win32gui.GetForegroundWindow()
+    
+    def get_pid(self):
+        """Get the process ID of a window."""
+        return win32process.GetWindowThreadProcessId(self.hwnd)[1]
+        
+    def get_rect(self):
+        """Get the coordinates of a window."""
+        return win32gui.GetWindowRect(self.hwnd)
