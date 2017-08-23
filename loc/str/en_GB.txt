@@ -13,6 +13,7 @@ word.mousebutton.middle=Middle mouse button
 word.mousebutton.right=Right mouse button
 string.exit=Press enter to exit.
 string.import=Importing modules...
+string.profile.load=Loading profile {P}...
 
 string.track.mouse.detected=Cursor position has been detected.
 string.track.mouse.undetected=Unable to read cursor position.
@@ -32,9 +33,11 @@ string.track.keyboard.press=Key {P}: {K}
 string.track.keyboard.held=Key {P} (held down): {K}
 string.track.application.start=Application detected: {A}
 string.track.application.load=Switching profile to {A}.
-string.track.application.quit=Application quit.
+string.track.application.quit=Application quit: {A}
 string.track.application.reload=Finished reloading application list.
 string.track.application.listen=Started checking for running applications.
+string.track.application.focused=Application gained focus: {A}.
+string.track.application.unfocused=Application lost focus: {A}.
 string.track.application.update.start=Updating application list from internet...
 string.track.application.update.success=Finished updating.
 string.track.application.update.fail=Failed to establish a connection.
@@ -63,7 +66,6 @@ string.image.profile.list=Type profile to load, or type "{L}" to see them all:
 string.image.profile.empty=Sorry, nothing was found in the data folder. You may need to wait until the program initally saves.
 string.image.profile.number.input=You can type the number or name of a profile to load it.
 string.image.profile.number.nomatch=Number doesn't match any profiles.
-string.image.profile.load=Loading profile {P}...
 string.image.profile.running=Warning: The profile you selected is currently running.
 string.image.save.wait=It has not had a chance to save yet, please wait a short while before trying again.
 string.image.save.frequency=The saving frequency is currently set to {T}.
@@ -79,6 +81,24 @@ string.image.option.session.all=Everything ({T})
 string.image.option.session.last=Last Session ({T})
 string.image.option.error.single=Please only select one option.
 string.image.option.error.nothing=Nothing was set to generate.
+string.keyboard.layout=Building keyboard from layout...
+string.keyboard.coordinates=Generating coordinates...
+string.keyboard.draw.keys=Colouring keys...
+string.keyboard.draw.outline=Drawing outlines...
+string.keyboard.draw.text=Adding text...
+
+//unused
+string.keyboard.stats.count=Total key presses: {T}
+string.keyboard.stats.time=Time elapsed: {T}
+string.keyboard.stats.colour.count=Colour based on number of key presses.
+string.keyboard.stats.colour.time=Colour based on how long keys were pressed for.
+string.image.save.start=Saving image...
+string.image.save.end=Finished saving.
+string.image.range=Manually set highest range to {M}
+string.image.convert=Converting to RGB...
+string.image.failed=No image data was found for type "{T}".
+
+
 
 keyboard.key.A=A
 keyboard.key.B=B
