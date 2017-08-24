@@ -155,11 +155,12 @@ class RunningApplications(object):
                     NOTIFY(APPLIST_UPDATE_FAIL)
                     
             NOTIFY.send(self.q)
-                
+    
     def refresh(self):
         self.processes = get_running_processes()
         if WindowFocus is not None:
-            self.focus = WindowFocus().exe()
+            self.focus = WindowFocus()
+            self.focused_app = self.focus.exe()
         else:
             self.focus = None
     
@@ -185,7 +186,7 @@ class RunningApplications(object):
         """
         if self.focus is not None:
             try:
-                return (self.applications[self.focus], self.focus)
+                return (self.applications[self.focused_app], self.focused_app)
             except KeyError:
                 return None
         else:
