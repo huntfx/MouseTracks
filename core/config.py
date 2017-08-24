@@ -4,7 +4,7 @@ import time
 
 from core.compatibility import get_items
 from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT
-from core.os import get_resolution, create_folder
+from core.os import get_resolution, create_folder, OS_DEBUG
 
 
 class SimpleConfig(object):
@@ -169,6 +169,8 @@ try:
 except ValueError:
     #Fix for a mac error saying unknown locale
     _language = DEFAULT_LANGUAGE
+
+_save_freq = 20 if OS_DEBUG else 180
     
 _config_defaults = {
     'Main': {
@@ -206,7 +208,7 @@ _config_defaults = {
         'UpdateApplications': (86400, int, 'How often to update the list from the internet. Set to 0 to disable.')
     },
     'Timer': {
-        'CheckPrograms': (2, int, 1),
+        'CheckPrograms': (1, int, 1),
         'CheckResolution': (1, int, 1),
         'ReloadPrograms': (300, int, 1),
         '_ShowQueuedCommands': (20, int),
@@ -223,7 +225,7 @@ _config_defaults = {
         'OutputResolutionY': (_res_y, int, 1),
         'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
                                        ' Set to 0 to use all available.'),
-        'FileType': ('png', str, (False, 'jpg', 'png'))
+        'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.')
     },
     'GenerateHeatmap': {
         'NameFormat': ('{}\\Images\\[Name] Clicks ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
@@ -280,8 +282,8 @@ _config_defaults = {
         'AppListUpdate': (0, int, None, int(time.time()))
     },
     'Advanced': {
-        'MessageLevel': (1, int, 0, 3, 'Choose how many messages to show.'
-                                       ' 0 will show everything, and 3 will show nothing.')
+        'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose how many messages to show.'
+                                                   ' 0 will show everything, and 3 will show nothing.')
     }
 }
 
