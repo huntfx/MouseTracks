@@ -45,12 +45,14 @@ class ThreadHelper(Thread):
 
 def start_tracking():
     
+    _background_process = None
+    no_detection_wait = 2
+    
     try:
         NOTIFY(MT_PATH)
         _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         CONFIG.save()
         
-        mouse_inactive_delay = 2
 
         timer = {'UpdateScreen': CONFIG['Timer']['CheckResolution'],
                  'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
@@ -76,18 +78,18 @@ def start_tracking():
                 }
         mouse_pos = store['Mouse']['Position']
         
-        #Start background process
-        q_send = Queue()
-        q_recv = Queue()
-        p = Process(target=background_process, args=(q_send, q_recv))
-        p.daemon = True
-        p.start()
-
-        q_send2 = Queue()
-        q_recv2 = Queue()
-        running_programs = ThreadHelper(running_processes, q_send2, q_recv2, q_send)
-        running_programs.daemon = True
-        running_programs.start()
+        #Start background processes
+        q_bg_send = Queue()
+        q_bg_recv = Queue()
+        _background_process = Process(target=background_process, args=(q_bg_send, q_bg_recv))
+        _background_process.daemon = True
+        _background_process.start()
+        
+        q_rp_send = Queue()
+        q_rp_recv = Queue()
+        _running_programs = ThreadHelper(running_processes, q_rp_send, q_rp_recv, q_bg_send)
+        _running_programs.daemon = True
+        _running_programs.start()
         
         i = 0
         NOTIFY(START_MAIN)
@@ -102,27 +104,27 @@ def start_tracking():
                         if frame_data:
                             if last_sent:
                                 frame_data['Ticks'] = last_sent
-                            q_send.put(frame_data)
+                            q_bg_send.put(frame_data)
                         if frame_data_rp:
-                            q_send2.put(frame_data_rp)
+                            q_rp_send.put(frame_data_rp)
                         store['LastSent'] = i
                 except NameError:
                     pass
                 
-                while not q_recv2.empty():
-                    _print(u'{} {}'.format(time_format(limiter.time), q_recv2.get()))
+                while not q_rp_recv.empty():
+                    _print(u'{} {}'.format(time_format(limiter.time), q_rp_recv.get()))
                 
                 #Print any messages from previous loop
                 notify_extra = ''
                 received_data = []
-                while not q_recv.empty():
+                while not q_bg_recv.empty():
                 
-                    received_message = q_recv.get()
+                    received_message = q_bg_recv.get()
                     
                     #Receive text messages
                     try:
                         if received_message.startswith('Traceback (most recent call last)'):
-                            q_send.put({'Quit': True})
+                            q_bg_send.put({'Quit': True})
                             handle_error(received_message)
                     except AttributeError:
                         pass
@@ -159,7 +161,7 @@ def start_tracking():
                     if not store['Mouse']['Inactive']:
                         NOTIFY(MOUSE_UNDETECTED)
                         store['Mouse']['Inactive'] = True
-                    time.sleep(mouse_inactive_delay)
+                    time.sleep(no_detection_wait)
                     continue
 
                 #Check if mouse left the monitor
@@ -325,7 +327,7 @@ def start_tracking():
                 #Update user about the queue size
                 if not i % timer['UpdateQueuedCommands'] and store['LastActivity'] > i - timer['Save']:
                     try:
-                        NOTIFY(QUEUE_SIZE, q_send.qsize())
+                        NOTIFY(QUEUE_SIZE, q_bg_send.qsize())
                     except NotImplementedError:
                         pass
                 
@@ -341,11 +343,13 @@ def start_tracking():
                 i += 1
             
     except Exception as e:
-        q_send.put({'Quit': True})
+        if _background_process is not None:
+            q_bg_send.put({'Quit': True})
         handle_error(traceback.format_exc())
         
     except KeyboardInterrupt:
-        q_send.put({'Quit': True})
+        if _background_process is not None:
+            q_bg_send.put({'Quit': True})
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
         _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
