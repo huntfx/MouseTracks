@@ -2,18 +2,21 @@
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
-This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `start_tracking.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process, so that the tracking part will be able to run constantly without any CPU spikes interfering with it.
+This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `start_tracking.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process, so that the tracking part will be able to run constantly without any CPU heavy calculations interfering with it.
 
-It'll record any monitors you have connected, and it'll merge the results with your main monitor.
+If you have multiple monitors, they are merged into the same file. By default, the tracking area is limited to the application window, but with no application detected, it will fall back to tracking all monitors.
 
 <b>Current Features</b>:
  - Track position, clicks and key presses over multiple resolutions and monitors
- - Generate colourful mouse tracks and a heatmap of clicks (for everything or just the latest session)
+ - Generate colourful mouse tracks and a heatmap of clicks and key presses (for everything or just the latest session)
  - Fade old mouse tracks to keep recent tracks more visible
- - Automatically keep separate tracks for different applications (defined in "Program List.txt")
+ - Record and adjust resolution based on the currently focused window
+ - Automatically keep separate tracks for different applications (defined in "AppList.txt")
+ - Perodically update AppList.txt from the internet, keeping and sorting all the old values, and adding any new ones
  - Edit settings with config.ini
  - Full Windows support
- - Some Linux support
+ - Some Linux support (WIP)
+ - Some Mac support (WIP)
  
 <b>Example Output:</b>
 <img src="http://i.imgur.com/UJgf0up.jpg">
