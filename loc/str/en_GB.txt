@@ -14,7 +14,6 @@ word.mousebutton.right=Right mouse button
 string.exit=Press enter to exit.
 string.import=Importing modules...
 string.profile.load=Loading profile {P}...
-
 string.track.mouse.detected=Cursor position has been detected.
 string.track.mouse.undetected=Unable to read cursor position.
 string.track.mouse.onscreen=Cursor has entered the main monitor.
@@ -28,7 +27,10 @@ string.track.mouse.held=Mouse button being held.
 string.track.compress.start=Tracking data is being compressed...
 string.track.compress.end=Finished compressing tracking data.
 string.track.resolution.new=Resolution changed from {X1}x{Y1} to {X2}x{Y2}.
-string.track.resolution.changed=Recording resolution switched to {Y2}p.
+string.track.resolution.changed=Mouse moved to {Y2}p screen.
+string.track.resolution.application.start=Application resolution is {X}x{Y}.
+string.track.resolution.application.move=Application moved from ({X1}, {Y1}) to ({X2}, {Y2}).
+string.track.resolution.application.resize=Application resized from {X1}x{Y1} to {X2}x{Y2}.
 string.track.keyboard.press=Key {P}: {K}
 string.track.keyboard.held=Key {P} (held down): {K}
 string.track.application.start=Application detected: {A}
@@ -57,7 +59,6 @@ string.track.profile.load=Finished loading data.
 string.track.profile.new=Started recording to new file.
 string.track.path=Set save location to "{P}".
 string.track.queue={N} {C} queued for processing.
-
 string.image.name.track=Tracks
 string.image.name.click=Click Heatmap
 string.image.name.keyboard=Keyboard Heatmap
@@ -86,20 +87,6 @@ string.keyboard.coordinates=Generating coordinates...
 string.keyboard.draw.keys=Colouring keys...
 string.keyboard.draw.outline=Drawing outlines...
 string.keyboard.draw.text=Adding text...
-
-//unused
-string.keyboard.stats.count=Total key presses: {T}
-string.keyboard.stats.time=Time elapsed: {T}
-string.keyboard.stats.colour.count=Colour based on number of key presses.
-string.keyboard.stats.colour.time=Colour based on how long keys were pressed for.
-string.image.save.start=Saving image...
-string.image.save.end=Finished saving.
-string.image.range=Manually set highest range to {M}
-string.image.convert=Converting to RGB...
-string.image.failed=No image data was found for type "{T}".
-
-
-
 keyboard.key.A=A
 keyboard.key.B=B
 keyboard.key.C=C
@@ -192,3 +179,14 @@ keyboard.key.NUM9=9\nPg Up
 keyboard.key.PRINTSCREEN=Print\nScreen
 keyboard.key.SCROLLLOCK=Scroll\nLock
 keyboard.key.PAUSE=Pause\nBreak
+
+//unused
+string.keyboard.stats.count=Total key presses: {T}
+string.keyboard.stats.time=Time elapsed: {T}
+string.keyboard.stats.colour.count=Colour based on number of key presses.
+string.keyboard.stats.colour.time=Colour based on how long keys were pressed for.
+string.image.save.start=Saving image...
+string.image.save.end=Finished saving.
+string.image.range=Manually set highest range to {M}
+string.image.convert=Converting to RGB...
+string.image.failed=No image data was found for type "{T}".
