@@ -3,6 +3,7 @@ import sys
 
 from core.compatibility import input, _print, PYTHON_VERSION
 from core.constants import DEFAULT_PATH, format_file_path
+from core.language import Language
 from core.os import OPERATING_SYSTEM
 from core.versions import VERSION
 
@@ -20,7 +21,9 @@ def handle_error(trace=None):
         with open(file_name, 'w') as f:
             f.write(output)
         _print(trace)
-        input('Press enter to close.')
+        
+        string = Language().get_strings()
+        input(string['string']['exit'])
         
     sys.exit()
  
