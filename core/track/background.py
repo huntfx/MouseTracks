@@ -19,7 +19,9 @@ def running_processes(q_recv, q_send, background_send):
     and sends the currently running program to the backgrund process.
     """
     try:
-        previous = None
+        previous_app = None
+        last_coordinates = None
+        last_resolution = None
             
         while True:
                 
@@ -35,17 +37,29 @@ def running_processes(q_recv, q_send, background_send):
             if 'Update' in received_data:
                 running_apps.refresh()
                 
-                current = running_apps.check()
+                current_app = running_apps.check()
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
-                    if current is None:
+                    if current_app is None:
                         cust_res = None
+                        
                     else:
                         cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
+                        
+                        if current_app == previous_app:
+                            if cust_res[1] != last_resolution:
+                                NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
+                            elif cust_res[0] != last_coordinates:
+                                NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
+                        else:
+                            NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
+                            
+                        last_coordinates, last_resolution = cust_res
+                            
                     background_send.put({'CustomResolution': cust_res})
                     
-                if current != previous:
+                if current_app != previous_app:
                     
                     if running_apps.focus is None:
                         start = APPLICATION_STARTED
@@ -55,17 +69,17 @@ def running_processes(q_recv, q_send, background_send):
                         start = APPLICATION_FOCUSED
                         end = APPLICATION_UNFOCUSED
                 
-                    if current is None:
-                        NOTIFY(end, previous)
+                    if current_app is None:
+                        NOTIFY(end, previous_app)
                     else:
-                        if running_apps.focus is not None and previous is not None:
-                            NOTIFY(APPLICATION_UNFOCUSED, previous)
-                        NOTIFY(start, current)
+                        if running_apps.focus is not None and previous_app is not None:
+                            NOTIFY(APPLICATION_UNFOCUSED, previous_app)
+                        NOTIFY(start, current_app)
                         
                     NOTIFY.send(q_send)
-                    background_send.put({'Program': current})
+                    background_send.put({'Program': current_app})
                     
-                    previous = current
+                    previous_app = current_app
     
     #Catch error after KeyboardInterrupt
     except EOFError:
