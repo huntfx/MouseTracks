@@ -36,16 +36,35 @@ def running_processes(q_recv, q_send, background_send):
                 running_apps.refresh()
                 
                 current = running_apps.check()
+                
+                #Send custom resolution
+                if running_apps.focus is not None:
+                    if current is None:
+                        cust_res = None
+                    else:
+                        cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
+                    background_send.put({'CustomResolution': cust_res})
                     
                 if current != previous:
-                    if current is None:
-                        NOTIFY(APPLICATION_UNFOCUSED if running_apps.focus else APPLICATION_QUIT, previous)
+                    
+                    if running_apps.focus is None:
+                        start = APPLICATION_STARTED
+                        end = APPLICATION_QUIT
+                        background_send.put({'CustomResolution': None})
                     else:
-                        if running_apps.focus and previous is not None:
+                        start = APPLICATION_FOCUSED
+                        end = APPLICATION_UNFOCUSED
+                
+                    if current is None:
+                        NOTIFY(end, previous)
+                    else:
+                        if running_apps.focus is not None and previous is not None:
                             NOTIFY(APPLICATION_UNFOCUSED, previous)
-                        NOTIFY(APPLICATION_FOCUSED if running_apps.focus else APPLICATION_STARTED, current)
+                        NOTIFY(start, current)
+                        
                     NOTIFY.send(q_send)
                     background_send.put({'Program': current})
+                    
                     previous = current
     
     #Catch error after KeyboardInterrupt
@@ -80,8 +99,7 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
             if max_attempts == 1:
                 NOTIFY(SAVE_FAIL)
                 return
-            NOTIFY(SAVE_FAIL_RETRY, CONFIG['Save']['WaitAfterFail'],
-                         i, max_attempts)
+            NOTIFY(SAVE_FAIL_RETRY, CONFIG['Save']['WaitAfterFail'], i, max_attempts)
             NOTIFY.send(q_send)
             time.sleep(CONFIG['Save']['WaitAfterFail'])
             
@@ -103,6 +121,8 @@ def _check_resolution(store, resolution):
     """Make sure resolution exists as a key for each map."""
     if resolution is None:
         return
+    if not isinstance(resolution, tuple):
+        raise ValueError('incorrect resolution: {}'.format(resolution))
     if resolution not in store['Data']['Maps']['Tracks']:
         store['Data']['Maps']['Tracks'][resolution] = {}
     if resolution not in store['Data']['Maps']['Clicks']:
@@ -124,7 +144,8 @@ def background_process(q_recv, q_send):
                  'LastResolution': None,
                  'ActivitySinceLastSave': False,
                  'SavesSkipped': 0,
-                 'PingTimeout': CONFIG['Timer']['_Ping'] + 1}
+                 'PingTimeout': CONFIG['Timer']['_Ping'] + 1,
+                 'CustomResolution': None}
         
         NOTIFY(DATA_LOADED)
         try:
@@ -185,7 +206,10 @@ def background_process(q_recv, q_send):
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
-                    _check_resolution(store, store['Resolution'])
+                    if store['CustomResolution'] is None:
+                        _check_resolution(store, store['Resolution'])
+                    else:
+                        _check_resolution(store, store['CustomResolution'][1])
                     store['ResolutionList'] = set()
                         
                     if store['Data']['Ticks']['Total']:
@@ -198,6 +222,12 @@ def background_process(q_recv, q_send):
                     except NotImplementedError:
                         pass
                 NOTIFY.send(q_send)
+            
+            if 'CustomResolution' in received_data:
+                
+                store['CustomResolution'] = received_data['CustomResolution']
+                if store['CustomResolution'] is not None:
+                    _check_resolution(store, store['CustomResolution'][1])
 
             if 'Resolution' in received_data:
                 store['Resolution'] = received_data['Resolution']
@@ -234,6 +264,7 @@ def background_process(q_recv, q_send):
                     except KeyError:
                         store['Data']['Keys']['Session']['Held'][key] = 1
             
+            
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
                 store['ActivitySinceLastSave'] = True
@@ -261,7 +292,16 @@ def background_process(q_recv, q_send):
                         
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
-                    if MULTI_MONITOR:
+                
+                    if store['CustomResolution'] is not None:
+                        try:
+                            resolution, offset = monitor_offset(pixel, [store['CustomResolution'][0]])
+                        except TypeError:
+                            continue
+                            
+                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                    
+                    elif MULTI_MONITOR:
                         
                         if resolution != _resolution:
                             try:
@@ -280,9 +320,9 @@ def background_process(q_recv, q_send):
                             
                     else:
                         resolution = store['Resolution']
-                        
+                    
                     store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
-                
+
                 store['Data']['Ticks']['Current']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
@@ -315,7 +355,16 @@ def background_process(q_recv, q_send):
                 store['ActivitySinceLastSave'] = True
                 
                 for mouse_button, pixel in received_data['MouseClick']:
-                    if MULTI_MONITOR:
+                
+                    if store['CustomResolution'] is not None:
+                        try:
+                            resolution, offset = monitor_offset(pixel,  [store['CustomResolution'][0]])
+                        except TypeError:
+                            continue
+                            
+                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                            
+                    elif MULTI_MONITOR:
                     
                         try:
                             resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
