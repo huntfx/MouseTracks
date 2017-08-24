@@ -36,6 +36,12 @@ RESOLUTION_CHANGED = 16
 
 MONITOR_CHANGED = 17
 
+APPLICATION_RESOLUTION = 18
+
+APPLICATION_MOVE = 19
+
+APPLICATION_RESIZE = 20
+
 KEYBOARD_PRESSES = 32
 
 KEYBOARD_PRESSES_HELD = 33
@@ -158,6 +164,17 @@ class Notify(object):
             q1(self.string['resolution']['changed'].format(X1=args[0][0], Y1=args[0][1],
                                                            X2=args[1][0], Y2=args[1][1]))
                                                        
+        if message_id == APPLICATION_RESOLUTION:
+            q1(self.string['resolution']['application']['start'].format(X=args[0][0], Y=args[0][1]))
+                                                       
+        if message_id == APPLICATION_MOVE:
+            q1(self.string['resolution']['application']['move'].format(X1=args[0][0], Y1=args[0][1],
+                                                                       X2=args[1][0], Y2=args[1][1]))
+                                                       
+        if message_id == APPLICATION_RESIZE:
+            q1(self.string['resolution']['application']['resize'].format(X1=args[0][0], Y1=args[0][1],
+                                                                         X2=args[1][0], Y2=args[1][1]))
+        
         if message_id == KEYBOARD_PRESSES:
             _press = self.word['keypress']
             press = _press['single'] if len(args[0]) == 1 else _press['plural']
