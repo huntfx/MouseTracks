@@ -2,7 +2,7 @@ from __future__ import division, absolute_import
 from PIL import Image
 
 from core.image.keyboard import DrawKeyboard
-from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour
+from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, calculate_gaussian_size
 from core.image.colours import ColourRange, calculate_colour_map
 from core.compatibility import get_items, _print
 from core.config import CONFIG, _config_defaults
@@ -24,7 +24,7 @@ class ImageName(object):
         self.upscale_res_x = str(CONFIG['GenerateImages']['_UpscaleResolutionX'])
         self.upscale_res_y = str(CONFIG['GenerateImages']['_UpscaleResolutionY'])
 
-        self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
+        #self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
         self.heatmap_exp = str(CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
         self.heatmap_colour = str(CONFIG['GenerateHeatmap']['ColourProfile'])
         self.heatmap_buttons = {'LMB': CONFIG['GenerateHeatmap']['_MouseButtonLeft'],
@@ -43,7 +43,7 @@ class ImageName(object):
         if image_type.lower() == 'clicks':
             name = CONFIG['GenerateHeatmap']['NameFormat']
             name = name.replace('[ExpMult]', self.heatmap_exp)
-            name = name.replace('[GaussianSize]', self.heatmap_gaussian)
+            #name = name.replace('[GaussianSize]', self.heatmap_gaussian)
             name = name.replace('[ColourProfile]', self.heatmap_colour)
             
             selected_buttons = [k for k, v in get_items(self.heatmap_buttons) if v]
@@ -129,9 +129,12 @@ class RenderImage(object):
                 numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple_selection=mb, 
                                                  session_start=session_start, _find_range=False,
                                                  high_precision=high_precision)
+                
+                _h, _w = numpy_arrays[0].shape
+                gaussian_size = calculate_gaussian_size(_w, _h)
 
                 (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
-                            gaussian_size=CONFIG['GenerateHeatmap']['GaussianBlurSize'],
+                            gaussian_size=gaussian_size,
                             exponential_multiplier=CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
                 
                 #Adjust range of heatmap            
