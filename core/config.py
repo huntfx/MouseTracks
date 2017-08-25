@@ -50,7 +50,7 @@ class SimpleConfig(object):
             #Process value
             else:
                 name, value = [i.strip() for i in line.split('=', 1)]
-                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0]
+                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0].strip()
                 
                 #Compare value in file to default settings
                 try:
@@ -236,8 +236,8 @@ _config_defaults = {
         #To get a consistent result -
         #   36 at 2880p, 28 at 2160p, 18 at 1440p, 15 at 1080p, 10 at 720p
         #Roughly that is a factor of 80, so it may be possible to give a consistent multiplier instead
-        'GaussianBlurSize': (28, float, 1),
-        
+        '_GaussianBlurBase': (0.0125, float, 0),
+        'GaussianBlurMultiplier': (1.0, float, 0, 'Change the size of the gaussian blur.'),
         'ExponentialMultiplier': (1.0, float, 0.001, 'Multiply every pixel to the power of this number.'
                                                      ' It can produce better results, but not all the time,'
                                                      ' so it is best left at 1.0 normally.'),
