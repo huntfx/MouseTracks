@@ -8,6 +8,15 @@ from core.compatibility import range, _print
 from core.config import CONFIG
 
 
+def calculate_gaussian_size(width, height):
+    """Calculate correct size of gaussian blur.
+    Currently only height is taken into account, but this could change, so takes both values.
+    """
+    gaussian_base = CONFIG['GenerateHeatmap']['_GaussianBlurBase']
+    gaussian_mult = CONFIG['GenerateHeatmap']['GaussianBlurMultiplier']
+    return height * gaussian_base * gaussian_mult
+
+
 def merge_resolutions(main_data, multiple_selection=False, 
                       session_start=None, high_precision=False, _find_range=True):
     """Upscale each resolution to make them all match.
@@ -40,7 +49,7 @@ def merge_resolutions(main_data, multiple_selection=False,
         _max_width_y = int(round(max_y / output_resolution[1] * output_resolution[0]))
         max_resolution = (_max_width_y, max_y)
     CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY'] = max_resolution
-                      
+                     
     #Read total number of images that will need to be upscaled
     max_count = 0
     for current_resolution in resolutions:
@@ -65,13 +74,13 @@ def merge_resolutions(main_data, multiple_selection=False,
             i += 1
             if current_resolution == max_resolution:
                 _print('Processing {}x{}... ({}/{})'.format(current_resolution[0], 
-                                                                    current_resolution[1],
-                                                                    i, max_count))
+                                                            current_resolution[1],
+                                                            i, max_count))
             else:
                 _print('Processing {}x{} and resizing to {}x{}...'
-                               ' ({}/{})'.format(current_resolution[0], current_resolution[1],
-                                                 max_resolution[0], max_resolution[1],
-                                                 i, max_count))
+                       ' ({}/{})'.format(current_resolution[0], current_resolution[1],
+                                         max_resolution[0], max_resolution[1],
+                                         i, max_count))
 
             #Try find the highest and lowest value
             if _find_range:
