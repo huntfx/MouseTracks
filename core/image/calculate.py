@@ -2,8 +2,15 @@ from __future__ import division, absolute_import
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
+#Attempt to import scipy, but have fallback options as scipy results in a huge 300mb+ exe file
+try:
+    from core.image._scipy import blur, upscale
+    scipy = True
+    raise ImportError
+except ImportError:
+    from core.image._numpy import blur, upscale
+    scipy = False
 from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
-from core.image._scipy import blur, upscale
 from core.compatibility import range, _print
 from core.config import CONFIG
 
@@ -27,6 +34,7 @@ def merge_resolutions(main_data, multiple_selection=False,
     highest_value = None
     lowest_value = None
     resolutions = main_data.keys()
+    print resolutions
 
     if any(not isinstance(i, tuple) for i in resolutions) or any(len(i) != 2 for i in resolutions):
         raise ValueError('incorrect resolutions')
@@ -41,7 +49,7 @@ def merge_resolutions(main_data, multiple_selection=False,
     if high_precision:
         max_x *= 2
         max_y *= 2
-    
+        
     _max_height_x = int(round(max_x / output_resolution[0] * output_resolution[1]))
     if _max_height_x > max_y:
         max_resolution = (max_x, _max_height_x)
@@ -115,7 +123,16 @@ def merge_resolutions(main_data, multiple_selection=False,
             #Calculate the zoom level needed
             zoom_factor = (max_resolution[1] / current_resolution[1],
                            max_resolution[0] / current_resolution[0])
-            numpy_arrays.append(upscale(numpy_array(new_data), zoom_factor))
+            result = upscale(numpy_array(new_data), zoom_factor)
+            
+            #Trim array to maximum resolution if needed
+            if not scipy:
+                if max_resolution[0] <= result.shape[1]:
+                    result = result[:, :max_resolution[0]-1]
+                if max_resolution[1] <= result.shape[0]:
+                    result = result[:max_resolution[1]-1, :]                    
+                
+            numpy_arrays.append(result)
     
     if _find_range:
         if session_start is not None:
@@ -222,7 +239,7 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
 
     #Blur the array
     _print('Applying gaussian blur...')            
-    heatmap = blur(max_array, gaussian_size)
+    heatmap = blur(max_array, int(gaussian_size))
 
     #Calculate the average of all the points
     _print('Calculating average...')
