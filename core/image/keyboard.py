@@ -2,7 +2,7 @@ from __future__ import division
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
-from core.compatibility import get_items, range
+from core.compatibility import get_items, range, _print
 from core.config import CONFIG
 from core.language import Language
 from core.files import load_program
@@ -168,7 +168,7 @@ class KeyboardGrid(object):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
         max_offset = {'X': 0, 'Y': 0}
         
-        use_linear = CONFIG['GenerateKeyboard']['LinearScale']
+        mapping = CONFIG['GenerateKeyboard']['ColourMapping'].lower()
         
         use_time = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time'
         use_count = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count'
@@ -179,14 +179,16 @@ class KeyboardGrid(object):
         elif use_count:
             values = self.count_press.values()
             
-        if use_linear:
-            exponential = CONFIG['GenerateKeyboard']['LinearExponential']
-            max_range = pow(max(values), exponential)
-        else:
+        if mapping == 'logarithmic':
             pools = sorted(set(values))
             max_range = len(pools) + 1
             lookup = {v: i + 1 for i, v in enumerate(pools)}
             lookup[0] = 0
+        else:
+            max_range = max(values)
+            if mapping == 'exponential':
+                exponential = CONFIG['GenerateKeyboard']['ExponentialMultiplier']
+                max_range **= exponential
         
         colours = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
         colour_range = ColourRange(0, max_range, colours)
@@ -223,10 +225,12 @@ class KeyboardGrid(object):
                     
                     #Calculate colour for key
                     if values['CustomColour'] is None:
-                        if use_linear:
+                        if mapping == 'logarithmic':
+                            fill_colour = colour_range[lookup[key_count]]
+                        if mapping == 'exponential':
                             fill_colour = colour_range[key_count ** exponential]
                         else:
-                            fill_colour = colour_range[lookup[key_count]]
+                            fill_colour = colour_range[key_count]
                     else:
                         if values['CustomColour'] == False:
                             hide_background = True
@@ -344,9 +348,16 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
         
 class DrawKeyboard(object):
     def __init__(self, profile_name, data=None, last_session=False):
+        
+        all_strings = Language().get_strings()
+        self._string = all_strings['string']
+        self.string = all_strings['string']['keyboard']
+        self.keys = all_strings['keyboard']['key']
+        #self.word = all_strings['word']
+        
         self.name = profile_name
         self.last_session = last_session
-        print 'Loading profile...'
+        _print(self._string['profile']['load'])
         self.reload(data)
     
     def reload(self, data=None):
@@ -358,11 +369,10 @@ class DrawKeyboard(object):
         else:
             self.key_counts = data['Keys']['All']
             self.ticks = data['Ticks']['Total']
-        self.keys = self._get_key_names()
         self.grid = self._create_grid()
     
     def _create_grid(self):
-        print 'Building keyboard from layout...'
+        _print(self.string['layout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
         layout = Language().get_keyboard_layout()
         for row in layout:
@@ -377,12 +387,8 @@ class DrawKeyboard(object):
                 grid.add_key(name, width, height, hide_border=hide_border, custom_colour=custom_colour)
         return grid
     
-    def _get_key_names(self):
-        all_strings = Language().get_strings(_new=True)
-        return all_strings['keyboard']['key']
-    
     def calculate(self):
-        print 'Calculating pixels...'
+        _print(self.string['coordinates'])
         (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
         return {'Width': width,
                 'Height': height,
@@ -406,19 +412,19 @@ class DrawKeyboard(object):
                     pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
     
         #Fill colours
-        print 'Colouring keys...'
+        _print(self.string['draw']['keys'])
         for colour in data['Coordinates']['Fill']:
             for x, y in data['Coordinates']['Fill'][colour]:
                 pixels[x, y] = colour
 
         #Draw border
-        print 'Drawing outlines...'
+        _print(self.string['draw']['outline'])
         border = tuple(255 - i for i in data['Coordinates']['Background'])
         for x, y in data['Coordinates']['Outline']:
             pixels[x, y] = border
     
         #Draw text
-        print 'Adding text...'
+        _print(self.string['draw']['text'])
         draw = ImageDraw.Draw(image)
         font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
         font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
