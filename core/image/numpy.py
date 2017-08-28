@@ -64,31 +64,3 @@ def numpy_array(array, dtype=None):
 
 def numpy_sum(array):
     return numpy.sum(array)
-    
-
-def upscale(array, factor):
-    """Scale array by a factor.
-    Got from https://stackoverflow.com/questions/45027220/expanding-zooming-in-a-numpy-array.
-    """
-    array = numpy.asarray(array)
-    try:
-        slices = [slice(0, v, 1 / factor[i]) for i, v in enumerate(array.shape)]
-    except TypeError:
-        slices = [slice(0, v, 1 / factor) for i, v in enumerate(array.shape)]
-    return array[tuple(numpy.mgrid[slices].astype('i'))]
-    
-    
-def _gaussian_kernel(size, size_y=None):
-    size = int(size)
-    if not size_y:
-        size_y = size
-    else:
-        size_y = int(size_y)
-    x, y = numpy.mgrid[-size:size+1, -size_y:size_y+1]
-    g = numpy.exp(-(x**2/float(size)+y**2/float(size_y)))
-    return g / g.sum()
-
-    
-def blur(array, size):
-    gaussian_filter = _gaussian_kernel(size)
-    raise NotImplementedError('gaussian blur in numpy not implemented, please install scipy for now')
