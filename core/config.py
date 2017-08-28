@@ -183,9 +183,10 @@ _config_defaults = {
     },
     'CompressMaps': {
         '__note__': ['Set how often the older tracks should be compressed, and by how much.',
-                     'This helps keep the most recent data visibile.'],
-        'TrackMaximum': (425000, int, 0, MAX_INT),
-        'TrackReduction': (1.1, float, 1.01)
+                     'This helps keep the most recent data visibile.',
+                     'The default values will result in a different image roughly every 2 hours.'],
+        'TrackMaximum': (425000, int, 0, MAX_INT, 'Maximum number of of ticks (at 60 per second).'),
+        'TrackReduction': (1.1, float, 1.001, 'How much to divide each pixel by.')
     },
     'Save': {
         'Frequency': (180, int, 10, 'Choose how often to save the file, don\'t set it too low'
@@ -228,33 +229,30 @@ _config_defaults = {
         'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.')
     },
     'GenerateHeatmap': {
-        'NameFormat': ('{}\\Images\\[Name] Clicks ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Clicks ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
         '_MouseButtonLeft': (True, bool),
         '_MouseButtonMiddle': (True, bool),
         '_MouseButtonRight': (True, bool),
-        
-        #To get a consistent result -
-        #   36 at 2880p, 28 at 2160p, 18 at 1440p, 15 at 1080p, 10 at 720p
-        #Roughly that is a factor of 80, so it may be possible to give a consistent multiplier instead
         '_GaussianBlurBase': (0.0125, float, 0),
-        'GaussianBlurMultiplier': (1.0, float, 0, 'Change the size of the gaussian blur.'),
+        'GaussianBlurMultiplier': (1.0, float, 0, 'Change the size multiplier of the gaussian blur.'
+                                                  ' Smaller values are less smooth but show more detail.'),
         'ExponentialMultiplier': (1.0, float, 0.001, 'Multiply every pixel to the power of this number.'
                                                      ' It can produce better results, but not all the time,'
                                                      ' so it is best left at 1.0 normally.'),
         'ColourProfile': ('Jet', str),
-        'MaximumValueMultiplier': (7.5, float, 0.001, 'A lower value pushes more areas to the maximum.',
-                                                      ' Change this for each image to get the best heatmap results.'),
-        'ForceMaximumValue': (0.0, float, 0, 'Manually set the maximum value to limit the range'
+        'RangeLimitMultiplier': (7.5, float, 0.001, 'A lower value pushes more areas to the maximum.'
+                                                     ' Change this for each image to get the best heatmap results.'),
+        'ManualRangeLimit': (0.0, float, 0, 'Manually set the maximum value to limit the range'
                                              ', which is generally between 0 and 1.'
                                              ' Set to 0.0 for automatic, otherwise use trial and error'
                                              ' to get it right.')
     },
     'GenerateTracks': {
-        'NameFormat': ('{}\\Images\\[Name] Tracks - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]'.format(DEFAULT_PATH), str),
         'ColourProfile': ('WhiteToBlack', str)
     },
     'GenerateKeyboard':{
-        'NameFormat': ('{}\\Images\\[Name] Keyboard - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])'.format(DEFAULT_PATH), str),
         'ColourProfile': ('Aqua', str),
         'ExtendedKeyboard': (True, bool, 'Set if the full keyboard should be shown.'),
         'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
@@ -270,9 +268,12 @@ _config_defaults = {
         'FontHeightOffset': (5.0, float),
         'FontWidthOffset': (5.0, float),
         'FontSpacing': (5.0, float),
-        'LinearScale': (False, bool, ('If enabled, it is recommended to use a simple colour map such as'
-                                      ' "WhiteTo____".')),
-        'LinearExponential': (1.0, float, 0),
+        'ColourMapping': ('logarithmic', str, (False, 'logarithmic', 'linear', 'exponential'),
+                          ('Set how the colours should be assigned.'
+                           ' Logarithmic results in similar amounts of each colour,'
+                           ' whereas linear gives an accurate range.'
+                           ' Use exponential to apply the multiplier to it.')),
+        'ExponentialMultiplier': (1.0, float, 0),
         'DataSet': ('time', str, (False, 'time', 'press'), 'Set if the colours should be determined by the'
                                                           ' total time the key has been held (time),'
                                                           ' or the number of presses (press).')
