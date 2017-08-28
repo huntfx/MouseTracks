@@ -4,75 +4,172 @@ from PIL import Image
 from core.image.keyboard import DrawKeyboard
 from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, calculate_gaussian_size
 from core.image.colours import ColourRange, calculate_colour_map
-from core.compatibility import get_items, _print
+from core.constants import UPDATES_PER_SECOND
+from core.compatibility import get_items, _print, get_items
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
-from core.files import load_program
+from core.files import load_program, format_name
+from core.maths import round_int
+from core.os import create_folder
+from core.versions import VERSION
 
 
 class ImageName(object):
     """Generate an image name using values defined in the config.
-    Not implemented yet: creation time | modify time | exe name
+    
+    Potential additions:
+        Date formatting (eg. [j]-[M]-[Y])
+        Inline if/else
     """
-    def __init__(self, program_name):
+    
+    # To do: Add date format strings to it, like [j]-[M]-[Y]
+    ALTERNATIVES = {
+        'Width': ['ResX', 'ResolutionX', 'ImageWidth', 'OutputWidth', 'X'],
+        'Height': ['ResY', 'ResolutionY', 'ImageHeight', 'OutputHeight', 'Y'],
+        'UpscaleWidth': ['UpscaleX', 'UpscaleResolutionX', 'UpscaleWidth', 'UWidth', 'UX'],
+        'UpscaleHeight': ['UpscaleY', 'UpscaleResolutionY', 'UpscaleHeight', 'UHeight', 'UY'],
+        'Exponential': ['ExponentialMultiplier', 'ExpMult'],
+        'Colours': ['Colors', 'ColourMap', 'ColorMap', 'ColourProfile', 'ColorProfile'],
+        'MouseButtons': [],
+        'FileName': ['FName'],
+        'FirstSave': ['CTime', 'CreationTime', 'Created'], #1494809091
+        'LatestSave': ['LastSave', 'MTime', 'ModifiedTime', 'LastModified'], #1503929321
+        'RunningTimeSeconds': ['RTSeconds'],
+        'RunningTimeMinutes': ['RTMinutes'],
+        'RunningTimeHours': ['RTHours'],
+        'RunningTimeDays': ['RTDays'],
+        'Ticks': [],
+        'FileVersion': [],
+        'Version': [],
+        'GaussianBlur': ['Gaussian', 'Blur', 'BlurAmount', 'GaussianSize'],
+        'GaussianSigma': [],
+        'RangeLimit': ['MaximumRange', 'MaximumValue', 'MaxRange', 'MaxValue', 'ValueLimit'],
+        'DataSet': [],
+        'Mapping': ['ColourMapping'],
+        'Size': ['SizeMultiplier', 'SizeMult'],
+        'Extended': ['ExtendedKeyboard'],
+        'Sessions': ['NumSessions'],
+        'HighPrecision': ['HighDetail']
+    }
+        
+        
+    def __init__(self, program_name, load_profile=False, data=None):
         self.name = program_name.replace('\\', '').replace('/', '')
+        if data is None and load_profile:
+            data = load_program(data)
+        self.data = data
+        self.file_name = format_name(self.name)
         self.reload()
 
     def reload(self):
-        self.output_res_x = str(CONFIG['GenerateImages']['OutputResolutionX'])
-        self.output_res_y = str(CONFIG['GenerateImages']['OutputResolutionY'])
-        self.upscale_res_x = str(CONFIG['GenerateImages']['_UpscaleResolutionX'])
-        self.upscale_res_y = str(CONFIG['GenerateImages']['_UpscaleResolutionY'])
+        
+        g_im = CONFIG['GenerateImages']
+        g_hm = CONFIG['GenerateHeatmap']
+        g_t = CONFIG['GenerateTracks']
+        g_kb = CONFIG['GenerateKeyboard']
+    
+        self.width = str(g_im['OutputResolutionX'])
+        self.height = str(g_im['OutputResolutionY'])
+        self.uwidth = str(g_im['_UpscaleResolutionX'])
+        self.uheight = str(g_im['_UpscaleResolutionY'])
+        self.high_precision = 'High Detail' if g_im['HighPrecision'] else 'Normal'
+        
+        self.heatmap_exponential = str(g_hm['ExponentialMultiplier'])
+        self.heatmap_colours = str(g_hm['ColourProfile'])
+        self.heatmap_buttons = {'LMB': g_hm['_MouseButtonLeft'],
+                                'MMB': g_hm['_MouseButtonMiddle'],
+                                'RMB': g_hm['_MouseButtonRight']}
+        selected_buttons = [k for k, v in get_items(self.heatmap_buttons) if v]
+        if len(selected_buttons) == 3:
+           self.heatmap_button_group = 'Combined'
+        elif len(selected_buttons) == 2:
+            self.heatmap_button_group = '+'.join(selected_buttons)
+        elif len(selected_buttons) == 1:
+            self.heatmap_button_group = selected_buttons[0]
+        else:
+            self.heatmap_button_group = 'Empty'
+        self.heatmap_gaussian_actual = str(calculate_gaussian_size(g_im['_UpscaleResolutionX'], 
+                                                                   g_im['_UpscaleResolutionY']))
+        self.heatmap_gaussian = str(g_hm['GaussianBlurMultiplier'])
+        self.heatmap_max = str(g_hm['ManualRangeLimit'])
 
-        #self.heatmap_gaussian = str(CONFIG['GenerateHeatmap']['GaussianBlurSize'])
-        self.heatmap_exp = str(CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
-        self.heatmap_colour = str(CONFIG['GenerateHeatmap']['ColourProfile'])
-        self.heatmap_buttons = {'LMB': CONFIG['GenerateHeatmap']['_MouseButtonLeft'],
-                                'MMB': CONFIG['GenerateHeatmap']['_MouseButtonMiddle'],
-                                'RMB': CONFIG['GenerateHeatmap']['_MouseButtonRight']}
+        self.track_colour = str(g_t['ColourProfile'])
 
-        self.track_colour = str(CONFIG['GenerateTracks']['ColourProfile'])
-
-        self.keyboard_colour = str(CONFIG['GenerateKeyboard']['ColourProfile'])
+        self.keyboard_colour = str(g_kb['ColourProfile'])
+        self.keyboard_set = g_kb['DataSet'][0].upper() + g_kb['DataSet'][1:].lower()
+        self.keyboard_exponential = str(g_kb['ExponentialMultiplier'])
+        self.keyboard_mapping = g_kb['ColourMapping'][0].upper() + g_kb['ColourMapping'][1:].lower()
+        self.keyboard_size_mult = str(g_kb['SizeMultiplier'])
+        self.keyboard_extended = 'Extended' if g_kb['ExtendedKeyboard'] else 'Compact'
 
     def generate(self, image_type, reload=False):
     
+        image_type = image_type.lower()
+    
         if reload:
             self.reload()
-            
-        if image_type.lower() == 'clicks':
-            name = CONFIG['GenerateHeatmap']['NameFormat']
-            name = name.replace('[ExpMult]', self.heatmap_exp)
-            #name = name.replace('[GaussianSize]', self.heatmap_gaussian)
-            name = name.replace('[ColourProfile]', self.heatmap_colour)
-            
-            selected_buttons = [k for k, v in get_items(self.heatmap_buttons) if v]
-            if all(self.heatmap_buttons.values()):
-                name = name.replace('[MouseButtons]', 'Combined')
-            elif len(selected_buttons) == 2:
-                name = name.replace('[MouseButtons]', '+'.join(selected_buttons))
-            elif len(selected_buttons) == 1:
-                name = name.replace('[MouseButtons]', selected_buttons[0])
-            else:
-                name = name.replace('[MouseButtons]', 'Empty')
-
-        elif image_type.lower() == 'tracks':
-            name = CONFIG['GenerateTracks']['NameFormat']
-            name = name.replace('[ColourProfile]', self.track_colour)
+        
+        lookup = {'clicks': 'GenerateHeatmap',
+                  'tracks': 'GenerateTracks',
+                  'keyboard': 'GenerateKeyboard'}
+        try:
+            name = CONFIG[lookup[image_type]]['NameFormat']
+        except KeyError:
+            raise ValueError('incorred image type: {}'.format(image_type))
+        
+        #Rename alternative variables
+        for k, v in get_items(self.ALTERNATIVES):
+            k = '[{}]'.format(k)
+            for i in v:
+                i = '[{}]'.format(i)
+                name = name.replace(i, k)
+        
+        #General Options
+        name = name.replace('[Name]', self.name)
+        name = name.replace('[FileName]', self.file_name)
+        name = name.replace('[Width]', self.width)
+        name = name.replace('[Height]', self.height)
+        name = name.replace('[UpscaleWidth]', self.uwidth)
+        name = name.replace('[UpscaleHeight]', self.uheight)
+        name = name.replace('[Version]', VERSION)
+        name = name.replace('[HighPrecision]', self.high_precision)
+        
+        if self.data is not None:
+            name = name.replace('[FirstSave]', str(round_int(self.data['Time']['Created'])))
+            name = name.replace('[LatestSave]', str(round_int(self.data['Time']['Modified'])))
+            name = name.replace('[FileVersion]', str(self.data['Version']))
+            name = name.replace('[TimesLoaded]', str(self.data['TimesLoaded']))
+            name = name.replace('[Sessions]', str(len(self.data['SessionStarts'])))
+            ticks = self.data['Ticks']['Total']
+            name = name.replace('[Ticks]', str(int(ticks)))
+            name = name.replace('[RunningTimeSeconds]', str(round_int(ticks / UPDATES_PER_SECOND)))
+            name = name.replace('[RunningTimeMinutes]', str(round(ticks / (UPDATES_PER_SECOND * 60), 2)))
+            name = name.replace('[RunningTimeHours]', str(round(ticks / (UPDATES_PER_SECOND * 60 * 60), 2)))
+            name = name.replace('[RunningTimeDays]', str(round(ticks / (UPDATES_PER_SECOND * 60 * 60 * 24), 2)))
+        
+        #Specific options
+        if image_type == 'clicks':
+            name = name.replace('[Exponential]', self.heatmap_exponential)
+            name = name.replace('[Colours]', self.heatmap_colours)
+            name = name.replace('[MouseButtons]', self.heatmap_button_group)
+            name = name.replace('[GaussianBlur]', self.heatmap_gaussian)
+            name = name.replace('[GaussianSigma]', self.heatmap_gaussian_actual)
+            name = name.replace('[RangeLimit]', self.heatmap_max)
+        
+        elif image_type == 'tracks':
+            name = name.replace('[Colours]', self.track_colour)
             
         elif image_type.lower() == 'keyboard':
-            name = CONFIG['GenerateKeyboard']['NameFormat']
-            name = name.replace('[ColourProfile]', self.keyboard_colour)
-        
+            name = name.replace('[Exponential]', self.keyboard_exponential)
+            name = name.replace('[Colours]', self.keyboard_colour)
+            name = name.replace('[DataSet]', self.keyboard_set)
+            name = name.replace('[Mapping]', self.keyboard_mapping)
+            name = name.replace('[Size]', self.keyboard_size_mult)
+            name = name.replace('[Extended]', self.keyboard_extended)
+            
         else:
-            raise ValueError('incorred image type: {}, '
-                             'must be tracks, clicks or keyboard'.format(image_type))
-        name = name.replace('[UResX]', self.upscale_res_x)
-        name = name.replace('[UResY]', self.upscale_res_y)
-        name = name.replace('[ResX]', self.output_res_x)
-        name = name.replace('[ResY]', self.output_res_y)
-        name = name.replace('[Name]', self.name)
-
+            raise ValueError('incorred image type: {}'.format(image_type))
+                
         #Replace invalid characters
         invalid_chars = ':*?"<>|'
         for char in invalid_chars:
@@ -89,7 +186,7 @@ class RenderImage(object):
             self.data = load_program(profile, _update_version=False)
         else:
             self.data = data
-        self.name = ImageName(profile)
+        self.name = ImageName(profile, data=self.data)
 
     def generate(self, image_type, last_session=False, save_image=True):
         image_type = image_type.lower()
@@ -128,7 +225,7 @@ class RenderImage(object):
                 clicks = self.data['Maps']['Clicks']
                 numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple_selection=mb, 
                                                  session_start=session_start, _find_range=False,
-                                                 high_precision=high_precision)
+                                                 high_precision=False)
                 
                 _h, _w = numpy_arrays[0].shape
                 gaussian_size = calculate_gaussian_size(_w, _h)
@@ -138,11 +235,12 @@ class RenderImage(object):
                             exponential_multiplier=CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
                 
                 #Adjust range of heatmap            
-                if CONFIG['GenerateHeatmap']['ForceMaximumValue']:
-                    max_value = CONFIG['GenerateHeatmap']['ForceMaximumValue']
+                if CONFIG['GenerateHeatmap']['ManualRangeLimit']:
+                    max_value = CONFIG['GenerateHeatmap']['ManualRangeLimit']
                     _print('Manually set highest range to {}'.format(max_value))
                 else:
-                    max_value *= CONFIG['GenerateHeatmap']['MaximumValueMultiplier']
+                    max_value *= CONFIG['GenerateHeatmap']['RangeLimitMultiplier']
+                    CONFIG['GenerateHeatmap']['ManualRangeLimit'] = max_value
                 
                 #Convert each point to an RGB tuple
                 _print('Converting to RGB...')
@@ -172,6 +270,7 @@ class RenderImage(object):
             if allow_resize:
                 image_output = image_output.resize(resolution, Image.ANTIALIAS)
             if save_image:
+                create_folder(image_name)
                 _print('Saving image...')
                 image_output.save(image_name)
                 _print('Finished saving.')
