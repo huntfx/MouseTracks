@@ -3,14 +3,8 @@ from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
 #Attempt to import scipy, but have fallback options as scipy results in a huge 300mb+ exe file
-try:
-    from core.image._scipy import blur, upscale
-    scipy = True
-    raise ImportError
-except ImportError:
-    from core.image._numpy import blur, upscale
-    scipy = False
-from core.image._numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
+from core.image.scipy import blur, upscale
+from core.image.numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
 from core.compatibility import range, _print
 from core.config import CONFIG
 
@@ -34,7 +28,6 @@ def merge_resolutions(main_data, multiple_selection=False,
     highest_value = None
     lowest_value = None
     resolutions = main_data.keys()
-    print resolutions
 
     if any(not isinstance(i, tuple) for i in resolutions) or any(len(i) != 2 for i in resolutions):
         raise ValueError('incorrect resolutions')
@@ -123,16 +116,7 @@ def merge_resolutions(main_data, multiple_selection=False,
             #Calculate the zoom level needed
             zoom_factor = (max_resolution[1] / current_resolution[1],
                            max_resolution[0] / current_resolution[0])
-            result = upscale(numpy_array(new_data), zoom_factor)
-            
-            #Trim array to maximum resolution if needed
-            if not scipy:
-                if max_resolution[0] <= result.shape[1]:
-                    result = result[:, :max_resolution[0]-1]
-                if max_resolution[1] <= result.shape[0]:
-                    result = result[:max_resolution[1]-1, :]                    
-                
-            numpy_arrays.append(result)
+            numpy_arrays.append(upscale(numpy_array(new_data), zoom_factor))
     
     if _find_range:
         if session_start is not None:
