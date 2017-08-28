@@ -15,7 +15,10 @@ def calculate_gaussian_size(width, height):
     """
     gaussian_base = CONFIG['GenerateHeatmap']['_GaussianBlurBase']
     gaussian_mult = CONFIG['GenerateHeatmap']['GaussianBlurMultiplier']
-    return height * gaussian_base * gaussian_mult
+    try:
+        return height * gaussian_base * gaussian_mult
+    except TypeError:
+        raise ValueError('invalid input type, must be int')
 
 
 def merge_resolutions(main_data, multiple_selection=False, 
