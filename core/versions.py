@@ -16,7 +16,9 @@ VERSION_HISTORY = [
     '2.0.6b',
     '2.0.6c',
     '2.0.7',
-    '2.0.8'
+    '2.0.8',
+    '2.0.9',
+    '2.0.9b'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -50,6 +52,8 @@ def upgrade_version(data, update_metadata=True):
     2.0.6c: Record key presses per session
     2.0.7: Fixed some incorrect key names
     2.0.8: Store each session start
+    2.0.9: Remove invalid track coordinates (fixed a bug)
+    2.0.9a: Matched format of session and total ticks, converted all back to integers
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -63,15 +67,19 @@ def upgrade_version(data, update_metadata=True):
         data['Keys'] = {}
         data['Ticks'] = 0
         data['LastSave'] = current_time
-        data['TimesLoaded'] = -1
+        data['TimesLoaded'] = 0
         data['Version'] = '2.0'
+        
     if current_version_id < _get_id('2.0.1'):
         data['Acceleration'] = {}
+        
     if current_version_id < _get_id('2.0.1b'):
         del data['Acceleration']
         data['Speed'] = {}
+        
     if current_version_id < _get_id('2.0.2'):
         data['Combined'] = {}
+        
     if current_version_id < _get_id('2.0.3'):
         if update_metadata:
             data['Clicks'] = {}
@@ -83,10 +91,12 @@ def upgrade_version(data, update_metadata=True):
                          'Total': data['Ticks'],
                          'Recorded': data['Count']}
         del data['Count']
+        
     if current_version_id < _get_id('2.0.4'):
         data['Time'] = {'Created': data['LastSave'],
                         'Modified': data['LastSave']}
         del data['LastSave']
+        
     if current_version_id < _get_id('2.0.5'):
         data['Maps'] = {'Tracks': data['Tracks'], 'Clicks': data['Clicks'],
                         'Speed': data['Speed'], 'Combined': data['Combined'],
@@ -96,18 +106,23 @@ def upgrade_version(data, update_metadata=True):
         del data['Clicks']
         del data['Speed']
         del data['Combined']
+        
     if current_version_id < _get_id('2.0.5b'):
         data['Ticks']['Current'] = {'Tracks': data['Ticks']['Current'],
                                     'Speed': data['Ticks']['Current']}
+                                    
     if current_version_id < _get_id('2.0.6'):
         del data['Maps']['Speed']
         del data['Maps']['Combined']
         del data['Ticks']['Current']['Speed']
+        
     if current_version_id < _get_id('2.0.6b'):
         data['Ticks']['Session'] = {'Current': data['Ticks']['Current']['Tracks'],
                                     'Total': data['Ticks']['Total']}
+                                    
     if current_version_id < _get_id('2.0.6c'):
         data['Keys'] = {'All': data['Keys'], 'Session': {'Pressed': {}, 'Held': {}}}
+        
     if current_version_id < _get_id('2.0.7'):
         changes = {'UNDERSCORE': 'HYPHEN',
                    'MULTIPLY': 'ASTERISK',
@@ -124,18 +139,35 @@ def upgrade_version(data, update_metadata=True):
                 data['Keys']['Session']['Held'][new] = data['Keys']['Session']['Held'].pop(old)
             except KeyError:
                 pass
+                
     if current_version_id < _get_id('2.0.8'):
         data['SessionStarts'] = []
         
+    if current_version_id < _get_id('2.0.9'):
+        for resolution in data['Maps']['Tracks']:
+            for k in data['Maps']['Tracks'][resolution].keys():
+                if not 0 < k[0] < resolution[0] or not 0 < k[1] < resolution[1]:
+                    del data['Maps']['Tracks'][resolution][k]
+                    
+    if current_version_id < _get_id('2.0.9b'):
+        data['Ticks']['Tracks'] = int(data['Ticks']['Current']['Tracks'])
+        data['Ticks']['Session']['Tracks'] = int(data['Ticks']['Session']['Current'])
+        del data['Ticks']['Current']
+        del data['Ticks']['Session']['Current']
+        for resolution in data['Maps']['Tracks']:
+            for k in data['Maps']['Tracks'][resolution]:
+                if isinstance(data['Maps']['Tracks'][resolution][k], float):
+                    data['Maps']['Tracks'][resolution][k] = int(data['Maps']['Tracks'][resolution][k])
+        
     if update_metadata:
         data['Version'] = VERSION
-        data['Ticks']['Session']['Current'] = data['Ticks']['Current']['Tracks']
+        data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
         data['Ticks']['Session']['Total'] = data['Ticks']['Total']
         data['Keys']['Session']['Pressed'] = {}
         data['Keys']['Session']['Held'] = {}
         
-        #Only count as new session if last save was over 5 minutes ago
-        if not data['SessionStarts'] or current_time - 300 > data['Time']['Modified']:
+        #Only count as new session if last save was over an hour ago
+        if not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']:
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
