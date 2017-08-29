@@ -335,16 +335,16 @@ def background_process(q_recv, q_send):
                             
                     else:
                         resolution = store['Resolution']
-                        
-                    store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
+                    
+                    store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Tracks']
 
-                store['Data']['Ticks']['Current']['Tracks'] += 1
+                store['Data']['Ticks']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
                 max_track_value = CONFIG['CompressMaps']['TrackMaximum']
                 if not max_track_value:
                     max_track_value = MAX_INT
-                if store['Data']['Ticks']['Current']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
+                if store['Data']['Ticks']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
                     compress_multplier = CONFIG['CompressMaps']['TrackReduction']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
@@ -362,9 +362,12 @@ def background_process(q_recv, q_send):
                         NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     except NotImplementedError:
                         pass
-                    store['Data']['Ticks']['Current']['Tracks'] //= compress_multplier
-                    store['Data']['Ticks']['Session']['Current'] //= compress_multplier
-
+                        
+                    store['Data']['Ticks']['Tracks'] //= compress_multplier
+                    store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
+                    store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
+                    store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
+                    
             #Record mouse clicks
             if 'MouseClick' in received_data:
                 store['ActivitySinceLastSave'] = True
