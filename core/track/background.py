@@ -294,15 +294,15 @@ def background_process(q_recv, q_send):
                 if start is None:
                     mouse_coordinates = [end]
                 else:
-                    mouse_coordinates = [start, end] + calculate_line(start, end)
+                    mouse_coordinates = [start] + calculate_line(start, end) + [end]
                     
-                    #Don't bother calculating offset for each pixel
-                    #if both start and end are on the same monitor
-                    try:
-                        resolution, offset = monitor_offset(start, store['ResolutionTemp'])
-                        _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
-                    except TypeError:
-                        pass
+                #Don't bother calculating offset for each pixel
+                #if both start and end are on the same monitor
+                try:
+                    resolution, offset = monitor_offset(start, store['ResolutionTemp'])
+                    _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
+                except TypeError:
+                    pass
                         
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
@@ -317,6 +317,7 @@ def background_process(q_recv, q_send):
                     
                     elif MULTI_MONITOR:
                         
+                        #Check if offset needs to be recalculated
                         if resolution != _resolution:
                             try:
                                 resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
@@ -334,7 +335,7 @@ def background_process(q_recv, q_send):
                             
                     else:
                         resolution = store['Resolution']
-                    
+                        
                     store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Current']['Tracks']
 
                 store['Data']['Ticks']['Current']['Tracks'] += 1
