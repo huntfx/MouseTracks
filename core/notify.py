@@ -117,7 +117,7 @@ class Notify(object):
         q2 = self.message_queue[2].append
         
         if message_id == MESSAGE_DEBUG:
-            q2('Debug: {}'.format(args))
+            self.debug.append(args)
             
         if message_id == MOUSE_UNDETECTED:
             q2(self.string['mouse']['undetected'])
@@ -299,8 +299,11 @@ class Notify(object):
     def get_output(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
         output = [u' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
-        self.reset()
         message = u' | '.join(i for i in output if i)
+        for msg in self.debug:
+            message += '\n' + u', '.join(map(str, msg))
+                
+        self.reset()
         return message
 
     def send(self, q):
@@ -310,6 +313,7 @@ class Notify(object):
 
     def reset(self):
         self.message_queue = {0: [], 1: [], 2: []}
+        self.debug = []
 
     
 NOTIFY = Notify()
