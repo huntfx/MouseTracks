@@ -141,6 +141,8 @@ def _check_resolution(store, resolution):
         store['Data']['Maps']['Tracks'][resolution] = {}
     if resolution not in store['Data']['Maps']['Clicks']:
         store['Data']['Maps']['Clicks'][resolution] = [{}, {}, {}]
+    if resolution not in store['Data']['Maps']['Session']['Clicks']:
+        store['Data']['Maps']['Session']['Clicks'][resolution] = [{}, {}, {}]
 
 
 def background_process(q_recv, q_send):
@@ -306,7 +308,7 @@ def background_process(q_recv, q_send):
                         
                 #Write each pixel to the dictionary
                 for pixel in mouse_coordinates:
-                
+                    
                     if store['CustomResolution'] is not None:
                         try:
                             resolution, offset = monitor_offset(pixel, [store['CustomResolution'][0]])
@@ -329,6 +331,7 @@ def background_process(q_recv, q_send):
                                     continue
                         
                         pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        
                         if resolution not in store['ResolutionList']:
                             _check_resolution(store, resolution)
                             store['ResolutionList'].add(resolution)
@@ -403,6 +406,10 @@ def background_process(q_recv, q_send):
                         store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] += 1
                     except KeyError:
                         store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] = 1
+                    try:
+                        store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] += 1
+                    except KeyError:
+                        store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] = 1
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
