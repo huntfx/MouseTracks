@@ -19,7 +19,8 @@ VERSION_HISTORY = [
     '2.0.8',
     '2.0.9',
     '2.0.9b',
-    '2.0.9c'
+    '2.0.9c',
+    '2.0.9d'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -56,6 +57,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.9: Remove invalid track coordinates
     2.0.9b: Matched format of session and total ticks, converted all back to integers
     2.0.9c: Created separate map for clicks this session
+    2.0.9d: Remove temporary maps as they were messy, add double clicks to test
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -164,6 +166,18 @@ def upgrade_version(data, update_metadata=True):
     if current_version_id < _get_id('2.0.9c'):
         data['Maps']['Session'] = {'Clicks': {}}
         
+    if current_version_id < _get_id('2.0.9d'):
+        del data['Maps']['Temp1']
+        del data['Maps']['Temp2']
+        del data['Maps']['Temp3']
+        del data['Maps']['Temp4']
+        del data['Maps']['Temp5']
+        del data['Maps']['Temp6']
+        del data['Maps']['Temp7']
+        del data['Maps']['Temp8']
+        data['Maps']['DoubleClicks'] = {}
+        data['Maps']['Session']['DoubleClicks'] = {}
+        
     if update_metadata:     
     
         #Only count as new session if updated or last save was over an hour ago
@@ -175,6 +189,7 @@ def upgrade_version(data, update_metadata=True):
             data['Keys']['Session']['Pressed'] = {}
             data['Keys']['Session']['Held'] = {}
             data['Maps']['Session']['Clicks'] = {}
+            data['Maps']['Session']['DoubleClicks'] = {}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
