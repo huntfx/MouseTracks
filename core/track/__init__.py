@@ -210,6 +210,7 @@ def start_tracking():
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
+                                frame_data['MouseHeld'] = False
                             else:
                                 NOTIFY(MOUSE_CLICKED_OFFSCREEN, mouse_button)
                                 
@@ -222,6 +223,7 @@ def start_tracking():
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
+                                frame_data['MouseHeld'] = True
                     elif mb_clicked:
                         NOTIFY(MOUSE_UNCLICKED)
                         del store['Mouse']['Clicked'][mouse_button]
