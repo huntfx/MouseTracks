@@ -18,7 +18,8 @@ VERSION_HISTORY = [
     '2.0.7',
     '2.0.8',
     '2.0.9',
-    '2.0.9b'
+    '2.0.9b',
+    '2.0.9c'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -52,8 +53,9 @@ def upgrade_version(data, update_metadata=True):
     2.0.6c: Record key presses per session
     2.0.7: Fixed some incorrect key names
     2.0.8: Store each session start
-    2.0.9: Remove invalid track coordinates (fixed a bug)
-    2.0.9a: Matched format of session and total ticks, converted all back to integers
+    2.0.9: Remove invalid track coordinates
+    2.0.9b: Matched format of session and total ticks, converted all back to integers
+    2.0.9c: Created separate map for clicks this session
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -158,17 +160,24 @@ def upgrade_version(data, update_metadata=True):
             for k in data['Maps']['Tracks'][resolution]:
                 if isinstance(data['Maps']['Tracks'][resolution][k], float):
                     data['Maps']['Tracks'][resolution][k] = int(data['Maps']['Tracks'][resolution][k])
+                    
+    if current_version_id < _get_id('2.0.9c'):
+        data['Maps']['Session'] = {'Clicks': {}}
         
-    if update_metadata:
-        data['Version'] = VERSION
-        data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
-        data['Ticks']['Session']['Total'] = data['Ticks']['Total']
-        data['Keys']['Session']['Pressed'] = {}
-        data['Keys']['Session']['Held'] = {}
-        
-        #Only count as new session if last save was over an hour ago
-        if not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']:
+    if update_metadata:     
+    
+        #Only count as new session if updated or last save was over an hour ago
+        if (data.get('Version', '-1') != VERSION 
+                or not data['SessionStarts'] 
+                or current_time - 3600 > data['Time']['Modified']):
+            data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
+            data['Ticks']['Session']['Total'] = data['Ticks']['Total']
+            data['Keys']['Session']['Pressed'] = {}
+            data['Keys']['Session']['Held'] = {}
+            data['Maps']['Session']['Clicks'] = {}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
+            
+        data['Version'] = VERSION
             
     return data
