@@ -143,6 +143,10 @@ def _check_resolution(store, resolution):
         store['Data']['Maps']['Clicks'][resolution] = [{}, {}, {}]
     if resolution not in store['Data']['Maps']['Session']['Clicks']:
         store['Data']['Maps']['Session']['Clicks'][resolution] = [{}, {}, {}]
+    if resolution not in store['Data']['Maps']['DoubleClicks']:
+        store['Data']['Maps']['DoubleClicks'][resolution] = [{}, {}, {}]
+    if resolution not in store['Data']['Maps']['Session']['DoubleClicks']:
+        store['Data']['Maps']['Session']['DoubleClicks'][resolution] = [{}, {}, {}]
 
 
 def background_process(q_recv, q_send):
@@ -161,7 +165,8 @@ def background_process(q_recv, q_send):
                  'ActivitySinceLastSave': False,
                  'SavesSkipped': 0,
                  'PingTimeout': CONFIG['Timer']['_Ping'] + 1,
-                 'CustomResolution': None}
+                 'CustomResolution': None,
+                 'LastClick': None}
         
         NOTIFY(DATA_LOADED)
         try:
@@ -410,6 +415,21 @@ def background_process(q_recv, q_send):
                         store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] += 1
                     except KeyError:
                         store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] = 1
+                    
+                    #Record double clicks (temporary - testing this out)
+                    if store['LastClick'] == pixel:
+                        store['LastClick'] = None
+                        try:
+                            store['Data']['Maps']['DoubleClicks'][resolution][mouse_button][pixel] += 1
+                        except KeyError:
+                            store['Data']['Maps']['DoubleClicks'][resolution][mouse_button][pixel] = 1
+                        try:
+                            store['Data']['Maps']['Session']['DoubleClicks'][resolution][mouse_button][pixel] += 1
+                        except KeyError:
+                            store['Data']['Maps']['Session']['DoubleClicks'][resolution][mouse_button][pixel] = 1
+                    else:
+                        store['LastClick'] = pixel
+                    
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
