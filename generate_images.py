@@ -4,7 +4,7 @@ import time
 import sys
 
 from core.applications import RunningApplications, read_app_list
-from core.compatibility import input, _print
+from core.compatibility import input, _print, get_items
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.files import list_data_files, format_name, load_program
@@ -136,7 +136,7 @@ def user_generate():
     _print(_string['import'])
     from core.image import RenderImage
 
-    _print(string['profile']['load'].format(P=profile))
+    _print(_string['profile']['load'].format(P=profile))
     r = RenderImage(profile)
     
     #Check if profile is running
@@ -169,16 +169,25 @@ def user_generate():
     generate_tracks = False
     generate_heatmap = False
     generate_keyboard = False
+    generate_csv = False
     
     default_options = [True, True, True, False]
+    
+    kb_string = string['name']['keyboard']
+    kph = r.keys_per_hour()
+    if kph < 10:
+        default_options[2] = False
+        kb_string = '{} ({} {})'.format(kb_string, 
+                                        string['name']['low']['keyboard'], 
+                                        string['name']['low']['steam']).format(C=round(kph, 2))
     
     _print(string['option']['generate'])
     default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
     _print(string['option']['select'].format(V=default_option_text))
     _print('1: {}'.format(string['name']['track']))
     _print('2: {}'.format(string['name']['click']))
-    _print('3: {}'.format(string['name']['keyboard']))
-    _print('4: {} (not working)'.format(string['name']['raw']))
+    _print('3: {}'.format(kb_string))
+    _print('4: {}'.format(string['name']['csv']))
     
     selection = map(int, input().split())
     result = value_select(selection, default_options, start=1)
@@ -210,15 +219,19 @@ def user_generate():
 
     if result[2]:
         generate_keyboard = True
+        
+    if result[3]:
+        generate_csv = True
 
-    if generate_tracks or generate_heatmap or generate_keyboard:
+    if any((generate_tracks, generate_heatmap, generate_keyboard, generate_csv)):
 
         last_session_start = r.data['Ticks']['Session']['Total']
         last_session_end = r.data['Ticks']['Total']
         all_time = ticks_to_seconds(last_session_end, UPDATES_PER_SECOND)
         last_session_time = ticks_to_seconds(last_session_end - last_session_start, UPDATES_PER_SECOND)
         
-        if not last_session_time or last_session_time == all_time:
+        csv_only = generate_csv and not any((generate_tracks, generate_heatmap, generate_keyboard))
+        if not last_session_time or last_session_time == all_time or csv_only:
             last_session = False
         
         else:
@@ -246,6 +259,8 @@ def user_generate():
             r.generate('Clicks', last_session)
         if generate_keyboard:
             r.generate('Keyboard', last_session)
+        if generate_csv:
+            r.csv()
             
     else:
         _print(string['option']['error']['nothing'])
