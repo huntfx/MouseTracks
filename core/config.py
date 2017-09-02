@@ -220,6 +220,8 @@ _config_defaults = {
                      ' is higher than or equal to the highest recorded resolution.'],
         '_UpscaleResolutionX': (_res_x, int, 1),
         '_UpscaleResolutionY': (_res_y, int, 1),
+        '_TempResolutionX': (1, int, 1),
+        '_TempResolutionY': (1, int, 1),
         'HighPrecision': (False, bool, 'Enable this for higher quality images'
                                        ' that take longer to generate.'),
         'OutputResolutionX': (_res_x, int, 1),
@@ -229,7 +231,7 @@ _config_defaults = {
         'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.')
     },
     'GenerateHeatmap': {
-        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Clicks ([MouseButtons]) - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]'.format(DEFAULT_PATH), str),
         '_MouseButtonLeft': (True, bool),
         '_MouseButtonMiddle': (True, bool),
         '_MouseButtonRight': (True, bool),
@@ -278,6 +280,16 @@ _config_defaults = {
                                                           ' total time the key has been held (time),'
                                                           ' or the number of presses (press).')
     },
+    'GenerateCSV':{
+        '__note__': ['This is for anyone who may want to use the recorded data in their own projects.'],
+        'NameFormatTracks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Tracks ([Width], [Height])'.format(DEFAULT_PATH), str),
+        'NameFormatClicks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]'.format(DEFAULT_PATH), str),
+        'NameFormatKeyboard': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Keyboard'.format(DEFAULT_PATH), str),
+        'MinimumResPoints': (20, int, 0, 'Files will not be generated for any resolutions that have fewer points than this recorded.'),
+        '_GenerateTracks': (True, bool),
+        '_GenerateClicks': (True, bool),
+        '_GenerateKeyboard': (True, bool)
+    },
     'SavedSettings': {
         '__note__': ['Anything put here is not for editing.'],
         'AppListUpdate': (0, int, None, int(time.time()))
@@ -299,6 +311,7 @@ _config_order = [
     'GenerateTracks',
     'GenerateHeatmap',
     'GenerateKeyboard',
+    'GenerateCSV',
     'Advanced',
     'SavedSettings'
 ]
