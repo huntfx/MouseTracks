@@ -22,28 +22,7 @@ def running_processes(q_recv, q_send, background_send):
         previous_app = None
         last_coordinates = None
         last_resolution = None
-        
-        #This is an attempt to stop it updating resolutions when a dialogue box is opened
-        ignore_win_names = set((
-            'save as',
-            'save',
-            'open',
-            'open as',
-            'export',
-            'export as',
-            'import',
-            'import as',
-            'find',
-            'replace',
-            'find and replace',
-            'find & replace',
-            'find in files',
-            'mark',
-            'new',
-            'go to line',
-            'new document'
-        ))
-        
+            
         while True:
                 
             received_data = q_recv.get()
@@ -62,31 +41,21 @@ def running_processes(q_recv, q_send, background_send):
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
-                    
                     if current_app is None:
                         cust_res = None
-                    
+                        
                     else:
-                    
-                        window_name = running_apps.focus.name().lower()
+                        cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
                         
-                        #Don't change resolution if it's just a dialogue box
-                        if (cust_res is not None and current_app == previous_app 
-                                and (not window_name or window_name in ignore_win_names)):
-                            pass
-                        
+                        if current_app == previous_app:
+                            if cust_res[1] != last_resolution:
+                                NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
+                            elif cust_res[0] != last_coordinates:
+                                NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
                         else:
-                            cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
+                            NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
                             
-                            if current_app == previous_app:
-                                if cust_res[1] != last_resolution:
-                                    NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
-                                elif cust_res[0] != last_coordinates:
-                                    NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
-                            else:
-                                NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
-                                
-                            last_coordinates, last_resolution = cust_res
+                        last_coordinates, last_resolution = cust_res
                             
                     background_send.put({'CustomResolution': cust_res})
                     
