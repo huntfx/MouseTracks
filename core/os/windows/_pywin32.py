@@ -85,7 +85,9 @@ def get_documents_path():
 class WindowFocusData(object):
 
     def __init__(self):
-        """Get the handle of the currently focused window."""
+        """Get the handle of the currently focused window.
+        In some cases this may end up as 0 if it can't be read.
+        """
         self.hwnd = win32gui.GetForegroundWindow()
     
     def get_pid(self):
@@ -94,4 +96,10 @@ class WindowFocusData(object):
         
     def get_rect(self):
         """Get the coordinates of a window."""
-        return win32gui.GetWindowRect(self.hwnd)
+        try:
+            return win32gui.GetWindowRect(self.hwnd)
+        except win32api.error:
+            return (0, 0, 0, 0)
+    
+    def get_name(self):
+        return win32gui.GetWindowText(self.hwnd)
