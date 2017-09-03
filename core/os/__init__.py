@@ -1,9 +1,7 @@
 # Determine which operating system is being used.
 # A quick check will be one to make sure all the required modules exist
 import platform
-import psutil
 import os
-
 
 #Load in modules from operating system
 OPERATING_SYSTEM = platform.system()
@@ -52,8 +50,9 @@ try:
     #Detect if code exists to detect window focus
     try:
         WindowFocusData
+        import psutil
         FOCUS_DETECTION = True
-    except NameError:
+    except (ImportError, NameError):
         FOCUS_DETECTION = False
         
         
@@ -151,6 +150,12 @@ if FOCUS_DETECTION:
                 x_res = x1 - x0
                 y_res = y1 - y0
                 return (x_res, y_res)
-                
+        
+        def name(self):
+            try:
+                return self.window_data.get_name()
+            except AttributeError:
+                return True
+        
 else:
     WindowFocus = None
