@@ -22,7 +22,28 @@ def running_processes(q_recv, q_send, background_send):
         previous_app = None
         last_coordinates = None
         last_resolution = None
-            
+        
+        #This is an attempt to stop it updating resolutions when a dialogue box is opened
+        ignore_win_names = set((
+            'save as',
+            'save',
+            'open',
+            'open as',
+            'export',
+            'export as',
+            'import',
+            'import as',
+            'find',
+            'replace',
+            'find and replace',
+            'find & replace',
+            'find in files',
+            'mark',
+            'new',
+            'go to line',
+            'new document'
+        ))
+        
         while True:
                 
             received_data = q_recv.get()
@@ -41,21 +62,31 @@ def running_processes(q_recv, q_send, background_send):
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
+                    
                     if current_app is None:
                         cust_res = None
-                        
+                    
                     else:
-                        cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
+                    
+                        window_name = running_apps.focus.name().lower()
                         
-                        if current_app == previous_app:
-                            if cust_res[1] != last_resolution:
-                                NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
-                            elif cust_res[0] != last_coordinates:
-                                NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
+                        #Don't change resolution if it's just a dialogue box
+                        if (cust_res is not None and current_app == previous_app 
+                                and (not window_name or window_name in ignore_win_names)):
+                            pass
+                        
                         else:
-                            NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
+                            cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
                             
-                        last_coordinates, last_resolution = cust_res
+                            if current_app == previous_app:
+                                if cust_res[1] != last_resolution:
+                                    NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
+                                elif cust_res[0] != last_coordinates:
+                                    NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
+                            else:
+                                NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
+                                
+                            last_coordinates, last_resolution = cust_res
                             
                     background_send.put({'CustomResolution': cust_res})
                     
@@ -227,6 +258,8 @@ def background_process(q_recv, q_send):
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
+                    if 'CustomResolution' in received_data:
+                        store['CustomResolution'] = received_data['CustomResolution']
                     if store['CustomResolution'] is None:
                         _check_resolution(store, store['Resolution'])
                     else:
@@ -375,7 +408,10 @@ def background_process(q_recv, q_send):
                     store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
-                    
+                
+                store['LastClick'] = None #If mouse has moved it's not a double click
+                
+                
             #Record mouse clicks
             if 'MouseClick' in received_data:
                 store['ActivitySinceLastSave'] = True
@@ -406,7 +442,7 @@ def background_process(q_recv, q_send):
                         
                     else:
                         resolution = store['Resolution']
-                        
+                    
                     try:
                         store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] += 1
                     except KeyError:
@@ -417,7 +453,8 @@ def background_process(q_recv, q_send):
                         store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] = 1
                     
                     #Record double clicks (temporary - testing this out)
-                    if store['LastClick'] == pixel:
+                    if store['LastClick'] == pixel and not received_data['MouseHeld']:
+                        
                         store['LastClick'] = None
                         try:
                             store['Data']['Maps']['DoubleClicks'][resolution][mouse_button][pixel] += 1
