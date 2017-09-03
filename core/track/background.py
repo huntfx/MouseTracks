@@ -38,6 +38,7 @@ def running_processes(q_recv, q_send, background_send):
                 running_apps.refresh()
                 
                 current_app = running_apps.check()
+                send = {}
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
@@ -57,14 +58,14 @@ def running_processes(q_recv, q_send, background_send):
                             
                         last_coordinates, last_resolution = cust_res
                             
-                    background_send.put({'CustomResolution': cust_res})
+                    send['CustomResolution'] = cust_res
                     
                 if current_app != previous_app:
                     
                     if running_apps.focus is None:
                         start = APPLICATION_STARTED
                         end = APPLICATION_QUIT
-                        background_send.put({'CustomResolution': None})
+                        send['CustomResolution'] = None
                     else:
                         start = APPLICATION_FOCUSED
                         end = APPLICATION_UNFOCUSED
@@ -77,9 +78,12 @@ def running_processes(q_recv, q_send, background_send):
                         NOTIFY(start, current_app)
                         
                     NOTIFY.send(q_send)
-                    background_send.put({'Program': current_app})
+                    send['Program'] = current_app
                     
                     previous_app = current_app
+                
+                if send:
+                    background_send.put(send)
     
     #Catch error after KeyboardInterrupt
     except EOFError:
@@ -206,7 +210,7 @@ def background_process(q_recv, q_send):
                     except NotImplementedError:
                         pass
                 q_send.put({'SaveFinished': None})
-
+            
             if 'Program' in received_data:
                 current_program = received_data['Program']
                 
@@ -227,8 +231,10 @@ def background_process(q_recv, q_send):
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
-                    if 'CustomResolution' in received_data:
+                    try:
                         store['CustomResolution'] = received_data['CustomResolution']
+                    except AttributeError:
+                        pass
                     if store['CustomResolution'] is None:
                         _check_resolution(store, store['Resolution'])
                     else:
