@@ -20,7 +20,8 @@ VERSION_HISTORY = [
     '2.0.9',
     '2.0.9b',
     '2.0.9c',
-    '2.0.9d'
+    '2.0.9d',
+    '2.0.9e'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -58,6 +59,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.9b: Matched format of session and total ticks, converted all back to integers
     2.0.9c: Created separate map for clicks this session
     2.0.9d: Remove temporary maps as they were messy, add double clicks to test
+    2.0.9e: Maintainence to remove invalid resolutions (the last update caused a few)
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -177,6 +179,33 @@ def upgrade_version(data, update_metadata=True):
         del data['Maps']['Temp8']
         data['Maps']['DoubleClicks'] = {}
         data['Maps']['Session']['DoubleClicks'] = {}
+        
+    if current_version_id < _get_id('2.0.9e'):
+        def _test_resolution(aspects, x, y):
+            for ax, ay in aspects:
+                dx = x / ax
+                if not dx % 1 and dx * ay == y:
+                    return True
+            return False
+            
+        aspects = [
+            (4, 3),
+            (16, 9),
+            (16, 10),
+            (18, 9),
+            (21, 9),
+        ]
+        
+        #Reverse and check for multi monitor setups
+        aspects += [(y, x) for x, y in aspects]
+        aspects += [(x * 2, y) for x, y in aspects] + [(x * 3, y) for x, y in aspects] + [(x * 5, y) for x, y in aspects]
+        
+        maps = ('Tracks', 'Clicks', 'DoubleClicks')
+        for map in maps:
+            for resolution in data['Maps'][map].keys():
+                if not _test_resolution(aspects, *resolution):
+                    del data['Maps'][map][resolution]
+        
         
     if update_metadata:     
     
