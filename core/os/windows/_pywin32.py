@@ -88,8 +88,21 @@ class WindowFocusData(object):
         """Get the handle of the currently focused window.
         In some cases this may end up as 0 if it can't be read.
         """
-        self.hwnd = win32gui.GetForegroundWindow()
+        self.hwnd = self._get_parent()
     
+    def _get_parent(self):
+        while True:
+            try:
+                parent = win32gui.GetParent(hwnd)
+            except UnboundLocalError:
+                hwnd = win32gui.GetForegroundWindow()
+            else:
+                if parent:
+                    hwnd = parent
+                else:
+                    break
+        return hwnd
+        
     def get_pid(self):
         """Get the process ID of a window."""
         return win32process.GetWindowThreadProcessId(self.hwnd)[1]
