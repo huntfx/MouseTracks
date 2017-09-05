@@ -3,6 +3,22 @@
 import platform
 import os
 
+
+def _add_placeholders(variables):
+    """Use placeholder functions if the counterpart doesn't exist."""
+    from core.os import placeholders
+    count = 0
+    for f_name in dir(placeholders):
+        try: 
+            variables[f_name]
+        except KeyError:
+            f = getattr(placeholders, f_name, None)
+            if callable(f):
+                variables[f_name] = f
+                count += 1
+    return count
+
+                
 #Load in modules from operating system
 OPERATING_SYSTEM = platform.system()
 if OPERATING_SYSTEM == 'Windows':
@@ -25,6 +41,8 @@ elif OPERATING_SYSTEM == 'Darwin':
     OS_DEBUG = True
 else:
     raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
+
+PLACEHOLDER_COUNT = _add_placeholders(locals())
 
 
 #Check the functions exist
@@ -57,7 +75,7 @@ try:
         
         
 except NameError:
-    raise ImportError('missing functions for operating system')
+    raise ImportError('failed to import all required modules')
 
 
 #Make sure exceptions exist as they are platform specific
