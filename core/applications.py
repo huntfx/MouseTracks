@@ -80,7 +80,7 @@ def _format_app_text(app, friendly_name=None, allow_non_executable=True):
             return '{}: {}'.format(app_name, friendly_name)
 
     
-def _format_app_list(app_list):
+def _format_app_list(app_list, combine=True):
     """Take a list of text inputs and sort them into a dictionary."""
     if isinstance(app_list, str):
         app_list = app_list.splitlines()
@@ -92,15 +92,18 @@ def _format_app_list(app_list):
         app_info = _format_app_text(app.strip())
         if app_info is not None:
             app_name, friendly_name, is_executable = app_info
-            if is_executable:
+            if is_executable or combine:
                 applications[app_name] = friendly_name
             else:
                 names[app_name] = friendly_name
     
-    return applications, names
+    if combine:
+        return applications
+    else:
+        return applications, names
 
 
-def read_app_list(application_path=APP_LIST_PATH, allow_write=False):
+def read_app_list(application_path=APP_LIST_PATH, allow_write=False, combine=True):
     """Read the application list file.
     Optionally write a new one if it doesn't exist.
     """
@@ -108,12 +111,12 @@ def read_app_list(application_path=APP_LIST_PATH, allow_write=False):
         with open(application_path, 'r') as f:
             lines = f.readlines()
     except IOError:
-        lines = _DEFAULT_TEXT + ['// game.exe: Name']
+        lines = _DEFAULT_TEXT + ['// MyGame.exe: Game Name']
         if allow_write:
             with open(application_path, 'w') as f:
                 f.write('\r\n'.join(lines))
 
-    return _format_app_list(lines)
+    return _format_app_list(lines, combine=combine)
 
     
 def download_app_list():
@@ -151,7 +154,7 @@ class RunningApplications(object):
 
     def reload_file(self):
     
-        self.applications, self.names = read_app_list(self.application_path, allow_write=True)
+        self.applications, self.names = read_app_list(self.application_path, allow_write=True, combine=False)
         
         #Download from the internet and combine with the current list
         last_updated = CONFIG['SavedSettings']['AppListUpdate']
