@@ -14,39 +14,63 @@ APP_LIST_PATH = format_file_path(CONFIG['Paths']['AppList'])
 _DEFAULT_TEXT = [
     '// Type any apps you want to be tracked here.',
     '// Two separate apps may have the same name, and will be tracked under the same file.',
-    '// Put each app on a new line, in the format "Game.exe: Name".'
+    '// Put each app on a new line, in the format "MyGame.exe: Game Name".'
     ' The executable file is case sensitive.',
     '// Alternatively if the app is already named with the correct name'
-    ', "Game.exe" by itself will use "Game" as its name.',
+    ', "MyGame.exe" by itself will use "MyGame" as its name.',
+    '// In the case of a game using a generic filename,',
+    ' you can type "Title || Game game" instead.',
     ''
 ]
 
 ALLOWED_EXTENSIONS = ['.exe', '.bin', '.app', '.scr', '.com']
 
+_ENCODINGS = [''.join(chr(i) for i in (239, 187, 191))]
 
-def _format_app_text(app, friendly_name=None):
+
+def _format_app_text(app, friendly_name=None, allow_non_executable=True):
+
+    app = app.strip()
+    if not app:
+        return None
+    
+    #Remove encoding from start of file
+    for i in _ENCODINGS:
+        if app.startswith(i):
+            app = app[len(i):]
+            break
 
     #Ignore comments
-    if not app or any(app.startswith(i) for i in ('#', ';', '/')):
+    if any(app.startswith(i) for i in ('#', ';', '//')):
         return None
         
     #Detect different extensions
     lowercase = app.lower()
-    for i in ALLOWED_EXTENSIONS + [None]:
-        if i is None:
-            return i
+    found_extension = False
+    split_value = ':'
+    for i in ALLOWED_EXTENSIONS:
         if i in lowercase:
+            found_extension = True
             ext_len = len(lowercase.split(i)[0])
             app_name = '{}.{}'.format(app[:ext_len], app[ext_len + 1:ext_len + 4])
             break
     
+    #Doesn't match any extension
+    if not found_extension:
+        split_value = '||'
+        if allow_non_executable:
+            ext_len = len(lowercase.split(split_value, 1)[0])
+            app_name = app[:ext_len].strip()
+        else:
+            return None
+    
     #Determine if name has been provided in file, or generate if not
     if friendly_name is None:
         try:
-            friendly_name = app[ext_len:].split(':', 1)[1].strip()
+            friendly_name = app[ext_len:].split(split_value, 1)[1].strip()
         except IndexError:
-            friendly_name = app[:ext_len]
-        return (app_name, friendly_name)
+            friendly_name = app[:ext_len].strip()
+        return (app_name, friendly_name, found_extension)
     
     #Format line to save
     else:
@@ -54,8 +78,6 @@ def _format_app_text(app, friendly_name=None):
             return app_name
         else:
             return '{}: {}'.format(app_name, friendly_name)
-            
-    return app
 
     
 def _format_app_list(app_list):
@@ -64,14 +86,18 @@ def _format_app_list(app_list):
         app_list = app_list.splitlines()
         
     applications = {}
+    names = {}
     for app in app_list:
         
         app_info = _format_app_text(app.strip())
         if app_info is not None:
-            app_name, friendly_name = app_info
-            applications[app_name] = friendly_name
+            app_name, friendly_name, is_executable = app_info
+            if is_executable:
+                applications[app_name] = friendly_name
+            else:
+                names[app_name] = friendly_name
     
-    return applications
+    return applications, names
 
 
 def read_app_list(application_path=APP_LIST_PATH, allow_write=False):
@@ -125,7 +151,7 @@ class RunningApplications(object):
 
     def reload_file(self):
     
-        self.applications = read_app_list(self.application_path, allow_write=True)
+        self.applications, self.names = read_app_list(self.application_path, allow_write=True)
         
         #Download from the internet and combine with the current list
         last_updated = CONFIG['SavedSettings']['AppListUpdate']
@@ -161,15 +187,19 @@ class RunningApplications(object):
         if WindowFocus is not None:
             self.focus = WindowFocus()
             self.focused_app = self.focus.exe()
+            self.focused_name = self.focus.name()
         else:
             self.focus = None
     
     def save_file(self):
         lines = _DEFAULT_TEXT
         
-        for app_info in sorted(self.applications.keys(), key=lambda s: s.lower()):
+        for app_info in sorted(self.applications.keys() + self.names.keys(), key=lambda s: s.lower()):
             
-            friendly_name = self.applications[app_info]
+            try:
+                friendly_name = self.names[app_info]
+            except KeyError:
+                friendly_name = self.applications[app_info]
             
             new_line = _format_app_text(app_info, friendly_name)
             if new_line is not None:
@@ -186,9 +216,14 @@ class RunningApplications(object):
         """
         if self.focus is not None:
             try:
+                return (self.names[self.focused_name], self.focused_app)
+            except KeyError:
+                pass
+            try:
                 return (self.applications[self.focused_app], self.focused_app)
             except KeyError:
-                return None
+                pass
+            return None
         else:
             matching_applications = {}
             for application in self.applications:
