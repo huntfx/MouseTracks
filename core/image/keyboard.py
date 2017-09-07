@@ -162,7 +162,6 @@ class KeyboardGrid(object):
                    'CustomColour': custom_colour,
                    'HideBorder': hide_border}
         self.row.append(_values)
-        #self.row.append([name, (_width, _height), hide_border, custom_colour])
 
     def generate_coordinates(self, key_names={}):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
@@ -179,7 +178,7 @@ class KeyboardGrid(object):
         elif use_count:
             values = self.count_press.values()
             
-        if mapping == 'logarithmic':
+        if mapping == 'standard':
             pools = sorted(set(values))
             max_range = len(pools) + 1
             lookup = {v: i + 1 for i, v in enumerate(pools)}
@@ -225,9 +224,9 @@ class KeyboardGrid(object):
                     
                     #Calculate colour for key
                     if values['CustomColour'] is None:
-                        if mapping == 'logarithmic':
+                        if mapping == 'standard':
                             fill_colour = colour_range[lookup[key_count]]
-                        if mapping == 'exponential':
+                        elif mapping == 'exponential':
                             fill_colour = colour_range[key_count ** exponential]
                         else:
                             fill_colour = colour_range[key_count]
@@ -405,7 +404,7 @@ class DrawKeyboard(object):
         #Add drop shadow
         shadow = (64, 64, 64)
         if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'] == (255, 255, 255, 255):
-            print 'Adding shadow...'
+            _print(self.string['draw']['shadow'])
             shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
                 for x, y in data['Coordinates']['Fill'][colour]:
@@ -430,14 +429,14 @@ class DrawKeyboard(object):
         font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
         
         #Generate stats
-        stats = ['Time elapsed: {}'.format(ticks_to_seconds(self.ticks, 60))]
+        stats = [self.string['stats']['time'].format(T=ticks_to_seconds(self.ticks, 60))]
         total_presses = format_amount(sum(self.key_counts['Pressed'].values()), 'press', 
                                       max_length=25, decimal_units=False)
-        stats.append('Total key presses: {}'.format(total_presses))
+        stats.append(self.string['stats']['count'].format(T=total_presses))
         if CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time':
-            stats.append('Colour based on how long keys were pressed for.')
+            stats.append(self.string['stats']['colour']['time'])
         elif CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count':
-            stats.append('Colour based on number of key presses.')
+            stats.append(self.string['stats']['colour']['count'])
         stats_text = ['{}:'.format(self.name), '\n'.join(stats)]
         
         #Write text to image
@@ -480,6 +479,7 @@ class DrawKeyboard(object):
             draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
 
         if file_path:
-            image.save(file_path, 'PNG')
-            print 'Saved image.'
+            _print(self._string['image']['save']['start'])
+            image.save(file_path, CONFIG['GenerateImages']['FileType'])
+            _print(self._string['image']['save']['end'])
         return image
