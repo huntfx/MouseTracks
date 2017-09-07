@@ -256,7 +256,7 @@ _config_defaults = {
     'GenerateKeyboard':{
         'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])'.format(DEFAULT_PATH), str),
         'ColourProfile': ('Aqua', str),
-        'ExtendedKeyboard': (True, bool, 'Set if the full keyboard should be shown.'),
+        'ExtendedKeyboard': (True, bool, 'If the full keyboard should be shown.'),
         'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
         'KeySize': (65.0, float, 0),
         'KeyCornerRadius': (3.0, float, 0),
@@ -270,11 +270,9 @@ _config_defaults = {
         'FontHeightOffset': (5.0, float),
         'FontWidthOffset': (5.0, float),
         'FontSpacing': (5.0, float),
-        'ColourMapping': ('logarithmic', str, (False, 'logarithmic', 'linear', 'exponential'),
+        'ColourMapping': ('standard', str, (False, 'standard', 'linear', 'exponential'),
                           ('Set how the colours should be assigned.'
-                           ' Logarithmic results in similar amounts of each colour,'
-                           ' whereas linear gives an accurate range.'
-                           ' Use exponential to apply the multiplier to it.')),
+                           ' Options are "standard", "linear" and "exponential".')),
         'ExponentialMultiplier': (1.0, float, 0),
         'DataSet': ('time', str, (False, 'time', 'press'), 'Set if the colours should be determined by the'
                                                           ' total time the key has been held (time),'
