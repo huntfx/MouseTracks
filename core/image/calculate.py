@@ -135,14 +135,19 @@ def convert_to_rgb(image_array, colour_range):
     #Calculate how many processes to use
     num_processes = CONFIG['GenerateImages']['AllowedCores']
     max_cores = cpu_count()
-    if not 0 < num_processes <= max_cores:
-        _print('Splitting up data for each process...')
+    
+    if not num_processes:
         num_processes = max_cores
         
+    elif num_processes < 0:
+        num_processes = max_cores + num_processes
+        if not num_processes:
+            num_processes = 1
+        
     if num_processes == 1:
-        return _rgb_process_single(image_array, colour_range)
+        return _rgb_process_single(image_array, colour_range)        
     
-    p = range(num_processes)
+    processes = range(num_processes)
     
     #Get actual image dimensions
     height = len(image_array)
@@ -157,7 +162,7 @@ def convert_to_rgb(image_array, colour_range):
     #Setup the queue and send it to each process
     q_send = Queue()
     q_recv = Queue()
-    for i in p:
+    for i in processes:
         height_range = range(heights[i][0], heights[i][1])
         q_send.put((i, width_range, height_range, colour_range, image_array))
         
@@ -168,14 +173,14 @@ def convert_to_rgb(image_array, colour_range):
     
     #Wait for the results to come back
     result_data = {}
-    for i in p:
+    for i in processes:
         data = q_recv.get()
         result_data[data[0]] = data[1]
         _print('Got result from process {}.'.format(data[0] + 1))
     
     #Join results
     results = []
-    for i in p:
+    for i in processes:
         results += result_data[i]
     
     return numpy_array(results, dtype='uint8')
