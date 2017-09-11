@@ -238,16 +238,7 @@ _config_defaults = {
         '_GaussianBlurBase': (0.0125, float, 0),
         'GaussianBlurMultiplier': (1.0, float, 0, 'Change the size multiplier of the gaussian blur.'
                                                   ' Smaller values are less smooth but show more detail.'),
-        'ExponentialMultiplier': (1.0, float, 0.001, 'Multiply every pixel to the power of this number.'
-                                                     ' It can produce better results, but not all the time,'
-                                                     ' so it is best left at 1.0 normally.'),
-        'ColourProfile': ('Jet', str),
-        'RangeLimitMultiplier': (7.5, float, 0.001, 'A lower value pushes more areas to the maximum.'
-                                                     ' Change this for each image to get the best heatmap results.'),
-        'ManualRangeLimit': (0.0, float, 0, 'Manually set the maximum value to limit the range'
-                                             ', which is generally between 0 and 1.'
-                                             ' Set to 0.0 for automatic, otherwise use trial and error'
-                                             ' to get it right.')
+        'ColourProfile': ('Jet', str)
     },
     'GenerateTracks': {
         'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]'.format(DEFAULT_PATH), str),
@@ -294,7 +285,8 @@ _config_defaults = {
     },
     'Advanced': {
         'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose how many messages to show.'
-                                                   ' 0 will show everything, and 3 will show nothing.')
+                                                   ' 0 will show everything, and 3 will show nothing.'),
+        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Reduce the range mapped to colours.')
     }
 }
 
