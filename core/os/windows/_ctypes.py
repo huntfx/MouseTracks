@@ -139,7 +139,20 @@ class WindowFocusData(object):
 
     def __init__(self):
         """Get the handle of the currently focused window."""
-        self.hwnd = ctypes.windll.user32.GetForegroundWindow()
+        self.hwnd = self._get_parent()
+    
+    def _get_parent(self):
+        while True:
+            try:
+                parent = ctypes.windll.user32.GetParent(hwnd)
+            except UnboundLocalError:
+                hwnd = ctypes.windll.user32.GetForegroundWindow()
+            else:
+                if parent:
+                    hwnd = parent
+                else:
+                    break
+        return hwnd
     
     def get_pid(self):
         """Get the process ID of a window."""
@@ -152,3 +165,9 @@ class WindowFocusData(object):
         win_rect = _RECT()
         ctypes.windll.user32.GetWindowRect(self.hwnd, ctypes.byref(win_rect))
         return win_rect.dump()
+    
+    def get_name(self):
+        length = ctypes.windll.user32.GetWindowTextLengthW(self.hwnd)
+        buff = ctypes.create_unicode_buffer(length)
+        ctypes.windll.user32.GetWindowTextW(self.hwnd, buff, length + 1)
+        return buff.value
