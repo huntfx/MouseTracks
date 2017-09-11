@@ -4,9 +4,10 @@ from PIL import Image
 
 #Attempt to import scipy, but have fallback options as scipy results in a huge 300mb+ exe file
 from core.image.scipy import blur, upscale
-from core.image.numpy import numpy_merge, numpy_array, numpy_power, numpy_sum
+from core.image.numpy import *
 from core.compatibility import range, _print
 from core.config import CONFIG
+from core.maths import round_int
 
 
 def calculate_gaussian_size(width, height):
@@ -16,7 +17,7 @@ def calculate_gaussian_size(width, height):
     gaussian_base = CONFIG['GenerateHeatmap']['_GaussianBlurBase']
     gaussian_mult = CONFIG['GenerateHeatmap']['GaussianBlurMultiplier']
     try:
-        return height * gaussian_base * gaussian_mult
+        return round_int(height * gaussian_base * gaussian_mult)
     except TypeError:
         raise ValueError('invalid input type, must be int')
 
@@ -216,23 +217,35 @@ def _rgb_process_single(image_array, colour_range):
     return numpy_array(new_data, dtype='uint8')
 
 
-def arrays_to_heatmap(numpy_arrays, gaussian_size, exponential_multiplier=1.0):
-    """Convert list of arrays into a heatmap."""
+def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
+    """Convert list of arrays into a heatmap.
+    The stages and values are chosen with trial and error, 
+    so this function is still open to improvement.
+    """
+    
     #Add all arrays together
     _print('Merging arrays...')
-    max_array = numpy_power(numpy_merge(numpy_arrays, 'add'), exponential_multiplier, dtype='float64')
-    if max_array is None:
-        return None
-
-    #Blur the array
-    _print('Applying gaussian blur...')            
-    heatmap = blur(max_array, int(gaussian_size))
-
-    #Calculate the average of all the points
-    _print('Calculating average...')
-    average = numpy_sum(heatmap) / heatmap.size
+    merged_arrays = numpy_merge(numpy_arrays, 'add', 'float64')
     
-    return ((0, average), heatmap)
+    #Set to constant values
+    _print('Flattening values...')
+    flattened = numpy_remap_to_range(merged_arrays)
+    
+    #Blur the array
+    if gaussian_size:
+        _print('Applying gaussian blur...')
+        heatmap = blur(flattened, gaussian_size)
+    else:
+        heatmap = flattened
+    
+    _print('Finding range limits...')
+    min_value = numpy_min(heatmap)
+    
+    #Lower the maximum value a little
+    all_values = sorted(set(heatmap.ravel()))
+    max_value = all_values[round_int(len(all_values) * clip)]
+    
+    return ((min_value, max_value), heatmap)
 
 
 def arrays_to_colour(colour_range, numpy_arrays):
