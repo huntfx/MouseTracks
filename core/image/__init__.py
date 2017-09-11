@@ -290,19 +290,9 @@ class RenderImage(object):
                                                  _find_range=False, high_precision=False)
                 
                 _h, _w = numpy_arrays[0].shape
-                gaussian_size = calculate_gaussian_size(_w, _h)
-
                 (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
-                            gaussian_size=gaussian_size,
-                            exponential_multiplier=CONFIG['GenerateHeatmap']['ExponentialMultiplier'])
-                
-                #Adjust range of heatmap            
-                if CONFIG['GenerateHeatmap']['ManualRangeLimit']:
-                    max_value = CONFIG['GenerateHeatmap']['ManualRangeLimit']
-                    _print('Manually set highest range to {}'.format(max_value))
-                else:
-                    max_value *= CONFIG['GenerateHeatmap']['RangeLimitMultiplier']
-                    CONFIG['GenerateHeatmap']['ManualRangeLimit'] = max_value
+                            gaussian_size=calculate_gaussian_size(_w, _h),
+                            clip=1 - CONFIG['Advanced']['HeatmapRangeClipping'])
                 
                 #Convert each point to an RGB tuple
                 _print('Converting to RGB...')
