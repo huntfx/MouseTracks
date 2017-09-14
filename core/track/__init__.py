@@ -67,6 +67,7 @@ def start_tracking():
                            'NotMoved': 0,
                            'Inactive': False,
                            'Clicked': {},
+                           'LastClick': None,
                            'LastClickTime': 0,
                            'OffScreen': False,
                            'DoubleClickTime': get_double_click_time() / 1000},
@@ -206,8 +207,10 @@ def start_tracking():
                             
                             #Double click     
                             double_click = False
-                            if store['Mouse']['LastClickTime'] > limiter.time - store['Mouse']['DoubleClickTime']:
+                            if (store['Mouse']['LastClickTime'] > limiter.time - store['Mouse']['DoubleClickTime']
+                                    and store['Mouse']['LastClick'] == mb_data):
                                 store['Mouse']['LastClickTime'] = 0
+                                store['Mouse']['LastClick'] = None
                                 double_click = True
                                 try:
                                     frame_data['DoubleClick'].append(mb_data)
@@ -248,6 +251,8 @@ def start_tracking():
                             else:
                                 NOTIFY(MOUSE_CLICKED_HELD, mouse_button)
                                 
+                        store['Mouse']['LastClick'] = mb_data
+                        
                     elif mb_clicked:
                         NOTIFY(MOUSE_UNCLICKED)
                         del store['Mouse']['Clicked'][mouse_button]
