@@ -2,7 +2,7 @@ from __future__ import division, absolute_import
 from PIL import Image
 
 from core.image.keyboard import DrawKeyboard
-from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, calculate_gaussian_size
+from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
 from core.image.colours import ColourRange, calculate_colour_map
 from core.constants import UPDATES_PER_SECOND
 from core.compatibility import get_items, _print
@@ -29,7 +29,7 @@ class ImageName(object):
         'Height': ['ResY', 'ResolutionY', 'ImageHeight', 'OutputHeight', 'Y'],
         'UpscaleWidth': ['UpscaleX', 'UpscaleResolutionX', 'UpscaleWidth', 'UWidth', 'UX'],
         'UpscaleHeight': ['UpscaleY', 'UpscaleResolutionY', 'UpscaleHeight', 'UHeight', 'UY'],
-        'Exponential': ['ExponentialMultiplier', 'ExpMult'],
+        'Exponential': ['ExponentialMultiplier', 'ExpMult', 'Power', 'LinearPower'],
         'Colours': ['Colors', 'ColourMap', 'ColorMap', 'ColourProfile', 'ColorProfile'],
         'MouseButton': ['MouseButtons'],
         'FileName': ['FName'],
@@ -77,7 +77,6 @@ class ImageName(object):
         self.uheight = str(g_im['_UpscaleResolutionY'])
         self.high_precision = 'High Detail' if g_im['HighPrecision'] else 'Normal'
         
-        self.heatmap_exponential = str(g_hm['ExponentialMultiplier'])
         self.heatmap_colours = str(g_hm['ColourProfile'])
         self.heatmap_buttons = {'LMB': g_hm['_MouseButtonLeft'],
                                 'MMB': g_hm['_MouseButtonMiddle'],
@@ -91,16 +90,15 @@ class ImageName(object):
             self.heatmap_button_group = selected_buttons[0]
         else:
             self.heatmap_button_group = 'Empty'
-        self.heatmap_gaussian_actual = str(calculate_gaussian_size(g_im['_UpscaleResolutionX'], 
+        self.heatmap_gaussian_actual = str(gaussian_size(g_im['_UpscaleResolutionX'], 
                                                                    g_im['_UpscaleResolutionY']))
         self.heatmap_gaussian = str(g_hm['GaussianBlurMultiplier'])
-        self.heatmap_max = str(g_hm['ManualRangeLimit'])
 
         self.track_colour = str(g_t['ColourProfile'])
 
         self.keyboard_colour = str(g_kb['ColourProfile'])
         self.keyboard_set = g_kb['DataSet'][0].upper() + g_kb['DataSet'][1:].lower()
-        self.keyboard_exponential = str(g_kb['ExponentialMultiplier'])
+        self.keyboard_exponential = str(g_kb['LinearPower'])
         self.keyboard_mapping = g_kb['ColourMapping'][0].upper() + g_kb['ColourMapping'][1:].lower()
         self.keyboard_size_mult = str(g_kb['SizeMultiplier'])
         self.keyboard_extended = 'Extended' if g_kb['ExtendedKeyboard'] else 'Compact'
@@ -158,12 +156,10 @@ class ImageName(object):
         
         #Specific options
         if image_type == 'clicks':
-            name = name.replace('[Exponential]', self.heatmap_exponential)
             name = name.replace('[Colours]', self.heatmap_colours)
             name = name.replace('[MouseButton]', self.heatmap_button_group)
             name = name.replace('[GaussianBlur]', self.heatmap_gaussian)
             name = name.replace('[GaussianSigma]', self.heatmap_gaussian_actual)
-            name = name.replace('[RangeLimit]', self.heatmap_max)
         
         elif image_type == 'tracks':
             name = name.replace('[Colours]', self.track_colour)
@@ -201,13 +197,14 @@ class ImageName(object):
 
 
 class RenderImage(object):
-    def __init__(self, profile, data=None):
+    def __init__(self, profile, data=None, allow_save=True):
         self.profile = profile
         if data is None:
             self.data = load_program(profile, _update_version=False)
         else:
             self.data = data
         self.name = ImageName(profile, data=self.data)
+        self.save = allow_save
 
     def keys_per_hour(self, session=False):
         """Detect if the game has keyboard tracking or not.
@@ -229,6 +226,7 @@ class RenderImage(object):
         
     def csv(self):
         
+        #TODO: Option to only return file
         export = ExportCSV(self.profile, self.data)
         
         if CONFIG['GenerateCSV']['_GenerateTracks']:
@@ -241,89 +239,106 @@ class RenderImage(object):
         if CONFIG['GenerateCSV']['_GenerateKeyboard']:
             csv_name = self.name.generate('csv-keyboard', reload=True)
             export.keyboard(self.name)
-            
-        
-    def generate(self, image_type, last_session=False, save_image=True):
-        image_type = image_type.lower()
-        if image_type not in ('tracks', 'clicks', 'keyboard'):
-            raise ValueError('image type \'{}\' not supported'.format(image_type))
-        
-        
-        if not self.data['Ticks']['Total']:
-            image_output = None
-        
-        else:
-        
-            CONFIG['GenerateImages']['_TempResolutionX'] = CONFIG['GenerateImages']['OutputResolutionX']
-            CONFIG['GenerateImages']['_TempResolutionY'] = CONFIG['GenerateImages']['OutputResolutionY']
-            
-            high_precision = CONFIG['GenerateImages']['HighPrecision']
-            allow_resize = True
-            
-            #Generate mouse tracks image
-            if image_type == 'tracks':
-            
-                session_start = self.data['Ticks']['Session']['Tracks'] if last_session else None
-                (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
-                                                                         session_start=session_start,
-                                                                         high_precision=high_precision)
-                try:
-                    colour_map = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
-                except ValueError:
-                    default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
-                    colour_map = calculate_colour_map(default_colours)
-                colour_range = ColourRange(min_value, max_value, colour_map)
-                image_output = arrays_to_colour(colour_range, numpy_arrays)
-                image_name = self.name.generate('Tracks', reload=True)
-            
-            #Generate click heatmap image
-            elif image_type == 'clicks':
-                lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
-                mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
-                rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
-                mb = [i for i, v in enumerate((lmb, mmb, rmb)) if v]
-                if last_session:
-                    clicks = self.data['Maps']['Session']['Clicks']
-                else:
-                    clicks = self.data['Maps']['Clicks']
-                numpy_arrays = merge_resolutions(self.data['Maps']['Clicks'], multiple_selection=mb, 
-                                                 _find_range=False, high_precision=False)
-                
-                _h, _w = numpy_arrays[0].shape
-                (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
-                            gaussian_size=calculate_gaussian_size(_w, _h),
-                            clip=1 - CONFIG['Advanced']['HeatmapRangeClipping'])
-                
-                #Convert each point to an RGB tuple
-                _print('Converting to RGB...')
-                try:
-                    colour_map = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
-                except ValueError:
-                    default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
-                    colour_map = calculate_colour_map(default_colours)
-                colour_range = ColourRange(min_value, max_value, colour_map)
-                image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
-              
-              
-                image_name = self.name.generate('Clicks', reload=True)
-            
-            elif image_type == 'keyboard':
-                allow_resize = False
-                kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
-                image_output = kb.draw_image()
-                image_name = self.name.generate('Keyboard', reload=True)
-            
+    
+    def _generate_start(self):
+        CONFIG['GenerateImages']['_TempResolutionX'] = CONFIG['GenerateImages']['OutputResolutionX']
+        CONFIG['GenerateImages']['_TempResolutionY'] = CONFIG['GenerateImages']['OutputResolutionY']
+    
+    def _generate_end(self, image_name, image_output, resize=True):
         resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
                       CONFIG['GenerateImages']['OutputResolutionY'])
             
-        if image_output is None:
-            _print('No image data was found for type "{}"'.format(image_type))
-        else:
-            if allow_resize:
-                image_output = image_output.resize(resolution, Image.ANTIALIAS)
-            if save_image:
-                create_folder(image_name)
-                _print('Saving image...')
-                image_output.save(image_name)
-                _print('Finished saving.')
+        
+        if resize:
+            image_output = image_output.resize(resolution, Image.ANTIALIAS)
+        if self.save:
+            create_folder(image_name)
+            _print('Saving image to "{}"...'.format(image_name))
+            image_output.save(image_name)
+            _print('Finished saving.')
+            
         return image_output
+    
+    def tracks(self, last_session=False):
+        """Generate the track image."""
+        self._generate_start()
+        
+        #Detect session information
+        if last_session:
+            session_start = self.data['Ticks']['Session']['Tracks']
+        else:
+            session_start = None
+        
+        #Resize all arrays
+        high_precision = CONFIG['GenerateImages']['HighPrecision']
+        (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
+                                                                 session_start=session_start,
+                                                                 high_precision=high_precision)
+                                                                 
+        try:
+            colour_map = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
+        except ValueError:
+            default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
+            colour_map = calculate_colour_map(default_colours)
+        colour_range = ColourRange(min_value, max_value, colour_map)
+        
+        image_name = self.name.generate('Tracks', reload=True)
+        image_output = arrays_to_colour(colour_range, numpy_arrays)
+        if image_output is None:
+            _print('No tracks data was found.')
+            return None
+            
+        return self._generate_end(image_name, image_output, resize=True)
+    
+    def doubleclicks(self, last_session=False):
+        """Generate the double click image."""
+        return self.clicks(last_session, 'Double')
+    
+    def clicks(self, last_session=False, click_type='Single'):
+        """Generate the click image."""
+        self._generate_start()
+        
+        #Detect session information
+        if last_session:
+            clicks = self.data['Maps']['Session']['Click'][click_type]
+        else:
+            clicks = self.data['Maps']['Click'][click_type]
+    
+        lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
+        mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
+        rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
+        valid_buttons = [i for i, v in zip(('Left', 'Middle', 'Right'), (lmb, mmb, rmb)) if v]
+        
+        numpy_arrays = merge_resolutions(clicks, map_selection=valid_buttons)[1]
+        
+        width, height = CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY']
+        (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
+                    gaussian_size=gaussian_size(width, height),
+                    clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
+                    
+        #Convert each point to an RGB tuple
+        _print('Converting to RGB...')
+        try:
+            colour_map = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
+        except ValueError:
+            default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
+            colour_map = calculate_colour_map(default_colours)
+        colour_range = ColourRange(min_value, max_value, colour_map)
+      
+        image_name = self.name.generate('Clicks', reload=True)
+        image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
+        
+        if image_output is None:
+            _print('No click data was found.')
+            return None
+            
+        return self._generate_end(image_name, image_output, resize=True)
+    
+    def keyboard(self, last_session=False):
+        """Generate the keyboard image."""
+        kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
+        
+        image_output = kb.draw_image()
+        image_name = self.name.generate('Keyboard', reload=True)
+        
+        return self._generate_end(image_name, image_output, resize=False)
