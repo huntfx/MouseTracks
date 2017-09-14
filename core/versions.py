@@ -24,7 +24,8 @@ VERSION_HISTORY = [
     '2.0.9c',
     '2.0.9d',
     '2.0.9e',
-    '2.0.10'
+    '2.0.10',
+    '2.0.10b'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -103,6 +104,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.9d: Remove temporary maps as they were messy, add double clicks to test
     2.0.9e: Maintainence to remove invalid resolutions (the last update caused a few)
     2.0.10: Rearrange some maps and convert to numpy arrays
+    2.0.10b: Reset double click maps for code update
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -267,6 +269,9 @@ def upgrade_version(data, update_metadata=True):
             del maps['DoubleClicks']
         
         IterateMaps(data['Maps']).convert()
+        
+    if current_version_id < _get_id('2.0.10b'):
+        data['Maps']['Click']['Double'] = {'Left': {}, 'Middle': {}, 'Right': {}}
         
     if update_metadata:     
     
