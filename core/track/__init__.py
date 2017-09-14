@@ -10,7 +10,7 @@ from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
 from core.messages import time_format
 from core.notify import *
-from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR
+from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
 from core.track.background import background_process, running_processes, monitor_offset
 
 
@@ -68,7 +68,9 @@ def start_tracking():
                            'NotMoved': 0,
                            'Inactive': False,
                            'Clicked': {},
-                           'OffScreen': False},
+                           'LastClickTime': 0,
+                           'OffScreen': False,
+                           'DoubleClickTime': get_double_click_time() / 1000},
                  'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
                  'LastActivity': 0,
                  'LastSent': 0,
@@ -201,28 +203,47 @@ def start_tracking():
                         store['LastActivity'] = i
                         
                         #First click
-                        if not mb_clicked:
+                        if not mb_clicked:           
+                            
+                            #Double click     
+                            double_click = False
+                            if store['Mouse']['LastClickTime'] > limiter.time - store['Mouse']['DoubleClickTime']:
+                                store['Mouse']['LastClickTime'] = 0
+                                double_click = True
+                            else:
+                                store['Mouse']['LastClickTime'] = limiter.time
+                            
+                            #Single click
                             store['Mouse']['Clicked'][mouse_button] = limiter.time
+                            
                             if not store['Mouse']['OffScreen']:
-                                NOTIFY(MOUSE_CLICKED, mouse_pos['Current'], mouse_button)
+                                if double_click:
+                                    NOTIFY(MOUSE_CLICKED_DOUBLE, mouse_button, mouse_pos['Current'])
+                                else:
+                                    NOTIFY(MOUSE_CLICKED, mouse_button, mouse_pos['Current'])
                                 try:
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
                                 frame_data['MouseHeld'] = False
                             else:
-                                NOTIFY(MOUSE_CLICKED_OFFSCREEN, mouse_button)
+                                if double_click:
+                                    NOTIFY(MOUSE_CLICKED_DOUBLE, mouse_button)
+                                else:
+                                    NOTIFY(MOUSE_CLICKED, mouse_button)
                                 
                         #Held clicks
                         elif click_repeat and mb_clicked < limiter.time - click_repeat:
                             store['Mouse']['Clicked'][mouse_button] = limiter.time
                             if not store['Mouse']['OffScreen']:
-                                NOTIFY(MOUSE_CLICKED_HELD, mouse_pos['Current'], mouse_button)
+                                NOTIFY(MOUSE_CLICKED_HELD, mouse_button, mouse_pos['Current'])
                                 try:
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
                                 frame_data['MouseHeld'] = True
+                            else:
+                                NOTIFY(MOUSE_CLICKED_HELD, mouse_button)
                                 
                     elif mb_clicked:
                         NOTIFY(MOUSE_UNCLICKED)
