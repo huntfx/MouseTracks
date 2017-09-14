@@ -53,7 +53,6 @@ def start_tracking():
         _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         CONFIG.save()
         
-
         timer = {'UpdateScreen': CONFIG['Advanced']['CheckResolution'],
                  'UpdatePrograms': CONFIG['Advanced']['CheckRunningApplications'],
                  'Save': CONFIG['Save']['Frequency'] * UPDATES_PER_SECOND,
@@ -210,6 +209,10 @@ def start_tracking():
                             if store['Mouse']['LastClickTime'] > limiter.time - store['Mouse']['DoubleClickTime']:
                                 store['Mouse']['LastClickTime'] = 0
                                 double_click = True
+                                try:
+                                    frame_data['DoubleClick'].append(mb_data)
+                                except KeyError:
+                                    frame_data['DoubleClick'] = [mb_data]
                             else:
                                 store['Mouse']['LastClickTime'] = limiter.time
                             
