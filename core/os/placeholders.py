@@ -66,6 +66,11 @@ def get_documents_path():
     return os.path.expanduser('~')
 
     
+def get_double_click_time():
+    """Get double click time in ms."""
+    return 500
+    
+    
 class WindowFocusData(object):
     def __init__(self):
         pass
@@ -77,6 +82,6 @@ class WindowFocusData(object):
     def get_rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
-
+        
         
 KEYS = {}
