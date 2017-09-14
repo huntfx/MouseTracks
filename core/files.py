@@ -75,13 +75,20 @@ def prepare_file(data, legacy=False):
     if legacy:
         return zlib.compress(cPickle.dumps(data, PICKLE_PROTOCOL))
     
+    #Separate the maps from the main dictionary
     numpy_maps = IterateMaps(data['Maps']).separate()
+    
+    #Write the maps to a zip file in memory
     io = StringIO()
     with CustomOpen(io, 'w') as f:
         f.write(cPickle.dumps(data, PICKLE_PROTOCOL), '_')
         f.write(str(len(numpy_maps)), 'n')
         for i, m in enumerate(numpy_maps):
             f.write(numpy.save(m), i)
+    
+    #Undo the modify
+    IterateMaps(data['Maps']).join(numpy_maps)
+    
     return io.getvalue()
     
 
