@@ -54,13 +54,12 @@ def start_tracking():
         CONFIG.save()
         
 
-        timer = {'UpdateScreen': CONFIG['Timer']['CheckResolution'],
-                 'UpdatePrograms': CONFIG['Timer']['CheckPrograms'],
-                 'Save': CONFIG['Save']['Frequency'],
-                 'ReloadProgramList': CONFIG['Timer']['ReloadPrograms'],
-                 'UpdateQueuedCommands': CONFIG['Timer']['_ShowQueuedCommands']}
-        timer = {k: v * UPDATES_PER_SECOND for k, v in get_items(timer)}
-
+        timer = {'UpdateScreen': CONFIG['Advanced']['CheckResolution'],
+                 'UpdatePrograms': CONFIG['Advanced']['CheckRunningApplications'],
+                 'Save': CONFIG['Save']['Frequency'] * UPDATES_PER_SECOND,
+                 'ReloadProgramList': CONFIG['Advanced']['ReloadApplicationList'],
+                 'UpdateQueuedCommands': CONFIG['Advanced']['ShowQueuedCommands']}
+                 
         store = {'Resolution': {'Current': monitor_info(),
                                 'Previous': None,
                                 'Boundaries': None},
@@ -192,7 +191,7 @@ def start_tracking():
                         store['LastActivity'] = i
 
                 #Mouse clicks
-                click_repeat = CONFIG['Main']['RepeatClicks']
+                click_repeat = CONFIG['Advanced']['RepeatClicks']
                 for mouse_button, clicked in enumerate(get_mouse_click()):
 
                     mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
@@ -224,6 +223,7 @@ def start_tracking():
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
                                 frame_data['MouseHeld'] = True
+                                
                     elif mb_clicked:
                         NOTIFY(MOUSE_UNCLICKED)
                         del store['Mouse']['Clicked'][mouse_button]
@@ -234,7 +234,7 @@ def start_tracking():
                 keys_pressed = []
                 keys_held = []
                 key_status = store['Keyboard']['KeysPressed']
-                key_press_repeat = CONFIG['Main']['RepeatKeyPress']
+                key_press_repeat = CONFIG['Advanced']['RepeatKeyPress']
                 _keys_held = []
                 _keys_pressed = []
                 for k in KEYS:
@@ -272,7 +272,7 @@ def start_tracking():
                 recalculate_mouse = False
                 
                 #Check if resolution has changed
-                if not i % timer['UpdateScreen']:
+                if timer['UpdateScreen'] and not i % timer['UpdateScreen']:
                 
                     if MULTI_MONITOR:
                         try:
@@ -318,16 +318,17 @@ def start_tracking():
                             store['Resolution']['Previous'] = store['Resolution']['Current']
 
                 #Send request to update programs
-                if not i % timer['UpdatePrograms']:
+                if timer['UpdatePrograms'] and not i % timer['UpdatePrograms']:
                     frame_data_rp['Update'] = True
                 
                 
                 #Send request to reload program list
-                if not i % timer['ReloadProgramList']:
+                if timer['ReloadProgramList'] and not i % timer['ReloadProgramList']:
                     frame_data_rp['Reload'] = True
 
                 #Update user about the queue size
-                if not i % timer['UpdateQueuedCommands'] and store['LastActivity'] > i - timer['Save']:
+                if (timer['UpdateQueuedCommands'] and not i % timer['UpdateQueuedCommands'] 
+                        and timer['Save'] and store['LastActivity'] > i - timer['Save']):
                     try:
                         NOTIFY(QUEUE_SIZE, q_bg_send.qsize())
                     except NotImplementedError:
@@ -346,12 +347,18 @@ def start_tracking():
             
     except Exception as e:
         if _background_process is not None:
-            q_bg_send.put({'Quit': True})
+            try:
+                q_bg_send.put({'Quit': True})
+            except IOError:
+                pass
         handle_error(traceback.format_exc())
         
     except KeyboardInterrupt:
         if _background_process is not None:
-            q_bg_send.put({'Quit': True})
+            try:
+                q_bg_send.put({'Quit': True})
+            except IOError:
+                pass
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
         _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
