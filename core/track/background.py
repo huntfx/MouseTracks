@@ -11,6 +11,7 @@ from core.files import load_program, save_program, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
+import core.numpy as numpy
     
 
 def running_processes(q_recv, q_send, background_send):
@@ -42,6 +43,7 @@ def running_processes(q_recv, q_send, background_send):
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
+                
                     if current_app is None:
                         cust_res = None
                         
@@ -59,7 +61,8 @@ def running_processes(q_recv, q_send, background_send):
                         last_coordinates, last_resolution = cust_res
                             
                     send['CustomResolution'] = cust_res
-                    
+                
+                #Detect running program
                 if current_app != previous_app:
                     
                     if running_apps.focus is None:
@@ -101,13 +104,13 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
     else:
         max_attempts = CONFIG['Save']['MaximumAttemptsNormal']
     
-    oompressed_data = prepare_file(data)
+    compressed_data = prepare_file(data)
     
     #Attempt to save
     NOTIFY(SAVE_START)
     NOTIFY.send(q_send)
     for i in range(max_attempts):
-        if save_program(program_name, oompressed_data, compress=False):
+        if save_program(program_name, compressed_data, _compress=False):
             NOTIFY(SAVE_SUCCESS)
             NOTIFY.send(q_send)
             saved = True
@@ -135,12 +138,32 @@ def monitor_offset(coordinate, monitor_limits):
             return ((x2 - x1, y2 - y1), (x1, y1))
             
             
-def _check_resolution(store, resolution):
+def _check_resolution(maps, resolution):
     """Make sure resolution exists as a key for each map."""
     if resolution is None:
         return
     if not isinstance(resolution, tuple):
         raise ValueError('incorrect resolution: {}'.format(resolution))
+    
+    all_maps = [
+        maps['Tracks'],
+        maps['Click']['Single']['Left'],
+        maps['Click']['Single']['Middle'],
+        maps['Click']['Single']['Right'],
+        maps['Click']['Double']['Left'],
+        maps['Click']['Double']['Middle'],
+        maps['Click']['Double']['Right'],
+        maps['Session']['Click']['Single']['Left'],
+        maps['Session']['Click']['Single']['Middle'],
+        maps['Session']['Click']['Single']['Right'],
+        maps['Session']['Click']['Double']['Left'],
+        maps['Session']['Click']['Double']['Middle'],
+        maps['Session']['Click']['Double']['Right']
+    ]
+    for map_resolutions in all_maps:
+        if resolution not in map_resolutions:
+            map_resolutions[resolution] = numpy.array(resolution, create=True)
+    '''
     if resolution not in store['Data']['Maps']['Tracks']:
         store['Data']['Maps']['Tracks'][resolution] = {}
     if resolution not in store['Data']['Maps']['Clicks']:
@@ -151,6 +174,7 @@ def _check_resolution(store, resolution):
         store['Data']['Maps']['DoubleClicks'][resolution] = [{}, {}, {}]
     if resolution not in store['Data']['Maps']['Session']['DoubleClicks']:
         store['Data']['Maps']['Session']['DoubleClicks'][resolution] = [{}, {}, {}]
+        '''
 
 
 def background_process(q_recv, q_send):
@@ -168,7 +192,6 @@ def background_process(q_recv, q_send):
                  'LastResolution': None,
                  'ActivitySinceLastSave': False,
                  'SavesSkipped': 0,
-                 'PingTimeout': CONFIG['Timer']['_Ping'] + 1,
                  'CustomResolution': None,
                  'LastClick': None}
         
@@ -181,14 +204,6 @@ def background_process(q_recv, q_send):
         
         while True:
             received_data = q_recv.get()
-            '''
-            #Quit if data is not received by the ping interval
-            #Seems buggy so disabling for now
-            try:
-                received_data = q_recv.get(timeout=store['PingTimeout'])
-            except Empty:
-                break
-                '''
             
             check_resolution = False
             
@@ -236,9 +251,9 @@ def background_process(q_recv, q_send):
                     except AttributeError:
                         pass
                     if store['CustomResolution'] is None:
-                        _check_resolution(store, store['Resolution'])
+                        _check_resolution(store['Data']['Maps'], store['Resolution'])
                     else:
-                        _check_resolution(store, store['CustomResolution'][1])
+                        _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
                     store['ResolutionList'] = set()
                         
                     if store['Data']['Ticks']['Total']:
@@ -256,11 +271,11 @@ def background_process(q_recv, q_send):
                 
                 store['CustomResolution'] = received_data['CustomResolution']
                 if store['CustomResolution'] is not None:
-                    _check_resolution(store, store['CustomResolution'][1])
+                    _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
 
             if 'Resolution' in received_data:
                 store['Resolution'] = received_data['Resolution']
-                _check_resolution(store, store['Resolution'])
+                _check_resolution(store['Data']['Maps'], store['Resolution'])
             
             if 'MonitorLimits' in received_data:
                 store['ResolutionTemp'] = received_data['MonitorLimits']
@@ -320,48 +335,53 @@ def background_process(q_recv, q_send):
                     pass
                         
                 #Write each pixel to the dictionary
-                for pixel in mouse_coordinates:
+                for (x, y) in mouse_coordinates:
                     
                     if store['CustomResolution'] is not None:
                         try:
-                            resolution, offset = monitor_offset(pixel, [store['CustomResolution'][0]])
+                            resolution, (x_offset, y_offset) = monitor_offset((x, y), [store['CustomResolution'][0]])
                         except TypeError:
                             continue
-                            
-                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        
+                        x -= x_offset
+                        y -= y_offset
+                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                     
                     elif MULTI_MONITOR:
                         
                         #Check if offset needs to be recalculated
                         if resolution != _resolution:
                             try:
-                                resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
                             except TypeError:
                                 store['ResolutionTemp'] = monitor_info()
                                 try:
-                                    resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                                    resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
                                 except TypeError:
                                     continue
                         
-                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        x -= x_offset
+                        y -= y_offset
+                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
                         if resolution not in store['ResolutionList']:
-                            _check_resolution(store, resolution)
+                            _check_resolution(store['Data']['Maps'], resolution)
                             store['ResolutionList'].add(resolution)
                             
                     else:
                         resolution = store['Resolution']
                     
-                    store['Data']['Maps']['Tracks'][resolution][pixel] = store['Data']['Ticks']['Tracks']
+                    store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
 
                 store['Data']['Ticks']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
-                max_track_value = CONFIG['CompressMaps']['TrackMaximum']
+                #FIX THIS FOR NUMPY
+                max_track_value = CONFIG['Advanced']['CompressTrackMax']
                 if not max_track_value:
                     max_track_value = MAX_INT
-                if store['Data']['Ticks']['Tracks'] > CONFIG['CompressMaps']['TrackMaximum']:
-                    compress_multplier = CONFIG['CompressMaps']['TrackReduction']
+                if False and store['Data']['Ticks']['Tracks'] > max_track_value:
+                    compress_multplier = CONFIG['Advanced']['CompressTrackAmount']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
                     
@@ -391,56 +411,61 @@ def background_process(q_recv, q_send):
             if 'MouseClick' in received_data:
                 store['ActivitySinceLastSave'] = True
                 
-                for mouse_button, pixel in received_data['MouseClick']:
+                for mouse_button_index, (x, y) in received_data['MouseClick']:
                 
                     if store['CustomResolution'] is not None:
                         try:
-                            resolution, offset = monitor_offset(pixel,  [store['CustomResolution'][0]])
+                            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
                         except TypeError:
                             continue
-                            
-                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        
+                        x -= x_offset
+                        y -= y_offset
+                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                             
                     elif MULTI_MONITOR:
                     
                         try:
-                            resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
                         except TypeError:
                             store['ResolutionTemp'] = monitor_info()
                             try:
-                                resolution, offset = monitor_offset(pixel, store['ResolutionTemp'])
+                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
                             except TypeError:
                                 continue
                         
-                        _check_resolution(store, resolution)
-                        pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
+                        _check_resolution(store['Data']['Maps'], resolution)
+                        x -= x_offset
+                        y -= y_offset
+                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
                     else:
                         resolution = store['Resolution']
                     
+                    mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
                     try:
-                        store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] += 1
+                        store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] += 1
                     except KeyError:
-                        store['Data']['Maps']['Clicks'][resolution][mouse_button][pixel] = 1
+                        store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] = 1
                     try:
-                        store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] += 1
+                        store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] += 1
                     except KeyError:
-                        store['Data']['Maps']['Session']['Clicks'][resolution][mouse_button][pixel] = 1
+                        store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] = 1
                     
                     #Record double clicks (temporary - testing this out)
-                    if store['LastClick'] == pixel and not received_data['MouseHeld']:
+                    if store['LastClick'] == (x, y) and not received_data['MouseHeld']:
                         
                         store['LastClick'] = None
                         try:
-                            store['Data']['Maps']['DoubleClicks'][resolution][mouse_button][pixel] += 1
+                            store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
                         except KeyError:
-                            store['Data']['Maps']['DoubleClicks'][resolution][mouse_button][pixel] = 1
+                            store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] = 1
                         try:
-                            store['Data']['Maps']['Session']['DoubleClicks'][resolution][mouse_button][pixel] += 1
+                            store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
                         except KeyError:
-                            store['Data']['Maps']['Session']['DoubleClicks'][resolution][mouse_button][pixel] = 1
+                            store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] = 1
                     else:
-                        store['LastClick'] = pixel
+                        store['LastClick'] = (x, y)
                     
                 
             #Increment the amount of time the script has been running for
