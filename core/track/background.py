@@ -163,18 +163,6 @@ def _check_resolution(maps, resolution):
     for map_resolutions in all_maps:
         if resolution not in map_resolutions:
             map_resolutions[resolution] = numpy.array(resolution, create=True)
-    '''
-    if resolution not in store['Data']['Maps']['Tracks']:
-        store['Data']['Maps']['Tracks'][resolution] = {}
-    if resolution not in store['Data']['Maps']['Clicks']:
-        store['Data']['Maps']['Clicks'][resolution] = [{}, {}, {}]
-    if resolution not in store['Data']['Maps']['Session']['Clicks']:
-        store['Data']['Maps']['Session']['Clicks'][resolution] = [{}, {}, {}]
-    if resolution not in store['Data']['Maps']['DoubleClicks']:
-        store['Data']['Maps']['DoubleClicks'][resolution] = [{}, {}, {}]
-    if resolution not in store['Data']['Maps']['Session']['DoubleClicks']:
-        store['Data']['Maps']['Session']['DoubleClicks'][resolution] = [{}, {}, {}]
-        '''
 
 
 def background_process(q_recv, q_send):
@@ -308,7 +296,6 @@ def background_process(q_recv, q_send):
                     except KeyError:
                         store['Data']['Keys']['Session']['Held'][key] = 1
             
-            
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
                 store['ActivitySinceLastSave'] = True
@@ -345,7 +332,6 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
-                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                     
                     elif MULTI_MONITOR:
                         
@@ -362,7 +348,6 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
-                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
                         if resolution not in store['ResolutionList']:
                             _check_resolution(store['Data']['Maps'], resolution)
@@ -371,7 +356,13 @@ def background_process(q_recv, q_send):
                     else:
                         resolution = store['Resolution']
                     
-                    store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
+                    try:
+                        store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
+                    except TypeError:
+                        print store['Data']['Ticks']
+                        print store['Data']['Maps']['Tracks'][resolution]
+                        store['Data']['Maps']['Tracks'][resolution][y]
+                        raise TypeError('{} {} {} {} {}'.format(store['Data']['Maps']['Tracks'].keys(), resolution, x, y, store['Data']['Ticks']['Tracks']))
 
                 store['Data']['Ticks']['Tracks'] += 1
                 
@@ -404,7 +395,7 @@ def background_process(q_recv, q_send):
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
                 
-                store['LastClick'] = None #If mouse has moved it's not a double click
+                #store['LastClick'] = None #If mouse has moved it's not a double click
                 
                 
             #Record mouse clicks
@@ -421,7 +412,6 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
-                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                             
                     elif MULTI_MONITOR:
                     
@@ -437,7 +427,6 @@ def background_process(q_recv, q_send):
                         _check_resolution(store['Data']['Maps'], resolution)
                         x -= x_offset
                         y -= y_offset
-                        #pixel = (pixel[0] - offset[0], pixel[1] - offset[1])
                         
                     else:
                         resolution = store['Resolution']
@@ -452,20 +441,48 @@ def background_process(q_recv, q_send):
                     except KeyError:
                         store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] = 1
                     
-                    #Record double clicks (temporary - testing this out)
-                    if store['LastClick'] == (x, y) and not received_data['MouseHeld']:
+            #Record double clicks
+            if 'DoubleClick' in received_data:
+                store['ActivitySinceLastSave'] = True
+                
+                for mouse_button_index, (x, y) in received_data['DoubleClick']:
+                
+                    if store['CustomResolution'] is not None:
+                        try:
+                            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
+                        except TypeError:
+                            continue
                         
-                        store['LastClick'] = None
+                        x -= x_offset
+                        y -= y_offset
+                            
+                    elif MULTI_MONITOR:
+                    
                         try:
-                            store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
-                        except KeyError:
-                            store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] = 1
-                        try:
-                            store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
-                        except KeyError:
-                            store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] = 1
+                            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+                        except TypeError:
+                            store['ResolutionTemp'] = monitor_info()
+                            try:
+                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+                            except TypeError:
+                                continue
+                        
+                        _check_resolution(store['Data']['Maps'], resolution)
+                        x -= x_offset
+                        y -= y_offset
+                        
                     else:
-                        store['LastClick'] = (x, y)
+                        resolution = store['Resolution']
+                    
+                    mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
+                    try:
+                        store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
+                    except KeyError:
+                        store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] = 1
+                    try:
+                        store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
+                    except KeyError:
+                        store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] = 1
                     
                 
             #Increment the amount of time the script has been running for
