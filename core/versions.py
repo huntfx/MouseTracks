@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import time
 
+import core.numpy as numpy
+
 
 VERSION_HISTORY = [
     '-1',
@@ -21,12 +23,52 @@ VERSION_HISTORY = [
     '2.0.9b',
     '2.0.9c',
     '2.0.9d',
-    '2.0.9e'
+    '2.0.9e',
+    '2.0.10'
 ]
 
 VERSION = VERSION_HISTORY[-1]
 
 
+class IterateMaps(object):
+    def __init__(self, maps):
+        self.maps = maps
+        
+    def _iterate(self, maps, command, extra=None):            
+        for key in maps.keys():
+        
+            if isinstance(key, str):
+                self._iterate(maps[key], command, extra)
+
+            elif command == 'separate':
+                array = maps[key]
+                maps[key] = len(self._map_list)
+                self._map_list.append(array)
+                
+            elif command == 'join':
+                index = maps[key]
+                maps[key] = extra[index]
+                
+            elif command == 'convert':
+                array = maps[key]
+                width, height = key
+                numpy_array = numpy.array((width, height), create=True, dtype='int64')
+                for x, y in array:
+                    numpy_array[y][x] = array[(x, y)]
+                maps[key] = numpy_array
+                
+    def separate(self):
+        self._map_list = []
+        self._iterate(self.maps, 'separate')
+        return self._map_list
+
+    def join(self, numpy_maps):
+        self._iterate(self.maps, 'join', numpy_maps)
+    
+    def convert(self):
+        self._iterate(self.maps, 'convert')
+
+        
 def _get_id(id):
     """Read the ID for upgrading versions.
     If no ID exists, such as if the version may not be finished,
@@ -60,6 +102,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.9c: Created separate map for clicks this session
     2.0.9d: Remove temporary maps as they were messy, add double clicks to test
     2.0.9e: Maintainence to remove invalid resolutions (the last update caused a few)
+    2.0.10: Rearrange some maps and convert to numpy arrays
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -181,6 +224,7 @@ def upgrade_version(data, update_metadata=True):
         data['Maps']['Session']['DoubleClicks'] = {}
         
     if current_version_id < _get_id('2.0.9e'):
+    
         def _test_resolution(aspects, x, y):
             for ax, ay in aspects:
                 dx = x / ax
@@ -205,7 +249,24 @@ def upgrade_version(data, update_metadata=True):
             for resolution in data['Maps'][map].keys():
                 if not _test_resolution(aspects, *resolution):
                     del data['Maps'][map][resolution]
+                    
+    if current_version_id < _get_id('2.0.10'):
+                        
+        for maps in (data['Maps'], data['Maps']['Session']):
+            maps['Click'] = {'Single': {'Left': {}, 'Middle': {}, 'Right': {}},
+                             'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
+            for resolution in maps['Clicks']:
+                maps['Click']['Single']['Left'][resolution] = maps['Clicks'][resolution][0]
+                maps['Click']['Single']['Middle'][resolution] = maps['Clicks'][resolution][1]
+                maps['Click']['Single']['Right'][resolution] = maps['Clicks'][resolution][2]
+            del maps['Clicks']
+            for resolution in maps['DoubleClicks']:
+                maps['Click']['Double']['Left'][resolution] = maps['DoubleClicks'][resolution][0]
+                maps['Click']['Double']['Middle'][resolution] = maps['DoubleClicks'][resolution][1]
+                maps['Click']['Double']['Right'][resolution] = maps['DoubleClicks'][resolution][2]
+            del maps['DoubleClicks']
         
+        IterateMaps(data['Maps']).convert()
         
     if update_metadata:     
     
@@ -217,8 +278,8 @@ def upgrade_version(data, update_metadata=True):
             data['Ticks']['Session']['Total'] = data['Ticks']['Total']
             data['Keys']['Session']['Pressed'] = {}
             data['Keys']['Session']['Held'] = {}
-            data['Maps']['Session']['Clicks'] = {}
-            data['Maps']['Session']['DoubleClicks'] = {}
+            data['Maps']['Session']['Click'] = {'Single': {'Left': {}, 'Middle': {}, 'Right': {}}, 
+                                                'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
