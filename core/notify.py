@@ -26,11 +26,11 @@ MOUSE_CLICKED_OFFSCREEN = 10
 
 MOUSE_CLICKED_HELD = 11
 
-MOUSE_HELD = 12
+MOUSE_CLICKED_DOUBLE = 13
 
-TRACK_COMPRESS_START = 13
+TRACK_COMPRESS_START = 14
 
-TRACK_COMPRESS_END = 14
+TRACK_COMPRESS_END = 15
 
 RESOLUTION_CHANGED = 16
 
@@ -135,20 +135,41 @@ class Notify(object):
             q0(self.string['mouse']['position'].format(X=args[0][0], Y=args[0][1]))
             
         if message_id == MOUSE_CLICKED:
-            q1(self.string['mouse']['clicked']['onscreen'].format(MB=self._mb(args[1]),
-                                                                  X=args[0][0], Y=args[0][1]))
-                                                              
-        if message_id == MOUSE_CLICKED_OFFSCREEN:
-            q1(self.string['mouse']['clicked']['offscreen'].format(MB=self._mb(args[1])))
+            mouse_button = args[0]
+            try:
+                resolution = args[1]
+            except IndexError:
+                q1(self.string['mouse']['clicked']['offscreen'].format(MB=self._mb(mouse_button),
+                                                                       C=self.word['mouse']['click']['single']))
+            else:
+                q1(self.string['mouse']['clicked']['onscreen'].format(MB=self._mb(mouse_button),
+                                                                      X=resolution[0], Y=resolution[1],
+                                                                      C=self.word['mouse']['click']['single']))
+            
+        if message_id == MOUSE_CLICKED_DOUBLE:
+            mouse_button = args[0]
+            try:
+                resolution = args[1]
+            except IndexError:
+                q1(self.string['mouse']['clicked']['offscreen'].format(MB=self._mb(mouse_button),
+                                                                       C=self.word['mouse']['click']['double']))
+            else:
+                q1(self.string['mouse']['clicked']['onscreen'].format(MB=self._mb(mouse_button),
+                                                                      X=resolution[0], Y=resolution[1],
+                                                                      C=self.word['mouse']['click']['double']))
             
         if message_id == MOUSE_CLICKED_HELD:
-            q1(self.string['mouse']['clicked']['held'].format(MB=self._mb(args[1]),
-                                                              X=args[0][0], Y=args[0][1]))
+            mouse_button = args[0]
+            try:
+                resolution = args[1]
+            except IndexError:
+                q1(self.string['mouse']['held']['offscreen'].format(MB=self._mb(mouse_button)))
+            else:
+                q1(self.string['mouse']['held']['onscreen'].format(MB=self._mb(mouse_button),
+                                                                      X=resolution[0], Y=resolution[1]))
+                                                                      
         if message_id == MOUSE_UNCLICKED:
             q0(self.string['mouse']['unclicked'])
-            
-        if message_id == MOUSE_HELD:
-            q1(self.string['mouse']['held'])
             
         if message_id == TRACK_COMPRESS_START:
             q2(self.string['compress']['start'])
@@ -301,7 +322,7 @@ class Notify(object):
         output = [u' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
         message = u' | '.join(i for i in output if i)
         for msg in self.debug:
-            message += '\n' + u', '.join(map(str, msg))
+            print(u', '.join(map(str, msg)))
                 
         self.reset()
         return message
