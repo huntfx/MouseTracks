@@ -356,32 +356,23 @@ def background_process(q_recv, q_send):
                     else:
                         resolution = store['Resolution']
                     
-                    try:
-                        store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
-                    except TypeError:
-                        print store['Data']['Ticks']
-                        print store['Data']['Maps']['Tracks'][resolution]
-                        store['Data']['Maps']['Tracks'][resolution][y]
-                        raise TypeError('{} {} {} {} {}'.format(store['Data']['Maps']['Tracks'].keys(), resolution, x, y, store['Data']['Ticks']['Tracks']))
+                    store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
 
                 store['Data']['Ticks']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
-                #FIX THIS FOR NUMPY
                 max_track_value = CONFIG['Advanced']['CompressTrackMax']
                 if not max_track_value:
                     max_track_value = MAX_INT
-                if False and store['Data']['Ticks']['Tracks'] > max_track_value:
+                if store['Data']['Ticks']['Tracks'] > max_track_value:
                     compress_multplier = CONFIG['Advanced']['CompressTrackAmount']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
                     
                     tracks = store['Data']['Maps']['Tracks']
                     for resolution in tracks.keys():
-                        tracks[resolution] = {k: int(v // compress_multplier)
-                                              for k, v in get_items(tracks[resolution])}
-                        tracks[resolution] = {k: v for k, v in get_items(tracks[resolution]) if v}
-                        if not tracks[resolution]:
+                        tracks[resolution] = numpy.divide(tracks[resolution], compress_multplier, as_int=True)
+                        if not numpy.len(tracks[resolution]):
                             del tracks[resolution]
                             
                     NOTIFY(TRACK_COMPRESS_END, 'track')
@@ -394,8 +385,6 @@ def background_process(q_recv, q_send):
                     store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
-                
-                #store['LastClick'] = None #If mouse has moved it's not a double click
                 
                 
             #Record mouse clicks
@@ -432,14 +421,8 @@ def background_process(q_recv, q_send):
                         resolution = store['Resolution']
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
-                    try:
-                        store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] += 1
-                    except KeyError:
-                        store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] = 1
-                    try:
-                        store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] += 1
-                    except KeyError:
-                        store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] = 1
+                    store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] += 1
+                    store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] += 1
                     
             #Record double clicks
             if 'DoubleClick' in received_data:
@@ -475,15 +458,8 @@ def background_process(q_recv, q_send):
                         resolution = store['Resolution']
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
-                    try:
-                        store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
-                    except KeyError:
-                        store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] = 1
-                    try:
-                        store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
-                    except KeyError:
-                        store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] = 1
-                    
+                    store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
+                    store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
                 
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
