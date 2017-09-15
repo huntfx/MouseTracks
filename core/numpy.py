@@ -33,8 +33,11 @@ def _get_dtype(dtype):
         return None
 
 
-def set_dtype(array, dtype):
-    return array.astype(_get_dtype(dtype))
+def set_type(array, dtype):
+    if isinstance(dtype, str):
+        return array.astype(_get_dtype(dtype))
+    else:
+        return array.astype(dtype)
         
         
 def array(array, create=False, dtype=None):
@@ -42,6 +45,10 @@ def array(array, create=False, dtype=None):
         return numpy.zeros(array[::-1], dtype=_get_dtype(dtype))
     return numpy.array(array, dtype=_get_dtype(dtype))
 
+    
+def len(array):
+    return (array > 0).sum()
+    
     
 def mean(array):
     return numpy.mean(array)
@@ -67,6 +74,12 @@ def multiply(array, amount, dtype=None):
     if isinstance(array, numpy.ndarray):
         return array * amount
     return numpy.multiply(array, amount, dtype=_get_dtype(dtype))
+    
+    
+def divide(array, amount, as_int=False, dtype=None):
+    if as_int:
+        return numpy.floor_divide(array, amount, dtype=_get_dtype(dtype))
+    return numpy.true_divide(array, amount, dtype=_get_dtype(dtype))
 
     
 def compare(result):
@@ -81,21 +94,28 @@ def merge(arrays, merge_type, dtype=None):
     
     merge_type = merge_type.lower()
     array_len = len(arrays)
+    
     if not array_len:
         return None
-    elif array_len > 1:
-        if merge_type.startswith('max'):
-            return numpy.maximum.reduce(arrays, dtype=_get_dtype(dtype))
-        elif merge_type.startswith('min'):
-            return numpy.minimum.reduce(arrays, dtype=_get_dtype(dtype))
-        elif merge_type.startswith('add'):
-            return numpy.add.reduce(arrays, dtype=_get_dtype(dtype))
-        elif merge_type.startswith('sub'):
-            return numpy.subtract.reduce(arrays, dtype=_get_dtype(dtype))
-        elif merge_type.startswith('mul'):
-            return numpy.multiply.reduce(arrays, dtype=_get_dtype(dtype))
-        elif merge_type.startswith('div'):
-            return numpy.divide.reduce(arrays, dtype=_get_dtype(dtype))
+    
+    elif merge_type.startswith('max'):
+        return numpy.maximum.reduce(arrays, dtype=_get_dtype(dtype))
+        
+    elif merge_type.startswith('min'):
+        return numpy.minimum.reduce(arrays, dtype=_get_dtype(dtype))
+        
+    elif merge_type.startswith('add'):
+        return numpy.add.reduce(arrays, dtype=_get_dtype(dtype))
+        
+    elif merge_type.startswith('sub'):
+        return numpy.subtract.reduce(arrays, dtype=_get_dtype(dtype))
+        
+    elif merge_type.startswith('mul'):
+        return numpy.multiply.reduce(arrays, dtype=_get_dtype(dtype))
+        
+    elif merge_type.startswith('div'):
+        return numpy.divide.reduce(arrays, dtype=_get_dtype(dtype))
+            
     return arrays[0]
 
 
@@ -109,6 +129,12 @@ def remap_to_range(array, dtype=None):
     values = {v: i for i, v in enumerate(sorted(set(array.ravel())))}
     return convert_to_dict(array, values, dtype)
 
+    
+def csv(array):
+    f = StringIO
+    numpy.savetxt(f, array, fmt='%d', delimiter=',')
+    return io.getvalue()
+    
 
 def save(array):
     f = StringIO()
