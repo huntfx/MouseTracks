@@ -32,7 +32,6 @@ def merge_resolutions(main_data, map_selection=False,
         resolutions = main_data[map_selection[0]].keys()
     else:
         resolutions = main_data.keys()
-    print resolutions
             
     output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
                          CONFIG['GenerateImages']['OutputResolutionY'])
@@ -57,7 +56,6 @@ def merge_resolutions(main_data, map_selection=False,
     for current_resolution in resolutions:
         if map_selection:
             max_count += len(map_selection)
-            #max_count += len([n for n in main_data[current_resolution] if n])
         else:
             max_count += 1
     
@@ -102,87 +100,11 @@ def merge_resolutions(main_data, map_selection=False,
 def convert_to_rgb(image_array, colour_range):
     """Convert an array into colours."""
     
-    #Calculate how many processes to use
-    num_processes = CONFIG['GenerateImages']['AllowedCores']
-    max_cores = cpu_count()
+    _print('Converting {} points to RGB values... (this may take a few seconds)'.format(image_array.size))
+    rounded = numpy.round(numpy.divide(image_array, numpy.max(image_array) / colour_range.steps), 0, 'uint64')
+    colour_array = [[colour_range.cache[item] for item in sublst] for sublst in rounded.tolist()]
+    return numpy.array(colour_array, dtype='uint8')
     
-    if not num_processes:
-        num_processes = max_cores
-        
-    elif num_processes < 0:
-        num_processes = max_cores + num_processes
-        if not num_processes:
-            num_processes = 1
-    
-    if num_processes == 1:
-        return _rgb_process_single(image_array, colour_range)        
-    
-    processes = range(num_processes)
-    
-    #Get actual image dimensions
-    height, width = image_array.shape
-    
-    #Figure how to split for each process
-    width_range = tuple(range(width))
-    height_per_process = height // num_processes
-    heights = [[i * height_per_process, (i + 1) * height_per_process] 
-               for i in range(num_processes)]
-    
-    #Setup the queue and send it to each process
-    q_send = Queue()
-    q_recv = Queue()
-    for i in processes:
-        height_range = tuple(range(heights[i][0], heights[i][1]))
-        q_send.put((i, width_range, height_range, colour_range, image_array))
-        
-        Process(target=_rgb_process_worker, args=(q_send, q_recv)).start()
-        _print('Started process {}.'.format(i + 1))
-    
-    _print('Waiting for processes to finish...')
-    
-    #Wait for the results to come back
-    result_data = {}
-    for i in processes:
-        data = q_recv.get()
-        result_data[data[0]] = data[1]
-        _print('Got result from process {}.'.format(data[0] + 1))
-    
-    #Join results
-    results = []
-    for i in processes:
-        results += result_data[i]
-    
-    return numpy.array(results, dtype='uint8')
-
-    
-def _rgb_process_worker(q_recv, q_send):
-    """Turn each element in a 2D array to its corresponding colour.
-    This is a shortened version of _rgb_process_single meant for multiprocessing.
-    """
-    i, width_range, height_range, colour_range, image_array = q_recv.get()
-    
-    result = [[]]
-    for y in height_range:
-        if result[-1]:
-            result.append([])
-        for x in width_range:
-            result[-1].append(colour_range[image_array[y][x]])
-    q_send.put((i, result))
-    
-    
-def _rgb_process_single(image_array, colour_range):
-    """Turn each element in a 2D array to its corresponding colour."""
-    
-    height, width = image_array.shape
-    height_range = tuple(range(height))
-    width_range = tuple(range(width))
-    
-    array = numpy.array((4, width, height), create=True, dtype='uint8')
-    for y in height_range:
-        for x in width_range:
-            array[y][x] = colour_range[image_array[y][x]]
-    return array
-
 
 def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
     """Convert list of arrays into a heatmap.
