@@ -83,7 +83,7 @@ def merge_resolutions(main_data, map_selection=False,
                        ' ({}/{})'.format(current_resolution[0], current_resolution[1],
                                          max_resolution[0], max_resolution[1],
                                          i, max_count))
-
+                                         
             lowest_value = min(lowest_value, numpy.min(data))
             highest_value = max(highest_value, numpy.max(data))
 
@@ -131,8 +131,8 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
     min_value = numpy.min(heatmap)
     
     #Lower the maximum value a little
-    all_values = sorted(set(heatmap.ravel()))
-    max_value = all_values[round_int(len(all_values) * clip)]
+    all_values = numpy.sort(heatmap.ravel(), unique=True)
+    max_value = all_values[round_int(all_values.size * clip)]
     
     return ((min_value, max_value), heatmap)
 
