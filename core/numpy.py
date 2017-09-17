@@ -46,7 +46,7 @@ def array(array, create=False, dtype=None):
     return numpy.array(array, dtype=_get_dtype(dtype))
 
     
-def len(array):
+def count(array):
     return (array > 0).sum()
     
     
@@ -81,6 +81,20 @@ def divide(array, amount, as_int=False, dtype=None):
         return numpy.floor_divide(array, amount, dtype=_get_dtype(dtype))
     return numpy.true_divide(array, amount, dtype=_get_dtype(dtype))
 
+
+def round(array, decimals, dtype=None):
+    new_array = numpy.round(array, decimals)
+    if dtype is not None:
+        return new_array.astype(_get_dtype(dtype))
+    else:
+        return new_array
+    
+    
+def sort(array, unique=False):
+    if unique:
+        array = numpy.unique(array)
+    return numpy.sort(array)
+    
     
 def compare(result):
     return len(numpy.where(result)[0])
