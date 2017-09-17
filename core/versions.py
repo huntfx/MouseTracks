@@ -57,6 +57,14 @@ class IterateMaps(object):
                 for x, y in array:
                     numpy_array[y][x] = array[(x, y)]
                 maps[key] = numpy_array
+            
+            elif command == 'trim':
+                if key == (0, 0):
+                    del maps[key]
+                #Delete any empty maps
+                #Disabled for now as groups currently need each resolution to exist
+                if False and not numpy.count(maps[key]):
+                   del maps[key]
                 
     def separate(self):
         self._map_list = []
@@ -69,6 +77,9 @@ class IterateMaps(object):
     def convert(self):
         self._iterate(self.maps, 'convert')
 
+    def trim(self):
+        self._iterate(self.maps, 'trim')
+        
         
 def _get_id(id):
     """Read the ID for upgrading versions.
@@ -289,5 +300,7 @@ def upgrade_version(data, update_metadata=True):
             data['SessionStarts'].append(current_time)
             
         data['Version'] = VERSION
-            
+        
+    IterateMaps(data['Maps']).trim()
+        
     return data
