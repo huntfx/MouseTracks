@@ -9,7 +9,7 @@ from core.compatibility import get_items, _print
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
 from core.export import ExportCSV
-from core.files import load_program, format_name
+from core.files import load_data, format_name
 from core.maths import round_int
 from core.os import create_folder
 from core.versions import VERSION
@@ -57,7 +57,7 @@ class ImageName(object):
     def __init__(self, program_name, load_profile=False, data=None):
         self.name = program_name.replace('\\', '').replace('/', '')
         if data is None and load_profile:
-            data = load_program(data)
+            data = load_data(data)
         self.data = data
         self.file_name = format_name(self.name)
         self.reload()
@@ -69,8 +69,6 @@ class ImageName(object):
         g_t = CONFIG['GenerateTracks']
         g_kb = CONFIG['GenerateKeyboard']
     
-        #self.width = str(g_im['OutputResolutionX'])
-        #self.height = str(g_im['OutputResolutionY'])
         self.width = str(g_im['_TempResolutionX'])
         self.height = str(g_im['_TempResolutionY'])
         self.uwidth = str(g_im['_UpscaleResolutionX'])
@@ -99,7 +97,6 @@ class ImageName(object):
         self.keyboard_colour = str(g_kb['ColourProfile'])
         self.keyboard_set = g_kb['DataSet'][0].upper() + g_kb['DataSet'][1:].lower()
         self.keyboard_exponential = str(g_kb['LinearPower'])
-        self.keyboard_mapping = g_kb['ColourMapping'][0].upper() + g_kb['ColourMapping'][1:].lower()
         self.keyboard_size_mult = str(g_kb['SizeMultiplier'])
         self.keyboard_extended = 'Extended' if g_kb['ExtendedKeyboard'] else 'Compact'
 
@@ -168,7 +165,6 @@ class ImageName(object):
             name = name.replace('[Exponential]', self.keyboard_exponential)
             name = name.replace('[Colours]', self.keyboard_colour)
             name = name.replace('[DataSet]', self.keyboard_set)
-            name = name.replace('[Mapping]', self.keyboard_mapping)
             name = name.replace('[Size]', self.keyboard_size_mult)
             name = name.replace('[Extended]', self.keyboard_extended)
         
@@ -200,7 +196,7 @@ class RenderImage(object):
     def __init__(self, profile, data=None, allow_save=True):
         self.profile = profile
         if data is None:
-            self.data = load_program(profile, _update_version=False)
+            self.data = load_data(profile, _update_version=False)
         else:
             self.data = data
         self.name = ImageName(profile, data=self.data)
@@ -230,14 +226,12 @@ class RenderImage(object):
         export = ExportCSV(self.profile, self.data)
         
         if CONFIG['GenerateCSV']['_GenerateTracks']:
-            csv_name = self.name.generate('csv-tracks', reload=True)
             export.tracks(self.name)
             
         if CONFIG['GenerateCSV']['_GenerateClicks']:
             export.clicks(self.name)
             
         if CONFIG['GenerateCSV']['_GenerateKeyboard']:
-            csv_name = self.name.generate('csv-keyboard', reload=True)
             export.keyboard(self.name)
     
     def _generate_start(self):
