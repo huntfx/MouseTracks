@@ -1,5 +1,4 @@
 from __future__ import division, absolute_import
-#from queue import Empty
 import time
 import traceback
 
@@ -7,7 +6,7 @@ from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
 from core.constants import MAX_INT
-from core.files import load_program, save_program, prepare_file
+from core.files import load_data, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
@@ -110,7 +109,7 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
     NOTIFY(SAVE_START)
     NOTIFY.send(q_send)
     for i in range(max_attempts):
-        if save_program(program_name, compressed_data, _compress=False):
+        if save_data(program_name, compressed_data, _compress=False):
             NOTIFY(SAVE_SUCCESS)
             NOTIFY.send(q_send)
             saved = True
@@ -171,11 +170,10 @@ def background_process(q_recv, q_send):
         NOTIFY(START_THREAD)
         NOTIFY.send(q_send)
         
-        store = {'Data': load_program(),
+        store = {'Data': load_data(),
                  'LastProgram': None,
                  'Resolution': None,
                  'ResolutionTemp': None,
-                 'ResolutionList': set(),
                  'Offset': (0, 0),
                  'LastResolution': None,
                  'ActivitySinceLastSave': False,
@@ -230,7 +228,7 @@ def background_process(q_recv, q_send):
                     
                     #Load new profile
                     store['LastProgram'] = current_program
-                    store['Data'] = load_program(current_program)
+                    store['Data'] = load_data(current_program)
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
@@ -242,7 +240,6 @@ def background_process(q_recv, q_send):
                         _check_resolution(store['Data']['Maps'], store['Resolution'])
                     else:
                         _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
-                    store['ResolutionList'] = set()
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -332,6 +329,7 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
+                        _check_resolution(store['Data']['Maps'], resolution)
                     
                     elif MULTI_MONITOR:
                         
@@ -348,10 +346,7 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
-                        
-                        if resolution not in store['ResolutionList']:
-                            _check_resolution(store['Data']['Maps'], resolution)
-                            store['ResolutionList'].add(resolution)
+                        _check_resolution(store['Data']['Maps'], resolution)
                             
                     else:
                         resolution = store['Resolution']
@@ -372,7 +367,7 @@ def background_process(q_recv, q_send):
                     tracks = store['Data']['Maps']['Tracks']
                     for resolution in tracks.keys():
                         tracks[resolution] = numpy.divide(tracks[resolution], compress_multplier, as_int=True)
-                        if not numpy.len(tracks[resolution]):
+                        if not numpy.count(tracks[resolution]):
                             del tracks[resolution]
                             
                     NOTIFY(TRACK_COMPRESS_END, 'track')
@@ -401,6 +396,7 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
+                        _check_resolution(store['Data']['Maps'], resolution)
                             
                     elif MULTI_MONITOR:
                     
@@ -413,9 +409,9 @@ def background_process(q_recv, q_send):
                             except TypeError:
                                 continue
                         
-                        _check_resolution(store['Data']['Maps'], resolution)
                         x -= x_offset
                         y -= y_offset
+                        _check_resolution(store['Data']['Maps'], resolution)
                         
                     else:
                         resolution = store['Resolution']
@@ -438,6 +434,7 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
+                        _check_resolution(store['Data']['Maps'], resolution)
                             
                     elif MULTI_MONITOR:
                     
@@ -450,9 +447,9 @@ def background_process(q_recv, q_send):
                             except TypeError:
                                 continue
                         
-                        _check_resolution(store['Data']['Maps'], resolution)
                         x -= x_offset
                         y -= y_offset
+                        _check_resolution(store['Data']['Maps'], resolution)
                         
                     else:
                         resolution = store['Resolution']
