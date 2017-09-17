@@ -5,7 +5,7 @@ from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, g
 from core.compatibility import get_items, range, _print
 from core.config import CONFIG
 from core.language import Language
-from core.files import load_program
+from core.files import load_data
 from core.maths import round_int, calculate_circle
 from core.messages import ticks_to_seconds
 
@@ -15,29 +15,29 @@ MULTIPLIER = CONFIG['GenerateKeyboard']['SizeMultiplier']
 if CONFIG['GenerateImages']['HighPrecision']:
     MULTIPLIER = max(4, MULTIPLIER)
 
-KEY_SIZE = round_int(CONFIG['GenerateKeyboard']['KeySize'] * MULTIPLIER)
+KEY_SIZE = round_int(CONFIG['Advanced']['KeyboardKeySize'] * MULTIPLIER)
 
-KEY_CORNER_RADIUS = round_int(CONFIG['GenerateKeyboard']['KeyCornerRadius'] * MULTIPLIER)
+KEY_CORNER_RADIUS = round_int(CONFIG['Advanced']['KeyboardKeyCornerRadius'] * MULTIPLIER)
 
-KEY_PADDING = round_int(CONFIG['GenerateKeyboard']['KeyPadding'] * MULTIPLIER)
+KEY_PADDING = round_int(CONFIG['Advanced']['KeyboardKeyPadding'] * MULTIPLIER)
 
-KEY_BORDER = round_int(CONFIG['GenerateKeyboard']['KeyBorder'] * MULTIPLIER)
+KEY_BORDER = round_int(CONFIG['Advanced']['KeyboardKeyBorder'] * MULTIPLIER)
 
-DROP_SHADOW_X = round_int(CONFIG['GenerateKeyboard']['DropShadowX'] * MULTIPLIER)
+DROP_SHADOW_X = round_int(CONFIG['Advanced']['KeyboardDropShadowX'] * MULTIPLIER)
 
-DROP_SHADOW_Y = round_int(CONFIG['GenerateKeyboard']['DropShadowY'] * MULTIPLIER)
+DROP_SHADOW_Y = round_int(CONFIG['Advanced']['KeyboardDropShadowY'] * MULTIPLIER)
 
-IMAGE_PADDING = round_int(CONFIG['GenerateKeyboard']['ImagePadding'] * MULTIPLIER)
+IMAGE_PADDING = round_int(CONFIG['Advanced']['KeyboardImagePadding'] * MULTIPLIER)
 
-FONT_SIZE_MAIN = round_int(CONFIG['GenerateKeyboard']['FontSizeMain'] * MULTIPLIER)
+FONT_SIZE_MAIN = round_int(CONFIG['Advanced']['KeyboardFontSizeMain'] * MULTIPLIER)
 
-FONT_SIZE_STATS = round_int(CONFIG['GenerateKeyboard']['FontSizeStats'] * MULTIPLIER)
+FONT_SIZE_STATS = round_int(CONFIG['Advanced']['KeyboardFontSizeStats'] * MULTIPLIER)
 
-FONT_OFFSET_X = round_int(CONFIG['GenerateKeyboard']['FontWidthOffset'] * MULTIPLIER)
+FONT_OFFSET_X = round_int(CONFIG['Advanced']['KeyboardFontWidthOffset'] * MULTIPLIER)
 
-FONT_OFFSET_Y = round_int(CONFIG['GenerateKeyboard']['FontHeightOffset'] * MULTIPLIER)
+FONT_OFFSET_Y = round_int(CONFIG['Advanced']['KeyboardFontHeightOffset'] * MULTIPLIER)
 
-FONT_LINE_SPACING = round_int(CONFIG['GenerateKeyboard']['FontSpacing'] * MULTIPLIER)
+FONT_LINE_SPACING = round_int(CONFIG['Advanced']['KeyboardFontSpacing'] * MULTIPLIER)
 
 _CIRCLE = {
     'TopRight': calculate_circle(KEY_CORNER_RADIUS, 'TopRight'),
@@ -167,7 +167,13 @@ class KeyboardGrid(object):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
         max_offset = {'X': 0, 'Y': 0}
         
-        mapping = CONFIG['GenerateKeyboard']['ColourMapping'].lower()
+        if CONFIG['GenerateKeyboard']['LinearMapping']:
+            if CONFIG['GenerateKeyboard']['LinearPower'] != 1:
+                mapping = 'exponential'
+            else:
+                mapping = 'linear'
+        else:
+            mapping = 'standard'
         
         use_time = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time'
         use_count = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count'
@@ -186,7 +192,7 @@ class KeyboardGrid(object):
         else:
             max_range = max(values)
             if mapping == 'exponential':
-                exponential = CONFIG['GenerateKeyboard']['ExponentialMultiplier']
+                exponential = CONFIG['GenerateKeyboard']['LinearPower']
                 max_range **= exponential
         
         colours = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
@@ -194,7 +200,7 @@ class KeyboardGrid(object):
         
         #Decide on background colour
         #For now the options are black or while
-        if any(i > 128 for i in colours[0]):
+        if any(i > 128 for i in colours[0][:3]):
             image['Background'] = self.colours['white']['Colour']
             image['Shadow'] = self.colours['black']['Colour']
         else:
@@ -361,7 +367,7 @@ class DrawKeyboard(object):
     
     def reload(self, data=None):
         if data is None:
-            data = load_program(self.name)
+            data = load_data(self.name)
         if self.last_session:
             self.key_counts = data['Keys']['Session']
             self.ticks = data['Ticks']['Total'] - data['Ticks']['Session']['Total']
@@ -398,12 +404,13 @@ class DrawKeyboard(object):
         
         #Create image object
         image = Image.new('RGB', (data['Width'], data['Height']))
+        background = tuple(list(data['Coordinates']['Background'][:3]) + [0])
         image.paste(data['Coordinates']['Background'], (0, 0, data['Width'], data['Height']))
         pixels = image.load()
 
         #Add drop shadow
         shadow = (64, 64, 64)
-        if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'] == (255, 255, 255, 255):
+        if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'][:3] == (255, 255, 255):
             _print(self.string['draw']['shadow'])
             shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
