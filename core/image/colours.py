@@ -43,7 +43,7 @@ class ColourRange(object):
     All possible colours within the range are cached for quick access.
     """
     
-    def __init__(self, min_amount, max_amount, colours, offset=0, loop=False, cache=None, background=None):
+    def __init__(self, min_amount, max_amount, colours, offset=0, colour_steps=256, loop=False, cache=None, background=None):
         
         if min_amount >= max_amount:
             colours = [colours[0]]
@@ -57,13 +57,13 @@ class ColourRange(object):
         self._len = len(colours)
         self._len_m = self._len - 1
 
-        self._step_max = 255 * self._len
-        self._step_size = self.amount_diff / self._step_max
+        self.steps = colour_steps * self._len
+        self._step_size = self.amount_diff / self.steps
         
         #Cache results for quick access
         if cache is None:
             self.cache = []
-            for i in range(self._step_max + 1):
+            for i in range(self.steps + 1):
                 self.cache.append(self.calculate_colour(self.amount[0] + i * self._step_size))
         else:
             self.cache = cache
@@ -72,11 +72,13 @@ class ColourRange(object):
         """Read an item from the cache."""
         if self.background is not None and not n:
             return self.background
+            
         value_index = int((n - self.amount[0]) / self._step_size)
+        
         if self.loop:
-            if value_index != self._step_max:
-                return self.cache[value_index % self._step_max]
-        return self.cache[min(max(0, value_index), self._step_max)]
+            if value_index != self.steps:
+                return self.cache[value_index % self.steps]
+        return self.cache[min(max(0, value_index), self.steps)]
     
     def calculate_colour(self, n, as_int=True):
         """Calculate colour for given value."""
