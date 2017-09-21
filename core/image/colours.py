@@ -2,6 +2,7 @@ from __future__ import division, absolute_import
 
 from core.compatibility import range, get_items
 from core.files import format_name
+import core.numpy as numpy
 
 
 COLOUR_FILE = 'colours.txt'
@@ -110,6 +111,20 @@ class ColourRange(object):
         else:
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
+    def convert_array(self, array):
+        
+        new = numpy.round(numpy.divide(numpy.array(array) - self.min, self._step_size), 0, 'int64')
+    
+        start_colour = self.cache[0]
+        end_colour = self.cache[-1]
+        colour_array = [[self.cache[item] if 0 <= item <= self.steps 
+                         else start_colour if item < 0 
+                         else end_colour for item in sublst] 
+                        for sublst in new.tolist()]
+                        
+        return numpy.array(colour_array, dtype='uint8')
+        
+        
             
 def _parse_colour_text(colour_string):
     """Convert text into a colour map.
