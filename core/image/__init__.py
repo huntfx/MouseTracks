@@ -1,5 +1,7 @@
 from __future__ import division, absolute_import
 from PIL import Image
+import cPickle
+import zlib
 
 from core.image.keyboard import DrawKeyboard
 from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
@@ -11,7 +13,7 @@ from core.constants import format_file_path
 from core.export import ExportCSV
 from core.files import load_data, format_name
 from core.maths import round_int
-from core.os import create_folder
+from core.os import create_folder, remove_file
 from core.versions import VERSION
 
 
@@ -253,22 +255,54 @@ class RenderImage(object):
             
         return image_output
     
-    def tracks(self, last_session=False):
+    def cache_load(self, file_name):
+        if file_name is None:
+            return None
+        _print('Loading from cache...')
+        try:
+            with open(file_name, 'rb') as f:
+                return cPickle.loads(zlib.decompress(f.read()))
+        except IOError:
+            return None
+    
+    def cache_save(self, file_name, min_value, max_value, array):
+        _print('Saving to cache...')
+        data = ((min_value, max_value), array)
+        with open(file_name, 'wb') as f:
+            f.write(zlib.compress(cPickle.dumps(data)))
+    
+    def cache_delete(self, file_name):
+        remove_file(file_name)
+    
+    def tracks(self, last_session=False, _cache_file=None):
         """Generate the track image."""
         self._generate_start()
         
-        #Detect session information
-        if last_session:
-            session_start = self.data['Ticks']['Session']['Tracks']
-        else:
-            session_start = None
+        #Attempt to load data from cache
+        cache_data = self.cache_load(_cache_file)
+        if cache_data is not None:
+            (min_value, max_value), numpy_arrays = cache_data
+        skip_calculations = cache_data is not None
         
-        #Resize all arrays
-        high_precision = CONFIG['GenerateImages']['HighPrecision']
-        (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
-                                                                 session_start=session_start,
-                                                                 high_precision=high_precision)
-                                                                 
+        if not skip_calculations:
+        
+            #Detect session information
+            if last_session:
+                session_start = self.data['Ticks']['Session']['Tracks']
+            else:
+                session_start = None
+            
+            #Resize all arrays
+            high_precision = CONFIG['GenerateImages']['HighPrecision']
+            (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
+                                                                     session_start=session_start,
+                                                                     high_precision=high_precision)
+        
+        #Save cache if it wasn't generated
+        if _cache_file is not None and not skip_calculations:
+            self.cache_save(_cache_file, min_value, max_value, numpy_arrays)
+        
+        #Convert each point to an RGB tuple
         try:
             colour_map = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
         except ValueError:
@@ -284,41 +318,53 @@ class RenderImage(object):
             
         return self._generate_end(image_name, image_output, resize=True)
     
-    def doubleclicks(self, last_session=False):
+    def doubleclicks(self, last_session=False, _cache_file=None):
         """Generate the double click image."""
-        return self.clicks(last_session, 'Double')
+        return self.clicks(last_session, 'Double', _cache_file=_cache_file)
     
-    def clicks(self, last_session=False, click_type='Single'):
+    
+    def clicks(self, last_session=False, click_type='Single', _cache_file=None):
         """Generate the click image."""
         self._generate_start()
         
-        #Detect session information
-        if last_session:
-            clicks = self.data['Maps']['Session']['Click'][click_type]
-        else:
-            clicks = self.data['Maps']['Click'][click_type]
-    
-        lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
-        mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
-        rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
-        valid_buttons = [i for i, v in zip(('Left', 'Middle', 'Right'), (lmb, mmb, rmb)) if v]
+        #Attempt to load data from cache
+        cache_data = self.cache_load(_cache_file)
+        if cache_data is not None:
+            (min_value, max_value), heatmap = cache_data
+        skip_calculations = cache_data is not None
         
-        numpy_arrays = merge_resolutions(clicks, map_selection=valid_buttons)[1]
+        if not skip_calculations:
         
-        width, height = CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY']
-        (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
-                    gaussian_size=gaussian_size(width, height),
-                    clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
-                    
+            #Detect session information
+            if last_session:
+                clicks = self.data['Maps']['Session']['Click'][click_type]
+            else:
+                clicks = self.data['Maps']['Click'][click_type]
+        
+            lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
+            mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
+            rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
+            valid_buttons = [i for i, v in zip(('Left', 'Middle', 'Right'), (lmb, mmb, rmb)) if v]
+            
+            numpy_arrays = merge_resolutions(clicks, map_selection=valid_buttons)[1]
+            
+            width, height = CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY']
+            (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
+                        gaussian_size=gaussian_size(width, height),
+                        clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
+        
+        #Save cache if it wasn't generated
+        if _cache_file is not None and not skip_calculations:
+            self.cache_save(_cache_file, min_value, max_value, heatmap)
+            
         #Convert each point to an RGB tuple
-        _print('Converting to RGB...')
         try:
             colour_map = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
         except ValueError:
             default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
             colour_map = calculate_colour_map(default_colours)
         colour_range = ColourRange(min_value, max_value, colour_map)
-      
+        
         image_name = self.name.generate('Clicks', reload=True)
         image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
         
