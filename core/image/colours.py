@@ -2,7 +2,6 @@ from __future__ import division, absolute_import
 
 from core.compatibility import range, get_items
 from core.files import format_name
-import core.numpy as numpy
 
 
 COLOUR_FILE = 'colours.txt'
@@ -112,6 +111,8 @@ class ColourRange(object):
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
     def convert_array(self, array):
+        """Convert numpy array to fit the cache for a huge speed boost."""
+        import core.numpy as numpy
         
         new = numpy.round(numpy.divide(numpy.array(array) - self.min, self._step_size), 0, 'int64')
     
@@ -123,10 +124,26 @@ class ColourRange(object):
                         for sublst in new.tolist()]
                         
         return numpy.array(colour_array, dtype='uint8')
+    
+    def _preview_gradient(self, width, height):
+        """Draw a gradient to test the colours."""
+        from PIL import Image
         
+        colours = ColourRange(0, width, self.colours)
+        
+        image = Image.new('RGB', (width, height))
+        pixels = image.load()
+        
+        height_range = range(height)
+        for x in range(width):
+            colour = colours[x]
+            for y in range(height):
+                pixels[x, y] = colour
+                
+        return image
         
             
-def _parse_colour_text(colour_string):
+def parse_colour_text(colour_string):
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
     as it was first written to only use capitals.
@@ -161,8 +178,8 @@ def _parse_colour_text(colour_string):
         + TripleCyanBlueToTripleCyanYellowToCyanYellowTo
         + CyanTripleYellowToYellowToOrangeToRedOrangeToRed 
     """
-    colour_string = format_name(colour_string)
-    colour_data = parse_colour_file(COLOUR_FILE)['Colours']
+    colour_string = format_name(colour_string, '#')
+    colour_data = parse_colour_file()['Colours']
 
     current_mix = [[]]
     current_colour = {'Mod': [], 'Dup': 1}
@@ -265,9 +282,9 @@ def _parse_colour_text(colour_string):
 
 def calculate_colour_map(colour_map):
     try:
-        return _parse_colour_text(parse_colour_file(COLOUR_FILE)['Maps'][format_name(colour_map)]['Colour'])
+        return parse_colour_text(parse_colour_file()['Maps'][format_name(colour_map)]['Colour'])
     except KeyError:
-        generated_map = _parse_colour_text(colour_map)
+        generated_map = parse_colour_text(colour_map)
         if generated_map:
             if len(generated_map) < 2:
                 raise ValueError('not enough colours to generate colour map')
@@ -280,7 +297,7 @@ def get_luminance(r, g, b, a=None):
     return (0.2126*r + 0.7152*g + 0.0722*b)
 
 
-def parse_colour_file(path):
+def parse_colour_file(path=COLOUR_FILE):
     """Read the colours text file to get all the data.
     
     Returns a dictionary containing the keys 'Colours' and 'Maps'.
@@ -326,12 +343,18 @@ def parse_colour_file(path):
         
         #Parse colour part
         if var_parts[0] == 'colour':
+            if len(var_parts) < 2:
+                continue
+                
             rgb = tuple(hex_to_colour(value)[1])
             if rgb is not None:
                 colours[format_name(var_parts[1])] = {'Uppercase': var_parts[1], 'Colour': rgb}
         
         #Parse colour map part
         elif var_parts[0] == 'map':
+            if len(var_parts) < 3:
+                continue
+        
             map_name = var_parts[1]
             map_name_l = format_name(map_name)
             var_type = var_parts[2].lower()
@@ -390,3 +413,22 @@ def hex_to_colour(h, _try_alt=True):
         except ValueError:
             pass
     return (0, None)
+    
+    
+def rgb_to_hex(rgb):
+    return "#{0:02x}{1:02x}{2:02x}".format(*rgb)
+    
+
+def gradient_preview(folder, width=720, height=80):
+    """Save each colour map as a gradient in a folder."""
+    from core.os import join_path
+    
+    for map_lowercase, data in get_items(parse_colour_file()['Maps']):
+        colours = calculate_colour_map(map_lowercase)
+        image = ColourRange(0, 1, colours)._preview_gradient(width, height)
+        if data['Type']['tracks']:
+            image.save(join_path(folder, 'Tracks', '{}.png'.format(data['UpperCase']), True))
+        if data['Type']['clicks']:
+            image.save(join_path(folder, 'Clicks', '{}.png'.format(data['UpperCase']), True))
+        if data['Type']['keyboard']:
+            image.save(join_path(folder, 'Keyboard', '{}.png'.format(data['UpperCase']), True))
