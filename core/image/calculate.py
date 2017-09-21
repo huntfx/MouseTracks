@@ -101,14 +101,8 @@ def convert_to_rgb(image_array, colour_range):
     """Convert an array into colours."""
     
     _print('Converting {} points to RGB values... (this may take a few seconds)'.format(image_array.size))
+    return colour_range.convert_array(image_array)
     
-    #Quick way of reading the cached values, ifs due to no exceptions allowed in list comprehension
-    start_colour = colour_range.cache[0]
-    end_colour = colour_range.cache[-1]
-    rounded = numpy.round(numpy.divide(image_array, colour_range.max / colour_range.steps), 0, 'uint64')
-    colour_array = [[colour_range.cache[item] if 0 <= item <= colour_range.steps else start_colour if item < 0 else end_colour for item in sublst] for sublst in rounded.tolist()]
-    
-    return numpy.array(colour_array, dtype='uint8')
     
 
 def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
