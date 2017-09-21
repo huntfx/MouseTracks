@@ -5,6 +5,7 @@ from core.compatibility import _print, input
 from core.config import CONFIG
 from core.constants import APP_LIST_FILE
 
+
 if __name__ == '__main__':
 
     if not CONFIG['Internet']['Enable']:
