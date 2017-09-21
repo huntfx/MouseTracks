@@ -11,11 +11,15 @@ DEFAULT_PATH = '%DOCUMENTS%\\Mouse Tracks'
 
 CONFIG_PATH = '{}\\config.ini'.format(DEFAULT_PATH)
 
+APP_LIST_FILE = 'AppList.txt'
+
 APP_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/AppList.txt'
 
 DEFAULT_LANGUAGE = 'en_US'
 
-MAX_INT = 2**64 - 1
+MAX_INT = pow(2, 63) - 1
+
+DISABLE_TRACKING = '<DoNotTrack>'
 
 
 def format_file_path(path):
