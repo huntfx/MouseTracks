@@ -18,7 +18,7 @@ def _add_placeholders(variables):
                 count += 1
     return count
 
-                
+
 #Load in modules from operating system
 OPERATING_SYSTEM = platform.system()
 if OPERATING_SYSTEM == 'Windows':
@@ -138,7 +138,21 @@ def list_directory(folder):
     except (OSError, FileNotFoundError, WindowsError):
         return None
 
+        
+def file_exists(path):
+    return os.path.exists(path)
+    
 
+def join_path(*args):
+    if isinstance(args[-1], bool):
+        create = args[-1]
+        args = args[:-1]
+    path = os.path.join(*args)
+    if create:
+        create_folder(path)
+    return path
+
+    
 if FOCUS_DETECTION:
     
     class WindowFocus(object):
