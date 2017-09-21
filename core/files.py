@@ -37,9 +37,9 @@ DATA_SAVED_FOLDER = 'Saved'
 PICKLE_PROTOCOL = min(cPickle.HIGHEST_PROTOCOL, 2)
 
 
-def format_name(name):
+def format_name(name, extra_chars=''):
     """Remove any invalid characters for file name."""
-    return sub('[^A-Za-z0-9]+', '', name).lower()
+    return sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', name).lower()
 
 
 def get_data_filename(name):
@@ -103,9 +103,9 @@ def decode_file(f, legacy=False):
     return data
     
 
-def load_program(program_name=None, _update_version=True, _metadata_only=False):
+def load_data(profile_name=None, _update_version=True, _metadata_only=False):
     """Read a profile (or create new one) and run it through the update."""
-    paths = _get_paths(program_name)
+    paths = _get_paths(profile_name)
     new_file = False
     
     if _metadata_only:
@@ -141,17 +141,18 @@ def load_program(program_name=None, _update_version=True, _metadata_only=False):
     return upgrade_version(loaded_data, update_metadata=_update_version)
     
 
-def save_program(program_name, data, _compress=True):
+def save_data(profile_name, data, _compress=True):
     """Handle the safe saving of profiles.
     
     Instead of overwriting, it will save as a temprary file and attempt to rename.
     At any point in time there are two copies of the save.
     """
     
+    #This is to allow pre-compressed data to be sent in
     if _compress:
         data = prepare_file(data)
     
-    paths = _get_paths(program_name)
+    paths = _get_paths(profile_name)
     
     if create_folder(paths['BackupFolder']):
         hide_file(paths['BackupFolder'])
