@@ -49,8 +49,10 @@ class ColourRange(object):
             colours = [colours[0]]
             max_amount = min_amount + 1
         self.background = background
-        self.amount = (min_amount, max_amount)
-        self.amount_diff = max_amount - min_amount
+        self.max = max_amount
+        self.min = min_amount
+        self.amount = (self.min, self.max)
+        self.amount_diff = self.max - self.min
         self.colours = colours
         self.offset = offset
         self.loop = loop
@@ -64,7 +66,7 @@ class ColourRange(object):
         if cache is None:
             self.cache = []
             for i in range(self.steps + 1):
-                self.cache.append(self.calculate_colour(self.amount[0] + i * self._step_size))
+                self.cache.append(self.calculate_colour(self.min + i * self._step_size))
         else:
             self.cache = cache
             
@@ -73,7 +75,7 @@ class ColourRange(object):
         if self.background is not None and not n:
             return self.background
             
-        value_index = int((n - self.amount[0]) / self._step_size)
+        value_index = int(round((n - self.min) / self._step_size))
         
         if self.loop:
             if value_index != self.steps:
@@ -82,7 +84,7 @@ class ColourRange(object):
     
     def calculate_colour(self, n, as_int=True):
         """Calculate colour for given value."""
-        offset = (n + self.offset - self.amount[0]) / self.amount_diff
+        offset = (n + self.offset - self.min) / self.amount_diff
         index_f = self._len_m * offset
 
         #Calculate the indexes of colours to mix
@@ -108,6 +110,7 @@ class ColourRange(object):
         else:
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
+            
 def _parse_colour_text(colour_string):
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
