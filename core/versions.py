@@ -25,7 +25,9 @@ VERSION_HISTORY = [
     '2.0.9d',
     '2.0.9e',
     '2.0.10',
-    '2.0.10b'
+    '2.0.10b',
+    '2.0.10c',
+    '2.0.10d'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -116,6 +118,8 @@ def upgrade_version(data, update_metadata=True):
     2.0.9e: Maintainence to remove invalid resolutions (the last update caused a few)
     2.0.10: Rearrange some maps and convert to numpy arrays
     2.0.10b: Reset double click maps for code update
+    2.0.10c: Track time between key presses and mistakes
+    2.0.10d: Record more accurate intervals for each key
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -283,7 +287,17 @@ def upgrade_version(data, update_metadata=True):
         
     if current_version_id < _get_id('2.0.10b'):
         data['Maps']['Click']['Double'] = {'Left': {}, 'Middle': {}, 'Right': {}}
-        
+                    
+    if current_version_id < _get_id('2.0.10c'):
+        data['Keys']['All']['Intervals'] = {}
+        data['Keys']['Session']['Intervals'] = {}
+        data['Keys']['All']['Mistakes'] = {}
+        data['Keys']['Session']['Mistakes'] = {}
+                    
+    if current_version_id < _get_id('2.0.10d'):
+        data['Keys']['All']['Intervals'] = {'Total': data['Keys']['All']['Intervals'], 'Individual': {}}
+        data['Keys']['Session']['Intervals'] = {'Total': data['Keys']['Session']['Intervals'], 'Individual': {}}
+
     if update_metadata:     
     
         #Only count as new session if updated or last save was over an hour ago
@@ -296,6 +310,8 @@ def upgrade_version(data, update_metadata=True):
             data['Keys']['Session']['Held'] = {}
             data['Maps']['Session']['Click'] = {'Single': {'Left': {}, 'Middle': {}, 'Right': {}}, 
                                                 'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
+            data['Keys']['Session']['Intervals'] = {'Total': {}, 'Individual': {}}
+            data['Keys']['Session']['Mistakes'] = {}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
