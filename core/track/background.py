@@ -196,6 +196,34 @@ def _find_resolution_offset(x, y, store):
         return ((x, y), resolution)
             
 
+def _record_keypress(key_dict, *args):
+    """Quick way of recording keypresses that doesn't involve a million try/excepts."""
+
+    all = key_dict['All']
+    session = key_dict['Session']
+    
+    for i in args[:-1]:
+        try:
+            all[i]
+        except KeyError:
+            all[i] = {}
+        all = all[i]
+        try:
+            session[i]
+        except KeyError:
+            session[i] = {}
+        session = session[i]
+    
+    try:
+        all[args[-1]] += 1
+    except KeyError:
+        all[args[-1]] = 1
+    try:
+        session[args[-1]] += 1
+    except KeyError:
+        session[args[-1]] = 1
+            
+            
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
     try:
@@ -211,7 +239,11 @@ def background_process(q_recv, q_send):
                  'ActivitySinceLastSave': False,
                  'SavesSkipped': 0,
                  'CustomResolution': None,
-                 'LastClick': None}
+                 'LastClick': None,
+                 'KeyTrack': {'LastKey': None,
+                              'Time': None,
+                              'Backspace': False}
+                }
         
         NOTIFY(DATA_LOADED)
         try:
@@ -225,6 +257,11 @@ def background_process(q_recv, q_send):
             
             check_resolution = False
             
+            #Increment the amount of time the script has been running for
+            if 'Ticks' in received_data:
+                store['Data']['Ticks']['Total'] += received_data['Ticks']
+            
+            #Save the data
             if 'Save' in received_data:
                 if store['ActivitySinceLastSave']:
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
@@ -244,6 +281,7 @@ def background_process(q_recv, q_send):
                         pass
                 q_send.put({'SaveFinished': None})
             
+            #Check for new program loaded
             if 'Program' in received_data:
                 current_program = received_data['Program']
                 
@@ -301,28 +339,35 @@ def background_process(q_recv, q_send):
                 store['ActivitySinceLastSave'] = True
                 
                 for key in received_data['KeyPress']:
-                    try:
-                        store['Data']['Keys']['All']['Pressed'][key] += 1
-                    except KeyError:
-                        store['Data']['Keys']['All']['Pressed'][key] = 1
-                    try:
-                        store['Data']['Keys']['Session']['Pressed'][key] += 1
-                    except KeyError:
-                        store['Data']['Keys']['Session']['Pressed'][key] = 1
+                
+                    _record_keypress(store['Data']['Keys'], 'Pressed', key)
+                    
+                    #Record mistakes
+                    if key == 'BACK':
+                        last = store['KeyTrack']['LastKey']
+                        if last is not None and last != 'BACK':
+                            store['KeyTrack']['Backspace'] = last
+                        else:
+                            store['KeyTrack']['Backspace'] = False
+                    elif store['KeyTrack']['Backspace']:
+                        _record_keypress(store['Data']['Keys'], 'Mistakes', store['KeyTrack']['Backspace'], key)
+                        store['KeyTrack']['Backspace'] = False
+                    
+                    #Record interval between key presses
+                    if store['KeyTrack']['Time'] is not None:
+                        time_difference = store['Data']['Ticks']['Total'] - store['KeyTrack']['Time']
+                        _record_keypress(store['Data']['Keys'], 'Intervals', 'Total', time_difference)
+                        _record_keypress(store['Data']['Keys'], 'Intervals', 'Individual', store['KeyTrack']['LastKey'], key, time_difference)
+                    
+                    store['KeyTrack']['LastKey'] = key
+                    store['KeyTrack']['Time'] = store['Data']['Ticks']['Total']
             
             #Record time keys are held down
             if 'KeyHeld' in received_data:
                 store['ActivitySinceLastSave'] = True
                 
                 for key in received_data['KeyHeld']:
-                    try:
-                        store['Data']['Keys']['All']['Held'][key] += 1
-                    except KeyError:
-                        store['Data']['Keys']['All']['Held'][key] = 1
-                    try:
-                        store['Data']['Keys']['Session']['Held'][key] += 1
-                    except KeyError:
-                        store['Data']['Keys']['Session']['Held'][key] = 1
+                    _record_keypress(store['Data']['Keys'], 'Held', key)
             
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
@@ -346,14 +391,13 @@ def background_process(q_recv, q_send):
                     _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
                     
                 elif MULTI_MONITOR:
-                    resolution = None
                     try:
                         #Don't bother calculating offset for each pixel
                         #if both start and end are on the same monitor
                         resolution, (x_offset, y_offset) = monitor_offset(start, store['ResolutionTemp'])
                         _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
                     except TypeError:
-                        if resolution is None:
+                        if not resolution:
                             mouse_coordinates = [] 
                     else:
                         _check_resolution(store['Data']['Maps'], resolution)
@@ -429,9 +473,6 @@ def background_process(q_recv, q_send):
                     store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
                     store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
                 
-            #Increment the amount of time the script has been running for
-            if 'Ticks' in received_data:
-                store['Data']['Ticks']['Total'] += received_data['Ticks']
             store['Data']['Ticks']['Recorded'] += 1
             
             if 'Quit' in received_data or 'Exit' in received_data:
