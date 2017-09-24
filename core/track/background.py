@@ -166,6 +166,35 @@ def _check_resolution(maps, resolution):
         if resolution not in map_resolutions:
             map_resolutions[resolution] = numpy.array(resolution, create=True)
 
+            
+def _find_resolution_offset(x, y, store):
+
+    if store['CustomResolution'] is not None:
+        try:
+            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
+        except TypeError:
+            return None
+        
+        return ((x - x_offset, y - y_offset), resolution)
+            
+    elif MULTI_MONITOR:
+    
+        try:
+            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+        except TypeError:
+            store['ResolutionTemp'] = monitor_info()
+            try:
+                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+            except TypeError:
+                return None
+        
+        return ((x - x_offset, y - y_offset), resolution)
+        
+    else:
+        resolution = store['Resolution']
+        
+        return ((x, y), resolution)
+            
 
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
@@ -256,7 +285,6 @@ def background_process(q_recv, q_send):
                 NOTIFY.send(q_send)
             
             if 'CustomResolution' in received_data:
-                
                 store['CustomResolution'] = received_data['CustomResolution']
                 if store['CustomResolution'] is not None:
                     _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
@@ -335,37 +363,11 @@ def background_process(q_recv, q_send):
                         
                 #Write each pixel to the dictionary
                 for (x, y) in mouse_coordinates:
-                    
-                    if store['CustomResolution'] is not None:
-                        try:
-                            resolution, (x_offset, y_offset) = monitor_offset((x, y), [store['CustomResolution'][0]])
-                        except TypeError:
-                            continue
-                        
-                        x -= x_offset
-                        y -= y_offset
-                    
-                    elif MULTI_MONITOR:
-                        
-                        #Check if offset needs to be recalculated
-                        if resolution != _resolution:
-                            try:
-                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                            except TypeError:
-                                store['ResolutionTemp'] = monitor_info()
-                                try:
-                                    resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                                except TypeError:
-                                    continue
-                            if resolution not in _resolutions:
-                                _check_resolution(store['Data']['Maps'], resolution)
-                                _resolutions.append(resolution)
-                        
-                        x -= x_offset
-                        y -= y_offset
-                            
-                    else:
-                        resolution = store['Resolution']
+                
+                    try:
+                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                    except TypeError:
+                        continue
                         
                     store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
                         
@@ -397,40 +399,16 @@ def background_process(q_recv, q_send):
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
                 
-                
             #Record mouse clicks
             if 'MouseClick' in received_data:
                 store['ActivitySinceLastSave'] = True
                 
                 for mouse_button_index, (x, y) in received_data['MouseClick']:
-                
-                    if store['CustomResolution'] is not None:
-                        try:
-                            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
-                        except TypeError:
-                            continue
-                        
-                        x -= x_offset
-                        y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
-                            
-                    elif MULTI_MONITOR:
                     
-                        try:
-                            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                        except TypeError:
-                            store['ResolutionTemp'] = monitor_info()
-                            try:
-                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                            except TypeError:
-                                continue
-                        
-                        x -= x_offset
-                        y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
-                        
-                    else:
-                        resolution = store['Resolution']
+                    try:
+                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                    except TypeError:
+                        continue
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
                     store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] += 1
@@ -441,34 +419,11 @@ def background_process(q_recv, q_send):
                 store['ActivitySinceLastSave'] = True
                 
                 for mouse_button_index, (x, y) in received_data['DoubleClick']:
-                
-                    if store['CustomResolution'] is not None:
-                        try:
-                            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
-                        except TypeError:
-                            continue
-                        
-                        x -= x_offset
-                        y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
-                            
-                    elif MULTI_MONITOR:
-                    
-                        try:
-                            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                        except TypeError:
-                            store['ResolutionTemp'] = monitor_info()
-                            try:
-                                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
-                            except TypeError:
-                                continue
-                        
-                        x -= x_offset
-                        y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
-                        
-                    else:
-                        resolution = store['Resolution']
+                                            
+                    try:
+                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                    except TypeError:
+                        continue
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
                     store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
