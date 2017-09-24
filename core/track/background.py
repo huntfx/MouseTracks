@@ -5,7 +5,7 @@ import traceback
 from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
-from core.constants import MAX_INT
+from core.constants import MAX_INT, DISABLE_TRACKING
 from core.files import load_data, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
@@ -92,6 +92,9 @@ def running_processes(q_recv, q_send, background_send):
         return
 
 def _save_wrapper(q_send, program_name, data, new_program=False):
+    
+    if program_name is not None and program_name[0] == DISABLE_TRACKING:
+        return
     
     NOTIFY(SAVE_PREPARE)
     NOTIFY.send(q_send)
@@ -310,13 +313,25 @@ def background_process(q_recv, q_send):
                 else:
                     mouse_coordinates = [start] + calculate_line(start, end) + [end]
                     
-                #Don't bother calculating offset for each pixel
-                #if both start and end are on the same monitor
-                try:
-                    resolution, offset = monitor_offset(start, store['ResolutionTemp'])
-                    _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
-                except TypeError:
-                    pass
+                #Make sure resolution exists in data
+                if store['CustomResolution'] is not None:
+                    _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
+                    
+                elif MULTI_MONITOR:
+                    resolution = None
+                    try:
+                        #Don't bother calculating offset for each pixel
+                        #if both start and end are on the same monitor
+                        resolution, (x_offset, y_offset) = monitor_offset(start, store['ResolutionTemp'])
+                        _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
+                    except TypeError:
+                        if resolution is None:
+                            mouse_coordinates = [] 
+                    else:
+                        _check_resolution(store['Data']['Maps'], resolution)
+                        if resolution != _resolution:
+                            _check_resolution(store['Data']['Maps'], resolution)
+                        _resolutions = [resolution, _resolution]
                         
                 #Write each pixel to the dictionary
                 for (x, y) in mouse_coordinates:
@@ -329,7 +344,6 @@ def background_process(q_recv, q_send):
                         
                         x -= x_offset
                         y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
                     
                     elif MULTI_MONITOR:
                         
@@ -343,16 +357,18 @@ def background_process(q_recv, q_send):
                                     resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
                                 except TypeError:
                                     continue
+                            if resolution not in _resolutions:
+                                _check_resolution(store['Data']['Maps'], resolution)
+                                _resolutions.append(resolution)
                         
                         x -= x_offset
                         y -= y_offset
-                        _check_resolution(store['Data']['Maps'], resolution)
                             
                     else:
                         resolution = store['Resolution']
-                    
+                        
                     store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
-
+                        
                 store['Data']['Ticks']['Tracks'] += 1
                 
                 #Compress tracks if the count gets too high
