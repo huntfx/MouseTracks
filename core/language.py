@@ -7,7 +7,7 @@ from core.constants import DEFAULT_LANGUAGE
 
 ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
-LANGUAGE_FOLDER = 'loc'
+LANGUAGE_FOLDER = 'language'
 
 KEYBOARD_LAYOUT_FOLDER = 'kb'
 
@@ -61,6 +61,8 @@ class Language(object):
                             self.keyboard = link.split('=', 1)[1].strip()
             if self.strings is not None and self.keyboard is not None:
                 break
+        if self.strings is None or self.keyboard is None:
+            raise IOError('no language file found')
                 
         
     def get_keyboard_layout(self, extended=True):
@@ -93,7 +95,6 @@ class Language(object):
                 row = row.replace(':', '')
             else:
                 row = row.split(':', 1)[0]
-                print row
             
             for key in row.split('+'):
             
@@ -128,50 +129,39 @@ class Language(object):
                 
         return keyboard_layout
     
-    def get_strings(self, _new=False):
+    def get_strings(self):
         try:
             data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, STRINGS_FOLDER))
         except AttributeError:
             return {}
         strings = {}
         
-        #New way (used by keyboard)
-        if _new:
-            for line in data:
-                try:
-                    var, value = [i.strip() for i in line.split('=', 1)]
-                except ValueError:
-                    pass
-                else:
-                    var_parts = var.split('.')
-                    var_len = len(var_parts)
-                    if var_len == 1:
-                        continue
-                        
-                    #Recursively look down dictionary
-                    _strings = strings
-                    for i, part in enumerate(var_parts[:-1]):
-                        last_loop = i == var_len - 2
-                        try:
-                            if not last_loop:
-                                _strings = _strings[part]
-                        except KeyError:
-                            _strings[part] = {}
-                            if not last_loop:
-                                _strings = _strings[part]
-                            
+        for line in data:
+            try:
+                var, value = [i.strip() for i in line.split('=', 1)]
+            except ValueError:
+                pass
+            else:
+                var_parts = var.split('.')
+                var_len = len(var_parts)
+                if var_len == 1:
+                    continue
+                
+                #Recursively look down dictionary
+                _strings = strings
+                for i, part in enumerate(var_parts[:-1]):
+                    last_loop = i == var_len - 2
                     try:
-                        _strings[part][var_parts[-1]] = value.replace('\\n', '\n')
+                        if not last_loop:
+                            _strings = _strings[part]
                     except KeyError:
-                        _strings[part] = {var_parts[-1]: value.replace('\\n', '\n')}
+                        _strings[part] = {}
+                        if not last_loop:
+                            _strings = _strings[part]
                         
-        #Legacy way (will be removed once language files are updated
-        else:
-            for line in data:
-                if '=' in line:
-                    name, string = line.split('=', 1)
-                    name = ''.join(i for i in name if i in ALLOWED_CHARACTERS)
-                    if name:
-                        strings[str(name)] = string.strip()
-                        
+                try:
+                    _strings[part][var_parts[-1]] = value.replace('\\n', '\n')
+                except KeyError:
+                    _strings[part] = {var_parts[-1]: value.replace('\\n', '\n')}
+        
         return strings
