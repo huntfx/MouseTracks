@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import errno
 
 
 def moveTree(sourceRoot, destRoot):
@@ -48,6 +49,15 @@ def move_all(final_folder, *args):
     return True
 
     
+def copy_all(src, dst):
+    try:
+        shutil.copytree(src, dst)
+    except OSError as exc: # python >2.5
+        if exc.errno == errno.ENOTDIR:
+            shutil.copy(src, dst)
+        else: raise
+        
+        
 if __name__ == '__main__':
     del sys.argv[0]
     dest_folder = sys.argv.pop(0)
@@ -55,6 +65,10 @@ if __name__ == '__main__':
         shutil.rmtree(dest_folder)
     except WindowsError:
         pass
+    copy_all('language', '{}/language'.format(dest_folder))
+    with open('colours.txt', 'r') as fr:
+        with open('{}/colours.txt'.format(dest_folder), 'w') as fw:
+            fw.write(fr.read())
     if move_all(dest_folder, *sys.argv):
         print 'Finished moving files.'
     else:
