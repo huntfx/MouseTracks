@@ -9,9 +9,9 @@ ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
 LANGUAGE_FOLDER = 'language'
 
-KEYBOARD_LAYOUT_FOLDER = 'kb'
+KEYBOARD_LAYOUT_FOLDER = 'keyboard_layout'
 
-STRINGS_FOLDER = 'str'
+CONSOLE_STRINGS_FOLDER = 'console'
 
 
 def follow_file_links(file_name, extension, path, visited=None):
@@ -131,7 +131,7 @@ class Language(object):
     
     def get_strings(self):
         try:
-            data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, STRINGS_FOLDER))
+            data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, CONSOLE_STRINGS_FOLDER))
         except AttributeError:
             return {}
         strings = {}
