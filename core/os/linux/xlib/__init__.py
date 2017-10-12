@@ -1,6 +1,6 @@
 from Xlib import display
 
-from core.os.linux.pyxhook import HookManager
+from core.os.linux.xlib.pyxhook import HookManager
 
 
 def get_resolution():
