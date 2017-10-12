@@ -2,7 +2,7 @@ import subprocess
 import re
 
 try:
-    from core.os.linux._xlib import *
+    from core.os.linux.xlib import *
 except ImportError:
     pass
 
