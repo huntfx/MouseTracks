@@ -429,8 +429,8 @@ def background_process(q_recv, q_send):
                     tracks = store['Data']['Maps']['Tracks']
                     for resolution in tracks.keys():
                         tracks[resolution] = numpy.divide(tracks[resolution], compress_multplier, as_int=True)
-                        if not numpy.count(tracks[resolution]):
-                            del tracks[resolution]
+                        #if not numpy.count(tracks[resolution]):
+                        #    del tracks[resolution]
                             
                     NOTIFY(TRACK_COMPRESS_END, 'track')
                     try:
