@@ -14,12 +14,15 @@ def get_items(d):
 
 def _print(text):
     """Send everything here to print, so that tweaks can be made if needed."""
-    for line in text.replace('\\n', '\n').split('\n'):
-        try:
-            print(line)
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            print(line.encode('utf-8').strip())
-
+    try:
+        for line in text.replace('\\n', '\n').split('\n'):
+            try:
+                print(line)
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                print(line.encode('utf-8').strip())
+    except AttributeError:
+        print(text)
+        
 
 class PythonVersion(object):
     
