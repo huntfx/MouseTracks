@@ -18,8 +18,8 @@ _DEFAULT_TEXT = [
     ' The executable file is case sensitive.',
     '// Alternatively if the app is already named with the correct name'
     ', "MyGame.exe" by itself will use "MyGame" as its name.',
-    '// In the case of a game using a generic filename,',
-    ' you can type "Title || Game game" instead.',
+    '// In the case of a game using a generic filename,'
+    ' you can type "Window Name || Game Name" instead.',
     ''
 ]
 
@@ -158,7 +158,7 @@ class RunningApplications(object):
         
         #Download from the internet and combine with the current list
         last_updated = CONFIG['SavedSettings']['AppListUpdate']
-        update_frequency = CONFIG['Internet']['UpdateApplications']
+        update_frequency = CONFIG['Internet']['UpdateApplications'] * 60
         
         if not CONFIG['Internet']['Enable'] or not update_frequency:
             return
