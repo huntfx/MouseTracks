@@ -85,9 +85,7 @@ def get_documents_path():
 class WindowFocusData(object):
 
     def __init__(self):
-        """Get the handle of the currently focused window.
-        In some cases this may end up as 0 if it can't be read.
-        """
+        """Get the handle of the currently focused window."""
         self.hwnd = self._get_parent()
     
     def _get_parent(self):
@@ -96,6 +94,8 @@ class WindowFocusData(object):
                 parent = win32gui.GetParent(hwnd)
             except UnboundLocalError:
                 hwnd = win32gui.GetForegroundWindow()
+            except win32api.error:
+                break
             else:
                 if parent:
                     hwnd = parent
