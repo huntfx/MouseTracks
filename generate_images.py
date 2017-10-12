@@ -7,7 +7,7 @@ from core.applications import RunningApplications, read_app_list
 from core.compatibility import input, _print, get_items
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
-from core.files import list_data_files, format_name, load_program
+from core.files import list_data_files, format_name, load_data
 from core.input import value_select
 from core.language import Language
 from core.maths import round_up
@@ -15,6 +15,18 @@ from core.messages import ticks_to_seconds
     
     
 def user_generate():
+    """Ask for options and generate an image.
+    This seriously needs rewriting.
+    
+    Idea:
+        List of profiles (choose page/type id/type name), shows the file size and last modified date of each profile.
+        (Load profile)
+        Say some stats about the profile
+        Ask for mouse tracks, clicks and key presses
+        For each of those, ask for colour profile and say the file location
+        Ask to open folder (will require image path rewrite for a base path)
+        Loop back to start if required
+    """
     CONFIG.save()
     
     all_strings = Language().get_strings()
@@ -35,7 +47,9 @@ def user_generate():
             input()
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
-        for program_name in read_app_list().values():
+        
+        app_list = read_app_list()
+        for program_name in app_list.values():
             programs[format_name(program_name)] = program_name
         
         page = 1
@@ -151,7 +165,7 @@ def user_generate():
             _print(string['profile']['running']['warning'])
             
             save_time = ticks_to_seconds(CONFIG['Save']['Frequency'], 1)
-            metadata = load_program(profile, _metadata_only=True)
+            metadata = load_data(profile, _metadata_only=True)
             if metadata['Modified'] is None:
                 _print(string['save']['wait'])
                 _print(string['save']['frequency'].format(T=save_time))
@@ -254,11 +268,11 @@ def user_generate():
 
         #Generate
         if generate_tracks:
-            r.generate('Tracks', last_session)
+            r.tracks(last_session)
         if generate_heatmap:
-            r.generate('Clicks', last_session)
+            r.clicks(last_session)
         if generate_keyboard:
-            r.generate('Keyboard', last_session)
+            r.keyboard(last_session)
         if generate_csv:
             r.csv()
             
