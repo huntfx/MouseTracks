@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import subprocess
 
 try:
-    from core.os.mac._appkit import *
+    from core.os.mac.appkit import *
 except ImportError:
     pass
     
@@ -14,3 +14,8 @@ def get_running_processes():
         pids.append(line.decode())
     output = {line.rsplit()[-1]: line.rsplit()[0] for line in pids}
     return output
+
+
+def get_documents_path():
+    """Not 100% sure this is the correct place to use."""
+    return os.path.join(os.path.expanduser('~'))
