@@ -1,7 +1,13 @@
+from __future__ import absolute_import
 import ctypes
 import ctypes.wintypes
 
 
+def get_double_click_time():
+    """ Gets the Windows double click time in ms """
+    return int(ctypes.windll.user32.GetDoubleClickTime())
+
+    
 def hide_file(file_name):
     """Set a file as hidden."""
     ctypes.windll.kernel32.SetFileAttributesW(file_name, 2)
@@ -19,14 +25,6 @@ def get_resolution():
     """
     user32 = ctypes.windll.user32
     return (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
-
-
-def get_refresh_rate():
-    """Get the refresh rate of the main monitor.
-    Returns:
-        Refresh rate/display frequency as an int.
-    """
-    raise NotImplementedError()
 
 
 class _POINT(ctypes.Structure):
@@ -134,7 +132,7 @@ def get_documents_path():
     ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
     return buf.value
     
-    
+
 class WindowFocusData(object):
 
     def __init__(self):
@@ -167,7 +165,7 @@ class WindowFocusData(object):
         return win_rect.dump()
     
     def get_name(self):
-        length = ctypes.windll.user32.GetWindowTextLengthW(self.hwnd)
+        length = ctypes.windll.user32.GetWindowTextLengthW(self.hwnd) + 1
         buff = ctypes.create_unicode_buffer(length)
-        ctypes.windll.user32.GetWindowTextW(self.hwnd, buff, length + 1)
+        ctypes.windll.user32.GetWindowTextW(self.hwnd, buff, length)
         return buff.value
