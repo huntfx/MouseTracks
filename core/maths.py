@@ -16,8 +16,8 @@ def calculate_line(start, end):
     Does not include the start and end point.
     """
     result = []
-    start = round_int(start)
-    end = round_int(end)
+    start = (round_int(start[0]), round_int(start[1]))
+    end = (round_int(end[0]), round_int(end[1]))
     
     #Return nothing if the two points are the same
     if start == end:
@@ -199,9 +199,9 @@ def round_int(n, min_value=None, max_value=None):
     It saves having to use a ton of brackets in certain situations.
     """
     if not isinstance(n, int):
-        value = int(round(float(n)))
+        n = int(round(float(n)))
     if min_value is not None:
-        value = max(value, min_value)
+        n = max(n, min_value)
     if max_value is not None:
-        value = min(value, max_value)
-    return value
+        n = min(n, max_value)
+    return n
