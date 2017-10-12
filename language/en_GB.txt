@@ -1,0 +1,2 @@
+locale.strings=en_GB
+locale.keyboard.layout=en_US
