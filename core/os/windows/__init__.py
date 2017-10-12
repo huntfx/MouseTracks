@@ -4,9 +4,10 @@ import os
 from core.compatibility import PYTHON_VERSION
 
 try:
-    from core.os.windows._pywin32 import *
+    raise ImportError
+    from core.os.windows.pywin32 import *
 except ImportError:
-    from core.os.windows._ctypes import *
+    from core.os.windows.ctypes import *
 if PYTHON_VERSION == 2:
     import core.os.windows.py2_utf8_console
 
@@ -21,7 +22,7 @@ def read_env_var(text):
     if text[0] == text[-1] == '%':
         return os.getenv(text[1:-1])
     return None
-        
+
 
 def get_running_processes():
     """Return a dictionary of running processes, with their ID as the value.
