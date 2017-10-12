@@ -3,7 +3,7 @@ from locale import getdefaultlocale
 import time
 
 from core.compatibility import get_items
-from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT
+from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
 
 
@@ -19,7 +19,6 @@ class SimpleConfig(object):
     
     def load(self):
         """Open config file and validate values.
-        
         
         Allowed formats:
             value, type, [comment] 
@@ -174,23 +173,13 @@ _save_freq = 20 if OS_DEBUG else 180
     
 _config_defaults = {
     'Main': {
-        'RepeatKeyPress': (0.0, float, 0, 'Record a new key press at this frequency'
-                                          ' if a key is being held down (set to 0.0 to disable).'),
-        'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
-                                         ' if a mouse button is being held down (set to 0.0 to disable).'),
-        'Language': (_language, str, 'Choose a language. If the files don\'t exit yet,'
+        'Language': (_language, str, 'Choose a language. If there is any issue or the files don\'t exit yet,'
                                      ' {} will be used.'.format(_language, DEFAULT_LANGUAGE))
     },
-    'CompressMaps': {
-        '__note__': ['Set how often the older tracks should be compressed, and by how much.',
-                     'This helps keep the most recent data visibile.',
-                     'The default values will result in a different image roughly every 2 hours.'],
-        'TrackMaximum': (425000, int, 0, MAX_INT, 'Maximum number of of ticks (at 60 per second).'),
-        'TrackReduction': (1.1, float, 1.001, 'How much to divide each pixel by.')
-    },
     'Save': {
-        'Frequency': (180, int, 10, 'Choose how often to save the file, don\'t set it too low'
-                                    ' or the program won\'t be able to keep up.'),
+        'Frequency': (180, int, 0, 'Choose how often to save the file, don\'t set it too low'
+                                    ' or the program won\'t be able to keep up.'
+                                    ' Set to 0 to disable.'),
         'MaximumAttemptsNormal': (3, int, 1, 'Maximum number of failed save attempts'
                                              ' before the tracking continues.'),
         'MaximumAttemptsSwitch': (24, int, 1, 'Maximum number of failed save attempts'
@@ -199,25 +188,16 @@ _config_defaults = {
         'WaitAfterFail': (5, int, 1, 'How many seconds to wait before trying again.')
     },
     'Paths': {
-        '__note__': ['You may use environment variables such as %APPDATA% in any paths.'],
+        '__note__': ['You may use environment variables such as %APPDATA%.'],
         'Data': ('{}\\Data\\'.format(DEFAULT_PATH), str),
-        'AppList': ('{}\\AppList.txt'.format(DEFAULT_PATH), str)
+        'AppList': ('{}\\{}'.format(DEFAULT_PATH, APP_LIST_FILE), str)
         
     },
     'Internet': {
         'Enable': (True, bool),
-        'UpdateApplications': (86400, int, 'How often to update the list from the internet. Set to 0 to disable.')
-    },
-    'Timer': {
-        'CheckPrograms': (1, int, 1),
-        'CheckResolution': (1, int, 1),
-        'ReloadPrograms': (300, int, 1),
-        '_ShowQueuedCommands': (20, int),
-        '_Ping': (5, int)
+        'UpdateApplications': (86400, int, 0, 'How often (in minutes) to update the list from the internet. Set to 0 to disable.')
     },
     'GenerateImages': {
-        '__note__': ['For the best results, make sure the upscale resolution'
-                     ' is higher than or equal to the highest recorded resolution.'],
         '_UpscaleResolutionX': (_res_x, int, 1),
         '_UpscaleResolutionY': (_res_y, int, 1),
         '_TempResolutionX': (1, int, 1),
@@ -226,8 +206,9 @@ _config_defaults = {
                                        ' that take longer to generate.'),
         'OutputResolutionX': (_res_x, int, 1),
         'OutputResolutionY': (_res_y, int, 1),
-        'AllowedCores': (0, int, 0, 8, 'Number of cores allowed for generating images.'
-                                       ' Set to 0 to use all available.'),
+        'AllowedCores': (0, int, 'Number of cores allowed for generating images.'
+                                 ' Set to 0 to use all available,'
+                                 ' or use a negative number to use all but a certain amount.'),
         'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.')
     },
     'GenerateHeatmap': {
@@ -247,24 +228,10 @@ _config_defaults = {
     'GenerateKeyboard':{
         'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])'.format(DEFAULT_PATH), str),
         'ColourProfile': ('Aqua', str),
-        'ExtendedKeyboard': (True, bool, 'If the full keyboard should be shown.'),
+        'ExtendedKeyboard': (True, bool, 'If the full keyboard should be shown, or just the main section.'),
         'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
-        'KeySize': (65.0, float, 0),
-        'KeyCornerRadius': (3.0, float, 0),
-        'KeyPadding': (8.0, float, 0),
-        'KeyBorder': (0.6, float, 0),
-        'DropShadowX': (1.25, float, 0),
-        'DropShadowY': (1.5, float, 0),
-        'ImagePadding': (16.0, float, 0),
-        'FontSizeMain': (17.0, float, 0),
-        'FontSizeStats': (13.0, float, 0),
-        'FontHeightOffset': (5.0, float),
-        'FontWidthOffset': (5.0, float),
-        'FontSpacing': (5.0, float),
-        'ColourMapping': ('standard', str, (False, 'standard', 'linear', 'exponential'),
-                          ('Set how the colours should be assigned.'
-                           ' Options are "standard", "linear" and "exponential".')),
-        'ExponentialMultiplier': (1.0, float, 0),
+        'LinearMapping': (False, bool, 'Set if a linear mapping for colours should be used.'),
+        'LinearPower': (1.0, float, 0, 'Set the exponential to raise the linear values to.'),
         'DataSet': ('time', str, (False, 'time', 'press'), 'Set if the colours should be determined by the'
                                                           ' total time the key has been held (time),'
                                                           ' or the number of presses (press).')
@@ -274,7 +241,7 @@ _config_defaults = {
         'NameFormatTracks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Tracks ([Width], [Height])'.format(DEFAULT_PATH), str),
         'NameFormatClicks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]'.format(DEFAULT_PATH), str),
         'NameFormatKeyboard': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Keyboard'.format(DEFAULT_PATH), str),
-        'MinimumResPoints': (20, int, 0, 'Files will not be generated for any resolutions that have fewer points than this recorded.'),
+        'MinimumPoints': (50, int, 0, 'Files will not be generated for any resolutions that have fewer points than this recorded.'),
         '_GenerateTracks': (True, bool),
         '_GenerateClicks': (True, bool),
         '_GenerateKeyboard': (True, bool)
@@ -286,7 +253,30 @@ _config_defaults = {
     'Advanced': {
         'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose how many messages to show.'
                                                    ' 0 will show everything, and 3 will show nothing.'),
-        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Reduce the range mapped to colours.')
+        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Reduce the range mapped to colours.'),
+        'CompressTrackMax': (425000, int, 0, MAX_INT, 'Maximum number of of ticks (at 60 per second) before compression happens.'
+                                                      ' Set to 0 to disable.'),
+        'CompressTrackAmount': (1.1, float, 1.001, 'How much to divide each pixel by when compression happens.'),
+        'CheckResolution': (60, int, 0, 'How many ticks to wait between checking the resolution.'),
+        'CheckRunningApplications': (60, int, 0, 'How many ticks to wait between checking if something is running.'),
+        'ReloadApplicationList': (18000, int, 0, 'How many ticks to wait before reloading {}.'.format(APP_LIST_FILE)),
+        'ShowQueuedCommands': (1200, int, 'How many ticks to wait before showing the number of commands waiting to be processed.'),
+        'RepeatKeyPress': (0.0, float, 0, 'Record a new key press at this frequency'
+                                          ' if a key is being held down (set to 0.0 to disable).'),
+        'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
+                                         ' if a mouse button is being held down (set to 0.0 to disable).'),
+        'KeyboardKeySize': (65.0, float, 0),
+        'KeyboardKeyCornerRadius': (3.0, float, 0),
+        'KeyboardKeyPadding': (8.0, float, 0),
+        'KeyboardKeyBorder': (0.6, float, 0),
+        'KeyboardDropShadowX': (1.25, float, 0),
+        'KeyboardDropShadowY': (1.5, float, 0),
+        'KeyboardImagePadding': (16.0, float, 0),
+        'KeyboardFontSizeMain': (17.0, float, 0),
+        'KeyboardFontSizeStats': (13.0, float, 0),
+        'KeyboardFontHeightOffset': (5.0, float),
+        'KeyboardFontWidthOffset': (5.0, float),
+        'KeyboardFontSpacing': (5.0, float)
     }
 }
 
@@ -295,8 +285,6 @@ _config_order = [
     'Paths',
     'Internet',
     'Save',
-    'Timer',
-    'CompressMaps',
     'GenerateImages',
     'GenerateTracks',
     'GenerateHeatmap',
