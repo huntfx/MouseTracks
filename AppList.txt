@@ -33,6 +33,7 @@ AlienBreed2Assault.exe: Alien Breed 2: Assault
 Allegiance.exe
 altitude.exe: Alltitude
 Amnesia.exe: Amnesia: The Dark Descent
+Angeldust.exe
 anno5.exe: Anno 2070
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
@@ -55,6 +56,7 @@ avalonlords.exe: Avalon Lords
 AvP.exe: Aliens vs Predator
 AvP_DX11.exe: Aliens vs Predator
 Awesomenauts.exe
+BackToBed.exe: Back to Bed
 BangBangRacing.exe: Bang Bang Racing
 BarkleyV120.exe: Charles Barkley: Shut Up and Jam Gaiden
 Bastion.exe
@@ -63,6 +65,7 @@ BattleBlockTheater.exe: BattleBlock Theater
 battlefront.exe: Star Wars Battlefront
 BattlefrontII.exe: Star Wars Battlefront II
 battlevschess.exe: Battle vs Chess
+BC.exe: Battle Chasers: Nightwar
 BeatHazard.exe: Beat Hazard
 bejeweled3.exe: Bejeweled 3
 Besiege.exe
@@ -108,6 +111,7 @@ carrier.exe: Carrier Command Gaea Mission
 castle.exe: Castle Crashers
 cataclysm-tiles.exe: Cataclysm: Dark Days Ahead
 CelebrityPoker.exe: Poker Night at the Inventory
+Chunk Stories.exe
 Cities.exe: Cities: Skylines
 CivilizationBE_DX11.exe: Sid Meier's Civilization: Beyond Earth
 CivilizationBE_Mantle.exe: Sid Meier's Civilization: Beyond Earth
@@ -120,8 +124,8 @@ client_x86.exe: Guardians of Ember
 clonk.exe: Clonk Rage
 Cloudbuilt.exe
 Clustertruck.exe
-CoD2MP_s.exe: Call of Duty 2:
-CoD2SP_s.exe: Call of Duty 2:
+CoD2MP_s.exe: Call of Duty 2
+CoD2SP_s.exe: Call of Duty 2
 CoDWaw.exe: Call of Duty: World at War
 CoDWaWmp.exe: Call of Duty: World at War
 CoJGunslinger.exe: Call of Juarez: Gunslinger
@@ -224,13 +228,13 @@ ed6_win.exe: The Legend of Heroes: Trails in the Sky
 EDLaunch.exe: Elite: Dangerous
 EliteDangerous32.exe: Elite: Dangerous
 elsword.exe: Elsword
-Empire.exe: Empire Total War
+Empire.exe: Empire: Total War
 empires2.exe: Age of Empires 2
 EndlessLegend.exe: Endless Legend
 Enslaved.exe
 EoCApp.exe: Divinity: Original Sin
 eqgame.exe: EverQuest
-es.scr: Electric Sheep
+es.scr: <DoNotTrack>
 eso.exe: The Elder Scrolls Online
 ESSTEAM.exe: Elsword
 EternalCrusadeClient.exe: Warhammer 40,000: Eternal Crusade
@@ -354,8 +358,8 @@ iracingsim64.exe: iRacing
 isaac-ng.exe: The Binding of Isaac: Rebirth
 Isaac.exe: The Binding of Isaac
 istrolid.exe: Istrolid
-iw3mp.exe: Call of Duty 4: Modern Warfare
-iw3sp.exe: Call of Duty 4: Modern Warfare
+iw3mp.exe: Call of Duty: Modern Warfare
+iw3sp.exe: Call of Duty: Modern Warfare
 iw4mp.exe: Call of Duty: Modern Warfare 2
 iw4sp.exe: Call of Duty: Modern Warfare 2
 iw5mp.exe: Call of Duty: Modern Warfare 3
@@ -454,8 +458,9 @@ NS2.exe: Natural Selection 2
 NS3FB.exe: Naruto Shippuden Ultimate Ninja Storm 3 Full Burst
 NSUNSR.exe: Naruto Shippuden Ultimate Ninja Storm Revolution
 nuclearthrone.exe: Nuclear Throne
+nw.exe: SORE
 Oblivion.exe: The Elder Scrolls 4: Oblivion
-Octerrain.exe: Other
+Octerrain.exe: <DoNotTrack>
 OctodadDadliestCatch.exe: Octodad: Deadliest Catch
 OfOrcsAndMen_Steam.exe: Of Orcs and Men
 OGAT.exe: Of Guards And Thieves
@@ -568,6 +573,7 @@ ROGame.exe: Rising Storm/Red Orchestra 2
 Rome2.exe: Total War: ROME II
 rotaku.exe: Rotaku Society
 RustClient.exe: Rust
+s2_mp64_ship.exe: Call of Duty: WWII
 sacred2.exe: Sacred 2
 SaintsRowIV.exe: Saints Row IV
 SaintsRowTheThird_DX11.exe: Saints Row 3
@@ -702,6 +708,7 @@ TheSecretWorld.exe: The Secret World
 thespacegame.exe: Ascent - The Space Game
 TheWalkingDead2.exe: The Walking Dead Season Two
 TheWolfAmongUs.exe: The Wolf Among Us
+Think of the Children Beta.exe: Think of the Children
 THUG.exe: Tony Hawk's Underground
 THUG2.exe: Tony Hawk's Underground 2
 THUGPro.exe: THUG Pro
@@ -797,9 +804,6 @@ WoWSLauncher.exe: World of Warships
 X-Plane-32bit.exe: X-Plane
 X-Plane.exe
 x2.exe: Elsword
-X3AP: X3 Albion Prelude
-X3AP_n: X3 Albion Prelude
-X3TC: X3 Albion Prelude
 XComGame.exe: XCOM: Enemy Unknown
 XRebirth.exe: X Rebirth
 ygopro_vs.exe: YGOPRO
