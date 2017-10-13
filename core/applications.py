@@ -28,7 +28,7 @@ ALLOWED_EXTENSIONS = ['.exe', '.bin', '.app', '.scr', '.com']
 _ENCODINGS = [''.join(chr(i) for i in (239, 187, 191))]
 
 
-def _format_app_text(app, friendly_name=None, allow_non_executable=True):
+def _format_app_text(app, friendly_name=None, allow_non_executable=True, _is_exe=True):
 
     app = app.strip()
     if not app:
@@ -77,7 +77,8 @@ def _format_app_text(app, friendly_name=None, allow_non_executable=True):
         if app_name[:ext_len] == friendly_name:
             return app_name
         else:
-            return '{}: {}'.format(app_name, friendly_name)
+            formatting = '{}: {}' if _is_exe else '{} || {}'
+            return formatting.format(app_name, friendly_name)
 
     
 def _format_app_list(app_list, combine=True):
@@ -198,13 +199,15 @@ class RunningApplications(object):
         lines = _DEFAULT_TEXT
         
         for app_info in sorted(self.applications.keys() + self.names.keys(), key=lambda s: s.lower()):
-            
+        
             try:
                 friendly_name = self.names[app_info]
+                _is_exe = False
             except KeyError:
                 friendly_name = self.applications[app_info]
+                _is_exe = True
             
-            new_line = _format_app_text(app_info, friendly_name)
+            new_line = _format_app_text(app_info, friendly_name, _is_exe=_is_exe)
             if new_line is not None:
                 lines.append(new_line)
         
