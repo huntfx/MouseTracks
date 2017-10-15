@@ -103,7 +103,7 @@ def decode_file(f, legacy=False):
     return data
     
 
-def load_data(profile_name=None, _update_version=True, _metadata_only=False):
+def load_data(profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
     """Read a profile (or create new one) and run it through the update."""
     paths = _get_paths(profile_name)
     new_file = False
@@ -136,7 +136,10 @@ def load_data(profile_name=None, _update_version=True, _metadata_only=False):
     
     #Create empty data
     if new_file:
-        loaded_data = {}
+        if _create_new:
+            loaded_data = {}
+        else:
+            return None
         
     return upgrade_version(loaded_data, update_metadata=_update_version)
     
