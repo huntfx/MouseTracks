@@ -151,7 +151,11 @@ def user_generate():
     from core.image import RenderImage
 
     _print(_string['profile']['load'].format(P=profile))
-    r = RenderImage(profile)
+    try:
+        r = RenderImage(profile)
+    except ValueError:
+        _print('Error: Selected profile is empty or doesn\'t exist.')
+        return
     
     #Check if profile is running
     try:
