@@ -198,9 +198,12 @@ class RenderImage(object):
     def __init__(self, profile, data=None, allow_save=True):
         self.profile = profile
         if data is None:
-            self.data = load_data(profile, _update_version=False)
+            self.data = load_data(profile, _update_version=False, _create_new=False)
+            if self.data is None:
+                raise ValueError('profile doesn\'t exist')
         else:
             self.data = data
+            
         self.name = ImageName(profile, data=self.data)
         self.save = allow_save
 
