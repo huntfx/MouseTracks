@@ -76,7 +76,7 @@ class AppList(object):
             #Check for each extensions
             no_space = line.replace(' ', '').lower()
             for ext in self.extensions:
-                if ext in line:
+                if ext in no_space:
 
                     #In the format "MyGame.exe: Game Name"
                     if self.extensions[ext][':'] in no_space:
@@ -117,7 +117,7 @@ class AppList(object):
         result = []
         for executable, names in get_items(self.data):
             for ext in self.extensions:
-                if executable.endswith(ext):
+                if executable.lower().endswith(ext):
                     for window_name, app_name in get_items(names):
                         if window_name is None:
                             if app_name == executable[:-self.extensions[ext]['len']]:
@@ -130,7 +130,7 @@ class AppList(object):
                             else:
                                 result.append('{}[{}]: {}'.format(executable, window_name, app_name))
                     break
-        result = '\r\n'.join(_DEFAULT_TEXT + [''] + sorted(result, key=str.lower))
+        result = '\n'.join(_DEFAULT_TEXT + [''] + sorted(result, key=str.lower))
         
         if path is None:
             path = self.path
