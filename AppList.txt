@@ -1,13 +1,14 @@
-// Type any apps you want to be tracked here.
-// Two separate apps may have the same name, and will be tracked under the same file.
+// Add any applications you want to be tracked here.
+// Two separate applications can have the same name, and will be tracked under the same file.
 // Put each app on a new line, in the format "MyGame.exe: Game Name". The executable file is case sensitive.
-// Alternatively if the app is already named with the correct name, "MyGame.exe" by itself will use "MyGame" as its name.
-// In the case of a game using a generic filename, you can type "Window Name || Game Name" instead.
+// You may also limit it to a certain window name, for example if the game uses a generic executable name.
+// This would work like "Play.exe[MyGame]: Game Name".
+// If the executable or window name is the same as the game name, you only need to provide that.
 
 100orange.exe: 100% Orange Juice
 3DfxCarm.exe: Carmageddon
 3DMark.exe: <DoNotTrack>
-7DaysToDie.exe
+7DaysToDie.exe: 7 Days to Die
 8bitboy.exe: 8BitBoy
 AbeWin.exe: Oddworld: Abe's Oddysee
 AbsoluteDrift.exe: Absolute Drift
@@ -51,6 +52,7 @@ Atilla.exe: Total War: Atilla
 AtlasReactor.exe: Atlas Reactor
 audiosurf.exe: Audiosurf
 audiosurf2.exe: Audiosurf 2
+AVA.exe: Alliance of Valiant Arms
 avalonlords.app: Avalon Lords
 avalonlords.exe: Avalon Lords
 AvP.exe: Aliens vs Predator
@@ -104,10 +106,10 @@ cabal2main.exe: Cabal 2
 CabalMain.exe: Cabal Online
 CARMA.EXE: Carmageddon
 CARMAG.EXE: Carmageddon
-Carmageddon_Max_Damage.exe: Carmageddon Max Damage
+Carmageddon_Max_Damage.exe: Carmageddon: Max Damage
 CARMAGV.EXE: Carmageddon
 CARMAV.EXE: Carmageddon
-carrier.exe: Carrier Command Gaea Mission
+carrier.exe: Carrier Command: Gaea Mission
 castle.exe: Castle Crashers
 cataclysm-tiles.exe: Cataclysm: Dark Days Ahead
 CelebrityPoker.exe: Poker Night at the Inventory
@@ -168,7 +170,7 @@ destiny2.exe: Destiny 2
 DeusEx_steam.exe: Deus Ex: The Fall
 Devilian.exe
 DeviMayCry4.exe: Devil May Cry 4
-dfbhd.exe: Delta Force Black Hawk Down
+dfbhd.exe: Delta Force: Black Hawk Down
 DFO.exe: Dungeon Fighter Online
 dfo.exe: Dungeon Fighter Online
 dfuw.exe: Darkfall: Unholy Wars
@@ -279,10 +281,9 @@ FTLGame.exe: FTL: Faster Than Light
 Future Soldier.exe: Tom Clancy's Ghost Recon: Future Solider
 GalCiv2.exe: Galactic Civilization 2
 GalCiv3.exe: Galactic Civilization 3
-Game.exe
-game.exe: Game
+Game.exe[Warface]
 gamemd.exe: Command & Conquer: Red Alert 2
-GameWin32RetailSteam.exe: Riptide GP2
+GameWin32RetailSteam.exe[Game]: Riptide GP2
 ge.exe: Granado Espada
 generals.exe: Command & Conquer Generals: Zero Hour
 GeometryWars.exe: Geometry Wars
@@ -299,6 +300,7 @@ Grickle102.exe: Puzzle Agent 2
 grid2.exe: Grid 2
 GrimFandango.exe: Grim Fandango
 GrowHome.exe: Grow Home
+GRW.exe: Tom Clancy's Ghost Recon Wildlands
 GTA5.exe: Grand Theft Auto V
 gta_sa.exe: Grand Theft Auto: San Andreas
 GTAIV.exe: Grand Theft Auto IV
@@ -332,6 +334,9 @@ Hexcells.exe
 HexPatch.exe: Hex: Shards of Fate
 hl.exe: Half-Life
 hl2.exe: Half-Life 2
+hl2.exe[Portal 2]
+hl2.exe[Portal]
+hl2.exe[Transmissions: Element 120]
 HL2HL2.exe: Half Life 2
 hl2P.exe: Portal
 hl2TF.exe: Team Fortress 2
@@ -538,6 +543,7 @@ RainbowSix.exe: Rainbow Six Siege
 Rayman Legends.exe
 RCT2.EXE: Rollercoaster Tycoon 2
 reactivedrop.exe: Alien Swarm: Reactive Drop
+RealmGrinderDesktop.exe: Realm Grinder
 ReassemblyRelease.exe: Reassembly
 RebelGalaxy.exe: Rebel Galaxy
 RebelGalaxyGOG.exe: Rebel Galaxy
@@ -598,7 +604,7 @@ ShippingPC-AFEARGame.exe: Alien Rage
 ShippingPC-BmGame.exe: Batman Arkham Asylum
 ShippingPC-StormGame.exe: Bulletstorm
 Shogun2.exe: Total War: Shogun 2
-ShooterGame-Win32-Shipping.exe: Dirty Bomb
+ShooterGame-Win32-Shipping.exe[Dirty Bomb (32-bit, DX9)]: Dirty Bomb
 ShooterGame.exe: Ark: Survival Evolved
 ShovelKnight.exe: Shovel Knight
 SimCity.exe
@@ -769,12 +775,10 @@ vindictus.exe: Vindictus
 VoxelFarmKit.exe: Voxel Farm
 Wakfu.app
 Wakfu.exe
-WALKINGDEAD101.EXE: The Walking Dead
 WalkingDead101.exe: The Walking Dead
 WAR.exe: Warhammer Online
 Warcraft II BNE.exe: Warcraft 2
 Warcraft III.exe: Warcraft 3: Reign of Chaos
-Warface
 Warframe.exe
 Warframe.x64.exe: Warframe
 watch_dogs.exe: Watch_Dogs
