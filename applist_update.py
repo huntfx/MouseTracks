@@ -1,6 +1,6 @@
-from __future__ import division
+from __future__ import absolute_import
 
-from core.applications import RunningApplications
+from core.applications import AppList
 from core.compatibility import _print, input
 from core.config import CONFIG
 from core.constants import APP_LIST_FILE
@@ -14,5 +14,5 @@ if __name__ == '__main__':
             CONFIG['Internet']['Enable'] = True
     CONFIG['SavedSettings']['AppListUpdate'] = 0
 
-    RunningApplications()
+    AppList().save()
     input('Finished, press enter to quit.')
