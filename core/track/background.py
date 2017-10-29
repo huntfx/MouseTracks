@@ -1,4 +1,5 @@
 from __future__ import division, absolute_import
+from functools import wraps
 import time
 import traceback
 
@@ -167,14 +168,31 @@ def _check_resolution(maps, resolution):
             map_resolutions[resolution] = numpy.array(resolution, create=True)
 
             
-def _find_resolution_offset(x, y, store):
+def _check_resolution_on_start(func):
+    """Wrapper for the get_monitor_coordinate function.
+    It makes sure the resolution exists on the first load of the program.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        store = args[2]
+        if store['FirstLoad']:
+            _check_resolution(store['Data']['Maps'], result[1])
+            store['FirstLoad'] = False
+        return result
+    return wrapper
+    
+    
+@_check_resolution_on_start
+def get_monitor_coordinate(x, y, store):
+    """Find the monitor and adjusted x, y coordinates."""
 
     if store['CustomResolution'] is not None:
         try:
             resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
         except TypeError:
             return None
-        
+            
         return ((x - x_offset, y - y_offset), resolution)
             
     elif MULTI_MONITOR:
@@ -188,6 +206,7 @@ def _find_resolution_offset(x, y, store):
             except TypeError:
                 return None
         
+        _check_resolution(store['Data']['Maps'], resolution)
         return ((x - x_offset, y - y_offset), resolution)
         
     else:
@@ -242,7 +261,8 @@ def background_process(q_recv, q_send):
                  'LastClick': None,
                  'KeyTrack': {'LastKey': None,
                               'Time': None,
-                              'Backspace': False}
+                              'Backspace': False},
+                 'FirstLoad': True
                 }
         
         NOTIFY(DATA_LOADED)
@@ -409,7 +429,7 @@ def background_process(q_recv, q_send):
                 for (x, y) in mouse_coordinates:
                 
                     try:
-                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                        (x, y), resolution = get_monitor_coordinate(x, y, store)
                     except TypeError:
                         continue
                         
@@ -450,7 +470,7 @@ def background_process(q_recv, q_send):
                 for mouse_button_index, (x, y) in received_data['MouseClick']:
                     
                     try:
-                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                        (x, y), resolution = get_monitor_coordinate(x, y, store)
                     except TypeError:
                         continue
                     
@@ -465,7 +485,7 @@ def background_process(q_recv, q_send):
                 for mouse_button_index, (x, y) in received_data['DoubleClick']:
                                             
                     try:
-                        (x, y), resolution = _find_resolution_offset(x, y, store)
+                        (x, y), resolution = get_monitor_coordinate(x, y, store)
                     except TypeError:
                         continue
                     
