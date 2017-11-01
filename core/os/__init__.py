@@ -168,7 +168,10 @@ if FOCUS_DETECTION:
             try:
                 return self.window_data.get_exe()
             except AttributeError:
-                return psutil.Process(self.pid()).name()
+                try:
+                    return psutil.Process(self.pid()).name()
+                except psutil.NoSuchProcess:
+                    return None
         
         def rect(self):
             """Get the corner coordinates of the focused window."""
@@ -189,5 +192,7 @@ if FOCUS_DETECTION:
             except AttributeError:
                 return True
         
+        def __str__(self):
+            return 'Process {} ({}): {}'.format(self.pid(), self.exe(), self.name())
 else:
     WindowFocus = None
