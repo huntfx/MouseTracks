@@ -3,6 +3,7 @@ import codecs
 
 from core.config import CONFIG
 from core.constants import DEFAULT_LANGUAGE
+import core.utf8
 
 
 ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
@@ -61,6 +62,7 @@ class Language(object):
                             self.keyboard = link.split('=', 1)[1].strip()
             if self.strings is not None and self.keyboard is not None:
                 break
+        
         if self.strings is None or self.keyboard is None:
             raise IOError('no language file found')
                 
