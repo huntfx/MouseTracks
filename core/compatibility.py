@@ -1,30 +1,23 @@
 from __future__ import absolute_import, print_function
 import sys
-
-
-def get_items(d):
-    """As Python 2 and 3 have different ways of getting items,
-    any attempt should be wrapped in this function.
-    """
-    if PYTHON_VERSION < 3:
-        return d.iteritems()
-    else:
-        return d.items()
-
-
-def _print(text):
-    """Send everything here to print, so that tweaks can be made if needed."""
-    try:
-        for line in text.replace('\\n', '\n').split('\n'):
-            try:
-                print(line)
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                print(line.encode('utf-8').strip())
-    except AttributeError:
-        print(text)
         
 
 class PythonVersion(object):
+    """Get easy information about the current python version.
+    Supports inputs as integers, floats or strings.
+    
+    Examples if the version is 2.7.0:
+    >>> PythonVersion() == 2:
+    True
+    >>> PythonVersion() == 3:
+    False
+    >>> PythonVersion() >= 2.7:
+    True
+    >>> PythonVersion() < "2.7.0":
+    False
+    >>> PythonVersion() <= "2.7.0":
+    True
+    """
     
     MAJOR = sys.version_info.major
     MINOR = sys.version_info.minor
@@ -43,6 +36,7 @@ class PythonVersion(object):
         return '{}.{}.{}'.format(self.MAJOR, self.MINOR, self.MICRO)
     
     def _compare(self, value):
+        """Match the input with the version in preparation for comparing."""
         try:
             v_num = int(value)
         except ValueError:
@@ -78,11 +72,41 @@ class PythonVersion(object):
         return v1 <= v2
 
 
+def get_items(d):
+    """Iterate through the keys and values of a dictionary.
+    As Python 2 and 3 have different ways of getting items,
+    any attempt should be wrapped in this function.
+    """
+    if PYTHON_VERSION < 3:
+        return d.iteritems()
+    else:
+        return d.items()
+
+
+def _print(text):
+    """Send everything here to print, so that tweaks can be made if needed."""
+    try:
+        for line in text.replace('\\n', '\n').split('\n'):
+            try:
+                print(line)
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                print(line.encode('utf-8').strip())
+    except AttributeError:
+        print(text)
+
+
 PYTHON_VERSION = PythonVersion()
 
 if PYTHON_VERSION < 3:
+    import cPickle as pickle
+    from cStringIO import StringIO
+    BytesIO = StringIO
     input = raw_input
     range = xrange
+    unicode = unicode
 else:
+    import pickle
+    from io import StringIO, BytesIO
     input = input
     range = range
+    unicode = str
