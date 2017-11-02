@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import time
 
+from core.compatibility import get_items
 import core.numpy as numpy
 
 
@@ -194,7 +195,7 @@ def upgrade_version(data, update_metadata=True):
                    'MULTIPLY': 'ASTERISK',
                    'AT': 'APOSTROPHE',
                    'HASH': 'NUMBER'}
-        for old, new in changes.iteritems():
+        for old, new in get_items(changes):
             try:
                 data['Keys']['All']['Pressed'][new] = data['Keys']['All']['Pressed'].pop(old)
                 data['Keys']['All']['Held'][new] = data['Keys']['All']['Held'].pop(old)
