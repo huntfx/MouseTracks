@@ -1,13 +1,12 @@
 from __future__ import division, absolute_import
 from PIL import Image
-import cPickle
 import zlib
 
 from core.image.keyboard import DrawKeyboard
 from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
 from core.image.colours import ColourRange, calculate_colour_map
 from core.constants import UPDATES_PER_SECOND
-from core.compatibility import get_items, _print
+from core.compatibility import get_items, _print, pickle
 from core.config import CONFIG, _config_defaults
 from core.constants import format_file_path
 from core.export import ExportCSV
@@ -264,7 +263,7 @@ class RenderImage(object):
         _print('Loading from cache...')
         try:
             with open(file_name, 'rb') as f:
-                return cPickle.loads(zlib.decompress(f.read()))
+                return pickle.loads(zlib.decompress(f.read()))
         except IOError:
             return None
     
@@ -272,7 +271,7 @@ class RenderImage(object):
         _print('Saving to cache...')
         data = ((min_value, max_value), array)
         with open(file_name, 'wb') as f:
-            f.write(zlib.compress(cPickle.dumps(data)))
+            f.write(zlib.compress(pickle.dumps(data)))
     
     def cache_delete(self, file_name):
         remove_file(file_name)
