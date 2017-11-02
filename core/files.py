@@ -1,23 +1,17 @@
 from __future__ import absolute_import
 from operator import itemgetter
 from re import sub
-from cStringIO import StringIO
 import time
 import zlib
 import os
 import zipfile
 
 from core.config import CONFIG
-from core.compatibility import PYTHON_VERSION, get_items
+from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
 from core.constants import DEFAULT_NAME, format_file_path
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
 from core.versions import VERSION, upgrade_version, IterateMaps
 import core.numpy as numpy
-
-if PYTHON_VERSION < 3:
-    import cPickle
-else:
-    import pickle as cPickle
 
 
 DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
@@ -34,7 +28,7 @@ DATA_CORRUPT_FOLDER = '.corrupted'
 
 DATA_SAVED_FOLDER = 'Saved'
 
-PICKLE_PROTOCOL = min(cPickle.HIGHEST_PROTOCOL, 2)
+PICKLE_PROTOCOL = min(pickle.HIGHEST_PROTOCOL, 2)
 
 
 def format_name(name, extra_chars=''):
@@ -73,15 +67,15 @@ def prepare_file(data, legacy=False):
     data['Version'] = VERSION
     
     if legacy:
-        return zlib.compress(cPickle.dumps(data, PICKLE_PROTOCOL))
+        return zlib.compress(pickle.dumps(data, PICKLE_PROTOCOL))
     
     #Separate the maps from the main dictionary
     numpy_maps = IterateMaps(data['Maps']).separate()
     
     #Write the maps to a zip file in memory
-    io = StringIO()
+    io = BytesIO()
     with CustomOpen(io, 'w') as f:
-        f.write(cPickle.dumps(data, PICKLE_PROTOCOL), '_')
+        f.write(pickle.dumps(data, PICKLE_PROTOCOL), '_')
         f.write(str(len(numpy_maps)), 'n')
         for i, m in enumerate(numpy_maps):
             f.write(numpy.save(m), i)
@@ -95,9 +89,9 @@ def prepare_file(data, legacy=False):
 def decode_file(f, legacy=False):
     """Read compressed data."""
     if legacy:
-        return cPickle.loads(zlib.decompress(f.read()))
+        return pickle.loads(zlib.decompress(f.read()))
         
-    data = cPickle.loads(f.read('_'))
+    data = pickle.loads(f.read('_'))
     numpy_maps = [numpy.load(f.read(i)) for i in range(int(f.read('n')))]
     IterateMaps(data['Maps']).join(numpy_maps)
     return data
@@ -207,7 +201,7 @@ class CustomOpen(object):
                     as_zip = False
             else:
                 if self.file is None:
-                    self._file_object = StringIO()
+                    self._file_object = BytesIO()
                     self.zip = zipfile.ZipFile(self._file_object, 'w', zipfile.ZIP_DEFLATED)
                 else:
                     self._file_object = None
@@ -219,7 +213,7 @@ class CustomOpen(object):
             if self.mode.startswith('r'):
                 self._file_object = open(self.file, mode=self.mode)
             else:
-                self._file_object = StringIO()
+                self._file_object = BytesIO()
         
     def __enter__(self):
         return self
@@ -244,6 +238,8 @@ class CustomOpen(object):
     def write(self, data, filename=None):
         """Write to the file."""
         if self.zip is None:
+            if isinstance(data, (str, unicode)):
+                return self._file_object.write(data.encode('utf-8'))
             return self._file_object.write(data)
         if filename is None:
             raise TypeError('filename required when writing to zip')
