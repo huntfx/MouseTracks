@@ -26,7 +26,8 @@ _DEFAULT_TEXT = [
     ' for example if the game uses a generic executable name.',
     '// This would work like "Play.exe[MyGame]: Game Name".',
     '// If the executable or window name is the same as the game name,'
-    ' you only need to provide that.'
+    ' you only need to provide that.',
+    '// To turn off tracking for a particular application, use <DoNotTrack> as its name.'
 ]
 
 
@@ -39,7 +40,34 @@ class AppList(object):
                            for i in extensions}
         
         self.refresh()
+        
+    def __getitem__(self, key):
+        return self.data[key]
+        
+    def __setitem__(self, key, value):
+        self.data[key] = value
 
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def __contains__(self, key):
+        return key in self.data
+
+    def __iter__(self):
+        return self.data.keys().__iter__()
+
+    def __str__(self):
+        return str(self.data)
+
+    def __nonzero__(self):
+        return bool(self.data)
+
+    def __bool__(self):
+        return bool(self.data)
+
+    def pop(self, n):
+        return self.data.pop(n)
+        
     def _read(self, path=None, url=None):
         """Parse an application list and return a dictionary.
 
@@ -52,15 +80,28 @@ class AppList(object):
         if path is None:
             if url is None:
                 return {}
+                
+            #Read file from URL
             try:
                 lines = get_url_contents(path).split('\n')
             except AttributeError:
                 return {}
                 
         else:
-            with open(path, 'r') as f:
-                lines = [i.strip() for i in f.readlines()]
-            
+            #Read file from disk
+            try:
+                with open(path, 'r') as f:
+                    lines = [i.strip() for i in f.readlines()]
+                    
+            #Attempt to read from script directory if it doesn't exist at the path
+            except IOError:
+                try:
+                    with open(path.replace('\\', '/').split('/')[-1], 'r') as f:
+                        lines = [i.strip() for i in f.readlines()]
+                except IOError:
+                    return {}
+        
+        #Remove any encoding at the start of the file
         for marker in _ENCODINGS:
             if lines[0].startswith(marker):
                 lines[0] = lines[0][len(marker):]
@@ -111,6 +152,12 @@ class AppList(object):
     def refresh(self):
         """Get data from the file."""
         self.data = self._read(self.path)
+        
+        #Build list of names
+        self.names = []
+        for v in self.data.values():
+            for name in v.values():
+                self.names.append(name)
 
     def save(self, path=None):
         """Save the sorted application list."""
@@ -138,7 +185,7 @@ class AppList(object):
             f.write(result)
         return result
 
-    def update(self, url):
+    def update(self, url=APP_LIST_URL):
         """Update application list from URL.
         Does not overwrite any values.
         """
@@ -153,33 +200,9 @@ class AppList(object):
                     if name not in self.data[executable]:
                         self.data[executable][name] = names[name]
         return True
-        
-    def __getitem__(self, key):
-        return self.data[key]
-        
-    def __setitem__(self, key, value):
-        self.data[key] = value
 
-    def __delitem__(self, key):
-        del self.data[key]
-
-    def __contains__(self, key):
-        return key in self.data
-
-    def __iter__(self):
-        return self.data.keys().__iter__()
-
-    def __str__(self):
-        return str(self.data)
-
-    def __nonzero__(self):
-        return bool(self.data)
-
-    def __bool__(self):
-        return bool(self.data)
-
-    def pop(self, n):
-        return self.data.pop(n)
+    def get_names(self):
+        """Return a list of all applications."""
         
 
 class RunningApplications(object):
@@ -265,4 +288,3 @@ class RunningApplications(object):
     
     def save_file(self):
         self.applist.save()
-
