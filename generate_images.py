@@ -3,7 +3,7 @@ from multiprocessing import freeze_support
 import time
 import sys
 
-from core.applications import RunningApplications, read_app_list
+from core.applications import RunningApplications, AppList
 from core.compatibility import input, _print, get_items
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
@@ -33,12 +33,12 @@ def user_generate():
     _string = all_strings['string']
     string = all_strings['string']['image']
     word = all_strings['word']
-    
+
     _print(string['profile']['list'].format(L=word['list']))
     profile = input()
 
     if profile.lower() == word['list'].lower():
-    
+
         #Read the data folder and format names
         all_files = list_data_files()
         if not all_files:
@@ -48,8 +48,8 @@ def user_generate():
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
         
-        app_list = read_app_list()
-        for program_name in app_list.values():
+        app_list = AppList()
+        for program_name in app_list.names:
             programs[format_name(program_name)] = program_name
         
         page = 1
@@ -207,9 +207,9 @@ def user_generate():
     _print('3: {}'.format(kb_string))
     _print('4: {}'.format(string['name']['csv']))
     
-    selection = map(int, input().split())
+    selection = list(map(int, input().split()))
     result = value_select(selection, default_options, start=1)
-
+    
     if result[0]:
         generate_tracks = True
         
@@ -227,7 +227,7 @@ def user_generate():
         _print('1: {}'.format(word['mousebutton']['left']))
         _print('2: {}'.format(word['mousebutton']['middle']))
         _print('3: {}'.format(word['mousebutton']['right']))
-        selection = map(int, input().split())
+        selection = list(map(int, input().split()))
         heatmap_buttons = value_select(selection, default_options, start=1)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
         CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = heatmap_buttons[1]
@@ -241,7 +241,7 @@ def user_generate():
     if result[3]:
         generate_csv = True
 
-    if any((generate_tracks, generate_heatmap, generate_keyboard, generate_csv)):
+    if generate_tracks or generate_heatmap or generate_keyboard or generate_csv:
 
         last_session_start = r.data['Ticks']['Session']['Total']
         last_session_end = r.data['Ticks']['Total']
@@ -259,7 +259,7 @@ def user_generate():
                 _print('1: {} [{}]'.format(string['option']['session']['all'].format(T=all_time), word['default']))
                 _print('2: {}'.format(string['option']['session']['last'].format(T=last_session_time)))
 
-                selection = map(int, input().split())
+                selection = list(map(int, input().split()))
                 result = value_select(selection, [True, False], start=1)
                 if result[0] and result[1]:
                     _print(string['option']['error']['single'])
