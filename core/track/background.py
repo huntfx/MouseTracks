@@ -1,5 +1,4 @@
 from __future__ import division, absolute_import
-from functools import wraps
 import time
 import traceback
 
@@ -167,25 +166,22 @@ def _check_resolution(maps, resolution):
         if resolution not in map_resolutions:
             map_resolutions[resolution] = numpy.array(resolution, create=True)
 
-            
-def _check_resolution_on_start(func):
-    """Wrapper for the get_monitor_coordinate function.
-    It makes sure the resolution exists on the first load of the program.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        store = args[2]
-        if store['FirstLoad']:
-            _check_resolution(store['Data']['Maps'], result[1])
-            store['FirstLoad'] = False
-        return result
-    return wrapper
-    
-    
-@_check_resolution_on_start
+
 def get_monitor_coordinate(x, y, store):
-    """Find the monitor and adjusted x, y coordinates."""
+    """Wrapper for getting the resolution and adjusted x, y coordinates.
+    This fixes the session maps not having the required resolution on load.
+    
+    Returns ((x, y), (width, height))
+    """
+    result = _get_monitor_coordinate(x, y, store)
+    if store['FirstLoad']:
+        _check_resolution(store['Data']['Maps'], result[1])
+        store['FirstLoad'] = False
+    return result
+    
+
+def _get_monitor_coordinate(x, y, store):
+    """Find the resolution of the monitor and adjusted x, y coordinates."""
 
     if store['CustomResolution'] is not None:
         try:
