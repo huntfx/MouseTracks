@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import
-from cStringIO import StringIO
 import numpy
+
+from core.compatibility import StringIO, BytesIO
 
 
 _NUMPY_DTYPES = {
@@ -82,7 +83,7 @@ def divide(array, amount, as_int=False, dtype=None):
     return numpy.true_divide(array, amount, dtype=_get_dtype(dtype))
 
 
-def round(array, decimals, dtype=None):
+def round(array, decimals=0, dtype=None):
     new_array = numpy.round(array, decimals)
     if dtype is not None:
         return new_array.astype(_get_dtype(dtype))
@@ -151,13 +152,13 @@ def csv(array):
     
 
 def save(array):
-    f = StringIO()
+    f = BytesIO()
     numpy.save(f, array, fix_imports=True)
     return f.getvalue()
 
     
 def load(saved_array):
-    f = StringIO()
+    f = BytesIO()
     f.write(saved_array)
     f.seek(0)
     return numpy.load(f)
