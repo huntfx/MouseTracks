@@ -8,8 +8,6 @@ try:
     from core.os.windows.pywin32 import *
 except ImportError:
     from core.os.windows.ctypes import *
-if PYTHON_VERSION == 2:
-    import core.os.windows.py2_utf8_console
 
 
 def read_env_var(text):
