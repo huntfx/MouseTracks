@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+import os
+import pywintypes
+import sys
 import win32api
 import win32con
 import win32gui
@@ -116,3 +120,17 @@ class WindowFocusData(object):
     
     def get_name(self):
         return win32gui.GetWindowText(self.hwnd)
+        
+        
+def elevate():
+    """Elevate the program to admin permissions."""
+    arg = 'forced_elevate'
+    if sys.argv[-1] != arg:
+        script = os.path.abspath(sys.argv[0])
+        params = ' '.join([script] + sys.argv[1:] + [arg])
+        try:
+            shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5) #nShow loads the console
+        except pywintypes.error:
+            pass
+        else:
+            sys.exit(0)
