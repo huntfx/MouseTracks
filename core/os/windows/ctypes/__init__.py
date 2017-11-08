@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 import ctypes
 import ctypes.wintypes
+import os
+import sys
+
+from core.compatibility import unicode
 
 
 def get_double_click_time():
@@ -169,3 +173,14 @@ class WindowFocusData(object):
         buff = ctypes.create_unicode_buffer(length)
         ctypes.windll.user32.GetWindowTextW(self.hwnd, buff, length)
         return buff.value
+
+    
+def elevate(console=True):
+    """Elevate the program to admin permissions."""
+    arg = 'forced_elevate'
+    if sys.argv[-1] != arg and not ctypes.windll.shell32.IsUserAnAdmin():
+        script = os.path.abspath(sys.argv[0])
+        params = u' '.join([script] + sys.argv[1:] + [arg])
+        ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(sys.executable), params, None, 5 if console else 0)
+        if int(ret) > 32:
+            sys.exit(0)
