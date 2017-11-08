@@ -16,7 +16,7 @@ import core.numpy as numpy
 
 DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
 
-DATA_EXTENSION = '.data'
+DATA_EXTENSION = '.mtk'
 
 DATA_NAME = '[PROGRAM]' + DATA_EXTENSION
 
