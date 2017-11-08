@@ -2,6 +2,13 @@ from __future__ import absolute_import
 import os
 
 
+def elevate():
+    """Run the script as an administrator.
+    Fixes issues with tracking keypresses of elevated programs.
+    """
+    pass
+
+
 def read_env_var(text):
     """Detect if text is an environment variable and read it.
     Returns:
