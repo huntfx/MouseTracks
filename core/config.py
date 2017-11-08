@@ -276,7 +276,8 @@ _config_defaults = {
         'KeyboardFontSizeStats': (13.0, float, 0),
         'KeyboardFontHeightOffset': (5.0, float),
         'KeyboardFontWidthOffset': (5.0, float),
-        'KeyboardFontSpacing': (5.0, float)
+        'KeyboardFontSpacing': (5.0, float),
+        'RunAsAdministrator': (True, bool, 'This fixes some issues with keyboard tracking.')
     }
 }
 
