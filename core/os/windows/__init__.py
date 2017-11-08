@@ -4,7 +4,6 @@ import os
 from core.compatibility import PYTHON_VERSION
 
 try:
-    raise ImportError
     from core.os.windows.pywin32 import *
 except ImportError:
     from core.os.windows.ctypes import *
