@@ -122,14 +122,14 @@ class WindowFocusData(object):
         return win32gui.GetWindowText(self.hwnd)
         
         
-def elevate():
+def elevate(console=True):
     """Elevate the program to admin permissions."""
     arg = 'forced_elevate'
-    if sys.argv[-1] != arg:
+    if sys.argv[-1] != arg and not shell.IsUserAnAdmin():
         script = os.path.abspath(sys.argv[0])
         params = ' '.join([script] + sys.argv[1:] + [arg])
         try:
-            shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5) #nShow loads the console
+            shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5 if console else 0)
         except pywintypes.error:
             pass
         else:
