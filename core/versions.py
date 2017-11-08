@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import time
 
-from core.compatibility import get_items
+from core.compatibility import get_items, unicode
 import core.numpy as numpy
 
 
@@ -40,8 +40,8 @@ class IterateMaps(object):
         
     def _iterate(self, maps, command, extra=None):            
         for key in maps.keys():
-        
-            if isinstance(key, str):
+            
+            if isinstance(key, (str, unicode)):
                 self._iterate(maps[key], command, extra)
 
             elif command == 'separate':
@@ -64,10 +64,11 @@ class IterateMaps(object):
             elif command == 'trim':
                 if key == (0, 0):
                     del maps[key]
+                    
                 #Delete any empty maps
                 #Disabled for now as groups currently need each resolution to exist
-                if False and not numpy.count(maps[key]):
-                   del maps[key]
+                #if not numpy.count(maps[key]):
+                #   del maps[key]
                 
     def separate(self):
         self._map_list = []
