@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 import sys
 
+from core.base import format_file_path
 from core.compatibility import input, _print, PYTHON_VERSION
-from core.constants import DEFAULT_PATH, format_file_path
+from core.constants import DEFAULT_PATH
 from core.language import Language
 from core.os import OPERATING_SYSTEM
 from core.versions import VERSION
