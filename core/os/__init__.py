@@ -3,79 +3,7 @@
 import platform
 import os
 
-
-def _add_placeholders(variables):
-    """Use placeholder functions if the counterpart doesn't exist."""
-    from core.os import placeholders
-    count = 0
-    for f_name in dir(placeholders):
-        try: 
-            variables[f_name]
-        except KeyError:
-            f = getattr(placeholders, f_name, None)
-            if callable(f):
-                variables[f_name] = f
-                count += 1
-    return count
-
-
-#Load in modules from operating system
-OPERATING_SYSTEM = platform.system()
-if OPERATING_SYSTEM == 'Windows':
-    try:
-        from core.os.windows import *
-    except ImportError:
-        raise ImportError('missing required modules for windows')
-    OS_DEBUG = False
-elif OPERATING_SYSTEM == 'Linux':
-    try:
-        from core.os.linux import *
-    except ImportError:
-        raise ImportError('missing required modules for linux')
-    OS_DEBUG = True
-elif OPERATING_SYSTEM == 'Darwin':
-    try:
-        from core.os.mac import *
-    except ImportError:
-        raise ImportError('missing required modules for mac')
-    OS_DEBUG = True
-else:
-    raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
-
-PLACEHOLDER_COUNT = _add_placeholders(locals())
-
-
-#Check the functions exist
-try:
-    get_cursor_pos
-    get_mouse_click
-    get_key_press
-    hide_file
-    get_running_processes
-    get_resolution
-    get_documents_path
-    
-    #Detect if multiple monitors can be used
-    try:
-        monitor_info = get_monitor_locations
-        if not monitor_info():
-            raise NameError
-        MULTI_MONITOR = True
-    except NameError:
-        monitor_info = get_resolution
-        MULTI_MONITOR = False
-    
-    #Detect if code exists to detect window focus
-    try:
-        WindowFocusData
-        import psutil
-        FOCUS_DETECTION = True
-    except (ImportError, NameError):
-        FOCUS_DETECTION = False
-        
-        
-except NameError:
-    raise ImportError('failed to import all required modules')
+from core.os import placeholders
 
 
 #Make sure exceptions exist as they are platform specific
@@ -110,6 +38,10 @@ def rename_file(old_name, new_name):
         return False
     return True
 
+    
+def file_exists(file_name):
+    return os.path.isfile(file_name)
+    
 
 def create_folder(folder_path):
     
@@ -151,6 +83,83 @@ def join_path(*args):
     if create:
         create_folder(path)
     return path
+
+
+#Load in modules from operating system
+OPERATING_SYSTEM = platform.system()
+if OPERATING_SYSTEM == 'Windows':
+    try:
+        from core.os.windows import *
+    except ImportError:
+        raise ImportError('missing required modules for windows')
+    OS_DEBUG = False
+elif OPERATING_SYSTEM == 'Linux':
+    try:
+        from core.os.linux import *
+    except ImportError:
+        raise ImportError('missing required modules for linux')
+    OS_DEBUG = True
+elif OPERATING_SYSTEM == 'Darwin':
+    try:
+        from core.os.mac import *
+    except ImportError:
+        raise ImportError('missing required modules for mac')
+    OS_DEBUG = True
+else:
+    raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
+
+
+def _add_placeholders(variables):
+    """Use placeholder functions if the counterpart doesn't exist."""
+    count = 0
+    for f_name in dir(placeholders):
+        try: 
+            variables[f_name]
+        except KeyError:
+            f = getattr(placeholders, f_name, None)
+            if callable(f):
+                variables[f_name] = f
+                count += 1
+    return count
+    
+PLACEHOLDER_COUNT = _add_placeholders(locals())
+
+
+#Check the functions exist
+try:
+    get_cursor_pos
+    get_mouse_click
+    get_key_press
+    hide_file
+    get_running_processes
+    get_resolution
+    get_documents_path
+    
+    #Detect if multiple monitors can be used
+    try:
+        monitor_info = get_monitor_locations
+        if not monitor_info():
+            raise NameError
+        MULTI_MONITOR = True
+    except NameError:
+        monitor_info = get_resolution
+        MULTI_MONITOR = False
+    
+    #Detect if code exists to detect window focus
+    try:
+        WindowFocusData.get_exe()
+        FOCUS_DETECTION = True
+    except AttributeError:
+        try:
+            import psutil
+            FOCUS_DETECTION = True
+        except ImportError:
+            FOCUS_DETECTION = False
+    except NameError:
+        FOCUS_DETECTION = False
+        
+except NameError:
+    raise ImportError('failed to import all required modules')
 
     
 if FOCUS_DETECTION:
