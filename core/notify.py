@@ -96,6 +96,8 @@ PROCESS_EXIT = 112
 
 THREAD_EXIT = 113
 
+PROCESS_NOT_UNIQUE = 114
+
 
 class Notify(object):
     
@@ -105,6 +107,9 @@ class Notify(object):
         self.word = all_strings['word']
         
         self.reset()
+    
+    def debug(self, *args):
+        return self.__call__(MESSAGE_DEBUG, *args)
     
     def _mb(self, id):
         mb = self.word['mousebutton']
@@ -316,6 +321,11 @@ class Notify(object):
             
         if message_id == THREAD_EXIT:
             q2(self.string['script']['thread']['end'])
+            
+        if message_id == PROCESS_NOT_UNIQUE:
+            q2(self.string['script']['process']['duplicate'])
+        
+        return self
 
     def get_output(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
@@ -338,3 +348,4 @@ class Notify(object):
 
     
 NOTIFY = Notify()
+NOTIFY_DEBUG = NOTIFY.debug
