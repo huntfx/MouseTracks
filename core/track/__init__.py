@@ -49,12 +49,17 @@ class ThreadHelper(Thread):
 
 def start_tracking():
     """Put a lock on the main script to stop more than one instance running."""
+
+    _start_tracking()
+    
+    #Disabled lock for now due to issues with multiprocessing
+    '''
     with Lock() as lock:
         if lock:
             _start_tracking()
         else:
             handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
-    
+            '''
     
 def _start_tracking():
     
