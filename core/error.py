@@ -8,7 +8,7 @@ from core.os import OPERATING_SYSTEM
 from core.versions import VERSION
 
 
-def handle_error(trace=None):
+def handle_error(trace=None, log=True):
     """Any errors are sent to here."""
     if trace is not None:
     
@@ -17,13 +17,13 @@ def handle_error(trace=None):
         output.append(trace)
         output = '\n'.join(output)
         
-        file_name = format_file_path('{}\\error.txt'.format(DEFAULT_PATH))
-        with open(file_name, 'w') as f:
-            f.write(output)
+        if log:
+            file_name = format_file_path('{}\\error.txt'.format(DEFAULT_PATH))
+            with open(file_name, 'w') as f:
+                f.write(output)
         _print(trace)
         
         string = Language().get_strings()
         input(string['string']['exit'])
-        
-    sys.exit()
- 
+    
+    sys.exit(0)
