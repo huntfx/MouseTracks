@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
+from core.base import format_file_path
 from core.config import CONFIG
-from core.constants import DEFAULT_NAME, DEFAULT_PATH, format_file_path
+from core.constants import DEFAULT_NAME, DEFAULT_PATH
 from core.language import Language
 from core.os import get_documents_path
 
