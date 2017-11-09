@@ -8,6 +8,7 @@ from core.compatibility import get_items, _print
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
+from core.files import Lock
 from core.messages import time_format
 from core.notify import *
 from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
@@ -28,7 +29,10 @@ class RefreshRateLimiter(object):
 
     def __exit__(self, *args):
         time_difference = time.time() - self.time
-        time.sleep(max(0, self.frame_time - time_difference))
+        try:
+            time.sleep(max(0, self.frame_time - time_difference))
+        except IOError: #Interrupted function call (when quitting program)
+            pass
 
 
 class ThreadHelper(Thread):
@@ -44,6 +48,15 @@ class ThreadHelper(Thread):
 
 
 def start_tracking():
+    """Put a lock on the main script to stop more than one instance running."""
+    with Lock() as lock:
+        if lock:
+            _start_tracking()
+        else:
+            handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
+    
+    
+def _start_tracking():
     
     _background_process = None
     no_detection_wait = 2
@@ -84,7 +97,7 @@ def start_tracking():
         q_bg_recv = Queue()
         _background_process = Process(target=background_process, args=(q_bg_send, q_bg_recv))
         _background_process.daemon = True
-        _background_process.start()
+        #_background_process.start()
         
         q_rp_send = Queue()
         q_rp_recv = Queue()
@@ -293,10 +306,10 @@ def start_tracking():
                 if keys_held:
                     frame_data['KeyHeld'] = keys_held
                     store['LastActivity'] = i
-                if _keys_held:
-                    NOTIFY(KEYBOARD_PRESSES_HELD, _keys_held)
                 if _keys_pressed:
                     NOTIFY(KEYBOARD_PRESSES, _keys_pressed)
+                if _keys_held:
+                    NOTIFY(KEYBOARD_PRESSES_HELD, _keys_held)
 
                 recalculate_mouse = False
                 
