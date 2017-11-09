@@ -2,18 +2,18 @@ from __future__ import division, absolute_import
 from PIL import Image
 import zlib
 
-from core.image.keyboard import DrawKeyboard
-from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
-from core.image.colours import ColourRange, calculate_colour_map
+from core.base import format_file_path
 from core.constants import UPDATES_PER_SECOND
 from core.compatibility import get_items, _print, pickle
 from core.config import CONFIG, _config_defaults
-from core.constants import format_file_path
 from core.export import ExportCSV
 from core.files import load_data, format_name
 from core.maths import round_int
 from core.os import create_folder, remove_file
 from core.versions import VERSION
+from core.image.keyboard import DrawKeyboard
+from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
+from core.image.colours import ColourRange, calculate_colour_map
 
 
 class ImageName(object):
