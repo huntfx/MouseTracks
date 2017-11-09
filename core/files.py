@@ -10,7 +10,7 @@ from core.base import format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
 from core.constants import DEFAULT_NAME
-from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
+from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
 from core.versions import VERSION, upgrade_version, IterateMaps
 import core.numpy as numpy
 
@@ -255,8 +255,8 @@ class CustomOpen(object):
         
 class Lock(object):
     """Stop two versions of the script from being loaded at the same time."""
-    def __init__(self, filename=LOCK_FILE):
-        self.filename = filename
+    def __init__(self, file_name=LOCK_FILE):
+        self._name = file_name
         self.closed = False
     
     def __enter__(self):
@@ -270,32 +270,29 @@ class Lock(object):
         return self._file is not None
     __nonzero__ = __bool__
     
-    def create(self, filename=None):
+    def get_file_name(self):
+        return self._name
+        
+    def get_file_object(self):
+        return self._file
+    
+    def create(self):
         """Open a new locked file, or return None if it already exists."""
-        if filename is None:
-            filename = self.filename
-            
-        #Create file if it doesn't exist (hidden files will cause IOError but it doesn't matter)
-        try:
-            with open(filename, 'w') as f:
-                pass
-        except IOError:
-            pass
             
         #Check if file is locked, or create one
-        if remove_file(filename):
-            f = open(filename, 'w')
-            hide_file(filename)
+        if not file_exists(self._name) or remove_file(self._name):
+            f = open(self._name, 'w')
+            hide_file(self._name)
         else:
             f = None
         return f
     
     def release(self):
-        """Release the locked file, and close if possible.
-        Issue with multithreading, where the file seems impossible to close, so just ignore.        
-        """
+        """Release the locked file, and delete if possible.
+        Issue with multithreading where the file seems impossible to delete, so just ignore for now.
+        """            
         if not self.closed:
             if self._file is not None:
                 self._file.close()
             self.closed = True
-            return remove_file(self.filename)
+            return remove_file(self._name)
