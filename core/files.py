@@ -1,15 +1,15 @@
 from __future__ import absolute_import
 from operator import itemgetter
-from re import sub
 from tempfile import gettempdir
 import time
 import zlib
 import os
 import zipfile
 
+from core.base import format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
-from core.constants import DEFAULT_NAME, format_file_path
+from core.constants import DEFAULT_NAME
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory
 from core.versions import VERSION, upgrade_version, IterateMaps
 import core.numpy as numpy
@@ -33,10 +33,8 @@ DATA_SAVED_FOLDER = 'Saved'
 
 PICKLE_PROTOCOL = min(pickle.HIGHEST_PROTOCOL, 2)
 
-
-def format_name(name, extra_chars=''):
-    """Remove any invalid characters for file name."""
-    return sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', name).lower()
+LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLDER, '-_'))   #Temporary folder
+#LOCK_FILE = '{}/mousetrack-{}.lock'.format(DATA_FOLDER, 1)   #Data folder (for testing)
 
 
 def get_data_filename(name):
@@ -253,11 +251,8 @@ class CustomOpen(object):
         if amount is None or self._file_object is None:
             return
         return self._file_object.seek(amount)
-
-
-LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLDER, '-_'))
-
-
+        
+        
 class Lock(object):
     """Stop two versions of the script from being loaded at the same time."""
     def __init__(self, filename=LOCK_FILE):
@@ -269,7 +264,7 @@ class Lock(object):
         return self
         
     def __exit__(self, *args):
-        self.close()
+        self.release()
         
     def __bool__(self):
         return self._file is not None
@@ -295,9 +290,12 @@ class Lock(object):
             f = None
         return f
     
-    def close(self):
-        """Close the locked file."""
+    def release(self):
+        """Release the locked file, and close if possible.
+        Issue with multithreading, where the file seems impossible to close, so just ignore.        
+        """
         if not self.closed:
             if self._file is not None:
                 self._file.close()
-        return remove_file(self.filename)
+            self.closed = True
+            return remove_file(self.filename)
