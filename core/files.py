@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from operator import itemgetter
 from re import sub
+from tempfile import gettempdir
 import time
 import zlib
 import os
@@ -13,6 +14,8 @@ from core.os import remove_file, rename_file, create_folder, hide_file, get_modi
 from core.versions import VERSION, upgrade_version, IterateMaps
 import core.numpy as numpy
 
+
+TEMPORARY_PATH = gettempdir()
 
 DATA_FOLDER = format_file_path(CONFIG['Paths']['Data'])
 
@@ -250,3 +253,51 @@ class CustomOpen(object):
         if amount is None or self._file_object is None:
             return
         return self._file_object.seek(amount)
+
+
+LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLDER, '-_'))
+
+
+class Lock(object):
+    """Stop two versions of the script from being loaded at the same time."""
+    def __init__(self, filename=LOCK_FILE):
+        self.filename = filename
+        self.closed = False
+    
+    def __enter__(self):
+        self._file = self.create()
+        return self
+        
+    def __exit__(self, *args):
+        self.close()
+        
+    def __bool__(self):
+        return self._file is not None
+    __nonzero__ = __bool__
+    
+    def create(self, filename=None):
+        """Open a new locked file, or return None if it already exists."""
+        if filename is None:
+            filename = self.filename
+            
+        #Create file if it doesn't exist (hidden files will cause IOError but it doesn't matter)
+        try:
+            with open(filename, 'w') as f:
+                pass
+        except IOError:
+            pass
+            
+        #Check if file is locked, or create one
+        if remove_file(filename):
+            f = open(filename, 'w')
+            hide_file(filename)
+        else:
+            f = None
+        return f
+    
+    def close(self):
+        """Close the locked file."""
+        if not self.closed:
+            if self._file is not None:
+                self._file.close()
+        return remove_file(self.filename)
