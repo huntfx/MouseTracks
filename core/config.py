@@ -2,8 +2,9 @@ from __future__ import absolute_import
 from locale import getdefaultlocale
 import time
 
+from core.base import format_file_path
 from core.compatibility import get_items
-from core.constants import format_file_path, CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
+from core.constants import CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
 
 
