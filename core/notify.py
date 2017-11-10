@@ -47,6 +47,8 @@ KEYBOARD_PRESSES = 32
 
 KEYBOARD_PRESSES_HELD = 33
 
+KEYBOARD_RELEASED = 34
+
 APPLICATION_STARTED = 48
 
 APPLICATION_QUIT = 49
@@ -99,6 +101,20 @@ THREAD_EXIT = 113
 
 PROCESS_NOT_UNIQUE = 114
 
+GAMEPAD_REFRESH = 128
+
+GAMEPAD_AXIS = 129
+
+GAMEPAD_BUTTON = 130
+
+GAMEPAD_BUTTON_HELD = 131
+
+GAMEPAD_BUTTON_RELEASED = 132
+
+
+def get_plural(word, amount):
+    return word['single'] if amount == 1 else word['plural']
+
 
 class Notify(object):
     
@@ -125,205 +141,207 @@ class Notify(object):
         if message_id == MESSAGE_DEBUG:
             self.debug.append(args)
             
-        if message_id == MOUSE_UNDETECTED:
+        elif message_id == MOUSE_UNDETECTED:
             q2(self.string['mouse']['undetected'])
             
-        if message_id == MOUSE_DETECTED:
+        elif message_id == MOUSE_DETECTED:
             q2(self.string['mouse']['detected'])
             
-        if message_id == MOUSE_OFFSCREEN:
+        elif message_id == MOUSE_OFFSCREEN:
             q1(self.string['mouse']['offscreen'])
             
-        if message_id == MOUSE_ONSCREEN:
+        elif message_id == MOUSE_ONSCREEN:
             q1(self.string['mouse']['onscreen'])
             
-        if message_id == MOUSE_POSITION:
+        elif message_id == MOUSE_POSITION:
             q0(self.string['mouse']['position'].format(X=args[0][0], Y=args[0][1]))
+        
+        #Mouse clicks
+        elif message_id in (MOUSE_CLICKED, MOUSE_CLICKED_DOUBLE, MOUSE_CLICKED_HELD):
+            if message_id == MOUSE_CLICKED:
+                click_group = 'clicked'
+                click_type = 'single'
+            elif message_id == MOUSE_CLICKED_DOUBLE:
+                click_group = 'clicked'
+                click_type = 'double'
+            elif message_id == MOUSE_CLICKED_HELD:
+                click_group = 'held'
+                click_type = 'single'
             
-        if message_id == MOUSE_CLICKED:
             mouse_button = args[0]
             try:
                 resolution = args[1]
             except IndexError:
-                q1(self.string['mouse']['clicked']['offscreen'].format(MB=self._mb(mouse_button),
-                                                                       C=self.word['mouse']['click']['single']))
+                screen = 'offscreen'
+                resolution = (0, 0)
             else:
-                q1(self.string['mouse']['clicked']['onscreen'].format(MB=self._mb(mouse_button),
-                                                                      X=resolution[0], Y=resolution[1],
-                                                                      C=self.word['mouse']['click']['single']))
-            
-        if message_id == MOUSE_CLICKED_DOUBLE:
-            mouse_button = args[0]
-            try:
-                resolution = args[1]
-            except IndexError:
-                q1(self.string['mouse']['clicked']['offscreen'].format(MB=self._mb(mouse_button),
-                                                                       C=self.word['mouse']['click']['double']))
-            else:
-                q1(self.string['mouse']['clicked']['onscreen'].format(MB=self._mb(mouse_button),
-                                                                      X=resolution[0], Y=resolution[1],
-                                                                      C=self.word['mouse']['click']['double']))
-            
-        if message_id == MOUSE_CLICKED_HELD:
-            mouse_button = args[0]
-            try:
-                resolution = args[1]
-            except IndexError:
-                q1(self.string['mouse']['held']['offscreen'].format(MB=self._mb(mouse_button)))
-            else:
-                q1(self.string['mouse']['held']['onscreen'].format(MB=self._mb(mouse_button),
-                                                                      X=resolution[0], Y=resolution[1]))
-                                                                      
-        if message_id == MOUSE_UNCLICKED:
+                screen = 'onscreen'
+                
+            q1(self.string['mouse'][click_group][screen].format(MB=self._mb(mouse_button),
+                                                                X=resolution[0], Y=resolution[1],
+                                                                C=self.word['mouse']['click'][click_type]))
+        
+        elif message_id == MOUSE_UNCLICKED:
             q0(self.string['mouse']['unclicked'])
             
-        if message_id == TRACK_COMPRESS_START:
+        elif message_id == TRACK_COMPRESS_START:
             q2(self.string['compress']['start'])
             
-        if message_id == TRACK_COMPRESS_END:
+        elif message_id == TRACK_COMPRESS_END:
             q2(self.string['compress']['end'])
             
-        if message_id == RESOLUTION_CHANGED:
+        elif message_id == RESOLUTION_CHANGED:
             q2(self.string['resolution']['new'].format(X1=args[0][0], Y1=args[0][1],
                                                        X2=args[1][0], Y2=args[1][1]))
                                                    
-        if message_id == MONITOR_CHANGED:
+        elif message_id == MONITOR_CHANGED:
             q1(self.string['resolution']['changed'].format(X1=args[0][0], Y1=args[0][1],
                                                            X2=args[1][0], Y2=args[1][1]))
                                                        
-        if message_id == APPLICATION_RESOLUTION:
+        elif message_id == APPLICATION_RESOLUTION:
             q1(self.string['resolution']['application']['start'].format(X=args[0][0], Y=args[0][1]))
                                                        
-        if message_id == APPLICATION_MOVE:
+        elif message_id == APPLICATION_MOVE:
             q1(self.string['resolution']['application']['move'].format(X1=args[0][0], Y1=args[0][1],
                                                                        X2=args[1][0], Y2=args[1][1]))
                                                        
-        if message_id == APPLICATION_RESIZE:
+        elif message_id == APPLICATION_RESIZE:
             q1(self.string['resolution']['application']['resize'].format(X1=args[0][0], Y1=args[0][1],
                                                                          X2=args[1][0], Y2=args[1][1]))
         
-        if message_id == KEYBOARD_PRESSES:
-            _press = self.word['keypress']
-            press = _press['single'] if len(args[0]) == 1 else _press['plural']
-            q1(self.string['keyboard']['press'].format(K=', '.join(*args), P=press))
+        #Key presses
+        elif message_id in (KEYBOARD_PRESSES, KEYBOARD_PRESSES_HELD, KEYBOARD_RELEASED):
+            keypresses = args
+            num_presses = len(keypresses)
+            key = get_plural(self.word['key'], num_presses).capitalize()
+            press = get_plural(self.word['press'], num_presses)
+            release = get_plural(self.word['release'], num_presses)
             
-        if message_id == KEYBOARD_PRESSES_HELD:
-            _press = self.word['keypress']
-            press = _press['single'] if len(args[0]) == 1 else _press['plural']
-            q1(self.string['keyboard']['held'].format(K=', '.join(*args), P=press))
+            if message_id == KEYBOARD_PRESSES:
+                q1(self.string['keyboard']['press'].format(K=key, P=press, V=', '.join(keypresses)))
+                
+            elif message_id == KEYBOARD_PRESSES_HELD:
+                q1(self.string['keyboard']['held'].format(K=key, P=press, V=', '.join(keypresses)))
+                
+            elif message_id == KEYBOARD_RELEASED:
+                q0(self.string['keyboard']['release'].format(K=key, R=release, V=', '.join(keypresses)))
+        
+        elif message_id == GAMEPAD_REFRESH:
+            q0(self.string['gamepad']['refresh'])
             
-        if message_id == APPLICATION_STARTED:
+        elif message_id == GAMEPAD_AXIS:
+            q0(self.string['gamepad']['axis'].format(N=args[0], A=args[1], V=args[2]))
+        
+        #Gamepad button presses
+        elif message_id in (GAMEPAD_BUTTON, GAMEPAD_BUTTON_HELD, GAMEPAD_BUTTON_RELEASED):
+            gamepad_number, buttons = args
+            num_buttons = len(buttons)
+            button = get_plural(self.word['button'], num_buttons).capitalize()
+            press = get_plural(self.word['press'], num_buttons)
+            release = get_plural(self.word['release'], num_buttons)
+            
+            if message_id == GAMEPAD_BUTTON:
+                q1(self.string['gamepad']['button']['press'].format(N=gamepad_number, B=button, V=', '.join(*buttons), P=press))
+            
+            elif message_id == GAMEPAD_BUTTON_HELD:
+                q1(self.string['gamepad']['button']['held'].format(N=gamepad_number, B=button, V=', '.join(*buttons), P=press))
+            
+            elif message_id == GAMEPAD_BUTTON_RELEASED:
+                q0(self.string['gamepad']['button']['held'].format(N=gamepad_number, B=button, V=', '.join(*buttons), R=release))
+            
+        elif message_id == APPLICATION_STARTED:
             q2(self.string['application']['start'].format(A=args[0][0]))
-            
-        if message_id == APPLICATION_LOADING:
+        
+        #Application changes
+        elif message_id in (APPLICATION_LOADING, APPLICATION_QUIT, APPLICATION_FOCUSED, APPLICATION_UNFOCUSED):
             try:
-                if args[0][0] is None:
+                application = args[0][0]
+                if application is None:
                     raise TypeError()
             except (IndexError, TypeError):
-                profile = DEFAULT_NAME
-            else:
-                profile = args[0][0]
-            q2(self.string['application']['load'].format(A=profile))
+                application = DEFAULT_NAME
             
-        if message_id == APPLICATION_QUIT:
-            try:
-                if args[0][0] is None:
-                    raise TypeError()
-            except (IndexError, TypeError):
-                profile = DEFAULT_NAME
-            else:
-                profile = args[0][0]
-            q2(self.string['application']['quit'].format(A=profile))
+            if message_id == APPLICATION_LOADING:
+                q2(self.string['application']['load'].format(A=application))
+                
+            if message_id == APPLICATION_QUIT:
+                q2(self.string['application']['quit'].format(A=application))
             
-        if message_id == APPLICATION_RELOAD:
+            if message_id == APPLICATION_FOCUSED:
+                q1(self.string['application']['focused'].format(A=application))
+            
+            if message_id == APPLICATION_UNFOCUSED:
+                q1(self.string['application']['unfocused'].format(A=application))
+            
+            
+        elif message_id == APPLICATION_RELOAD:
             q1(self.string['application']['reload'])
             
-        if message_id == APPLICATION_LISTEN:
+        elif message_id == APPLICATION_LISTEN:
             q1(self.string['application']['listen'])
             
-        if message_id == APPLICATION_FOCUSED:
-            try:
-                if args[0][0] is None:
-                    raise TypeError()
-            except (IndexError, TypeError):
-                profile = DEFAULT_NAME
-            else:
-                profile = args[0][0]
-            q1(self.string['application']['focused'].format(A=profile))
-            
-        if message_id == APPLICATION_UNFOCUSED:
-            try:
-                if args[0][0] is None:
-                    raise TypeError()
-            except (IndexError, TypeError):
-                profile = DEFAULT_NAME
-            else:
-                profile = args[0][0]
-            q1(self.string['application']['unfocused'].format(A=profile))
-            
-        if message_id == APPLIST_UPDATE_START:
+        elif message_id == APPLIST_UPDATE_START:
             q1(self.string['application']['update']['start'])
             
-        if message_id == APPLIST_UPDATE_SUCCESS:
+        elif message_id == APPLIST_UPDATE_SUCCESS:
             q1(self.string['application']['update']['success'])
             
-        if message_id == APPLIST_UPDATE_FAIL:
+        elif message_id == APPLIST_UPDATE_FAIL:
             q1(self.string['application']['update']['fail'])
             
-        if message_id == SAVE_START:
+        elif message_id == SAVE_START:
             q2(self.string['save']['start'])
             
-        if message_id == SAVE_SUCCESS:
+        elif message_id == SAVE_SUCCESS:
             q2(self.string['save']['success'])
             
-        if message_id == SAVE_FAIL:
+        elif message_id == SAVE_FAIL:
             q2(self.string['save']['fail']['noretry'])
             
-        if message_id == SAVE_FAIL_RETRY:
-            _second = self.word['second']
-            second = _second['single'] if args[0] == 1 else _second['plural']
+        elif message_id == SAVE_FAIL_RETRY:
+            second = get_plural(self.word['second'], args[0])
             q2(self.string['save']['fail']['retry'].format(T=args[0], S=second, C=args[1] + 1, M=args[2]))
             
-        if message_id == SAVE_FAIL_END:
-                q2(self.string['save']['fail']['end'])
-        if message_id == SAVE_SKIP:
-            if args[1] > 2:
+        elif message_id == SAVE_FAIL_END:
+            q2(self.string['save']['fail']['end'])
+            
+        elif message_id == SAVE_SKIP:
+            save_frequency, queue_size = args
+            if queue_size > 2:
                 q2(self.string['save']['skip']['nochange'])
             else:
-                _second = self.word['second']
-                second = _second['single'] if args[0] == 1 else _second['plural']
-                q2(self.string['save']['skip']['inactive'].format(T=args[0], S=second))
+                second = get_plural(self.word['second'], args[0])
+                q2(self.string['save']['skip']['inactive'].format(T=save_frequency, S=second))
                 
-        if message_id == SAVE_PREPARE:
+        elif message_id == SAVE_PREPARE:
             q2(self.string['save']['prepare'])
             
-        if message_id == START_MAIN:
+        elif message_id == START_MAIN:
             q2(self.string['script']['main']['start'])
             
-        if message_id == START_THREAD:
+        elif message_id == START_THREAD:
             q2(self.string['script']['thread']['start'])
             
-        if message_id == DATA_LOADED:
+        elif message_id == DATA_LOADED:
             q1(self.string['profile']['load'])
             
-        if message_id == DATA_NOTFOUND:
+        elif message_id == DATA_NOTFOUND:
             q1(self.string['profile']['new'])
             
-        if message_id == MT_PATH:
+        elif message_id == MT_PATH:
             q2(self.string['path'].format(P=format_file_path(DEFAULT_PATH)))
             
-        if message_id == QUEUE_SIZE:
-            _command = self.word['command']
-            command = _command['single'] if args[0] == 1 else _command['plural']
+        elif message_id == QUEUE_SIZE:
+            command = get_plural(self.word['command'], args[0])
             q1(self.string['queue'].format(N=args[0], C=command))
             
-        if message_id == PROCESS_EXIT:
+        elif message_id == PROCESS_EXIT:
             q2(self.string['script']['main']['end'])
             
-        if message_id == THREAD_EXIT:
+        elif message_id == THREAD_EXIT:
             q2(self.string['script']['thread']['end'])
             
-        if message_id == PROCESS_NOT_UNIQUE:
+        elif message_id == PROCESS_NOT_UNIQUE:
             q2(self.string['script']['process']['duplicate'])
         
         return self
