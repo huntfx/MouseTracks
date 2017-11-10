@@ -2,6 +2,7 @@ from __future__ import division
 from multiprocessing import freeze_support
 import time
 import sys
+import webbrowser
 
 from core.applications import RunningApplications, AppList
 from core.compatibility import input, _print, get_items
@@ -12,6 +13,7 @@ from core.input import value_select
 from core.language import Language
 from core.maths import round_up
 from core.messages import ticks_to_seconds
+from core.os import open_folder
     
     
 def user_generate():
@@ -195,9 +197,7 @@ def user_generate():
     kph = r.keys_per_hour()
     if kph < 10:
         default_options[2] = False
-        kb_string = '{} ({} {})'.format(kb_string, 
-                                        string['name']['low']['keyboard'], 
-                                        string['name']['low']['steam']).format(C=round(kph, 2))
+        kb_string = '{} ({})'.format(kb_string, string['name']['low']['keyboard']).format(C=round(kph, 2))
     
     _print(string['option']['generate'])
     default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
@@ -279,7 +279,10 @@ def user_generate():
             r.keyboard(last_session)
         if generate_csv:
             r.csv()
-            
+        if CONFIG['GenerateImages']['OpenOnFinish']:
+            _print(string['option']['open'])
+            open_folder(r.name.generate())
+        
     else:
         _print(string['option']['error']['nothing'])
 
