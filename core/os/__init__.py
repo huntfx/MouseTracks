@@ -75,15 +75,17 @@ def file_exists(path):
     return os.path.exists(path)
     
 
-def join_path(*args):
-    if isinstance(args[-1], bool):
-        create = args[-1]
-        args = args[:-1]
-    path = os.path.join(*args)
+def join_path(path, create=False):
+    """Join a path, and create folder if needed."""
+    joined = os.path.join(*path)
     if create:
-        create_folder(path)
-    return path
-
+        create_folder(joined)
+    return joined
+    
+    
+def open_folder(path):
+    os.startfile(path)
+    
 
 #Load in modules from operating system
 OPERATING_SYSTEM = platform.system()
