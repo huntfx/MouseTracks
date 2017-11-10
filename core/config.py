@@ -251,19 +251,19 @@ _config_defaults = {
         'AppListUpdate': (0, int, None, int(time.time()))
     },
     'Advanced': {
-        'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose how many messages to show.'
+        'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose the level of messages to show.'
                                                    ' 0 will show everything, and 3 will show nothing.'),
-        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Reduce the range mapped to colours.'),
-        'CompressTrackMax': (425000, int, 0, MAX_INT, 'Maximum number of of ticks (at 60 per second) before compression happens.'
+        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Lower the highest value when generating a heatmap.'),
+        'CompressTrackMax': (425000, int, 0, MAX_INT, 'Maximum number of of ticks before compression happens.'
                                                       ' Set to 0 to disable.'),
         'CompressTrackAmount': (1.1, float, 1.001, 'How much to divide each pixel by when compression happens.'),
         'CheckResolution': (60, int, 0, 'How many ticks to wait between checking the resolution.'),
         'CheckRunningApplications': (60, int, 0, 'How many ticks to wait between checking if something is running.'),
         'ReloadApplicationList': (18000, int, 0, 'How many ticks to wait before reloading {}.'.format(APP_LIST_FILE)),
         'ShowQueuedCommands': (1200, int, 'How many ticks to wait before showing the number of commands waiting to be processed.'),
-        'RepeatKeyPress': (0.0, float, 0, 'Record a new key press at this frequency'
+        'RepeatKeyPress': (0.0, float, 0, 'Record a new key press after this many seconds'
                                           ' if a key is being held down (set to 0.0 to disable).'),
-        'RepeatClicks': (0.18, float, 0, 'Record a new click at this frequency'
+        'RepeatClicks': (0.18, float, 0, 'Record a new click after this many seconds'
                                          ' if a mouse button is being held down (set to 0.0 to disable).'),
         'KeyboardKeySize': (65.0, float, 0),
         'KeyboardKeyCornerRadius': (3.0, float, 0),
@@ -277,7 +277,8 @@ _config_defaults = {
         'KeyboardFontHeightOffset': (5.0, float),
         'KeyboardFontWidthOffset': (5.0, float),
         'KeyboardFontSpacing': (5.0, float),
-        'RunAsAdministrator': (True, bool, 'This fixes some issues with keyboard tracking.')
+        'RunAsAdministrator': (True, bool, 'This fixes some issues with keyboard tracking.'),
+        'RefreshGamepads': (600, int, 1, 'How many ticks to wait before refreshing the list of connected gamepads.')
     }
 }
 
