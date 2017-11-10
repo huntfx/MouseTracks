@@ -191,7 +191,8 @@ _config_defaults = {
     'Paths': {
         '__note__': ['You may use environment variables such as %APPDATA%.'],
         'Data': ('{}\\Data\\'.format(DEFAULT_PATH), str),
-        'AppList': ('{}\\{}'.format(DEFAULT_PATH, APP_LIST_FILE), str)
+        'AppList': ('{}\\{}'.format(DEFAULT_PATH, APP_LIST_FILE), str),
+        'Images': ('{}\\Images\\[Name]'.format(DEFAULT_PATH), str, 'Default place to save images. [Name] is replaced by the name of the application.')
         
     },
     'Internet': {
@@ -207,13 +208,11 @@ _config_defaults = {
                                        ' that take longer to generate.'),
         'OutputResolutionX': (_res_x, int, 1),
         'OutputResolutionY': (_res_y, int, 1),
-        'AllowedCores': (0, int, 'Number of cores allowed for generating images.'
-                                 ' Set to 0 to use all available,'
-                                 ' or use a negative number to use all but a certain amount.'),
-        'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.')
+        'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.'),
+        'OpenOnFinish': (True, bool, 'Enable to open the image folder after generating.')
     },
     'GenerateHeatmap': {
-        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]'.format(DEFAULT_PATH), str),
+        'FileName': ('[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]', str),
         '_MouseButtonLeft': (True, bool),
         '_MouseButtonMiddle': (True, bool),
         '_MouseButtonRight': (True, bool),
@@ -223,11 +222,11 @@ _config_defaults = {
         'ColourProfile': ('Jet', str)
     },
     'GenerateTracks': {
-        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]'.format(DEFAULT_PATH), str),
+        'FileName': ('[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]', str),
         'ColourProfile': ('WhiteToBlack', str)
     },
     'GenerateKeyboard':{
-        'NameFormat': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])'.format(DEFAULT_PATH), str),
+        'FileName': ('[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])', str),
         'ColourProfile': ('Aqua', str),
         'ExtendedKeyboard': (True, bool, 'If the full keyboard should be shown, or just the main section.'),
         'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
@@ -239,9 +238,9 @@ _config_defaults = {
     },
     'GenerateCSV':{
         '__note__': ['This is for anyone who may want to use the recorded data in their own projects.'],
-        'NameFormatTracks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Tracks ([Width], [Height])'.format(DEFAULT_PATH), str),
-        'NameFormatClicks': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]'.format(DEFAULT_PATH), str),
-        'NameFormatKeyboard': ('{}\\Render\\[Name]\\[[RunningTimeSeconds]] Keyboard'.format(DEFAULT_PATH), str),
+        'FileNameTracks': ('[[RunningTimeSeconds]] Tracks ([Width], [Height])', str),
+        'FileNameClicks': ('[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]', str),
+        'FileNameKeyboard': ('[[RunningTimeSeconds]] Keyboard', str),
         'MinimumPoints': (50, int, 0, 'Files will not be generated for any resolutions that have fewer points than this recorded.'),
         '_GenerateTracks': (True, bool),
         '_GenerateClicks': (True, bool),
