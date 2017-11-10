@@ -307,25 +307,51 @@ def _start_tracking():
                         
                 if keys_pressed:
                     frame_data['KeyPress'] = keys_pressed
+                    
                 if keys_held:
                     frame_data['KeyHeld'] = keys_held
                     store['LastActivity'] = i
+                    
                 if _keys_pressed:
                     NOTIFY(KEYBOARD_PRESSES, *_keys_pressed)
+                    
                 if _keys_held:
                     NOTIFY(KEYBOARD_PRESSES_HELD, *_keys_held)
+                    
                 if _keys_released:
                     NOTIFY(KEYBOARD_RELEASED, *_keys_released)
                 
                 #Reload list of gamepads (in case one was plugged in)
                 if timer['RefreshGamepads'] and not i % timer['RefreshGamepads']:
-                    gamepad_list = Gamepad.list_gamepads()
+                    try:
+                        old_gamepads = set(gamepads)
+                    except UnboundLocalError:
+                        old_gamepads = set()
+                    gamepads = {gamepad.device_number: gamepad for gamepad in Gamepad.list_gamepads()}
+                    difference = set(gamepads) - old_gamepads
+                    for i, id in enumerate(difference):
+                        NOTIFY(GAMEPAD_FOUND, id)
                 
                 #Gamepad tracking (WIP)
-                for gamepad in gamepad_list:
+                invalid_ids = []
+                for id, gamepad in get_items(gamepads):
                     with gamepad as gamepad_input:
+                    
+                        #Break the connection to stop and error
+                        if not gamepad.connected:
+                            NOTIFY(GAMEPAD_LOST, id)
+                            invalid_ids.append(id)
+                            continue
+                        
                         button_presses = gamepad_input.get_button()
                         axis_updates = gamepad_input.get_axis()
+                        if axis_updates:
+                            print axis_updates
+                        if button_presses:
+                            print button_presses
+                            
+                for id in invalid_ids:
+                    del gamepads[id]
                     
                 recalculate_mouse = False
                 
