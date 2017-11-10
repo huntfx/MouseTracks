@@ -2,6 +2,7 @@ from __future__ import division, absolute_import
 
 from core.compatibility import range, get_items
 from core.files import format_name
+from core.os import join_path
 
 
 COLOUR_FILE = 'colours.txt'
@@ -421,14 +422,13 @@ def rgb_to_hex(rgb):
 
 def gradient_preview(folder, width=720, height=80):
     """Save each colour map as a gradient in a folder."""
-    from core.os import join_path
     
     for map_lowercase, data in get_items(parse_colour_file()['Maps']):
         colours = calculate_colour_map(map_lowercase)
         image = ColourRange(0, 1, colours)._preview_gradient(width, height)
         if data['Type']['tracks']:
-            image.save(join_path(folder, 'Tracks', '{}.png'.format(data['UpperCase']), True))
+            image.save(join_path((folder, 'Tracks', '{}.png'.format(data['UpperCase'])), create=True))
         if data['Type']['clicks']:
-            image.save(join_path(folder, 'Clicks', '{}.png'.format(data['UpperCase']), True))
+            image.save(join_path((folder, 'Clicks', '{}.png'.format(data['UpperCase'])), create=True))
         if data['Type']['keyboard']:
-            image.save(join_path(folder, 'Keyboard', '{}.png'.format(data['UpperCase']), True))
+            image.save(join_path((folder, 'Keyboard', '{}.png'.format(data['UpperCase'])), create=True))
