@@ -13,6 +13,7 @@ from core.messages import time_format
 from core.notify import *
 from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
 from core.track.background import background_process, running_processes, monitor_offset
+from core.track.xinput import Gamepad
 
 
 class RefreshRateLimiter(object):
@@ -71,7 +72,8 @@ def _start_tracking():
                  'UpdatePrograms': CONFIG['Advanced']['CheckRunningApplications'],
                  'Save': CONFIG['Save']['Frequency'] * UPDATES_PER_SECOND,
                  'ReloadProgramList': CONFIG['Advanced']['ReloadApplicationList'],
-                 'UpdateQueuedCommands': CONFIG['Advanced']['ShowQueuedCommands']}
+                 'UpdateQueuedCommands': CONFIG['Advanced']['ShowQueuedCommands'],
+                 'RefreshGamepads': CONFIG['Advanced']['RefreshGamepads']}
                  
         store = {'Resolution': {'Current': monitor_info(),
                                 'Previous': None,
@@ -272,7 +274,6 @@ def _start_tracking():
                         del store['Mouse']['Clicked'][mouse_button]
                         store['LastActivity'] = i
      
-                
                 #Key presses
                 keys_pressed = []
                 keys_held = []
@@ -280,6 +281,7 @@ def _start_tracking():
                 key_press_repeat = CONFIG['Advanced']['RepeatKeyPress']
                 _keys_held = []
                 _keys_pressed = []
+                _keys_released = []
                 for k in KEYS:
                     if get_key_press(KEYS[k]):
                         keys_held.append(k)
@@ -301,6 +303,7 @@ def _start_tracking():
                     #If key has been released
                     elif key_status[k]:
                         key_status[k] = False
+                        _keys_released.append(k)
                         
                 if keys_pressed:
                     frame_data['KeyPress'] = keys_pressed
@@ -308,10 +311,22 @@ def _start_tracking():
                     frame_data['KeyHeld'] = keys_held
                     store['LastActivity'] = i
                 if _keys_pressed:
-                    NOTIFY(KEYBOARD_PRESSES, _keys_pressed)
+                    NOTIFY(KEYBOARD_PRESSES, *_keys_pressed)
                 if _keys_held:
-                    NOTIFY(KEYBOARD_PRESSES_HELD, _keys_held)
-
+                    NOTIFY(KEYBOARD_PRESSES_HELD, *_keys_held)
+                if _keys_released:
+                    NOTIFY(KEYBOARD_RELEASED, *_keys_released)
+                
+                #Reload list of gamepads (in case one was plugged in)
+                if timer['RefreshGamepads'] and not i % timer['RefreshGamepads']:
+                    gamepad_list = Gamepad.list_gamepads()
+                
+                #Gamepad tracking (WIP)
+                for gamepad in gamepad_list:
+                    with gamepad as gamepad_input:
+                        button_presses = gamepad_input.get_button()
+                        axis_updates = gamepad_input.get_axis()
+                    
                 recalculate_mouse = False
                 
                 #Check if resolution has changed
@@ -363,7 +378,6 @@ def _start_tracking():
                 #Send request to update programs
                 if timer['UpdatePrograms'] and not i % timer['UpdatePrograms']:
                     frame_data_rp['Update'] = True
-                
                 
                 #Send request to reload program list
                 if timer['ReloadProgramList'] and not i % timer['ReloadProgramList']:
