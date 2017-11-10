@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+#https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py
 """
 A module for getting input from Microsoft XBox 360 controllers via the XInput library on Windows.
 Adapted from Jason R. Coombs' code here:
@@ -7,16 +7,15 @@ http://pydoc.net/Python/jaraco.input/1.0.1/jaraco.input.win32.xinput/
 under the MIT licence terms
 Upgraded to Python 3
 Modified to add deadzones, reduce noise, and support vibration
-Only req is Pyglet 1.2alpha1 or higher:
-pip install --upgrade http://pyglet.googlecode.com/archive/tip.zip 
 """
-
+from __future__ import absolute_import
+from operator import itemgetter, attrgetter
+from itertools import count, starmap
 import ctypes
 import sys
 import time
-from operator import itemgetter, attrgetter
-from itertools import count, starmap
-from pyglet import event
+
+from core.track.xinput import event
 
 # structs according to
 # http://msdn.microsoft.com/en-gb/library/windows/desktop/ee417001%28v=vs.85%29.aspx
@@ -193,7 +192,7 @@ class XInputJoystick(event.EventDispatcher):
         #define BATTERY_LEVEL_LOW               0x01
         #define BATTERY_LEVEL_MEDIUM            0x02
         #define BATTERY_LEVEL_FULL              0x03
-        batt_type = "Unknown" if battery.BatteryType == 0xFF else ["Disconnected", "Wired", "Alkaline","Nimh"][battery.BatteryType]
+        batt_type = "Unknown" if battery.BatteryType == 0xFF else ["Disconnected", "Wired", "Alkaline", "Nimh"][battery.BatteryType]
         level = ["Empty", "Low", "Medium", "Full"][battery.BatteryLevel]
         return batt_type, level
 
