@@ -9,7 +9,7 @@ from core.config import CONFIG, _config_defaults
 from core.export import ExportCSV
 from core.files import load_data, format_name
 from core.maths import round_int
-from core.os import create_folder, remove_file
+from core.os import create_folder, remove_file, join_path
 from core.versions import VERSION
 from core.image.keyboard import DrawKeyboard
 from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
@@ -101,26 +101,46 @@ class ImageName(object):
         self.keyboard_size_mult = str(g_kb['SizeMultiplier'])
         self.keyboard_extended = 'Extended' if g_kb['ExtendedKeyboard'] else 'Compact'
 
-    def generate(self, image_type, reload=False):
-    
-        image_type = image_type.lower()
+    def generate(self, image_type=None, reload=False):
+        """Generate and format a folder/image path."""
+        name = self._generate(image_type=image_type, reload=reload)
+        
+        #Replace invalid characters
+        invalid_chars = ':*?"<>|'
+        for char in invalid_chars:
+            if char in name:
+                name = name.replace(char, '')
+        
+        return format_file_path(name)
+        
+    def _generate(self, image_type=None, reload=False):
+        
+        if image_type is not None:
+            image_type = image_type.lower()
     
         if reload:
             self.reload()
         
+        #Lookup the name in the config file
         lookup = {'clicks': 'GenerateHeatmap',
                   'tracks': 'GenerateTracks',
                   'keyboard': 'GenerateKeyboard',
-                  'csv-tracks': 'NameFormatTracks',
-                  'csv-clicks': 'NameFormatClicks',
-                  'csv-keyboard': 'NameFormatKeyboard'}
+                  'csv-tracks': 'FileNameTracks',
+                  'csv-clicks': 'FileNameClicks',
+                  'csv-keyboard': 'FileNameKeyboard'}
         try:
-            name = CONFIG[lookup[image_type]]['NameFormat']
+            name = CONFIG[lookup[image_type]]['FileName']
+            
+        #CSV follows a different format, so if no match, try CSV
         except KeyError:
             try:
                 name = CONFIG['GenerateCSV'][lookup[image_type]]
             except KeyError:
-                raise ValueError('incorred image type: {}'.format(image_type))
+                if image_type is not None:
+                    raise ValueError('incorred image type: {}'.format(image_type))
+                name = ''
+        
+        name = join_path((CONFIG['Paths']['Images'], name))
         
         #Rename alternative variables
         for k, v in get_items(self.ALTERNATIVES):
@@ -152,6 +172,9 @@ class ImageName(object):
             name = name.replace('[RunningTimeHours]', str(round(ticks / (UPDATES_PER_SECOND * 60 * 60), 2)))
             name = name.replace('[RunningTimeDays]', str(round(ticks / (UPDATES_PER_SECOND * 60 * 60 * 24), 2)))
         
+        if image_type is None:
+            return name
+        
         #Specific options
         if image_type == 'clicks':
             name = name.replace('[Colours]', self.heatmap_colours)
@@ -162,7 +185,7 @@ class ImageName(object):
         elif image_type == 'tracks':
             name = name.replace('[Colours]', self.track_colour)
             
-        elif image_type.lower() == 'keyboard':
+        elif image_type == 'keyboard':
             name = name.replace('[Exponential]', self.keyboard_exponential)
             name = name.replace('[Colours]', self.keyboard_colour)
             name = name.replace('[DataSet]', self.keyboard_set)
@@ -179,18 +202,12 @@ class ImageName(object):
         else:
             raise ValueError('incorred image type: {}'.format(image_type))
                 
-        #Replace invalid characters
-        invalid_chars = ':*?"<>|'
-        for char in invalid_chars:
-            if char in name:
-                name = name.replace(char, '')
-                
         if image_type.startswith('csv'):
             ext = 'csv'
         else:
             ext = CONFIG['GenerateImages']['FileType']
         
-        return '{}.{}'.format(format_file_path(name), ext)
+        return '{}.{}'.format(name, ext)
 
 
 class RenderImage(object):
@@ -226,7 +243,6 @@ class RenderImage(object):
         
     def csv(self):
         
-        #TODO: Option to only return file
         export = ExportCSV(self.profile, self.data)
         
         if CONFIG['GenerateCSV']['_GenerateTracks']:
