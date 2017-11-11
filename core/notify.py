@@ -105,17 +105,28 @@ GAMEPAD_REFRESH = 128
 
 GAMEPAD_AXIS = 129
 
-GAMEPAD_BUTTON = 130
+GAMEPAD_BUTTON_PRESS = 130
 
 GAMEPAD_BUTTON_HELD = 131
 
 GAMEPAD_BUTTON_RELEASED = 132
+
+GAMEPAD_FOUND = 133
+
+GAMEPAD_LOST = 134
 
 
 def get_plural(word, amount):
     return word['single'] if amount == 1 else word['plural']
 
 
+def capitalize(sentence):
+    try:
+        return sentence[0].upper() + sentence[1:]
+    except IndexError:
+        return ''
+    
+    
 class Notify(object):
     
     def __init__(self):
@@ -139,7 +150,7 @@ class Notify(object):
         q2 = self.message_queue[2].append
         
         if message_id == MESSAGE_DEBUG:
-            self.debug.append(args)
+            self._debug.append(args)
             
         elif message_id == MOUSE_UNDETECTED:
             q2(self.string['mouse']['undetected'])
@@ -213,7 +224,7 @@ class Notify(object):
         elif message_id in (KEYBOARD_PRESSES, KEYBOARD_PRESSES_HELD, KEYBOARD_RELEASED):
             keypresses = args
             num_presses = len(keypresses)
-            key = get_plural(self.word['key'], num_presses).capitalize()
+            key = get_plural(self.word['key'], num_presses)
             press = get_plural(self.word['press'], num_presses)
             release = get_plural(self.word['release'], num_presses)
             
@@ -230,24 +241,35 @@ class Notify(object):
             q0(self.string['gamepad']['refresh'])
             
         elif message_id == GAMEPAD_AXIS:
-            q0(self.string['gamepad']['axis'].format(N=args[0], A=args[1], V=args[2]))
+            gamepad_id, axis, value = args
+            q0(self.string['gamepad']['axis'].format(N=gamepad_id, A=axis, V=value))
         
         #Gamepad button presses
-        elif message_id in (GAMEPAD_BUTTON, GAMEPAD_BUTTON_HELD, GAMEPAD_BUTTON_RELEASED):
-            gamepad_number, buttons = args
-            num_buttons = len(buttons)
-            button = get_plural(self.word['button'], num_buttons).capitalize()
+        elif message_id in (GAMEPAD_BUTTON_PRESS, GAMEPAD_BUTTON_HELD, GAMEPAD_BUTTON_RELEASED):
+            gamepad_number, buttons_ids = args
+            num_buttons = len(buttons_ids)
+            button = get_plural(self.word['button'], num_buttons)
             press = get_plural(self.word['press'], num_buttons)
             release = get_plural(self.word['release'], num_buttons)
             
-            if message_id == GAMEPAD_BUTTON:
-                q1(self.string['gamepad']['button']['press'].format(N=gamepad_number, B=button, V=', '.join(*buttons), P=press))
+            buttons = [str(id) for id in buttons_ids] #TODO: set button names
+            
+            if message_id == GAMEPAD_BUTTON_PRESS:
+                q1(self.string['gamepad']['button']['press'].format(N=gamepad_number, B=button, V=', '.join(buttons), P=press))
             
             elif message_id == GAMEPAD_BUTTON_HELD:
-                q1(self.string['gamepad']['button']['held'].format(N=gamepad_number, B=button, V=', '.join(*buttons), P=press))
+                q1(self.string['gamepad']['button']['held'].format(N=gamepad_number, B=button, V=', '.join(buttons), P=press))
             
             elif message_id == GAMEPAD_BUTTON_RELEASED:
-                q0(self.string['gamepad']['button']['held'].format(N=gamepad_number, B=button, V=', '.join(*buttons), R=release))
+                q0(self.string['gamepad']['button']['release'].format(N=gamepad_number, B=button, V=', '.join(buttons), R=release))
+        
+        elif message_id == GAMEPAD_FOUND:
+            gamepad_number = args[0]
+            q2(self.string['gamepad']['found'].format(N=gamepad_number))
+            
+        elif message_id == GAMEPAD_LOST:
+            gamepad_number = args[0]
+            q2(self.string['gamepad']['lost'].format(N=gamepad_number))
             
         elif message_id == APPLICATION_STARTED:
             q2(self.string['application']['start'].format(A=args[0][0]))
@@ -348,9 +370,9 @@ class Notify(object):
 
     def get_output(self):
         allowed_levels = range(CONFIG['Advanced']['MessageLevel'], 3)
-        output = [u' | '.join(self.message_queue[i]) for i in allowed_levels][::-1]
+        output = [capitalize(u' | '.join(self.message_queue[i])) for i in allowed_levels][::-1]
         message = u' | '.join(i for i in output if i)
-        for msg in self.debug:
+        for msg in self._debug:
             print(u', '.join(map(str, msg)))
                 
         self.reset()
@@ -363,7 +385,7 @@ class Notify(object):
 
     def reset(self):
         self.message_queue = {0: [], 1: [], 2: []}
-        self.debug = []
+        self._debug = []
 
     
 NOTIFY = Notify()
