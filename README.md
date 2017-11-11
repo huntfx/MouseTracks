@@ -7,7 +7,7 @@ This was made with the intention of recording mouse movements over multiple reso
 If you have multiple monitors, they are merged into the same file. By default, the tracking area is limited to the application window, but with no application detected, it will fall back to tracking all monitors.
 
 <b>Current Features:</b>
- - Track position, clicks and key presses over multiple resolutions and monitors
+ - Track position, clicks, key presses and gamepad usage over multiple resolutions and monitors
  - Generate colourful mouse tracks and a heatmap of clicks and key presses (for everything or just the latest session)
  - Fade old mouse tracks to keep recent tracks more visible
  - Record and adjust resolution based on the currently focused window
@@ -68,10 +68,12 @@ If you have multiple monitors, they are merged into the same file. By default, t
 <img src="http://i.imgur.com/Y5tttVN.jpg">
 
 <b>Requirements:</b>
- - [Numpy](https://pypi.python.org/pypi/numpy) (required to generate images)
+ - [Numpy](https://pypi.python.org/pypi/numpy)
  - [Pillow](https://pypi.python.org/pypi/Pillow) (required to generate images)
  - ~~[scipy](https://pypi.python.org/pypi/scipy) (required to generate images)~~ - included in code
  - [psutil](https://pypi.python.org/pypi/psutil) (required for application focus detection)
- - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - more efficient Windows tracking)
+ - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - more robust Windows tracking)
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8) (required for Mac tracking)
  - ~~[pyxhook](https://github.com/JeffHoogland/pyxhook/blob/master/pyxhook.py) (required for Linux tracking)~~ - included in code
+ - ~~[pyglet](https://pypi.python.org/pypi/pyglet/1.3.0)~~ - included in code
+ - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py)~~ - included in code
