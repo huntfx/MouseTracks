@@ -261,10 +261,12 @@ _config_defaults = {
         'CheckRunningApplications': (60, int, 0, 'How many ticks to wait between checking if something is running.'),
         'ReloadApplicationList': (18000, int, 0, 'How many ticks to wait before reloading {}.'.format(APP_LIST_FILE)),
         'ShowQueuedCommands': (1200, int, 'How many ticks to wait before showing the number of commands waiting to be processed.'),
-        'RepeatKeyPress': (0.0, float, 0, 'Record a new key press after this many seconds'
-                                          ' if a key is being held down (set to 0.0 to disable).'),
-        'RepeatClicks': (0.18, float, 0, 'Record a new click after this many seconds'
-                                         ' if a mouse button is being held down (set to 0.0 to disable).'),
+        'RepeatKeyPress': (0, int, 0, 'How many ticks to wait before recording a new key press'
+                                          ' if a key is being held down (set to 0 to disable).'),
+        'RepeatClicks': (14, int, 0, 'How many ticks to wait before recording a click'
+                                         ' if a mouse button is being held down (set to 0 to disable).'),
+        'RepeatButtonPress': (0, int, 0, 'How many ticks to wait before recording a new gamepad button press'
+                                         ' if a button is being held down (set to 0 to disable).'),
         'KeyboardKeySize': (65.0, float, 0),
         'KeyboardKeyCornerRadius': (3.0, float, 0),
         'KeyboardKeyPadding': (8.0, float, 0),
