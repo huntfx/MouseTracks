@@ -6,15 +6,15 @@ import ctypes
 from core.track.xinput.xinput import XInputJoystick, get_bit_values, XINPUT_GAMEPAD
 
 
-class GamepadControls(XInputJoystick):
+class Gamepad(XInputJoystick):
     """Wrapper for the XInputJoystick class to avoid using events."""
     
     def __init__(self, *args, **kwargs):
         try:
             device_number = args[0].device_number
         except (IndexError, AttributeError):
-            raise ValueError('use the result from GamepadControls.list_gamepads() to initialize the class')
-        super(GamepadControls, self).__init__(device_number, *args[1:], **kwargs)
+            raise ValueError('use Gamepad.list_gamepads() to initialize the class objects')
+        super(Gamepad, self).__init__(device_number, *args[1:], **kwargs)
 
     @classmethod
     def list_gamepads(self):
@@ -24,13 +24,14 @@ class GamepadControls(XInputJoystick):
     def __enter__(self):
         """Get the current state."""
         self._state = self.get_state()
+        self.connected = self._state is not None
         return self
 
     def __exit__(self, *args):
         """Record the last state."""
         self._last_state = self._state
     
-    def get_axis(self, dead_zone=1024):
+    def get_axis(self, dead_zone=1024, printable=None):
         """Return a dictionary of any axis based inputs."""
         result = {}
         axis_fields = dict(XINPUT_GAMEPAD._fields_)
@@ -43,16 +44,20 @@ class GamepadControls(XInputJoystick):
             new_val = int(self.translate(new_val, data_size) * 65535)
 
             #Detect when to send update
-            movement = old_val != new_val and abs(old_val - new_val) > 1
-            is_trigger = axis.endswith('trigger')
-            in_dead_zone = abs(new_val) < dead_zone
-            if movement and (not in_dead_zone or new_val == 0):
-                result[axis] = new_val
+            if printable is not None:
+                movement = old_val != new_val and abs(old_val - new_val) > 1
+                is_trigger = axis.endswith('trigger')
+                in_dead_zone = abs(new_val) < dead_zone
+                if movement and (not in_dead_zone or new_val == 0):
+                    printable[axis] = new_val
+            result[axis] = new_val
             
         return result
         
     def get_button(self):
         """Return a dictionary of any button inputs."""
+        if self._state is None:
+            return None
         changed = self._state.gamepad.buttons ^ self._last_state.gamepad.buttons
         changed = get_bit_values(changed, 16)
         buttons_state = get_bit_values(self._state.gamepad.buttons, 16)
@@ -71,7 +76,7 @@ if __name__ == '__main__':
     import time
 
     #Example usage
-    gamepads = GamepadControls.list_gamepads()
+    gamepads = Gamepad.list_gamepads()
     while True:
         for gamepad in gamepads:
             with gamepad as gamepad_input:
