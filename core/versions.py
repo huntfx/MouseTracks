@@ -28,7 +28,8 @@ VERSION_HISTORY = [
     '2.0.10',
     '2.0.10b',
     '2.0.10c',
-    '2.0.10d'
+    '2.0.10d',
+    '2.0.11'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -122,6 +123,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.10b: Reset double click maps for code update
     2.0.10c: Track time between key presses and mistakes
     2.0.10d: Record more accurate intervals for each key
+    2.0.11: Gamepad tracking
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -300,12 +302,13 @@ def upgrade_version(data, update_metadata=True):
         data['Keys']['All']['Intervals'] = {'Total': data['Keys']['All']['Intervals'], 'Individual': {}}
         data['Keys']['Session']['Intervals'] = {'Total': data['Keys']['Session']['Intervals'], 'Individual': {}}
 
+    if current_version_id < _get_id('2.0.11'):
+        data['Gamepad'] = {'All': {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}}
+    
     if update_metadata:     
     
         #Only count as new session if updated or last save was over an hour ago
-        if (data.get('Version', '-1') != VERSION 
-                or not data['SessionStarts'] 
-                or current_time - 3600 > data['Time']['Modified']):
+        if (data.get('Version', '-1') != VERSION or not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']):
             data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
             data['Ticks']['Session']['Total'] = data['Ticks']['Total']
             data['Keys']['Session']['Pressed'] = {}
@@ -314,6 +317,7 @@ def upgrade_version(data, update_metadata=True):
                                                 'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
             data['Keys']['Session']['Intervals'] = {'Total': {}, 'Individual': {}}
             data['Keys']['Session']['Mistakes'] = {}
+            data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
