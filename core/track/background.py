@@ -92,6 +92,7 @@ def running_processes(q_recv, q_send, background_send):
         return
 
 def _save_wrapper(q_send, program_name, data, new_program=False):
+    """Handle saving the data files from the thread."""
     
     if program_name is not None and program_name[0] == DISABLE_TRACKING:
         return
@@ -359,6 +360,7 @@ def background_process(q_recv, q_send):
                     _record_keypress(store['Data']['Keys'], 'Pressed', key)
                     
                     #Record mistakes
+                    #Only records the key if a single backspace is used
                     if key == 'BACK':
                         last = store['KeyTrack']['LastKey']
                         if last is not None and last != 'BACK':
@@ -384,6 +386,64 @@ def background_process(q_recv, q_send):
                 
                 for key in received_data['KeyHeld']:
                     _record_keypress(store['Data']['Keys'], 'Held', key)
+            
+            #Record button presses
+            try:
+                pressed_buttons = received_data['GamepadButtonPress']
+            except KeyError:
+                pass
+            else:
+                store['ActivitySinceLastSave'] = True
+                for button_id in pressed_buttons:
+                    try:
+                        store['Data']['Gamepad']['All']['Buttons']['Pressed'][button_id] += 1
+                    except KeyError:
+                        store['Data']['Gamepad']['All']['Buttons']['Pressed'][button_id] = 1
+                    try:
+                        store['Data']['Gamepad']['Session']['Buttons']['Pressed'][button_id] += 1
+                    except KeyError:
+                        store['Data']['Gamepad']['Session']['Buttons']['Pressed'][button_id] = 1
+            
+            #Record how long buttons are held
+            try:
+               held_buttons = received_data['GamepadButtonHeld']
+            except KeyError:
+                pass
+            else:
+                store['ActivitySinceLastSave'] = True
+                for button_id in held_buttons:
+                    try:
+                        store['Data']['Gamepad']['All']['Buttons']['Held'][button_id] += 1
+                    except KeyError:
+                        store['Data']['Gamepad']['All']['Buttons']['Held'][button_id] = 1
+                    try:
+                        store['Data']['Gamepad']['Session']['Buttons']['Held'][button_id] += 1
+                    except KeyError:
+                        store['Data']['Gamepad']['Session']['Buttons']['Held'][button_id] = 1
+                        
+            #Axis updates
+            try:
+                axis_updates = received_data['GamepadAxis']
+            except KeyError:
+                pass
+            else:
+                for controller_axis in axis_updates:
+                    for axis, amount in get_items(controller_axis):
+                        try:
+                            store['Data']['Gamepad']['All']['Axis'][axis][amount] += 1
+                        except KeyError:
+                            try:
+                                store['Data']['Gamepad']['All']['Axis'][axis][amount] = 1
+                            except KeyError:
+                                store['Data']['Gamepad']['All']['Axis'][axis] = {amount: 1}
+                        try:
+                            store['Data']['Gamepad']['Session']['Axis'][axis][amount] += 1
+                        except KeyError:
+                            try:
+                                store['Data']['Gamepad']['Session']['Axis'][axis][amount] = 1
+                            except KeyError:
+                                store['Data']['Gamepad']['Session']['Axis'][axis] = {amount: 1}
+                                
             
             #Calculate and track mouse movement
             if 'MouseMove' in received_data:
