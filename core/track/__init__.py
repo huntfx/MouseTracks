@@ -1,4 +1,5 @@
 from __future__ import division, absolute_import
+from collections import defaultdict
 from multiprocessing import Process, Queue
 from threading import Thread
 import time
@@ -86,12 +87,13 @@ def _start_tracking():
                            'LastClick': None,
                            'LastClickTime': 0,
                            'OffScreen': False,
-                           'DoubleClickTime': get_double_click_time() / 1000},
+                           'DoubleClickTime': get_double_click_time() / 1000 * UPDATES_PER_SECOND},
                  'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
                  'LastActivity': 0,
                  'LastSent': 0,
                  'Save': {'Finished': True,
-                          'Next': timer['Save']}
+                          'Next': timer['Save']},
+                 'Gamepad': {'ButtonsPressed': {}}
                 }
         mouse_pos = store['Mouse']['Position']
         
@@ -108,7 +110,7 @@ def _start_tracking():
         _running_programs.daemon = True
         _running_programs.start()
         
-        i = 0
+        ticks = 0
         NOTIFY(START_MAIN)
         _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         while True:
@@ -117,14 +119,14 @@ def _start_tracking():
                 #Send data to thread
                 try:
                     if frame_data or frame_data_rp:
-                        last_sent = i - store['LastSent']
+                        last_sent = ticks - store['LastSent']
                         if frame_data:
                             if last_sent:
                                 frame_data['Ticks'] = last_sent
                             q_bg_send.put(frame_data)
                         if frame_data_rp:
                             q_rp_send.put(frame_data_rp)
-                        store['LastSent'] = i
+                        store['LastSent'] = ticks
                 except NameError:
                     pass
                 
@@ -155,7 +157,7 @@ def _start_tracking():
                         pass
                     else:
                         store['Save']['Finished'] = True
-                        store['Save']['Next'] = i + timer['Save']
+                        store['Save']['Next'] = ticks + timer['Save']
                     
                 if received_data:
                     notify_extra = u' | '.join(received_data)
@@ -206,7 +208,7 @@ def _start_tracking():
                     if not store['Mouse']['OffScreen']:
                         frame_data['MouseMove'] = (mouse_pos['Previous'], mouse_pos['Current'])
                         NOTIFY(MOUSE_POSITION, mouse_pos['Current'])
-                        store['LastActivity'] = i
+                        store['LastActivity'] = ticks
 
                 #Mouse clicks
                 click_repeat = CONFIG['Advanced']['RepeatClicks']
@@ -216,14 +218,14 @@ def _start_tracking():
                     mb_data = (mouse_button, mouse_pos['Current'])
                     
                     if clicked:
-                        store['LastActivity'] = i
+                        store['LastActivity'] = ticks
                         
                         #First click
                         if not mb_clicked:           
                             
                             #Double click     
                             double_click = False
-                            if (store['Mouse']['LastClickTime'] > limiter.time - store['Mouse']['DoubleClickTime']
+                            if (store['Mouse']['LastClickTime'] > ticks - store['Mouse']['DoubleClickTime']
                                     and store['Mouse']['LastClick'] == mb_data):
                                 store['Mouse']['LastClickTime'] = 0
                                 store['Mouse']['LastClick'] = None
@@ -233,10 +235,10 @@ def _start_tracking():
                                 except KeyError:
                                     frame_data['DoubleClick'] = [mb_data]
                             else:
-                                store['Mouse']['LastClickTime'] = limiter.time
+                                store['Mouse']['LastClickTime'] = ticks
                             
                             #Single click
-                            store['Mouse']['Clicked'][mouse_button] = limiter.time
+                            store['Mouse']['Clicked'][mouse_button] = ticks
                             
                             if not store['Mouse']['OffScreen']:
                                 if double_click:
@@ -255,8 +257,8 @@ def _start_tracking():
                                     NOTIFY(MOUSE_CLICKED, mouse_button)
                                 
                         #Held clicks
-                        elif click_repeat and mb_clicked < limiter.time - click_repeat:
-                            store['Mouse']['Clicked'][mouse_button] = limiter.time
+                        elif click_repeat and mb_clicked < ticks - click_repeat:
+                            store['Mouse']['Clicked'][mouse_button] = ticks
                             if not store['Mouse']['OffScreen']:
                                 NOTIFY(MOUSE_CLICKED_HELD, mouse_button, mouse_pos['Current'])
                                 try:
@@ -272,7 +274,7 @@ def _start_tracking():
                     elif mb_clicked:
                         NOTIFY(MOUSE_UNCLICKED)
                         del store['Mouse']['Clicked'][mouse_button]
-                        store['LastActivity'] = i
+                        store['LastActivity'] = ticks
      
                 #Key presses
                 keys_pressed = []
@@ -288,16 +290,16 @@ def _start_tracking():
                         
                         #If key is currently being held down
                         if key_status[k]:
-                            if key_press_repeat and key_status[k] < limiter.time - key_press_repeat:
+                            if key_press_repeat and key_status[k] < ticks - key_press_repeat:
                                 keys_pressed.append(k)
                                 _keys_held.append(k)
-                                key_status[k] = limiter.time
+                                key_status[k] = ticks
 
                         #If key has been pressed
                         else:
                             keys_pressed.append(k)
                             _keys_pressed.append(k)
-                            key_status[k] = limiter.time
+                            key_status[k] = ticks
                             notify_key_press = list(keys_pressed)
 
                     #If key has been released
@@ -310,7 +312,7 @@ def _start_tracking():
                     
                 if keys_held:
                     frame_data['KeyHeld'] = keys_held
-                    store['LastActivity'] = i
+                    store['LastActivity'] = ticks
                     
                 if _keys_pressed:
                     NOTIFY(KEYBOARD_PRESSES, *_keys_pressed)
@@ -322,7 +324,7 @@ def _start_tracking():
                     NOTIFY(KEYBOARD_RELEASED, *_keys_released)
                 
                 #Reload list of gamepads (in case one was plugged in)
-                if timer['RefreshGamepads'] and not i % timer['RefreshGamepads']:
+                if timer['RefreshGamepads'] and not ticks % timer['RefreshGamepads']:
                     try:
                         old_gamepads = set(gamepads)
                     except UnboundLocalError:
@@ -332,31 +334,105 @@ def _start_tracking():
                     for i, id in enumerate(difference):
                         NOTIFY(GAMEPAD_FOUND, id)
                 
-                #Gamepad tracking (WIP)
+                #Gamepad tracking (multiple controllers not tested yet)
+                button_repeat = CONFIG['Advanced']['RepeatButtonPress']
                 invalid_ids = []
+                _buttons_pressed = {}
+                _buttons_held = {}
+                _buttons_released = {}
+                
                 for id, gamepad in get_items(gamepads):
+                    
+                    #Repeat presses
+                    try:
+                        if button_repeat:
+                            for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
+                                if last_update < ticks - button_repeat:
+                                    try:
+                                        _buttons_held[id].append(button_id)
+                                    except KeyError:
+                                        _buttons_held[id] = [button_id]
+                                    store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
+                                    try:
+                                        frame_data['GamepadButtonPress'].append(button_id)
+                                    except KeyError:
+                                        frame_data['GamepadButtonPress'] = [button_id]
+
+                    except KeyError:
+                        store['Gamepad']['ButtonsPressed'][id] = {}
+                    
                     with gamepad as gamepad_input:
                     
-                        #Break the connection to stop and error
+                        #Break the connection if controller can't be found
                         if not gamepad.connected:
                             NOTIFY(GAMEPAD_LOST, id)
                             invalid_ids.append(id)
                             continue
                         
-                        button_presses = gamepad_input.get_button()
+                        #Axis events (thumbsticks, triggers, etc)
                         axis_updates = gamepad_input.get_axis()
                         if axis_updates:
-                            print axis_updates
+                            store['LastActivity'] = ticks
+                            try:
+                                frame_data['GamepadAxis'].append(axis_updates)
+                            except KeyError:
+                                frame_data['GamepadAxis'] = [axis_updates]
+                        
+                        #Button events
+                        button_presses = gamepad_input.get_button()
                         if button_presses:
-                            print button_presses
-                            
+                            store['LastActivity'] = ticks
+                            for button_id, state in get_items(button_presses):
+                                
+                                #Button pressed
+                                if state:
+                                    try:
+                                        frame_data['GamepadButtonPress'].append(button_id)
+                                    except KeyError:
+                                        frame_data['GamepadButtonPress'] = [button_id]
+                                    try:
+                                        store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
+                                    except KeyError:
+                                        store['Gamepad']['ButtonsPressed'][id] = {button_id: ticks}
+                                    try:
+                                        _buttons_pressed[id].append(button_id)
+                                    except KeyError:
+                                        _buttons_pressed[id] = [button_id]
+                                
+                                #Button has been released
+                                elif button_id in store['Gamepad']['ButtonsPressed'][id]:
+                                    held_length = ticks - store['Gamepad']['ButtonsPressed'][id][button_id]
+                                    del store['Gamepad']['ButtonsPressed'][id][button_id]
+                                    try:
+                                        _buttons_released[id].append(button_id)
+                                    except KeyError:
+                                        _buttons_released[id] = [button_id]
+                
+                #Send held buttons each frame
+                for id, held_buttons in get_items(store['Gamepad']['ButtonsPressed']):
+                    if held_buttons:
+                        try:
+                            frame_data['GamepadButtonHeld'].add(held_buttons)
+                        except KeyError:
+                            frame_data['GamepadButtonHeld'] = set(held_buttons)
+                
+                #Cleanup disconnected controllers
                 for id in invalid_ids:
                     del gamepads[id]
+                    del store['Gamepad']['ButtonsPressed'][id]
+                    
+                if _buttons_pressed:
+                    for id, buttons in get_items(_buttons_pressed):
+                        NOTIFY(GAMEPAD_BUTTON_PRESS, id, buttons)
+                    
+                if _buttons_released:
+                    for id, buttons in get_items(_buttons_released):
+                        NOTIFY(GAMEPAD_BUTTON_RELEASED, id, buttons)
                     
                 recalculate_mouse = False
                 
                 #Check if resolution has changed
-                if timer['UpdateScreen'] and not i % timer['UpdateScreen']:
+                if timer['UpdateScreen'] and not ticks % timer['UpdateScreen']:
                 
                     if MULTI_MONITOR:
                         try:
@@ -402,23 +478,23 @@ def _start_tracking():
                             store['Resolution']['Previous'] = store['Resolution']['Current']
 
                 #Send request to update programs
-                if timer['UpdatePrograms'] and not i % timer['UpdatePrograms']:
+                if timer['UpdatePrograms'] and not ticks % timer['UpdatePrograms']:
                     frame_data_rp['Update'] = True
                 
                 #Send request to reload program list
-                if timer['ReloadProgramList'] and not i % timer['ReloadProgramList']:
+                if timer['ReloadProgramList'] and not ticks % timer['ReloadProgramList']:
                     frame_data_rp['Reload'] = True
 
                 #Update user about the queue size
-                if (timer['UpdateQueuedCommands'] and not i % timer['UpdateQueuedCommands'] 
-                        and timer['Save'] and store['LastActivity'] > i - timer['Save']):
+                if (timer['UpdateQueuedCommands'] and not ticks % timer['UpdateQueuedCommands'] 
+                        and timer['Save'] and store['LastActivity'] > ticks - timer['Save']):
                     try:
                         NOTIFY(QUEUE_SIZE, q_bg_send.qsize())
                     except NotImplementedError:
                         pass
                 
                 #Send save request
-                if store['Save']['Finished'] and i and not i % store['Save']['Next']:
+                if store['Save']['Finished'] and ticks and not ticks % store['Save']['Next']:
                     frame_data['Save'] = True
                     store['Save']['Finished'] = False
 
@@ -426,7 +502,7 @@ def _start_tracking():
                     mouse_pos['Previous'] = None
                 else:
                     mouse_pos['Previous'] = mouse_pos['Current']
-                i += 1
+                ticks += 1
             
     except Exception as e:
         if _background_process is not None:
