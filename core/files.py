@@ -71,7 +71,7 @@ def prepare_file(data, legacy=False):
         return zlib.compress(pickle.dumps(data, PICKLE_PROTOCOL))
     
     #Separate the maps from the main dictionary
-    numpy_maps = IterateMaps(data['Maps']).separate()
+    numpy_maps = IterateMaps(data['Resolution']).separate()
     
     #Write the maps to a zip file in memory
     io = BytesIO()
@@ -82,7 +82,7 @@ def prepare_file(data, legacy=False):
             f.write(numpy.save(m), i)
     
     #Undo the modify
-    IterateMaps(data['Maps']).join(numpy_maps)
+    IterateMaps(data['Resolution']).join(numpy_maps)
     
     return io.getvalue()
     
@@ -94,12 +94,17 @@ def decode_file(f, legacy=False):
         
     data = pickle.loads(f.read('_'))
     numpy_maps = [numpy.load(f.read(i)) for i in range(int(f.read('n')))]
-    IterateMaps(data['Maps']).join(numpy_maps)
+    try:
+        IterateMaps(data['Maps']).join(numpy_maps, _legacy=True)
+    except KeyError:
+        IterateMaps(data['Resolution']).join(numpy_maps, _legacy=False)
     return data
     
 
 def load_data(profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
-    """Read a profile (or create new one) and run it through the update."""
+    """Read a profile (or create new one) and run it through the update.
+    Use LoadData class instead of this.
+    """
     paths = _get_paths(profile_name)
     new_file = False
     
@@ -137,8 +142,37 @@ def load_data(profile_name=None, _update_version=True, _metadata_only=False, _cr
             return None
         
     return upgrade_version(loaded_data, update_metadata=_update_version)
-    
 
+    
+class LoadData(dict):
+    """Wrapper for the load_data function to allow for custom functions."""
+    def __init__(self, profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
+        data = load_data(profile_name=profile_name, _update_version=_update_version, 
+                         _metadata_only=_metadata_only, _create_new=_create_new)
+        super(LoadData, self).__init__(data)
+        
+        self.version = self['Version']
+    
+    def get_tracks(self, session=False, resolution=None):
+        """Return dictionary containing all the tracks."""
+        start_time = self['Ticks']['Session']['Tracks'] if session else 0
+        result = {}
+        for resolution, maps in get_items(self['Resolution']):
+            array = numpy.max(maps['Tracks'] - start_time, 0)
+            if numpy.count(array):
+                result[resolution] = array
+        return result
+    
+    def get_clicks(self):
+        raise NotImplementedError
+        
+    def get_keys(self):
+        raise NotImplementedError
+        
+    def get_buttons(self):
+        raise NotImplementedError
+        
+        
 def save_data(profile_name, data, _compress=True):
     """Handle the safe saving of profiles.
     
