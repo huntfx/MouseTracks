@@ -29,7 +29,8 @@ VERSION_HISTORY = [
     '2.0.10b',
     '2.0.10c',
     '2.0.10d',
-    '2.0.11'
+    '2.0.11',
+    '2.0.12'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -39,51 +40,49 @@ class IterateMaps(object):
     def __init__(self, maps):
         self.maps = maps
         
-    def _iterate(self, maps, command, extra=None):            
-        for key in maps.keys():
+    def _iterate(self, maps, command, extra=None, _legacy=False):            
+        for key, value in get_items(maps):
             
-            if isinstance(key, (str, unicode)):
-                self._iterate(maps[key], command, extra)
+            #Old format where resolution was separate for each map
+            if _legacy and isinstance(key, (str, unicode)):
+                self._iterate(value, command, extra, _legacy=_legacy)
+            
+            #New format when each resolution contains all the maps
+            elif not _legacy and isinstance(value, dict):
+                self._iterate(value, command, extra, _legacy=_legacy)
 
+            #Separate the numpy arrays from the data
             elif command == 'separate':
                 array = maps[key]
                 maps[key] = len(self._map_list)
                 self._map_list.append(array)
-                
+            
+            #Rejoin the numpy arrays with the data
             elif command == 'join':
-                index = maps[key]
+                index = value
                 maps[key] = extra[index]
-                
-            elif command == 'convert':
-                array = maps[key]
+            
+            #Convert dicts to numpy arrays (only used on old files)
+            elif command == 'convert' and _legacy:
                 width, height = key
                 numpy_array = numpy.array((width, height), create=True, dtype='int64')
                 for x, y in array:
                     numpy_array[y][x] = array[(x, y)]
                 maps[key] = numpy_array
-            
-            elif command == 'trim':
-                if key == (0, 0):
-                    del maps[key]
-                    
-                #Delete any empty maps
-                #Disabled for now as groups currently need each resolution to exist
-                #if not numpy.count(maps[key]):
-                #   del maps[key]
                 
     def separate(self):
+        """Separate the numpy maps from the main data, and replace with an integer."""
         self._map_list = []
         self._iterate(self.maps, 'separate')
         return self._map_list
 
-    def join(self, numpy_maps):
-        self._iterate(self.maps, 'join', numpy_maps)
+    def join(self, numpy_maps, _legacy=False):
+        """Merge with the numpy maps again."""
+        self._iterate(self.maps, 'join', numpy_maps, _legacy=_legacy)
     
     def convert(self):
-        self._iterate(self.maps, 'convert')
-
-    def trim(self):
-        self._iterate(self.maps, 'trim')
+        """Convert the old map dictionaries to numpy arrays."""
+        self._iterate(self.maps, 'convert', _legacy=True)
         
         
 def _get_id(id):
@@ -124,6 +123,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.10c: Track time between key presses and mistakes
     2.0.10d: Record more accurate intervals for each key
     2.0.11: Gamepad tracking
+    2.0.12: Change resolutions to major keys
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -305,6 +305,47 @@ def upgrade_version(data, update_metadata=True):
     if current_version_id < _get_id('2.0.11'):
         data['Gamepad'] = {'All': {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}}
     
+    if current_version_id < _get_id('2.0.12'):
+        data['Resolution'] = {}
+        resolutions = data['Maps']['Tracks'].keys()
+        for resolution in resolutions:
+            data['Resolution'][resolution] = {}
+            data['Resolution'][resolution]['Tracks'] = data['Maps']['Tracks'].pop(resolution)
+            data['Resolution'][resolution]['Clicks'] = {}
+            try:
+                click_s_l = data['Maps']['Click']['Single']['Left'].pop(resolution)
+            except KeyError:
+                click_s_l = numpy.array(resolution, create=True)
+            try:
+                click_s_m = data['Maps']['Click']['Single']['Middle'].pop(resolution)
+            except KeyError:
+                click_s_m = numpy.array(resolution, create=True)
+            try:
+                click_s_r = data['Maps']['Click']['Single']['Right'].pop(resolution)
+            except KeyError:
+                click_s_r = numpy.array(resolution, create=True)
+            try:
+                click_d_l = data['Maps']['Click']['Double']['Left'].pop(resolution)
+            except KeyError:
+                click_d_l = numpy.array(resolution, create=True)
+            try:
+                click_d_m = data['Maps']['Click']['Double']['Middle'].pop(resolution)
+            except KeyError:
+                click_d_m = numpy.array(resolution, create=True)
+            try:
+                click_d_r = data['Maps']['Click']['Double']['Right'].pop(resolution)
+            except KeyError:
+                click_d_r = numpy.array(resolution, create=True)
+            clicks = {'Single': {'Left': click_s_l,
+                                 'Middle': click_s_m,
+                                 'Right': click_s_r},
+                      'Double': {'Left': click_d_l,
+                                 'Middle': click_d_m,
+                                 'Right': click_d_r}}
+            data['Resolution'][resolution]['Clicks']['All'] = clicks
+            
+        del data['Maps']
+    
     if update_metadata:     
     
         #Only count as new session if updated or last save was over an hour ago
@@ -313,16 +354,30 @@ def upgrade_version(data, update_metadata=True):
             data['Ticks']['Session']['Total'] = data['Ticks']['Total']
             data['Keys']['Session']['Pressed'] = {}
             data['Keys']['Session']['Held'] = {}
-            data['Maps']['Session']['Click'] = {'Single': {'Left': {}, 'Middle': {}, 'Right': {}}, 
-                                                'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
             data['Keys']['Session']['Intervals'] = {'Total': {}, 'Individual': {}}
             data['Keys']['Session']['Mistakes'] = {}
+            
+            #Empty session arrays
+            for resolution, values in get_items(data['Resolution']):
+                if 'Session' not in values['Clicks']:
+                    values['Clicks']['Session'] = {'Single': {'Left': numpy.array(resolution, create=True),
+                                                              'Middle': numpy.array(resolution, create=True),
+                                                              'Right': numpy.array(resolution, create=True)},
+                                                   'Double': {'Left': numpy.array(resolution, create=True),
+                                                              'Middle': numpy.array(resolution, create=True),
+                                                              'Right': numpy.array(resolution, create=True)}}
+                else:
+                    values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
+                    values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
+                    values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
+                    values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
+                    values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
+                    values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
+            
             data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
             
         data['Version'] = VERSION
-        
-    IterateMaps(data['Maps']).trim()
         
     return data
