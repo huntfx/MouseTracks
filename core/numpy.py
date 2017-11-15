@@ -59,13 +59,19 @@ def sum(array):
     return numpy.sum(array)
 
     
-def min(array):
-    return numpy.amin(array)
+def min(array, value=None):
+    if value is None:
+        return numpy.amin(array)
+    array[array > value] = value
+    return array
     
     
-def max(array):
-    return numpy.amax(array)
-
+def max(array, value=None):
+    if value is None:
+        return numpy.amax(array)
+    array[array < value] = value
+    return array
+    
         
 def power(array, power, dtype=None):
     return numpy.power(array, power, dtype=_get_dtype(dtype))
@@ -162,3 +168,7 @@ def load(saved_array):
     f.write(saved_array)
     f.seek(0)
     return numpy.load(f)
+    
+
+def fill(array, value):
+    return array.fill(value)
