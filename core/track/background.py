@@ -6,7 +6,7 @@ from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
 from core.constants import MAX_INT, DISABLE_TRACKING
-from core.files import load_data, save_data, prepare_file
+from core.files import LoadData, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
@@ -141,47 +141,30 @@ def monitor_offset(coordinate, monitor_limits):
             return ((x2 - x1, y2 - y1), (x1, y1))
             
             
-def _check_resolution(maps, resolution):
-    """Make sure resolution exists as a key for each map."""
+def _check_resolution(data, resolution):
+    """Make sure resolution exists in data."""
     if resolution is None:
         return
     if not isinstance(resolution, tuple):
         raise ValueError('incorrect resolution: {}'.format(resolution))
-    
-    all_maps = [
-        maps['Tracks'],
-        maps['Click']['Single']['Left'],
-        maps['Click']['Single']['Middle'],
-        maps['Click']['Single']['Right'],
-        maps['Click']['Double']['Left'],
-        maps['Click']['Double']['Middle'],
-        maps['Click']['Double']['Right'],
-        maps['Session']['Click']['Single']['Left'],
-        maps['Session']['Click']['Single']['Middle'],
-        maps['Session']['Click']['Single']['Right'],
-        maps['Session']['Click']['Double']['Left'],
-        maps['Session']['Click']['Double']['Middle'],
-        maps['Session']['Click']['Double']['Right']
-    ]
-    for map_resolutions in all_maps:
-        if resolution not in map_resolutions:
-            map_resolutions[resolution] = numpy.array(resolution, create=True)
-
+        
+    if resolution not in data['Resolution']:
+        data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True), 'Clicks': {}}
+        clicks = data['Resolution'][resolution]['Clicks']
+        clicks['All'] = {'Single': {'Left': numpy.array(resolution, create=True),
+                                    'Middle': numpy.array(resolution, create=True),
+                                    'Right': numpy.array(resolution, create=True)},
+                         'Double': {'Left': numpy.array(resolution, create=True),
+                                    'Middle': numpy.array(resolution, create=True),
+                                    'Right': numpy.array(resolution, create=True)}}
+        clicks['Session'] = {'Single': {'Left': numpy.array(resolution, create=True),
+                                        'Middle': numpy.array(resolution, create=True),
+                                        'Right': numpy.array(resolution, create=True)},
+                             'Double': {'Left': numpy.array(resolution, create=True),
+                                        'Middle': numpy.array(resolution, create=True),
+                                        'Right': numpy.array(resolution, create=True)}}
 
 def get_monitor_coordinate(x, y, store):
-    """Wrapper for getting the resolution and adjusted x, y coordinates.
-    This fixes the session maps not having the required resolution on load.
-    
-    Returns ((x, y), (width, height))
-    """
-    result = _get_monitor_coordinate(x, y, store)
-    if store['FirstLoad']:
-        _check_resolution(store['Data']['Maps'], result[1])
-        store['FirstLoad'] = False
-    return result
-    
-
-def _get_monitor_coordinate(x, y, store):
     """Find the resolution of the monitor and adjusted x, y coordinates."""
 
     if store['CustomResolution'] is not None:
@@ -203,7 +186,7 @@ def _get_monitor_coordinate(x, y, store):
             except TypeError:
                 return None
         
-        _check_resolution(store['Data']['Maps'], resolution)
+        _check_resolution(store['Data'], resolution)
         return ((x - x_offset, y - y_offset), resolution)
         
     else:
@@ -246,7 +229,7 @@ def background_process(q_recv, q_send):
         NOTIFY(START_THREAD)
         NOTIFY.send(q_send)
         
-        store = {'Data': load_data(),
+        store = {'Data': LoadData(),
                  'LastProgram': None,
                  'Resolution': None,
                  'ResolutionTemp': None,
@@ -315,7 +298,7 @@ def background_process(q_recv, q_send):
                     
                     #Load new profile
                     store['LastProgram'] = current_program
-                    store['Data'] = load_data(current_program)
+                    store['Data'] = LoadData(current_program)
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
@@ -324,9 +307,9 @@ def background_process(q_recv, q_send):
                     except AttributeError:
                         pass
                     if store['CustomResolution'] is None:
-                        _check_resolution(store['Data']['Maps'], store['Resolution'])
+                        _check_resolution(store['Data'], store['Resolution'])
                     else:
-                        _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
+                        _check_resolution(store['Data'], store['CustomResolution'][1])
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -342,11 +325,11 @@ def background_process(q_recv, q_send):
             if 'CustomResolution' in received_data:
                 store['CustomResolution'] = received_data['CustomResolution']
                 if store['CustomResolution'] is not None:
-                    _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
+                    _check_resolution(store['Data'], store['CustomResolution'][1])
 
             if 'Resolution' in received_data:
                 store['Resolution'] = received_data['Resolution']
-                _check_resolution(store['Data']['Maps'], store['Resolution'])
+                _check_resolution(store['Data'], store['Resolution'])
             
             if 'MonitorLimits' in received_data:
                 store['ResolutionTemp'] = received_data['MonitorLimits']
@@ -464,7 +447,7 @@ def background_process(q_recv, q_send):
                     
                 #Make sure resolution exists in data
                 if store['CustomResolution'] is not None:
-                    _check_resolution(store['Data']['Maps'], store['CustomResolution'][1])
+                    _check_resolution(store['Data'], store['CustomResolution'][1])
                     
                 elif MULTI_MONITOR:
                     try:
@@ -476,9 +459,9 @@ def background_process(q_recv, q_send):
                         if not resolution:
                             mouse_coordinates = [] 
                     else:
-                        _check_resolution(store['Data']['Maps'], resolution)
+                        _check_resolution(store['Data'], resolution)
                         if resolution != _resolution:
-                            _check_resolution(store['Data']['Maps'], resolution)
+                            _check_resolution(store['Data'], resolution)
                         _resolutions = [resolution, _resolution]
                         
                 #Write each pixel to the dictionary
@@ -489,7 +472,8 @@ def background_process(q_recv, q_send):
                     except TypeError:
                         continue
                         
-                    store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
+                    #store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
+                    store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
                         
                 store['Data']['Ticks']['Tracks'] += 1
                 
@@ -497,6 +481,8 @@ def background_process(q_recv, q_send):
                 max_track_value = CONFIG['Advanced']['CompressTrackMax']
                 if not max_track_value:
                     max_track_value = MAX_INT
+                
+                '''
                 if store['Data']['Ticks']['Tracks'] > max_track_value:
                     compress_multplier = CONFIG['Advanced']['CompressTrackAmount']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
@@ -518,6 +504,7 @@ def background_process(q_recv, q_send):
                     store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
+                    '''
                 
             #Record mouse clicks
             if 'MouseClick' in received_data:
@@ -531,8 +518,8 @@ def background_process(q_recv, q_send):
                         continue
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
-                    store['Data']['Maps']['Click']['Single'][mouse_button][resolution][y][x] += 1
-                    store['Data']['Maps']['Session']['Click']['Single'][mouse_button][resolution][y][x] += 1
+                    store['Data']['Resolution'][resolution]['Clicks']['All']['Single'][mouse_button][y][x] += 1
+                    store['Data']['Resolution'][resolution]['Clicks']['Session']['Single'][mouse_button][y][x] += 1
                     
             #Record double clicks
             if 'DoubleClick' in received_data:
@@ -546,8 +533,8 @@ def background_process(q_recv, q_send):
                         continue
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
-                    store['Data']['Maps']['Click']['Double'][mouse_button][resolution][y][x] += 1
-                    store['Data']['Maps']['Session']['Click']['Double'][mouse_button][resolution][y][x] += 1
+                    store['Data']['Resolution'][resolution]['Clicks']['All']['Double'][mouse_button][y][x] += 1
+                    store['Data']['Resolution'][resolution]['Clicks']['Session']['Double'][mouse_button][y][x] += 1
                 
             store['Data']['Ticks']['Recorded'] += 1
             
