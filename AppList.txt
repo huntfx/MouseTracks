@@ -41,6 +41,7 @@ AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
 Application-64.exe: Game
+ApplicationFrameHost.exe[Halo 5: Forge]
 ArcheAge.exe
 arena.exe: Total War: Arena
 arma2.exe: Arma 2
@@ -180,6 +181,7 @@ Diablo III.exe: Diablo 3
 Diablo%20III.app: Diablo 3
 diablo.exe: Diablo
 DinoHordeGame.exe: ORION: Prelude
+Directus3D.exe: Directus
 dirt2_game.exe: DiRT 2
 dirt3.exe: Dirt 3
 dirt3_game.exe: Dirt 3
@@ -194,6 +196,8 @@ Dofus.exe
 Dolphin.exe
 dontstarve_steam.exe: Don't Starve
 DontTouchAnything.exe: Please, Don't Touch Anything
+DOOMx64.exe: DOOM
+DOOMx64vk.exe: DOOM
 DoorKickers.exe: Door Kickers
 dosbox.exe: DOSBox
 dota.exe: DOTA
@@ -318,6 +322,7 @@ Gw2-64.exe: Guild Wars 2
 gw2.app: Guild Wars 2
 gw2.exe: Guild Wars 2
 GW3.exe: Geometry Wars 3
+gzdoom - PLAY BRUTAL DOOM.exe: Brutal Doom
 H1Z1.exe
 HackerEvolution.exe: Hacker Evolution
 Hammerwatch.exe
@@ -426,6 +431,9 @@ MassEffect2.exe: Mass Effect 2
 MassEffect3.exe: Mass Effect 3
 MassEffect3Demo.exe: Mass Effect 3
 MaxPayne3.exe: Max Payne 3
+maya.exe: Autodesk Maya
+maya.exe[]: <DoNotTrack>
+maya.exe[Output Window]: <DoNotTrack>
 MBAA.exe: Melty Blood Actress Again: Current Code
 MechWarriorOnline.exe: MechWarrior Online
 METAL GEAR RISING REVENGEANCE.exe: Metal Gear Rising: Revengeance
