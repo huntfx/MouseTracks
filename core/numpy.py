@@ -171,4 +171,5 @@ def load(saved_array):
     
 
 def fill(array, value):
-    return array.fill(value)
+    array.fill(value)
+    return array
