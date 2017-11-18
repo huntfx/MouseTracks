@@ -5,7 +5,7 @@ import traceback
 from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
-from core.constants import MAX_INT, DISABLE_TRACKING
+from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING
 from core.files import LoadData, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
@@ -40,12 +40,15 @@ def running_processes(q_recv, q_send, background_send):
                 current_app = running_apps.check()
                 send = {}
                 
+                if current_app is not None and current_app[0] == IGNORE_TRACKING:
+                    current_app = None
+                
                 #Send custom resolution
                 if running_apps.focus is not None:
-                
+                    
                     if current_app is None:
                         cust_res = None
-                        
+                    
                     else:
                         cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
                         
@@ -518,6 +521,7 @@ def background_process(q_recv, q_send):
                         continue
                     
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
+                    
                     store['Data']['Resolution'][resolution]['Clicks']['All']['Single'][mouse_button][y][x] += 1
                     store['Data']['Resolution'][resolution]['Clicks']['Session']['Single'][mouse_button][y][x] += 1
                     
