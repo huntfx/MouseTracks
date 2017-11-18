@@ -18,3 +18,5 @@ DEFAULT_LANGUAGE = 'en_US'
 MAX_INT = pow(2, 63) - 1
 
 DISABLE_TRACKING = '<DoNotTrack>'
+
+IGNORE_TRACKING = '<Ignore>'
