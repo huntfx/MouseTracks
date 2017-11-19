@@ -9,7 +9,7 @@ import zipfile
 from core.base import format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
-from core.constants import DEFAULT_NAME
+from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
 from core.versions import VERSION, upgrade_version, IterateMaps
 import core.numpy as numpy
@@ -140,7 +140,7 @@ def load_data(profile_name=None, _update_version=True, _metadata_only=False, _cr
             loaded_data = {}
         else:
             return None
-        
+    
     return upgrade_version(loaded_data, update_metadata=_update_version)
 
     
@@ -149,19 +149,35 @@ class LoadData(dict):
     def __init__(self, profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
         data = load_data(profile_name=profile_name, _update_version=_update_version, 
                          _metadata_only=_metadata_only, _create_new=_create_new)
+                         
         super(LoadData, self).__init__(data)
         
         self.version = self['Version']
     
     def get_tracks(self, session=False, resolution=None):
-        """Return dictionary containing all the tracks."""
+        """Return dictionary of tracks along with top resolution and range of values."""
         start_time = self['Ticks']['Session']['Tracks'] if session else 0
+        
+        top_resolution = None
+        max_records = 0
+        min_value = MAX_INT
+        max_value = 0
         result = {}
         for resolution, maps in get_items(self['Resolution']):
             array = numpy.max(maps['Tracks'] - start_time, 0)
-            if numpy.count(array):
+            num_records = numpy.count(array)
+            if num_records:
                 result[resolution] = array
-        return result
+                
+                #Find resolution with most data
+                if num_records > max_records:
+                    max_records = num_records
+                    top_resolution = resolution
+                
+                min_value = min(min_value, numpy.min(array))
+                max_value = max(max_value, numpy.max(array))
+                
+        return top_resolution, (int(min_value), int(max_value)), result
     
     def get_clicks(self):
         raise NotImplementedError
