@@ -3,16 +3,16 @@ from PIL import Image
 import zlib
 
 from core.base import format_file_path
-from core.constants import UPDATES_PER_SECOND
+from core.constants import UPDATES_PER_SECOND, DEFAULT_NAME
 from core.compatibility import get_items, _print, pickle
 from core.config import CONFIG, _config_defaults
 from core.export import ExportCSV
-from core.files import load_data, format_name
+from core.files import LoadData, format_name
 from core.maths import round_int
 from core.os import create_folder, remove_file, join_path
 from core.versions import VERSION
 from core.image.keyboard import DrawKeyboard
-from core.image.calculate import merge_resolutions, convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size
+from core.image.calculate import convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size, calculate_resolution, upscale_arrays_to_resolution
 from core.image.colours import ColourRange, calculate_colour_map
 
 
@@ -56,9 +56,11 @@ class ImageName(object):
         
         
     def __init__(self, program_name, load_profile=False, data=None):
+        if program_name is None:
+            program_name = DEFAULT_NAME
         self.name = program_name.replace('\\', '').replace('/', '')
         if data is None and load_profile:
-            data = load_data(data)
+            data = LoadData(data)
         self.data = data
         self.file_name = format_name(self.name)
         self.reload()
@@ -70,8 +72,8 @@ class ImageName(object):
         g_t = CONFIG['GenerateTracks']
         g_kb = CONFIG['GenerateKeyboard']
     
-        self.width = str(g_im['_TempResolutionX'])
-        self.height = str(g_im['_TempResolutionY'])
+        self.width = str(g_im['_OutputResolutionX'])
+        self.height = str(g_im['_OutputResolutionY'])
         self.uwidth = str(g_im['_UpscaleResolutionX'])
         self.uheight = str(g_im['_UpscaleResolutionY'])
         self.high_precision = 'High Detail' if g_im['HighPrecision'] else 'Normal'
@@ -211,10 +213,11 @@ class ImageName(object):
 
 
 class RenderImage(object):
-    def __init__(self, profile, data=None, allow_save=True):
+    
+    def __init__(self, profile=None, data=None, allow_save=True):
         self.profile = profile
         if data is None:
-            self.data = load_data(profile, _update_version=False, _create_new=False)
+            self.data = LoadData(profile, _update_metadata=False)
             if self.data is None:
                 raise ValueError('profile doesn\'t exist')
         else:
@@ -227,7 +230,6 @@ class RenderImage(object):
         """Detect if the game has keyboard tracking or not.
         Based on my own tracks, a game may range from 100 to 4000 normally.
         Without keyboard tracking, it's generally between 0.01 and 5.
-        Check if this number is above 10 or 20 to get an idea.
         """
         
         if session:
@@ -253,150 +255,88 @@ class RenderImage(object):
             
         if CONFIG['GenerateCSV']['_GenerateKeyboard']:
             export.keyboard(self.name)
-    
-    def _generate_start(self):
-        CONFIG['GenerateImages']['_TempResolutionX'] = CONFIG['GenerateImages']['OutputResolutionX']
-        CONFIG['GenerateImages']['_TempResolutionY'] = CONFIG['GenerateImages']['OutputResolutionY']
-    
-    def _generate_end(self, image_name, image_output, resize=True):
-        resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
-                      CONFIG['GenerateImages']['OutputResolutionY'])
-            
+
+    def _get_colour_range(self, min_value, max_value, config_heading):
+        """Get the colour range for the chosen config heading,
+        or revert back to the default one if it is invalid.
+        """
+        try:
+            colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'])
+        except ValueError:
+            colour_map = calculate_colour_map(get_config_default(config_heading, 'ColourProfile'))
+        return ColourRange(min_value, max_value, colour_map)
+
+    def tracks(self, last_session=False, file_name=None):
+        top_resolution, (min_value, max_value), tracks = self.data.get_tracks()
         
-        if resize:
-            image_output = image_output.resize(resolution, Image.ANTIALIAS)
-        if self.save:
-            create_folder(image_name)
-            _print('Saving image to "{}"...'.format(image_name))
-            image_output.save(image_name)
-            _print('Finished saving.')
-            
-        return image_output
-    
-    def cache_load(self, file_name):
+        output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
+        upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
+
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateTracks')
+        
+        image_output = arrays_to_colour(colour_range, upscaled_arrays)
+        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+
         if file_name is None:
-            return None
-        _print('Loading from cache...')
-        try:
-            with open(file_name, 'rb') as f:
-                return pickle.loads(zlib.decompress(f.read()))
-        except IOError:
-            return None
-    
-    def cache_save(self, file_name, min_value, max_value, array):
-        _print('Saving to cache...')
-        data = ((min_value, max_value), array)
-        with open(file_name, 'wb') as f:
-            f.write(zlib.compress(pickle.dumps(data)))
-    
-    def cache_delete(self, file_name):
-        remove_file(file_name)
-    
-    def tracks(self, last_session=False, _cache_file=None):
-        """Generate the track image."""
-        self._generate_start()
-        
-        #Attempt to load data from cache
-        cache_data = self.cache_load(_cache_file)
-        if cache_data is not None:
-            (min_value, max_value), numpy_arrays = cache_data
-        skip_calculations = cache_data is not None
-        
-        if not skip_calculations:
-        
-            #Detect session information
-            if last_session:
-                session_start = self.data['Ticks']['Session']['Tracks']
-            else:
-                session_start = None
+            file_name = self.name.generate('Tracks', reload=True)
             
-            #Resize all arrays
-            high_precision = CONFIG['GenerateImages']['HighPrecision']
-            (min_value, max_value), numpy_arrays = merge_resolutions(self.data['Maps']['Tracks'], 
-                                                                     session_start=session_start,
-                                                                     high_precision=high_precision)
+        if self.save:
+            create_folder(file_name)
+            _print('Saving image to "{}"...'.format(file_name))
+            image_output.save(file_name)
+            _print('Finished saving.')
+
+    def double_clicks(self, last_session=False, file_name=None):
+        return self.clicks(last_session=last_session, file_name=file_name, _double_click=True)
+
+    def clicks(self, last_session=False, file_name=None, _double_click=False):
+        pass
+
+        top_resolution, (min_value, max_value), clicks = self.data.get_clicks(session=last_session, double_click=_double_click)
+        output_resolution, upscale_resolution = calculate_resolution(clicks.keys(), top_resolution)
+
+        lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
+        mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
+        rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
+        skip = []
+        if lmb or mmb or rmb:
+            if not lmb:
+                skip.append(0)
+            if not mmb:
+                skip.append(1)
+            if not rmb:
+                skip.append(2)
+        upscaled_arrays = upscale_arrays_to_resolution(clicks, upscale_resolution, skip=skip)
+
+        (min_value, max_value), heatmap = arrays_to_heatmap(upscaled_arrays,
+                               gaussian_size=gaussian_size(upscale_resolution[0], upscale_resolution[1]),
+                               clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
+
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateHeatmap')
         
-        #Save cache if it wasn't generated
-        if _cache_file is not None and not skip_calculations:
-            self.cache_save(_cache_file, min_value, max_value, numpy_arrays)
-        
-        #Convert each point to an RGB tuple
-        try:
-            colour_map = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
-        except ValueError:
-            default_colours = _config_defaults['GenerateTracks']['ColourProfile'][0]
-            colour_map = calculate_colour_map(default_colours)
-        colour_range = ColourRange(min_value, max_value, colour_map)
-        
-        image_name = self.name.generate('Tracks', reload=True)
-        image_output = arrays_to_colour(colour_range, numpy_arrays)
-        if image_output is None:
-            _print('No tracks data was found.')
-            return None
-            
-        return self._generate_end(image_name, image_output, resize=True)
-    
-    def doubleclicks(self, last_session=False, _cache_file=None):
-        """Generate the double click image."""
-        return self.clicks(last_session, 'Double', _cache_file=_cache_file)
-    
-    
-    def clicks(self, last_session=False, click_type='Single', _cache_file=None):
-        """Generate the click image."""
-        self._generate_start()
-        
-        #Attempt to load data from cache
-        cache_data = self.cache_load(_cache_file)
-        if cache_data is not None:
-            (min_value, max_value), heatmap = cache_data
-        skip_calculations = cache_data is not None
-        
-        if not skip_calculations:
-        
-            #Detect session information
-            if last_session:
-                clicks = self.data['Maps']['Session']['Click'][click_type]
-            else:
-                clicks = self.data['Maps']['Click'][click_type]
-        
-            lmb = CONFIG['GenerateHeatmap']['_MouseButtonLeft']
-            mmb = CONFIG['GenerateHeatmap']['_MouseButtonMiddle']
-            rmb = CONFIG['GenerateHeatmap']['_MouseButtonRight']
-            valid_buttons = [i for i, v in zip(('Left', 'Middle', 'Right'), (lmb, mmb, rmb)) if v]
-            
-            numpy_arrays = merge_resolutions(clicks, map_selection=valid_buttons)[1]
-            
-            width, height = CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY']
-            (min_value, max_value), heatmap = arrays_to_heatmap(numpy_arrays,
-                        gaussian_size=gaussian_size(width, height),
-                        clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
-        
-        #Save cache if it wasn't generated
-        if _cache_file is not None and not skip_calculations:
-            self.cache_save(_cache_file, min_value, max_value, heatmap)
-            
-        #Convert each point to an RGB tuple
-        try:
-            colour_map = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
-        except ValueError:
-            default_colours = _config_defaults['GenerateHeatmap']['ColourProfile'][0]
-            colour_map = calculate_colour_map(default_colours)
-        colour_range = ColourRange(min_value, max_value, colour_map)
-        
-        image_name = self.name.generate('Clicks', reload=True)
         image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
-        
-        if image_output is None:
-            _print('No click data was found.')
-            return None
+        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+
+        if file_name is None:
+            file_name = self.name.generate('Clicks', reload=True)
             
-        return self._generate_end(image_name, image_output, resize=True)
-    
-    def keyboard(self, last_session=False):
+        if self.save:
+            create_folder(file_name)
+            _print('Saving image to "{}"...'.format(file_name))
+            image_output.save(file_name)
+            _print('Finished saving.')
+        
+    def keyboard(self, last_session=False, file_name=None):
         """Generate the keyboard image."""
         kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
         
         image_output = kb.draw_image()
-        image_name = self.name.generate('Keyboard', reload=True)
-        
-        return self._generate_end(image_name, image_output, resize=False)
+
+        if file_name is None:
+            file_name = self.name.generate('Keyboard', reload=True)
+            
+        if self.save:
+            create_folder(file_name)
+            _print('Saving image to "{}"...'.format(file_name))
+            image_output.save(file_name)
+            _print('Finished saving.')
