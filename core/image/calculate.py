@@ -3,7 +3,7 @@ from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
 from core.image.scipy import blur, upscale
-from core.compatibility import range, _print
+from core.compatibility import range, _print, get_items
 from core.config import CONFIG
 from core.maths import round_int
 import core.numpy as numpy
@@ -21,25 +21,15 @@ def gaussian_size(width, height):
         raise ValueError('invalid input type, must be int')
 
 
-def merge_resolutions(main_data, map_selection=False, 
-                      session_start=None, high_precision=False):
-    """Upscale each resolution to make them all match.
-    A list of arrays and range of data will be returned.
-    """
-    
-    numpy_arrays = []
-    if map_selection:
-        resolutions = main_data[map_selection[0]].keys()
-    else:
-        resolutions = main_data.keys()
-            
-    output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
-                         CONFIG['GenerateImages']['OutputResolutionY'])
-        
-    #Calculate upscale resolution
+def calculate_resolution(resolutions, output_resolution):
+
+    if not CONFIG['GenerateImages']['AutomaticResolution']:
+        output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
+                             CONFIG['GenerateImages']['OutputResolutionY'])
+
     max_x = max(x for x, y in resolutions)
     max_y = max(y for x, y in resolutions)
-    if high_precision:
+    if CONFIG['GenerateImages']['HighPrecision']:
         max_x *= 2
         max_y *= 2
         
@@ -49,52 +39,52 @@ def merge_resolutions(main_data, map_selection=False,
     else:
         _max_width_y = int(round(max_y / output_resolution[1] * output_resolution[0]))
         max_resolution = (_max_width_y, max_y)
-    CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY'] = max_resolution
-                     
-    #Read total number of images that will need to be upscaled
-    max_count = 0
-    for current_resolution in resolutions:
-        if map_selection:
-            max_count += len(map_selection)
-        else:
-            max_count += 1
-    
-    i = 0
-    count = 0
-    total = 0
-    
-    #Upscale each resolution to the same level
-    highest_value = 0
-    lowest_value = 0
-    for current_resolution in resolutions:
-        if map_selection:
-            array_list = [main_data[m][current_resolution] for m in map_selection]
-        else:
-            array_list = [main_data[current_resolution]]
-            
-        for data in array_list:
-            i += 1
-            if current_resolution == max_resolution:
-                _print('Processing {}x{}... ({}/{})'.format(current_resolution[0], 
-                                                            current_resolution[1],
-                                                            i, max_count))
-            else:
-                _print('Processing {}x{} and resizing to {}x{}...'
-                       ' ({}/{})'.format(current_resolution[0], current_resolution[1],
-                                         max_resolution[0], max_resolution[1],
-                                         i, max_count))
-                                         
-            lowest_value = min(lowest_value, numpy.min(data))
-            highest_value = max(highest_value, numpy.max(data))
 
-            #Calculate the zoom level needed
-            zoom_factor = (max_resolution[1] / current_resolution[1],
-                           max_resolution[0] / current_resolution[0])
-            numpy_arrays.append(upscale(numpy.array(data), zoom_factor))
+    CONFIG['GenerateImages']['_OutputResolutionX'], CONFIG['GenerateImages']['_OutputResolutionY'] = output_resolution
+    CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY'] = max_resolution
+
+    return output_resolution, max_resolution
+
     
-    if session_start is not None:
-        highest_value -= session_start
-    return (lowest_value, highest_value), numpy_arrays
+def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
+    """Upscale a dict of arrays to a certain resolution.
+    The dictionary key must be a resolution,
+    and the values can either be an array or list of arrays.
+    
+    Use skip to ignore array indexes in the list.
+    """
+    if isinstance(skip, int):
+        skip = [skip]
+    skip = set(skip)
+
+    #Count number of arrays
+    num_arrays = 0
+    for resolution, array_list in get_items(arrays):
+        if isinstance(array_list, (list, tuple)):
+            array_len = len(array_list)
+            num_arrays += array_len - len([i for i in range(array_len) if i in skip])
+        elif 0 not in skip:
+            num_arrays += 1
+
+    #Upscale each array
+    _print('Upscaling arrays to {}x{}...'.format(target_resolution[0], target_resolution[1]))
+    processed = 0
+    output = []
+    for resolution, array_list in get_items(arrays):
+
+        if not isinstance(array_list, (list, tuple)):
+            array_list = [array_list]
+            
+        for i, array in enumerate(array_list):
+            if i in skip:
+                continue
+            processed += 1
+            _print('Processing array for {}x{} ({}/{})'.format(resolution[0], resolution[1], processed, num_arrays))
+            zoom_factor = (target_resolution[1] / resolution[1],
+                           target_resolution[0] / resolution[0])
+            upscaled = upscale(array, zoom_factor)
+            output.append(upscaled)
+    return output
     
     
 def convert_to_rgb(image_array, colour_range):
