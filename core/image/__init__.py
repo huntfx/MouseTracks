@@ -214,16 +214,19 @@ class ImageName(object):
 
 class RenderImage(object):
     
-    def __init__(self, profile=None, data=None, allow_save=True):
-        self.profile = profile
-        if data is None:
+    def __init__(self, profile=None, allow_save=True):
+    
+        if isinstance(profile, LoadData):
+            self.profile = profile.name
+            self.data = profile
+        else:
+            self.profile = profile
+        
             self.data = LoadData(profile, _update_metadata=False)
             if self.data is None:
                 raise ValueError('profile doesn\'t exist')
-        else:
-            self.data = data
             
-        self.name = ImageName(profile, data=self.data)
+        self.name = ImageName(self.profile, data=self.data)
         self.save = allow_save
 
     def keys_per_hour(self, session=False):
@@ -267,7 +270,13 @@ class RenderImage(object):
         return ColourRange(min_value, max_value, colour_map)
 
     def tracks(self, last_session=False, file_name=None):
-        top_resolution, (min_value, max_value), tracks = self.data.get_tracks()
+    
+        track_data = self.data.get_tracks()
+        if track_data is None:
+            _print('No tracking data found.')
+            return None
+            
+        top_resolution, (min_value, max_value), tracks = track_data
         
         output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
         upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
