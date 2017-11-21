@@ -99,17 +99,19 @@ def decode_file(f, legacy=False):
     except KeyError:
         IterateMaps(data['Resolution']).join(numpy_maps, _legacy=False)
     return data
+
+    
+def read_metadata(profile_name=None):
+    paths = _get_paths(profile_name)
+    return {'Modified': get_modified_time(paths['Main'])}
     
 
-def load_data(profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
+def load_data(profile_name=None, _update_metadata=True, _create_new=True):
     """Read a profile (or create new one) and run it through the update.
     Use LoadData class instead of this.
     """
     paths = _get_paths(profile_name)
     new_file = False
-    
-    if _metadata_only:
-        return {'Modified': get_modified_time(paths['Main'])}
     
     #Load the main file
     try:
@@ -141,27 +143,27 @@ def load_data(profile_name=None, _update_version=True, _metadata_only=False, _cr
         else:
             return None
     
-    return upgrade_version(loaded_data, update_metadata=_update_version)
+    return upgrade_version(loaded_data, update_metadata=_update_metadata)
 
     
 class LoadData(dict):
     """Wrapper for the load_data function to allow for custom functions."""
-    def __init__(self, profile_name=None, _update_version=True, _metadata_only=False, _create_new=True):
-        data = load_data(profile_name=profile_name, _update_version=_update_version, 
-                         _metadata_only=_metadata_only, _create_new=_create_new)
+    def __init__(self, profile_name=None, _update_metadata=True):
+        data = load_data(profile_name=profile_name, _update_metadata=_update_metadata, _create_new=True)
                          
         super(LoadData, self).__init__(data)
         
         self.version = self['Version']
+        self.name = profile_name
     
-    def get_tracks(self, session=False, resolution=None):
+    def get_tracks(self, session=False):
         """Return dictionary of tracks along with top resolution and range of values."""
         start_time = self['Ticks']['Session']['Tracks'] if session else 0
         
         top_resolution = None
         max_records = 0
-        min_value = MAX_INT
-        max_value = 0
+        min_value = float('inf')
+        max_value = -float('inf')
         result = {}
         for resolution, maps in get_items(self['Resolution']):
             array = numpy.max(maps['Tracks'] - start_time, 0)
@@ -174,13 +176,53 @@ class LoadData(dict):
                     max_records = num_records
                     top_resolution = resolution
                 
+                #Find the highest and lowest recorded values
+                min_value = min(min_value, numpy.min(array))
+                max_value = max(max_value, numpy.max(array))
+        
+        if not result:
+            return None
+        
+        return top_resolution, (int(min_value), int(max_value)), result
+    
+    def get_clicks(self, double_click=False, session=False):
+        session = 'Session' if session else 'All'
+        click_type = 'Double' if double_click else 'Single'
+        
+        top_resolution = None
+        max_records = 0
+        min_value = float('inf')
+        max_value = -float('inf')
+        result = {}
+        for resolution, maps in get_items(self['Resolution']):
+            click_maps = (maps['Clicks'][session][click_type]['Left'],
+                          maps['Clicks'][session][click_type]['Middle'],
+                          maps['Clicks'][session][click_type]['Right'])
+            
+            #Get information on array
+            contains_data = False
+            for array in click_maps:
+                num_records = numpy.count(array)
+                if num_records:
+                    contains_data = True
+                
+                #Find resolution with most data
+                if num_records > max_records:
+                    max_records = num_records
+                    top_resolution = resolution
+                
+                #Find the highest and lowest recorded values
                 min_value = min(min_value, numpy.min(array))
                 max_value = max(max_value, numpy.max(array))
                 
+            if contains_data:
+                result[resolution] = click_maps
+        
+        if not result:
+            return None
+        
         return top_resolution, (int(min_value), int(max_value)), result
-    
-    def get_clicks(self):
-        raise NotImplementedError
+                
         
     def get_keys(self):
         raise NotImplementedError
