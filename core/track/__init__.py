@@ -73,7 +73,8 @@ def _start_tracking():
                  'Save': CONFIG['Save']['Frequency'] * UPDATES_PER_SECOND,
                  'ReloadProgramList': CONFIG['Advanced']['ReloadApplicationList'],
                  'UpdateQueuedCommands': CONFIG['Advanced']['ShowQueuedCommands'],
-                 'RefreshGamepads': CONFIG['Advanced']['RefreshGamepads']}
+                 'RefreshGamepads': CONFIG['Advanced']['RefreshGamepads'],
+                 'HistoryCheck': CONFIG['Advanced']['HistoryCheck']}
                  
         store = {'Resolution': {'Current': monitor_info(),
                                 'Previous': None,
@@ -498,8 +499,12 @@ def _start_tracking():
                                 if store['Resolution']['Previous'] is not None:
                                     NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], current_screen_resolution)
                                 store['Resolution']['Previous'] = current_screen_resolution
+                
+                
+                #Send request to check history list
+                if timer['HistoryCheck'] and not ticks % timer['HistoryCheck']:
+                    frame_data['HistoryCheck'] = True
                             
-                    
                 #Send request to update programs
                 if timer['UpdatePrograms'] and not ticks % timer['UpdatePrograms']:
                     frame_data_rp['Update'] = True
