@@ -339,6 +339,7 @@ def _start_tracking():
                     difference = set(gamepads) - old_gamepads
                     for i, id in enumerate(difference):
                         NOTIFY(GAMEPAD_FOUND, id)
+                        store['Gamepad']['ButtonsPressed'][id] = {}
                 
                 #Gamepad tracking (multiple controllers not tested yet)
                 button_repeat = CONFIG['Advanced']['RepeatButtonPress']
@@ -350,18 +351,14 @@ def _start_tracking():
                 for id, gamepad in get_items(gamepads):
                     
                     #Repeat presses
-                    try:
-                        if button_repeat:
-                            for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
-                                if last_update < ticks - button_repeat:
-                                    try:
-                                        buttons_held[id].append(button_id)
-                                    except KeyError:
-                                        buttons_held[id] = [button_id]
-                                    store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
-
-                    except KeyError:
-                        store['Gamepad']['ButtonsPressed'][id] = {}
+                    if button_repeat:
+                        for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
+                            if last_update < ticks - button_repeat:
+                                try:
+                                    buttons_held[id].append(button_id)
+                                except KeyError:
+                                    buttons_held[id] = [button_id]
+                                store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
                     
                     with gamepad as gamepad_input:
                     
@@ -396,10 +393,7 @@ def _start_tracking():
                                         frame_data['GamepadButtonPress'].append(button_id)
                                     except KeyError:
                                         frame_data['GamepadButtonPress'] = [button_id]
-                                    try:
-                                        store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
-                                    except KeyError:
-                                        store['Gamepad']['ButtonsPressed'][id] = {button_id: ticks}
+                                    store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
                                     try:
                                         _buttons_pressed[id].append(button_id)
                                     except KeyError:
@@ -449,26 +443,25 @@ def _start_tracking():
                 
                 #Resolution
                 recalculate_mouse = False
+                check_resolution = timer['UpdateScreen'] and not ticks % timer['UpdateScreen']
                 
                 #Check if resolution has changed
-                if timer['UpdateScreen'] and not ticks % timer['UpdateScreen']:
+                if check_resolution:
                 
                     if MULTI_MONITOR:
-                        try:
-                            old_resolution = list(store['Resolution']['Boundaries'])
-                        except TypeError:
-                            old_resolution = None
+                        old_resolution = store['Resolution']['Boundaries']
                         store['Resolution']['Boundaries'] = monitor_info()
-                        frame_data['MonitorLimits'] = store['Resolution']['Boundaries']
                         if old_resolution != store['Resolution']['Boundaries']:
+                            frame_data['MonitorLimits'] = store['Resolution']['Boundaries']
                             recalculate_mouse = True
                     else:
                         store['Resolution']['Current'] = monitor_info()
                         if store['Resolution']['Previous'] != store['Resolution']['Current']:
                             if store['Resolution']['Previous'] is not None:
                                 NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
-                            frame_data['Resolution'] = ['Resolution']['Current']
+                            frame_data['Resolution'] = store['Resolution']['Current']
                             store['Resolution']['Previous'] = store['Resolution']['Current']
+                
                 
                 #Display message that mouse has switched monitors
                 if MULTI_MONITOR:
@@ -478,25 +471,35 @@ def _start_tracking():
                         current_mouse_pos = mouse_pos['Current']
                     else:
                         recalculate_mouse = True
-                    
+                        
                     if recalculate_mouse:
                         try:
+                            #Calculate which monitor the mouse is on
                             try:
-                                res = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                                current_screen_resolution = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                            
                             except TypeError:
-                                frame_data['MonitorLimits'] = monitor_info()
-                                store['Resolution']['Boundaries'] = frame_data['MonitorLimits']
-                                res = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                            
+                                if check_resolution:
+                                    raise TypeError
+                                    
+                                #Send to background process if the monitor list changes
+                                old_resolution = store['Resolution']['Boundaries']
+                                store['Resolution']['Boundaries'] = monitor_info()
+                                if old_resolution != store['Resolution']['Boundaries']:
+                                    frame_data['MonitorLimits'] = store['Resolution']['Boundaries']
+                                current_screen_resolution = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
+                        
                         except TypeError:
                             pass
+                            
                         else:
-                            store['Resolution']['Current'] = res
-                            if store['Resolution']['Previous'] is not None:
-                                if store['Resolution']['Current'] != store['Resolution']['Previous']:
-                                    NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
-                            store['Resolution']['Previous'] = store['Resolution']['Current']
-                
-
+                            if current_screen_resolution != store['Resolution']['Previous']:
+                                if store['Resolution']['Previous'] is not None:
+                                    NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], current_screen_resolution)
+                                store['Resolution']['Previous'] = current_screen_resolution
+                            
+                    
                 #Send request to update programs
                 if timer['UpdatePrograms'] and not ticks % timer['UpdatePrograms']:
                     frame_data_rp['Update'] = True
