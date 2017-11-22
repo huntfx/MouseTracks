@@ -6,7 +6,7 @@ import traceback
 from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
-from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING
+from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND
 from core.files import LoadData, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
@@ -23,6 +23,7 @@ def running_processes(q_recv, q_send, background_send):
         previous_app = None
         last_coordinates = None
         last_resolution = None
+        last_app_resolution = None
             
         while True:
                 
@@ -49,22 +50,23 @@ def running_processes(q_recv, q_send, background_send):
                     #NOTIFY_DEBUG(running_apps.focused_exe, running_apps.focused_name)
                     
                     if current_app is None:
-                        cust_res = None
+                        application_resolution = None
                     
                     else:
-                        cust_res = [running_apps.focus.rect(), running_apps.focus.resolution()]
+                        application_resolution = (running_apps.focus.rect(), running_apps.focus.resolution())
                         
                         if current_app == previous_app:
-                            if cust_res[1] != last_resolution:
-                                NOTIFY(APPLICATION_RESIZE, last_resolution, cust_res[1])
-                            elif cust_res[0] != last_coordinates:
-                                NOTIFY(APPLICATION_MOVE, last_coordinates, cust_res[0])
+                            if application_resolution[1] != last_resolution:
+                                NOTIFY(APPLICATION_RESIZE, last_resolution, application_resolution[1])
+                            elif application_resolution[0] != last_coordinates:
+                                NOTIFY(APPLICATION_MOVE, last_coordinates, application_resolution[0])
                         else:
-                            NOTIFY(APPLICATION_RESOLUTION, cust_res[1])
+                            NOTIFY(APPLICATION_RESOLUTION, application_resolution[1])
                             
-                        last_coordinates, last_resolution = cust_res
-                            
-                    send['ApplicationResolution'] = cust_res
+                        last_coordinates, last_resolution = application_resolution
+                    
+                    if last_app_resolution != application_resolution:
+                        send['ApplicationResolution'] = last_app_resolution = application_resolution
                 
                 #Detect running program
                 if current_app != previous_app:
@@ -284,11 +286,14 @@ def background_process(q_recv, q_send):
                         pass
                 q_send.put({'SaveFinished': None})
             
+            update_resolution = False
+            
             #Check for new program loaded
             if 'Program' in received_data:
                 current_program = received_data['Program']
                 
                 if current_program != store['LastProgram']:
+                    update_resolution = True
                     
                     if current_program is None:
                         NOTIFY(APPLICATION_LOADING)
@@ -323,27 +328,38 @@ def background_process(q_recv, q_send):
                         NOTIFY(QUEUE_SIZE, q_recv.qsize())
                     except NotImplementedError:
                         pass
+                        
                 NOTIFY.send(q_send)
             
             if 'ApplicationResolution' in received_data:
                 store['ApplicationResolution'] = received_data['ApplicationResolution']
                 if store['ApplicationResolution'] is not None:
                     check_resolution(store['Data'], store['ApplicationResolution'][1])
+                    update_resolution = True
 
             if 'Resolution' in received_data:
                 store['Resolution'] = received_data['Resolution']
                 check_resolution(store['Data'], received_data['Resolution'])
-                
-                if store['LastResolution'] != store['Resolution']:
-                    store['Data']['HistoryAnimation']['Tracks'].append([store['Resolution']])
-                    store['LastResolution'] = store['Resolution']
+                update_resolution = True
             
             if 'MonitorLimits' in received_data:
                 store['MonitorLimits'] = received_data['MonitorLimits']
-                
-                if store['LastResolution'] != store['MonitorLimits']:
-                    store['Data']['HistoryAnimation']['Tracks'].append([store['MonitorLimits']])
-                    store['LastResolution'] = store['MonitorLimits']
+                update_resolution = True
+            
+            #Keep the history tracking the correct resolution
+            if update_resolution:
+                if store['ApplicationResolution'] is not None:
+                    history_resolution = store['ApplicationResolution']
+                elif MULTI_MONITOR:
+                    history_resolution = store['MonitorLimits']
+                else:
+                    history_resolution = store['Resolution']
+                try:
+                    if store['Data']['HistoryAnimation']['Tracks'][-1][0] != history_resolution:
+                        raise IndexError
+                except IndexError:
+                    store['Data']['HistoryAnimation']['Tracks'].append([history_resolution])
+                NOTIFY_DEBUG(history_resolution)
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -550,18 +566,21 @@ def background_process(q_recv, q_send):
             
             #Trim the history list if too long
             if 'HistoryCheck' in received_data:
-                history_len = [len(i) - 1 for i in store['Data']['HistoryAnimation']['Tracks']]
-                if sum(history_len) > CONFIG['Main']['HistoryLength']:
+                history = store['Data']['HistoryAnimation']['Tracks']
+                history_len = [len(i) - 1 for i in history]
+                max_length = CONFIG['Main']['HistoryLength'] * UPDATES_PER_SECOND
+                
+                if sum(history_len) > max_length:
                     count = 0
-                    for i, value in enumerate(store['Data']['HistoryAnimation']['Tracks']):
-                    
+                    for i, value in enumerate(history):
                         count += history_len[i]
-                        if count >= CONFIG['Main']['HistoryLength']:
-                            data = data[i:]
-                            if count > CONFIG['Main']['HistoryLength']:
-                                offset = data_len[i] - CONFIG['Main']['HistoryLength']
-                                data[0] = [data[0][0]] + data[0][offset+1:]
+                        if count >= max_length:
+                            history = history[i:]
+                            if count > max_length:
+                                offset = history_len[i] - max_length
+                                history[0] = [history[0][0]] + history[0][offset+1:]
                             break
+                    store['Data']['HistoryAnimation']['Tracks'] = history
 
             store['Data']['Ticks']['Recorded'] += 1
             
