@@ -1,3 +1,4 @@
+#todo: check no crash when resolution doesnt update after plugging in monitor
 from __future__ import division, absolute_import
 import time
 import traceback
@@ -45,6 +46,7 @@ def running_processes(q_recv, q_send, background_send):
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
+                    #NOTIFY_DEBUG(running_apps.focused_exe, running_apps.focused_name)
                     
                     if current_app is None:
                         cust_res = None
@@ -62,7 +64,7 @@ def running_processes(q_recv, q_send, background_send):
                             
                         last_coordinates, last_resolution = cust_res
                             
-                    send['CustomResolution'] = cust_res
+                    send['ApplicationResolution'] = cust_res
                 
                 #Detect running program
                 if current_app != previous_app:
@@ -70,7 +72,7 @@ def running_processes(q_recv, q_send, background_send):
                     if running_apps.focus is None:
                         start = APPLICATION_STARTED
                         end = APPLICATION_QUIT
-                        send['CustomResolution'] = None
+                        send['ApplicationResolution'] = None
                     else:
                         start = APPLICATION_FOCUSED
                         end = APPLICATION_UNFOCUSED
@@ -144,7 +146,7 @@ def monitor_offset(coordinate, monitor_limits):
             return ((x2 - x1, y2 - y1), (x1, y1))
             
             
-def _check_resolution(data, resolution):
+def check_resolution(data, resolution):
     """Make sure resolution exists in data."""
     if resolution is None:
         return
@@ -170,9 +172,9 @@ def _check_resolution(data, resolution):
 def get_monitor_coordinate(x, y, store):
     """Find the resolution of the monitor and adjusted x, y coordinates."""
 
-    if store['CustomResolution'] is not None:
+    if store['ApplicationResolution'] is not None:
         try:
-            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['CustomResolution'][0]])
+            resolution, (x_offset, y_offset) = monitor_offset((x, y),  [store['ApplicationResolution'][0]])
         except TypeError:
             return None
             
@@ -181,15 +183,15 @@ def get_monitor_coordinate(x, y, store):
     elif MULTI_MONITOR:
     
         try:
-            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+            resolution, (x_offset, y_offset) = monitor_offset((x, y), store['MonitorLimits'])
         except TypeError:
-            store['ResolutionTemp'] = monitor_info()
+            store['MonitorLimits'] = monitor_info()
             try:
-                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['ResolutionTemp'])
+                resolution, (x_offset, y_offset) = monitor_offset((x, y), store['MonitorLimits'])
             except TypeError:
                 return None
         
-        _check_resolution(store['Data'], resolution)
+        check_resolution(store['Data'], resolution)
         return ((x - x_offset, y - y_offset), resolution)
         
     else:
@@ -235,12 +237,12 @@ def background_process(q_recv, q_send):
         store = {'Data': LoadData(),
                  'LastProgram': None,
                  'Resolution': None,
-                 'ResolutionTemp': None,
+                 'MonitorLimits': None,
                  'Offset': (0, 0),
                  'LastResolution': None,
                  'ActivitySinceLastSave': False,
                  'SavesSkipped': 0,
-                 'CustomResolution': None,
+                 'ApplicationResolution': None,
                  'LastClick': None,
                  'KeyTrack': {'LastKey': None,
                               'Time': None,
@@ -257,8 +259,6 @@ def background_process(q_recv, q_send):
         
         while True:
             received_data = q_recv.get()
-            
-            check_resolution = False
             
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
@@ -306,13 +306,13 @@ def background_process(q_recv, q_send):
                     
                     #Check new resolution
                     try:
-                        store['CustomResolution'] = received_data['CustomResolution']
+                        store['ApplicationResolution'] = received_data['ApplicationResolution']
                     except AttributeError:
                         pass
-                    if store['CustomResolution'] is None:
-                        _check_resolution(store['Data'], store['Resolution'])
+                    if store['ApplicationResolution'] is None:
+                        check_resolution(store['Data'], store['Resolution'])
                     else:
-                        _check_resolution(store['Data'], store['CustomResolution'][1])
+                        check_resolution(store['Data'], store['ApplicationResolution'][1])
                         
                     if store['Data']['Ticks']['Total']:
                         NOTIFY(DATA_LOADED)
@@ -325,17 +325,25 @@ def background_process(q_recv, q_send):
                         pass
                 NOTIFY.send(q_send)
             
-            if 'CustomResolution' in received_data:
-                store['CustomResolution'] = received_data['CustomResolution']
-                if store['CustomResolution'] is not None:
-                    _check_resolution(store['Data'], store['CustomResolution'][1])
+            if 'ApplicationResolution' in received_data:
+                store['ApplicationResolution'] = received_data['ApplicationResolution']
+                if store['ApplicationResolution'] is not None:
+                    check_resolution(store['Data'], store['ApplicationResolution'][1])
 
             if 'Resolution' in received_data:
                 store['Resolution'] = received_data['Resolution']
-                _check_resolution(store['Data'], store['Resolution'])
+                check_resolution(store['Data'], received_data['Resolution'])
+                
+                if store['LastResolution'] != store['Resolution']:
+                    store['Data']['HistoryAnimation']['Tracks'].append([store['Resolution']])
+                    store['LastResolution'] = store['Resolution']
             
             if 'MonitorLimits' in received_data:
-                store['ResolutionTemp'] = received_data['MonitorLimits']
+                store['MonitorLimits'] = received_data['MonitorLimits']
+                
+                if store['LastResolution'] != store['MonitorLimits']:
+                    store['Data']['HistoryAnimation']['Tracks'].append([store['MonitorLimits']])
+                    store['LastResolution'] = store['MonitorLimits']
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -440,31 +448,31 @@ def background_process(q_recv, q_send):
                 start, end = received_data['MouseMove']
                 #distance = find_distance(end, start)
                 
+                store['Data']['HistoryAnimation']['Tracks'][-1].append(end)
+                
                 #Calculate the pixels in the line
-                if end is None:
-                    raise TypeError('debug - mouse moved without coordinates')
                 if start is None:
                     mouse_coordinates = [end]
                 else:
                     mouse_coordinates = [start] + calculate_line(start, end) + [end]
                     
                 #Make sure resolution exists in data
-                if store['CustomResolution'] is not None:
-                    _check_resolution(store['Data'], store['CustomResolution'][1])
+                if store['ApplicationResolution'] is not None:
+                    check_resolution(store['Data'], store['ApplicationResolution'][1])
                     
                 elif MULTI_MONITOR:
                     try:
                         #Don't bother calculating offset for each pixel
                         #if both start and end are on the same monitor
-                        resolution, (x_offset, y_offset) = monitor_offset(start, store['ResolutionTemp'])
-                        _resolution = monitor_offset(end, store['ResolutionTemp'])[0]
+                        resolution, (x_offset, y_offset) = monitor_offset(start, store['MonitorLimits'])
+                        _resolution = monitor_offset(end, store['MonitorLimits'])[0]
                     except TypeError:
                         if not resolution:
                             mouse_coordinates = [] 
                     else:
-                        _check_resolution(store['Data'], resolution)
+                        check_resolution(store['Data'], resolution)
                         if resolution != _resolution:
-                            _check_resolution(store['Data'], resolution)
+                            check_resolution(store['Data'], resolution)
                         _resolutions = [resolution, _resolution]
                         
                 #Write each pixel to the dictionary
@@ -475,7 +483,6 @@ def background_process(q_recv, q_send):
                     except TypeError:
                         continue
                         
-                    #store['Data']['Maps']['Tracks'][resolution][y][x] = store['Data']['Ticks']['Tracks']
                     store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
                         
                 store['Data']['Ticks']['Tracks'] += 1
@@ -539,7 +546,23 @@ def background_process(q_recv, q_send):
                     mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
                     store['Data']['Resolution'][resolution]['Clicks']['All']['Double'][mouse_button][y][x] += 1
                     store['Data']['Resolution'][resolution]['Clicks']['Session']['Double'][mouse_button][y][x] += 1
-                
+            
+            
+            #Trim the history list if too long
+            if 'HistoryCheck' in received_data:
+                history_len = [len(i) - 1 for i in store['Data']['HistoryAnimation']['Tracks']]
+                if sum(history_len) > CONFIG['Main']['HistoryLength']:
+                    count = 0
+                    for i, value in enumerate(store['Data']['HistoryAnimation']['Tracks']):
+                    
+                        count += history_len[i]
+                        if count >= CONFIG['Main']['HistoryLength']:
+                            data = data[i:]
+                            if count > CONFIG['Main']['HistoryLength']:
+                                offset = data_len[i] - CONFIG['Main']['HistoryLength']
+                                data[0] = [data[0][0]] + data[0][offset+1:]
+                            break
+
             store['Data']['Ticks']['Recorded'] += 1
             
             if 'Quit' in received_data or 'Exit' in received_data:
