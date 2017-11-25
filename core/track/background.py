@@ -346,7 +346,7 @@ def background_process(q_recv, q_send):
                 update_resolution = True
             
             #Keep the history tracking the correct resolution
-            if update_resolution:
+            if update_resolution and CONFIG['Main']['HistoryLength']:
                 if store['ApplicationResolution'] is not None:
                     history_resolution = store['ApplicationResolution']
                 elif MULTI_MONITOR:
@@ -462,7 +462,8 @@ def background_process(q_recv, q_send):
                 start, end = received_data['MouseMove']
                 #distance = find_distance(end, start)
                 
-                store['Data']['HistoryAnimation']['Tracks'][-1].append(end)
+                if CONFIG['Main']['HistoryLength']:
+                    store['Data']['HistoryAnimation']['Tracks'][-1].append(end)
                 
                 #Calculate the pixels in the line
                 if start is None:
@@ -563,7 +564,7 @@ def background_process(q_recv, q_send):
             
             
             #Trim the history list if too long
-            if 'HistoryCheck' in received_data:
+            if 'HistoryCheck' in received_data and CONFIG['Main']['HistoryLength']:
                 history = store['Data']['HistoryAnimation']['Tracks']
                 history_len = [len(i) - 1 for i in history]
                 max_length = CONFIG['Main']['HistoryLength'] * UPDATES_PER_SECOND
