@@ -8,7 +8,7 @@
 
 100orange.exe: 100% Orange Juice
 3DfxCarm.exe: Carmageddon
-3DMark.exe: <DoNotTrack>
+3DMark.exe: <Disable>
 7DaysToDie.exe: 7 Days to Die
 8bitboy.exe: 8BitBoy
 AbeWin.exe: Oddworld: Abe's Oddysee
@@ -40,7 +40,6 @@ anno5.exe: Anno 2070
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
-Application-64.exe: Game
 ApplicationFrameHost.exe[Halo 5: Forge]
 ArcheAge.exe
 arena.exe: Total War: Arena
@@ -176,9 +175,10 @@ dfbhd.exe: Delta Force: Black Hawk Down
 DFO.exe: Dungeon Fighter Online
 dfo.exe: Dungeon Fighter Online
 dfuw.exe: Darkfall: Unholy Wars
-diablo ii.exe: Diablo 2
-Diablo III.exe: Diablo 3
-Diablo%20III.app: Diablo 3
+diablo ii.exe: Diablo II
+Diablo III.exe
+Diablo III64.exe: Diablo III
+Diablo%20III.app: Diablo III
 diablo.exe: Diablo
 DinoHordeGame.exe: ORION: Prelude
 Directus3D.exe: Directus
@@ -241,7 +241,7 @@ EndlessLegend.exe: Endless Legend
 Enslaved.exe
 EoCApp.exe: Divinity: Original Sin
 eqgame.exe: EverQuest
-es.scr: <DoNotTrack>
+es.scr: <Disable>
 eso.exe: The Elder Scrolls Online
 ESSTEAM.exe: Elsword
 EternalCrusadeClient.exe: Warhammer 40,000: Eternal Crusade
@@ -278,6 +278,7 @@ flexDemoRelease.exe: FLEX
 fm.exe: Football Manager 2014
 forhonor.exe: For Honor
 FortniteClient-Win64-Shipping.exe: Fortnite
+FortniteClient-Win64-Shipping_BE.exe: Fortnite
 Fractured Space.exe
 FreeStyle2.exe: Freestyle Basketball 2
 From_The_Depths.exe: From The Depths
@@ -331,7 +332,7 @@ hatoful.exe: Hatoful Boyfriend
 HCB.exe: Hyper Color Ball
 Hearthstone.app
 Hearthstone.exe
-Heaven.exe: <DoNotTrack>
+Heaven.exe: <Disable>
 helldivers.exe: HELLDIVERS
 Hero_Siege.exe: Hero Siege
 Heroes of the Storm.exe
@@ -389,6 +390,7 @@ KanColleViewer.exe: KanColle
 kaneandlynch.exe: Kane and Lynch: Dead Men
 KeystonePublic.x64.exe: Keystone
 KFGame.exe: Killing Floor 2
+KFGame.exe[SplashScreen]: <Ignore>
 KillingFloor.exe: Killing Floor
 Kingdom.exe
 kofxiii.exe: The King of Fighters XIII
@@ -421,7 +423,7 @@ mabinogi.exe: Mabinogi
 MadMax.exe: Mad Max
 mafia2.exe: Mafia 2
 Magicka.exe
-Mandelbulb3D.exe: <DoNotTrack>
+Mandelbulb3D.exe: <Disable>
 maniaplanet.exe: Maniaplanet
 MapleStory.exe
 MapleStory2.exe: MapleStory 2
@@ -432,8 +434,8 @@ MassEffect3.exe: Mass Effect 3
 MassEffect3Demo.exe: Mass Effect 3
 MaxPayne3.exe: Max Payne 3
 maya.exe: Autodesk Maya
-maya.exe[]: <DoNotTrack>
-maya.exe[Output Window]: <DoNotTrack>
+maya.exe[]: <Disable>
+maya.exe[Output Window]: <Disable>
 MBAA.exe: Melty Blood Actress Again: Current Code
 MechWarriorOnline.exe: MechWarrior Online
 METAL GEAR RISING REVENGEANCE.exe: Metal Gear Rising: Revengeance
@@ -465,7 +467,7 @@ nekopara_vol0.exe: Nekopara Vol. 0
 nekopara_vol1.exe: Nekopara Vol. 1
 NeoAquarium.exe: NEO AQUARIUM - The King of Crustaceans
 NEOScavenger.exe: NERO Scavenger
-NewSca.exe: <DoNotTrack>
+NewSca.exe: <Disable>
 Nexuiz.exe
 Nicole.exe: Nicole (Otome Version)
 Nidhogg.exe
@@ -479,7 +481,7 @@ NSUNSR.exe: Naruto Shippuden Ultimate Ninja Storm Revolution
 nuclearthrone.exe: Nuclear Throne
 nw.exe: SORE
 Oblivion.exe: The Elder Scrolls 4: Oblivion
-Octerrain.exe: <DoNotTrack>
+Octerrain.exe: <Disable>
 OctodadDadliestCatch.exe: Octodad: Deadliest Catch
 OfOrcsAndMen_Steam.exe: Of Orcs and Men
 OGAT.exe: Of Guards And Thieves
@@ -553,7 +555,7 @@ RaceTheSun.exe: Race The Sun
 Rage.exe: RAGE
 ragexe.exe: Ragnarok Online
 Railroads.exe: Sid Meier's Railroads!
-RainbowSix.exe: Rainbow Six Siege
+RainbowSix.exe: Tom Clancy's Rainbow Six Siege
 Rayman Legends.exe
 RCT2.EXE: Rollercoaster Tycoon 2
 reactivedrop.exe: Alien Swarm: Reactive Drop
@@ -600,8 +602,8 @@ SaintsRowTheThird_DX11.exe: Saints Row 3
 Sakura Angels.exe
 Sakura Clicker.exe
 Sakura Spirit.exe
-SC2.exe: Starcraft 2
-SC2_x64.exe: Starcraft 2
+SC2.exe: Starcraft II
+SC2_x64.exe: Starcraft II
 SC2VN.exe: SC2VN: The e-sport Visual Novel
 screencheat.exe: Screencheat
 Scrivener.exe
@@ -650,8 +652,11 @@ Starbound.app
 starbound.exe: Starbound
 starbound_opengl.exe: Starbound
 StarCitizen.exe: Star Citizen
-starcraft ii.exe: Starcraft 2
-starcraft%20ii.app: Starcraft 2
+StarCraft II Editor.exe
+StarCraft II Editor_x64.exe: Starcraft II Editor
+StarCraft II.exe
+starcraft ii.exe: Starcraft II
+starcraft%20ii.app: Starcraft II
 starcraft.exe: Starcraft
 Stardew Valley.exe
 StarDrive.exe: Star Drive
@@ -768,6 +773,12 @@ TS4.exe: The Sims 4
 TslGame.exe: Player Unknown's Battlegrounds
 TTREngine.exe: Toontown
 TurbineLauncher.exe: Dungeons & Dragons Online
+UDK.exe: Unreal Development Kit
+UDK.exe[Unreal Development Kit (32-bit, DX9)]: <Ignore>
+UDK.exe[Unreal Development Kit (64-bit, DX9)]: <Ignore>
+UDK.exe[Unreal Development Kit Editor Preview (32-bit, DX9)]: <Disable>
+UDK.exe[Unreal Development Kit Editor Preview (64-bit, DX9)]: <Disable>
+UDK.exe[UnrealEngine3]: <Disable>
 UE4-Win64-Shipping.exe: Unreal Tournament 4
 UE4-Win64-Test.exe: Unreal Tournament 4
 UE4Editor.exe: Unreal Editor
@@ -783,7 +794,7 @@ UT2004.exe: Unreal Tournament 2004
 UT3.exe: Unreal Tournament 3
 v2game.exe: Victoria II
 Valkyria.exe: Valkyria Chronicles
-Valley.exe: <DoNotTrack>
+Valley.exe: <Disable>
 vermintide.exe: Warhammer: End Times - Vermintide
 vindictus.exe: Vindictus
 VoxelFarmKit.exe: Voxel Farm
