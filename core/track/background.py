@@ -1,4 +1,3 @@
-#todo: check no crash when resolution doesnt update after plugging in monitor
 from __future__ import division, absolute_import
 import time
 import traceback
@@ -359,7 +358,6 @@ def background_process(q_recv, q_send):
                         raise IndexError
                 except IndexError:
                     store['Data']['HistoryAnimation']['Tracks'].append([history_resolution])
-                NOTIFY_DEBUG(history_resolution)
             
             #Record key presses
             if 'KeyPress' in received_data:
@@ -578,7 +576,7 @@ def background_process(q_recv, q_send):
                             history = history[i:]
                             if count > max_length:
                                 offset = history_len[i] - max_length
-                                history[0] = [history[0][0]] + history[0][offset+1:]
+                                history[i] = [value[0]] + value[offset+1:]
                             break
                     store['Data']['HistoryAnimation']['Tracks'] = history
 
