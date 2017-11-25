@@ -157,13 +157,11 @@ class SimpleConfig(object):
     def __getitem__(self, item):
         return self.data[item]
 
-#Get the current resolution to set for image generation
-try:
-    _res_x, _res_y = get_resolution()
-except TypeError:
-    _res_x = 1920
-    _res_y = 1080
-
+        
+def get_config_default(heading, value):
+    return _config_defaults[heading][value][0]
+        
+        
 try:
     _language = getdefaultlocale()[0]
 except ValueError:
@@ -175,7 +173,9 @@ _save_freq = 20 if OS_DEBUG else 180
 _config_defaults = {
     'Main': {
         'Language': (_language, str, 'Choose a language. If there is any issue or the files don\'t exit yet,'
-                                     ' {} will be used.'.format(_language, DEFAULT_LANGUAGE))
+                                     ' {} will be used.'.format(_language, DEFAULT_LANGUAGE)),
+        'HistoryLength': (7200, int, 'How many seconds to store of the track history.',
+                                     ' This will increase file size so don\'t set it too high')
     },
     'Save': {
         'Frequency': (180, int, 0, 'Choose how often to save the file, don\'t set it too low'
@@ -200,14 +200,15 @@ _config_defaults = {
         'UpdateApplications': (86400, int, 0, 'How often (in minutes) to update the list from the internet. Set to 0 to disable.')
     },
     'GenerateImages': {
-        '_UpscaleResolutionX': (_res_x, int, 1),
-        '_UpscaleResolutionY': (_res_y, int, 1),
-        '_TempResolutionX': (1, int, 1),
-        '_TempResolutionY': (1, int, 1),
+        '_UpscaleResolutionX': (0, int),
+        '_UpscaleResolutionY': (0, int),
+        '_OutputResolutionX': (0, int),
+        '_OutputResolutionY': (0, int),
         'HighPrecision': (False, bool, 'Enable this for higher quality images'
                                        ' that take longer to generate.'),
-        'OutputResolutionX': (_res_x, int, 1),
-        'OutputResolutionY': (_res_y, int, 1),
+        'AutomaticResolution': (True, bool, 'If disabled, OutputResolutionX/Y must be set.'),
+        'OutputResolutionX': (0, int),
+        'OutputResolutionY': (0, int),
         'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.'),
         'OpenOnFinish': (True, bool, 'Enable to open the image folder after generating.')
     },
@@ -223,7 +224,7 @@ _config_defaults = {
     },
     'GenerateTracks': {
         'FileName': ('[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]', str),
-        'ColourProfile': ('WhiteToBlack', str)
+        'ColourProfile': ('Citrus', str)
     },
     'GenerateKeyboard':{
         'FileName': ('[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])', str),
@@ -279,6 +280,7 @@ _config_defaults = {
         'KeyboardFontHeightOffset': (5.0, float),
         'KeyboardFontWidthOffset': (5.0, float),
         'KeyboardFontSpacing': (5.0, float),
+        'HistoryCheck': (1200, int, 0, 'How many ticks to wait before checking the history length and trimming if needed.'),
         'RunAsAdministrator': (True, bool, 'This fixes some issues with keyboard tracking.'),
         'RefreshGamepads': (600, int, 1, 'How many ticks to wait before refreshing the list of connected gamepads.')
     }
