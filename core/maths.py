@@ -199,7 +199,10 @@ def round_int(n, min_value=None, max_value=None):
     It saves having to use a ton of brackets in certain situations.
     """
     if not isinstance(n, int):
-        n = int(round(float(n)))
+        try:
+            n = int(round(float(n)))
+        except TypeError:
+            raise TypeError('value is not a valid number: {}'.format(n))
     if min_value is not None:
         n = max(n, min_value)
     if max_value is not None:
