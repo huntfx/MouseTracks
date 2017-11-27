@@ -1,7 +1,15 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+#The background process does all the heavy lifting and is not required to be in realtime
+
 from __future__ import division, absolute_import
+
 import time
 import traceback
 
+import core.numpy as numpy
 from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
@@ -10,7 +18,6 @@ from core.files import LoadData, save_data, prepare_file
 from core.maths import calculate_line, find_distance
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
-import core.numpy as numpy
     
 
 def running_processes(q_recv, q_send, background_send):
@@ -577,7 +584,11 @@ def background_process(q_recv, q_send):
                             history = history[i:]
                             if count > max_length:
                                 offset = history_len[i] - max_length
-                                history[i] = [value[0]] + value[offset+1:]
+                                try:
+                                    history[i] = [value[0]] + value[offset+1:]
+                                #Temporary error check
+                                except IndexError:
+                                    raise IndexError(value[:5])
                             break
                     store['Data']['HistoryAnimation']['Tracks'] = history
 
