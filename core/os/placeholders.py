@@ -89,6 +89,3 @@ class WindowFocusData(object):
     def get_rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
-        
-        
-KEYS = {}
