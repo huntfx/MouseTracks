@@ -127,7 +127,7 @@ def _monitor_areas():
 
 def get_monitor_locations():
     """Extract locations from monitor functions."""
-    return [m[1] for m in _monitor_areas()]
+    return tuple(m[1] for m in _monitor_areas())
 
     
 def get_documents_path():
@@ -175,12 +175,14 @@ class WindowFocusData(object):
         return buff.value
 
     
-def elevate(console=True):
+def elevate(console=True, _argument='forced_elevate'):
     """Elevate the program to admin permissions."""
-    arg = 'forced_elevate'
-    if sys.argv[-1] != arg and not ctypes.windll.shell32.IsUserAnAdmin():
-        script = os.path.abspath(sys.argv[0])
-        params = u' '.join([script] + sys.argv[1:] + [arg])
-        ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(sys.executable), params, None, 5 if console else 0)
-        if int(ret) > 32:
-            sys.exit(0)
+    if ctypes.windll.shell32.IsUserAnAdmin() or sys.argv[-1] == _argument:
+        return True
+        
+    script = os.path.abspath(sys.argv[0])
+    params = u' '.join([script] + sys.argv[1:] + [_argument])
+    ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(sys.executable), params, None, 5 if console else 0)
+    if int(ret) > 32:
+        sys.exit(0)
+    return False

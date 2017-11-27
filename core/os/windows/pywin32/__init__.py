@@ -78,7 +78,7 @@ def get_key_press(key):
 
 def get_monitor_locations():
     """Return a list of (x[0], y[0], x[1], y[1]) coordinates for each monitor."""
-    return [m[2] for m in win32api.EnumDisplayMonitors()]
+    return tuple(m[2] for m in win32api.EnumDisplayMonitors())
     
     
 def get_documents_path():
@@ -122,15 +122,17 @@ class WindowFocusData(object):
         return win32gui.GetWindowText(self.hwnd)
         
         
-def elevate(console=True):
+def elevate(console=True, _argument='forced_elevate'):
     """Elevate the program to admin permissions."""
-    arg = 'forced_elevate'
-    if sys.argv[-1] != arg and not shell.IsUserAnAdmin():
-        script = os.path.abspath(sys.argv[0])
-        params = ' '.join([script] + sys.argv[1:] + [arg])
-        try:
-            shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5 if console else 0)
-        except pywintypes.error:
-            pass
-        else:
-            sys.exit(0)
+    if shell.IsUserAnAdmin() or sys.argv[-1] == _argument:
+        return True
+        
+    script = os.path.abspath(sys.argv[0])
+    params = ' '.join([script] + sys.argv[1:] + [_argument])
+    try:
+        shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5 if console else 0)
+    except pywintypes.error:
+        pass
+    else:
+        sys.exit(0)
+    return False
