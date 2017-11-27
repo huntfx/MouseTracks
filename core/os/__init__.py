@@ -222,7 +222,6 @@ try:
     get_key_press
     hide_file
     get_running_processes
-    get_resolution
     get_documents_path
     
     #Detect if multiple monitors can be used
