@@ -1,6 +1,12 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
-from locale import getdefaultlocale
+
 import time
+from locale import getdefaultlocale
 
 from core.base import format_file_path
 from core.compatibility import get_items
@@ -174,8 +180,8 @@ _config_defaults = {
     'Main': {
         'Language': (_language, str, 'Choose a language. If there is any issue or the files don\'t exit yet,'
                                      ' {} will be used.'.format(_language, DEFAULT_LANGUAGE)),
-        'HistoryLength': (7200, int, 'How many seconds to store of the track history.',
-                                     ' This will increase file size so don\'t set it too high')
+        'HistoryLength': (7200, int, 0, 'How many seconds to store of the track history.',
+                                     ' Each hour increases the file size by roughly 1.5mb.')
     },
     'Save': {
         'Frequency': (180, int, 0, 'Choose how often to save the file, don\'t set it too low'

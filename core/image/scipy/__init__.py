@@ -1,9 +1,14 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
 
 try:
     from core.image.scipy.gaussian import gaussian_filter
     from core.image.scipy.zoom import zoom
-except ImportError: #DLL load failed: %1 is not a valid Win32 application - maybe issue with 32 bit python, needs testing
+except ImportError:
     from scipy.ndimage.filters import gaussian_filter
     from scipy.ndimage.interpolation import zoom
     

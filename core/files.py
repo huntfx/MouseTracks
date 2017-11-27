@@ -1,18 +1,24 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
-from operator import itemgetter
-from tempfile import gettempdir
+
 import time
 import zlib
 import os
 import zipfile
+from operator import itemgetter
+from tempfile import gettempdir
 
+import core.numpy as numpy
 from core.base import format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
 from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
 from core.versions import upgrade_version, IterateMaps
-import core.numpy as numpy
 
 
 TEMPORARY_PATH = gettempdir()

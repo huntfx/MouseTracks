@@ -1,9 +1,15 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
+
 import codecs
 
+import core.utf8
 from core.config import CONFIG
 from core.constants import DEFAULT_LANGUAGE
-import core.utf8
 
 
 ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'

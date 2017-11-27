@@ -1,8 +1,15 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+#The main loop used for tracking, runs 60 times per second
+
 from __future__ import division, absolute_import
-from multiprocessing import Process, Queue
-from threading import Thread
+
 import time
 import traceback
+from multiprocessing import Process, Queue
+from threading import Thread
 
 from core.compatibility import get_items, _print
 from core.config import CONFIG

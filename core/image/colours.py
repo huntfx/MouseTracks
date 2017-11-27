@@ -1,4 +1,9 @@
-from __future__ import division, absolute_import
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
+from __future__ import absolute_import, division
 
 from core.compatibility import range, get_items
 from core.files import format_name

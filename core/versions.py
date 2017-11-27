@@ -1,8 +1,14 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
+
 import time
 
-from core.compatibility import get_items, unicode
 import core.numpy as numpy
+from core.compatibility import get_items, unicode
 
 
 VERSION_HISTORY = [
@@ -30,7 +36,8 @@ VERSION_HISTORY = [
     '2.0.10c',
     '2.0.10d',
     '2.0.11',
-    '2.0.12'
+    '2.0.12',
+    '2.0.13'
 ]
 
 VERSION = VERSION_HISTORY[-1]
@@ -59,15 +66,14 @@ class IterateMaps(object):
             
             #Rejoin the numpy arrays with the data
             elif command == 'join':
-                index = value
-                maps[key] = extra[index]
+                maps[key] = extra[value]
             
             #Convert dicts to numpy arrays (only used on old files)
             elif command == 'convert' and _legacy:
                 width, height = key
                 numpy_array = numpy.array((width, height), create=True, dtype='int64')
-                for x, y in array:
-                    numpy_array[y][x] = array[(x, y)]
+                for x, y in value:
+                    numpy_array[y][x] = value[(x, y)]
                 maps[key] = numpy_array
                 
     def separate(self):
@@ -96,7 +102,7 @@ def _get_id(id):
         return 0
 
 
-def upgrade_version(data, update_metadata=True):
+def upgrade_version(data={}, update_metadata=True):
     """Files from an older version will be run through this function.
 
     History:
@@ -124,6 +130,7 @@ def upgrade_version(data, update_metadata=True):
     2.0.10d: Record more accurate intervals for each key
     2.0.11: Gamepad tracking
     2.0.12: Change resolutions to major keys
+    2.0.13: Record history of tracks for animation
     """
 
     #Make sure version is in history, otherwise set to lowest version
@@ -346,6 +353,9 @@ def upgrade_version(data, update_metadata=True):
             
         del data['Maps']
     
+    if current_version_id < _get_id('2.0.13'):
+        data['HistoryAnimation'] = {'Tracks': [], 'Clicks': [], 'Keyboard': []}
+    
     if update_metadata:     
     
         #Only count as new session if updated or last save was over an hour ago
@@ -367,13 +377,31 @@ def upgrade_version(data, update_metadata=True):
                                                               'Middle': numpy.array(resolution, create=True),
                                                               'Right': numpy.array(resolution, create=True)}}
                 else:
-                    values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
-                    values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
-                    values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
-                    values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
-                    values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
-                    values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
-            
+                    try:
+                        values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Single']['Left'] = numpy.array(resolution, create=True)
+                    try:
+                        values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Single']['Middle'] = numpy.array(resolution, create=True)
+                    try:
+                        values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Single']['Right'] = numpy.array(resolution, create=True)
+                    try:
+                        values['Clicks']['Session']['Double']['Left'] = numpy.fill(values['Clicks']['Session']['Double']['Left'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Double']['Left'] = numpy.array(resolution, create=True)
+                    try:
+                        values['Clicks']['Session']['Double']['Middle'] = numpy.fill(values['Clicks']['Session']['Double']['Middle'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Double']['Middle'] = numpy.array(resolution, create=True)
+                    try:
+                        values['Clicks']['Session']['Double']['Right'] = numpy.fill(values['Clicks']['Session']['Double']['Right'], 0)
+                    except AttributeError:
+                        values['Clicks']['Session']['Double']['Right'] = numpy.array(resolution, create=True)
+                        
             data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)

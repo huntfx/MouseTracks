@@ -1,4 +1,10 @@
-from __future__ import division
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
+from __future__ import absolute_import, division
+
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file

@@ -1,12 +1,18 @@
-from __future__ import division, absolute_import
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
+from __future__ import absolute_import, division
+
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
+import core.numpy as numpy
 from core.image.scipy import blur, upscale
 from core.compatibility import range, _print, get_items
 from core.config import CONFIG
 from core.maths import round_int
-import core.numpy as numpy
 
 
 def gaussian_size(width, height):

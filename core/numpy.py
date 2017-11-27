@@ -1,4 +1,10 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import division, absolute_import
+
 import numpy
 
 from core.compatibility import StringIO, BytesIO

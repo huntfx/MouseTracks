@@ -1,6 +1,13 @@
-import struct
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
+from __future__ import absolute_import
+
 import cPickle
 import socket
+import struct
 from select import select
 
 
@@ -14,7 +21,7 @@ def send_msg(sock, msg):
     
 def recv_msg(sock):
     """Receive the message."""
-            
+    
     #Read message length
     raw_msglen = recvall(sock, 4)
     if not raw_msglen:
@@ -27,7 +34,6 @@ def recv_msg(sock):
     
 def recvall(sock, n):
     """Receive socket data and detect if the connection was closed."""
-
     data = ''
     while len(data) < n:
         packet = sock.recv(n - len(data))

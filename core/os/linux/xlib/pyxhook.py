@@ -32,7 +32,7 @@
 #    This file has now been somewhat extensively modified by
 #    Daniel Folkinshteyn <nanotube@users.sf.net>
 #    So if there are any bugs, they are probably my fault. :)
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import sys
 import re

@@ -1,15 +1,22 @@
+"""
+This is part of the Mouse Tracks Python application.
+Source: https://github.com/Peter92/MouseTracks
+"""
+
 from __future__ import absolute_import
+
 from multiprocessing import freeze_support
 
+from core.constants import *
 from core.config import CONFIG
 from core.track import start_tracking
-from core.os import elevate
-
+from core.os import elevate, remove_file
 
 if __name__ == '__main__':
     freeze_support()
-    
+
+    CONFIG.save()
     if CONFIG['Advanced']['RunAsAdministrator']:
         elevate()
-        
+    
     start_tracking()
