@@ -12,14 +12,14 @@ from core.compatibility import input, _print, PYTHON_VERSION
 from core.constants import DEFAULT_PATH
 from core.language import Language
 from core.os import OPERATING_SYSTEM
-from core.versions import VERSION
+from core.versions import VERSION, FILE_VERSION
 
 
 def handle_error(trace=None, log=True):
     """Any errors are sent to here."""
     if trace is not None:
     
-        output = ['Mouse Tracks v{} | Python {} | {}'.format(VERSION, PYTHON_VERSION, OPERATING_SYSTEM)]
+        output = ['Mouse Tracks {} ({}) | Python {} | {}'.format(VERSION, FILE_VERSION, PYTHON_VERSION, OPERATING_SYSTEM)]
         output.append('')
         output.append(trace)
         output = '\n'.join(output)
