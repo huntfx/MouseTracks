@@ -21,9 +21,9 @@ def gaussian_size(width, height):
         raise ValueError('invalid input type, must be int')
 
 
-def calculate_resolution(resolutions, output_resolution):
+def calculate_resolution(resolutions, output_resolution=None):
 
-    if not CONFIG['GenerateImages']['AutomaticResolution']:
+    if output_resolution is None or not CONFIG['GenerateImages']['AutomaticResolution']:
         output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
                              CONFIG['GenerateImages']['OutputResolutionY'])
 
