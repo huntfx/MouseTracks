@@ -18,7 +18,7 @@ from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
 from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
-from core.versions import upgrade_version, IterateMaps
+from core.versions import VERSION, upgrade_version, IterateMaps
 
 
 TEMPORARY_PATH = gettempdir()

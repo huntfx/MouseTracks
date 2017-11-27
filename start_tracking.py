@@ -10,7 +10,7 @@ from multiprocessing import freeze_support
 from core.constants import *
 from core.config import CONFIG
 from core.track import start_tracking
-from core.os import elevate, remove_file
+from core.os import elevate
 
 if __name__ == '__main__':
     freeze_support()
