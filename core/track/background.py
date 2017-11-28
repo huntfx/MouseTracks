@@ -584,11 +584,7 @@ def background_process(q_recv, q_send):
                             history = history[i:]
                             if count > max_length:
                                 offset = history_len[i] - max_length
-                                try:
-                                    history[i] = [value[0]] + value[offset+1:]
-                                #Temporary error check
-                                except IndexError:
-                                    raise IndexError(value[:5])
+                                history[0] = [value[0]] + value[offset+1:]
                             break
                     store['Data']['HistoryAnimation']['Tracks'] = history
 
