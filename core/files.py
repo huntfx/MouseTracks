@@ -85,6 +85,14 @@ def prepare_file(data, legacy=False):
     with CustomOpen(io, 'w') as f:
         f.write(pickle.dumps(data, PICKLE_PROTOCOL), '_')
         f.write(str(len(numpy_maps)), 'n')
+        
+        f.write(str(VERSION), 'metadata\\version.txt')
+        f.write(str(FILE_VERSION), 'metadata\\file.txt')
+        f.write(str(data['Time']['Modified']), 'metadata\\modified.txt')
+        f.write(str(data['Time']['Created']), 'metadata\\created.txt')
+        f.write(str(data['TimesLoaded']), 'metadata\\sessions.txt')
+        f.write(str(data['Ticks']['Total']), 'metadata\\time.txt')
+        
         for i, m in enumerate(numpy_maps):
             f.write(numpy.save(m), i)
     
@@ -166,8 +174,14 @@ class LoadData(dict):
         self.version = self['Version']
         self.name = profile_name
     
+    def __repr__(self):
+        return dict(self)
+    
     def get_tracks(self, session=False):
-        """Return dictionary of tracks along with top resolution and range of values."""
+        """Return dictionary of tracks along with top resolution and range of values.
+        
+        TODO: Test sum of arrays vs length of arrays
+        """
         start_time = self['Ticks']['Session']['Tracks'] if session else 0
         
         top_resolution = None
