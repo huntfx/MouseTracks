@@ -11,7 +11,7 @@ import core.numpy as numpy
 from core.compatibility import get_items, unicode
 
 
-FILE_VERSION = 25
+FILE_VERSION = 26
 
 VERSION = '1.0 beta'
 

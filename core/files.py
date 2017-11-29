@@ -83,18 +83,18 @@ def prepare_file(data, legacy=False):
     #Write the maps to a zip file in memory
     io = BytesIO()
     with CustomOpen(io, 'w') as f:
-        f.write(pickle.dumps(data, PICKLE_PROTOCOL), '_')
-        f.write(str(len(numpy_maps)), 'n')
+        f.write(pickle.dumps(data, PICKLE_PROTOCOL), 'data.pkl')
         
+        #Write metadata for quick access
         f.write(str(VERSION), 'metadata\\version.txt')
         f.write(str(FILE_VERSION), 'metadata\\file.txt')
-        f.write(str(data['Time']['Modified']), 'metadata\\modified.txt')
-        f.write(str(data['Time']['Created']), 'metadata\\created.txt')
-        f.write(str(data['TimesLoaded']), 'metadata\\sessions.txt')
-        f.write(str(data['Ticks']['Total']), 'metadata\\time.txt')
+        f.write(str(data['Time']['Modified']), 'metadata/modified.txt')
+        f.write(str(data['Time']['Created']), 'metadata/created.txt')
+        f.write(str(data['TimesLoaded']), 'metadata/sessions.txt')
+        f.write(str(data['Ticks']['Total']), 'metadata/time.txt')
         
         for i, m in enumerate(numpy_maps):
-            f.write(numpy.save(m), i)
+            f.write(numpy.save(m), 'maps/{}.npy'.format(i))
     
     #Undo the modify
     IterateMaps(data['Resolution']).join(numpy_maps)
@@ -104,21 +104,34 @@ def prepare_file(data, legacy=False):
 
 def decode_file(f, legacy=False):
     """Read compressed data."""
+    #Old file format
     if legacy:
         return pickle.loads(zlib.decompress(f.read()))
-        
-    data = pickle.loads(f.read('_'))
-    numpy_maps = [numpy.load(f.read(i)) for i in range(int(f.read('n')))]
+    
+    #New zip format (file version 26)
+    try:
+        data = pickle.loads(f.read('data.pkl'))
+        numpy_maps = []
+        i = 0
+        while True:
+            try:
+                numpy_maps.append(numpy.load(f.read('maps/{}.npy'.format(i))))
+            except KeyError:
+                break
+            i += 1
+            
+    #Original zip format
+    except KeyError:
+        data = pickle.loads(f.read('_'))
+        numpy_maps = [numpy.load(f.read(i)) for i in range(int(f.read('n')))]
+    
+    #Reconnect the numpy maps
     try:
         IterateMaps(data['Maps']).join(numpy_maps, _legacy=True)
     except KeyError:
         IterateMaps(data['Resolution']).join(numpy_maps, _legacy=False)
+        
     return data
-
-    
-def read_metadata(profile_name=None):
-    paths = _get_paths(profile_name)
-    return {'Modified': get_modified_time(paths['Main'])}
     
 
 def load_data(profile_name=None, _update_metadata=True, _create_new=True):
