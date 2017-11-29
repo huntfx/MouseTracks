@@ -68,6 +68,14 @@ def get_modified_time(file_name):
         return os.path.getmtime(file_name)
     except (OSError, FileNotFoundError, WindowsError):
         return None
+
+    
+def set_modified_time(path, time):
+    try:
+        os.utime(path, (time, time))
+    except (OSError, FileNotFoundError, WindowsError):
+        return False
+    return True
     
     
 def list_directory(folder):
@@ -91,7 +99,7 @@ def join_path(path, create=False):
     
 def open_folder(path):
     os.startfile(path)
-
+    
 
 #Set which keys to check
 KEYS = {
