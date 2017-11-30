@@ -514,16 +514,14 @@ def background_process(q_recv, q_send):
                 if not max_track_value:
                     max_track_value = MAX_INT
                 
-                '''
                 if store['Data']['Ticks']['Tracks'] > max_track_value:
                     compress_multplier = CONFIG['Advanced']['CompressTrackAmount']
                     NOTIFY(TRACK_COMPRESS_START, 'track')
                     NOTIFY.send(q_send)
                     
-                    tracks = store['Data']['Maps']['Tracks']
-                    for resolution in tracks.keys():
-                        tracks[resolution] = numpy.divide(tracks[resolution], compress_multplier, as_int=True)
-                        #if not numpy.count(tracks[resolution]):
+                    for resolution, maps in get_items(store['Data']['Resolution']):
+                        maps['Tracks'] = numpy.divide(maps['Tracks'], compress_multplier, as_int=True)
+                        #if not numpy.count(maps['Tracks']):
                         #    del tracks[resolution]
                             
                     NOTIFY(TRACK_COMPRESS_END, 'track')
@@ -533,10 +531,9 @@ def background_process(q_recv, q_send):
                         pass
                         
                     store['Data']['Ticks']['Tracks'] //= compress_multplier
-                    store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
+                    store['Data']['Ticks']['Session']['Tracks'] //= compress_multplier
                     store['Data']['Ticks']['Session']['Tracks'] = int(store['Data']['Ticks']['Session']['Tracks'])
-                    '''
                 
             #Record mouse clicks
             if 'MouseClick' in received_data:
