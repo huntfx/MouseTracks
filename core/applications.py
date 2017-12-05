@@ -94,17 +94,19 @@ class AppList(object):
                 return {}
                 
         else:
-            #Read file from disk
+            #Read from script directory
+            try:
+                with open(path.replace('\\', '/').split('/')[-1], 'r') as f:
+                    lines = [i.strip() for i in f.readlines()]
+            except IOError:
+                lines = []
+                
+            #Read from documents
             try:
                 with open(path, 'r') as f:
-                    lines = [i.strip() for i in f.readlines()]
-                    
-            #Attempt to read from script directory if it doesn't exist at the path
+                    lines += [i.strip() for i in f.readlines()]
             except IOError:
-                try:
-                    with open(path.replace('\\', '/').split('/')[-1], 'r') as f:
-                        lines = [i.strip() for i in f.readlines()]
-                except IOError:
+                if not lines:
                     return {}
         
         #Remove any encoding at the start of the file
