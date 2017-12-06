@@ -279,7 +279,7 @@ if FOCUS_DETECTION:
             self._psutil = None
         
         def __str__(self):
-            return 'Process {} ({}): {}'.format(self.pid(), self.exe(), self.name())
+            return 'Process {} ({}): "{}" ({})'.format(self.pid(), self.exe(), self.name(), '{}x{}'.format(*self.resolution()))
     
         def psutil(self):
             if self._psutil is None:
