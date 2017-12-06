@@ -78,29 +78,6 @@ class PythonVersion(object):
         return v1 <= v2
 
 
-def get_items(d):
-    """Iterate through the keys and values of a dictionary.
-    As Python 2 and 3 have different ways of getting items,
-    any attempt should be wrapped in this function.
-    """
-    if PYTHON_VERSION < 3:
-        return d.iteritems()
-    else:
-        return d.items()
-
-
-def _print(text):
-    """Send everything here to print, so that tweaks can be made if needed."""
-    try:
-        for line in text.replace('\\n', '\n').split('\n'):
-            try:
-                print(line)
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                print(line.encode('utf-8').strip())
-    except AttributeError:
-        print(text)
-
-
 PYTHON_VERSION = PythonVersion()
 
 if PYTHON_VERSION < 3:
@@ -116,3 +93,30 @@ else:
     input = input
     range = range
     unicode = str
+
+
+def get_items(d):
+    """Iterate through the keys and values of a dictionary.
+    As Python 2 and 3 have different ways of getting items,
+    any attempt should be wrapped in this function.
+    """
+    if PYTHON_VERSION < 3:
+        return d.iteritems()
+    else:
+        return d.items()
+
+
+def _print(text, join=', '):
+    """Send everything here to print, so that tweaks can be made if needed."""
+    try:
+        if isinstance(text, (tuple, list)):
+            text = unicode(join).join(str(i).decode('utf-8','ignore').encode("utf-8") for i in text)
+        else:
+            text = text.replace('\\n', '\n')
+        for line in text.split('\n'):
+            try:
+                print(line)
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                print(line.encode('utf-8').strip())
+    except AttributeError:
+        print(text)
