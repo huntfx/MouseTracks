@@ -43,8 +43,10 @@ LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLD
 #LOCK_FILE = '{}/mousetrack-{}.lock'.format(DATA_FOLDER, 1)   #Data folder (for testing)
 
 
-def get_data_filename(name):
+def get_data_filename(name=None):
     """Get file name of data file."""
+    if name is None:
+        name = DEFAULT_NAME
     return DATA_NAME.replace('[PROGRAM]', format_name(name))
     
     
@@ -407,8 +409,6 @@ class Lock(object):
     
     def create(self):
         """Open a new locked file, or return None if it already exists."""
-            
-        #Check if file is locked, or create one
         if not file_exists(self._name) or remove_file(self._name):
             f = open(self._name, 'w')
             hide_file(self._name)
