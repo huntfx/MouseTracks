@@ -29,6 +29,14 @@ except NameError:
 
 
 #Define any functions
+def _get_folder_path(file_path):
+    """Remove the last item from a path if it is a file."""
+    if os.path.isfile(file_path):
+        folders = file_path.replace('\\', '/').split('/')
+        return '/'.join(folders[:-1]), folders[-1]
+    return file_path, None
+    
+    
 def remove_file(file_name):
     try:
         os.remove(file_name)
@@ -51,10 +59,7 @@ def file_exists(file_name):
 
 def create_folder(folder_path):
     
-    #Remove file from path
-    folders = folder_path.replace('\\', '/').split('/')
-    if not folders[-1] or '.' in folders[-1][1:]:
-        folder_path = '/'.join(folders[:-1])
+    folder_path, file_path = _get_folder_path(folder_path)
     
     try:
         os.makedirs(folder_path)
@@ -78,9 +83,14 @@ def set_modified_time(path, time):
     return True
     
     
-def list_directory(folder):
+def list_directory(folder, remove_extensions=False, force_extension=None):
     try:
-        return os.listdir(folder)
+        files = os.listdir(folder)
+        if force_extension:
+            files = [f for f in files if f.lower().endswith(force_extension)]
+        if remove_extensions:
+            files = ['.'.join(f.split('.')[:-1]) for f in files]
+        return files
     except (OSError, FileNotFoundError, WindowsError):
         return None
 
@@ -99,6 +109,24 @@ def join_path(path, create=False):
     
 def open_folder(path):
     os.startfile(path)
+    
+
+#Functions to be used with commands
+def load_executable(path):
+    
+    folder_path, file_path = _get_folder_path(path)
+    
+    os.chdir(folder_path)
+    os.system(path)
+    
+def mouse_press(button):
+    raise NotImplementedError
+    
+def mouse_move(x, y):
+    raise NotImplementedError
+    
+def key_press(key):
+    raise NotImplementedError
     
 
 #Set which keys to check
