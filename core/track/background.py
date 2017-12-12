@@ -53,7 +53,6 @@ def running_processes(q_recv, q_send, background_send):
                 
                 #Send custom resolution
                 if running_apps.focus is not None:
-                    #NOTIFY_DEBUG(running_apps.focused_exe, running_apps.focused_name)
                     
                     if current_app is None:
                         application_resolution = None
@@ -467,7 +466,10 @@ def background_process(q_recv, q_send):
                 _resolution = -1
                 
                 start, end = received_data['MouseMove']
-                #distance = find_distance(end, start)
+                
+                #Store total distance travelled
+                distance = find_distance(end, start)
+                store['Data']['Distance']['Tracks'] += distance
                 
                 if CONFIG['Main']['HistoryLength']:
                     store['Data']['HistoryAnimation']['Tracks'][-1].append(end)

@@ -11,7 +11,7 @@ import core.numpy as numpy
 from core.compatibility import get_items, unicode
 
 
-FILE_VERSION = 26
+FILE_VERSION = 27
 
 VERSION = '1.0 beta'
 
@@ -91,6 +91,7 @@ def upgrade_version(data={}, update_metadata=True):
             file_version = legacy_history.index(data['Version'])
         except KeyError:
             file_version = 0
+    original_version = file_version
             
     current_time = time.time()
     
@@ -337,11 +338,28 @@ def upgrade_version(data={}, update_metadata=True):
     #Record history for later animation
     if file_version < 25:
         data['HistoryAnimation'] = {'Tracks': [], 'Clicks': [], 'Keyboard': []}
+        
+    #Add version update history and distance travelled
+    if file_version < 27:
+        data['VersionHistory'] = {}
+        data['Distance'] = {'Tracks': 0.0}
+        
+        
+    version_update = data.get('FileVersion', '0') != FILE_VERSION
     
-    if update_metadata:     
+    #Track when the updates happen
+    if version_update:
+        start_version = max(original_version, 27)
+        for i in range(start_version, FILE_VERSION+1):
+            data['VersionHistory'][i] = current_time
     
+    if update_metadata: 
+            
+        data['Version'] = VERSION
+        data['FileVersion'] = FILE_VERSION 
+                
         #Only count as new session if updated or last save was over an hour ago
-        if (data.get('FileVersion', '0') != FILE_VERSION or not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']):
+        if version_update or not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']:
             data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
             data['Ticks']['Session']['Total'] = data['Ticks']['Total']
             data['Keys']['Session']['Pressed'] = {}
@@ -387,8 +405,5 @@ def upgrade_version(data={}, update_metadata=True):
             data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
             data['TimesLoaded'] += 1
             data['SessionStarts'].append(current_time)
-            
-        data['Version'] = VERSION
-        data['FileVersion'] = FILE_VERSION
         
     return data
