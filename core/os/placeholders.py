@@ -6,6 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import os
+import psutil
 
 
 def elevate():
@@ -26,8 +27,11 @@ def read_env_var(text):
 def get_running_processes():
     """Return a dictionary of running processes, with their ID as the value.
     The ID is used to determine which process was most recently loaded.
+    
+    This fallback function is sorted by the PID,
+    which is incorrect in terms of load order.
     """
-    return {}
+    return {i.name(): i.pid for i in psutil.process_iter()}
 
     
 def hide_file():
