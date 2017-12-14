@@ -119,6 +119,28 @@ def load_executable(path):
     os.chdir(folder_path)
     os.system(path)
     
+
+def process_terminate(pid, wait=False):
+    p = psutil.Process(pid)
+    if wait:
+        if isinstance(wait, bool):
+            p.wait()
+        else:
+            p.wait(wait)
+    else:
+        p.terminate()
+
+
+def process_suspend(pid):
+    p = psutil.Process(pid)
+    p.suspend()
+
+
+def process_resume(pid):
+    p = psutil.Process(pid)
+    p.resume()
+    
+    
 def mouse_press(button):
     raise NotImplementedError
     
