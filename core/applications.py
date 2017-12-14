@@ -261,6 +261,30 @@ class RunningApplications(object):
             self.focused_exe = self.focus.exe()
             self.focused_name = self.focus.name()
 
+    def all_loaded_apps(self):
+        """Get list of every loaded program."""
+        loaded = []
+        
+        #Get dict of running processes here if focus is enabled
+        if WindowFocus is not None:
+            self.processes = get_running_processes()
+        
+        matching_applications = {self.processes[app]: app
+                                 for app in self.applist
+                                 if app in self.processes}
+        
+        for index in sorted(matching_applications.keys())[::-1]:
+            loaded_exe = matching_applications[index]
+            names = self.applist[loaded_exe]
+            try:
+                loaded.append(names[None])
+
+            #Only fallback to window name if it is the only entry for that application
+            except KeyError:
+                if len(names) == 1 or len(set(names.values())) == 1:
+                    loaded.append(names[names.keys()[0]])
+        return set(loaded)
+            
     def check(self):
         """Return the name and executable of a running application."""
         #Get most recently loaded application
@@ -277,6 +301,7 @@ class RunningApplications(object):
                     return names[None], loaded_exe
 
                 #Only fallback to window name if it is the only entry for that application
+                #Otherwise we don't know which entry to use, so ignore
                 except KeyError:
                     if len(names) == 1 or len(set(names.values())) == 1:
                         return names[names.keys()[0]], loaded_exe
