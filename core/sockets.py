@@ -6,6 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import cPickle
+import psutil
 import socket
 import struct
 from select import select
@@ -46,3 +47,34 @@ def recvall(sock, n):
 def msg_empty(sock):
     """Detect if socket is empty."""
     return not select([sock],[],[],0)[0]
+
+
+def get_ip(sock):
+    """Get the IP address the socket is bound to."""
+    return sock.getsockname()[0]
+
+
+def get_port(sock):
+    """Get the port the socket is bound to."""
+    return sock.getsockname()[1]
+    
+    
+def force_close_port(port, process_name=None):
+    """Terminate a process that is bound to a port.
+    
+    The process name can be set (eg. python), which will
+    ignore any other process that doesn't start with it.
+    """
+    for proc in psutil.process_iter():
+        for conn in proc.connections():
+            if x.laddr[1] == port:
+                #Don't close if it belongs to SYSTEM
+                #On windows using .username() results in AccessDenied
+                #Needs testing on other operating systems
+                try:
+                    proc.username()
+                except psutil.AccessDenied:
+                    pass
+                else:
+                    if process_name is None or proc.name().startswith(process_name):
+                        proc.kill()
