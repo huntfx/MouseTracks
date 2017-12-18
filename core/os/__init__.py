@@ -31,8 +31,13 @@ except NameError:
 #Define any functions
 def _get_folder_path(file_path):
     """Remove the last item from a path if it is a file."""
-    if os.path.isfile(file_path):
-        folders = file_path.replace('\\', '/').split('/')
+    if os.path.exists(file_path):
+        if os.path.isfile(file_path):
+            folders = file_path.replace('\\', '/').split('/')
+            return '/'.join(folders[:-1]), folders[-1]
+        return file_path, None
+    folders = file_path.replace('\\', '/').split('/')
+    if '.' in folders[-1]:
         return '/'.join(folders[:-1]), folders[-1]
     return file_path, None
     
