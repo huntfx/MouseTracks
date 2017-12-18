@@ -257,6 +257,13 @@ _config_defaults = {
         '__note__': ['Anything put here is not for editing.'],
         'AppListUpdate': (0, int, None, int(time.time()))
     },
+    'API': {
+        'AutomaticallyChoosePorts': (False, bool),
+        'ForceCloseProcessUsingPort': (False, bool, ('If this is set, the program will attempt to shut down whatever is using the requested port,'
+                                                     ' otherwise a random port will be chosen.')),
+        'ServerPort': (60315, int, 1025, 65535, 'Set the port to run the message server.'),
+        'WebPort': (60316, int, 1025, 65535, 'Set the port to run the web API.')
+    },
     'Advanced': {
         'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose the level of messages to show.'
                                                    ' 0 will show everything, and 3 will show nothing.'),
@@ -301,8 +308,9 @@ _config_order = [
     'GenerateTracks',
     'GenerateHeatmap',
     'GenerateKeyboard',
-    'GenerateCSV',
+    'GenerateCSV', 
     'Advanced',
+    'API',
     'SavedSettings'
 ]
 
