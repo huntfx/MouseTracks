@@ -12,7 +12,7 @@ from core.config import CONFIG
 from core.constants import APP_LIST_URL
 from core.notify import *
 from core.files import format_file_path
-from core.os import get_running_processes, WindowFocus
+from core.os import get_running_processes, WindowFocus, get_modified_time
 from core.internet import get_url_contents
 
 
@@ -89,7 +89,7 @@ class AppList(object):
                 
             #Read file from URL
             try:
-                lines = get_url_contents(path).split('\n')
+                lines = get_url_contents(url).split('\n')
             except AttributeError:
                 return {}
                 
@@ -224,7 +224,7 @@ class RunningApplications(object):
 
     def reload_file(self):
         #Download from the internet and combine with the current list
-        last_updated = CONFIG['SavedSettings']['AppListUpdate']
+        last_updated = get_modified_time(APP_LIST_PATH)
         update_frequency = CONFIG['Internet']['UpdateApplications'] * 60
         
         if not CONFIG['Internet']['Enable'] or not update_frequency:
@@ -239,8 +239,6 @@ class RunningApplications(object):
                 NOTIFY.send(self.q)
                 
             if self.applist.update(APP_LIST_URL):
-                CONFIG['SavedSettings']['AppListUpdate'] = int(time.time())
-                CONFIG.save()
                 self.applist.save()
                 
                 if self.q is not None:

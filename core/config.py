@@ -253,10 +253,6 @@ _config_defaults = {
         '_GenerateClicks': (True, bool),
         '_GenerateKeyboard': (True, bool)
     },
-    'SavedSettings': {
-        '__note__': ['Anything put here is not for editing.'],
-        'AppListUpdate': (0, int, None, int(time.time()))
-    },
     'API': {
         'AutomaticallyChoosePorts': (False, bool),
         'ForceCloseProcessUsingPort': (False, bool, ('If this is set, the program will attempt to shut down whatever is using the requested port,'
@@ -310,8 +306,7 @@ _config_order = [
     'GenerateKeyboard',
     'GenerateCSV', 
     'Advanced',
-    'API',
-    'SavedSettings'
+    'API'
 ]
 
 
