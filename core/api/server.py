@@ -22,7 +22,7 @@ def client_thread(client_id, sock, q_recv, q_send):
     conn, addr = sock.accept()
     q_send.put(addr)
     
-    #Remove earlier items from queue
+    #Remove items from queue sent before connection
     while not q_recv.empty():
         q_recv.get()
     
@@ -122,7 +122,18 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False):
                         q_main.put('{}:{} connected.'.format(*addr))
                     client_id += 1
                     break
-        
+
+            #Delete closed connections
+            invalid = []
+            for i, thread in enumerate(threads):
+                if not thread.isAlive():
+                    invalid.append(i)
+            for i in invalid[::-1]:
+                del threads[i]
+                queues[i].close()
+                del queues[i]
+    
+    #Safely shut down threads and queues
     except KeyboardInterrupt:
         for thread in threads:
             thread.running = False
