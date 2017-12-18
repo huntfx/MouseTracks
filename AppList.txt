@@ -20,6 +20,8 @@ acclient.exe: Asheron's Call
 aces.exe: War Thunder
 aclauncher.exe: Asheron's Call
 Adobe Premiere Pro.exe
+Adobe Premiere Pro.exe[]: <Ignore>
+Adobe Premiere Pro.exe[Start]: <Ignore>
 adventure-capitalist.exe: AdVenture Capitalist
 AdvHD.exe: If My Heart Had Wings
 AfterFX.exe: Adobe After Effects
@@ -40,6 +42,7 @@ anno5.exe: Anno 2070
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
+ApplicationFrameHost.exe: <Ignore>
 ApplicationFrameHost.exe[Halo 5: Forge]
 ArcheAge.exe
 arena.exe: Total War: Arena
@@ -243,6 +246,7 @@ EoCApp.exe: Divinity: Original Sin
 eqgame.exe: EverQuest
 es.scr: <Disable>
 eso.exe: The Elder Scrolls Online
+eso64.exe: The Elder Scrolls Online
 ESSTEAM.exe: Elsword
 EternalCrusadeClient.exe: Warhammer 40,000: Eternal Crusade
 EthanCarter-Win64-Shipping.exe: The Vanishing of Ethan Carter Redux
@@ -354,6 +358,7 @@ HMM.exe: Heavy Metal Machines
 hng.exe: Heroes and Generals
 HoM.exe: Hero of Many
 HOMEFRONT.exe: Homefront
+Homefront2_Release.exe: Homefront: The Revolution
 Hon.exe: Heroes of Newerth
 HotlineGL.exe: Hotline Miami
 HotlineMiami.exe: Hotline Miami
@@ -785,7 +790,7 @@ UE4Editor.exe: Unreal Editor
 UNDERTALE.exe: Undertale
 Unity.exe
 Unreal.exe
-UnrealTournament.exe: Unreal Tournament
+UnrealTournament.exe: Unreal Tournament 4
 Unturned.exe
 UOKR.exe: Ultima Online
 Uplink.exe
