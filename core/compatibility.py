@@ -105,9 +105,36 @@ def get_items(d):
     else:
         return d.items()
 
+        
+class Message(object):
+    def __init__(self, queue=None):
+        self.queue = queue
+    
+    def send(self, text, join=', '):
+        """Send everything here to print, so that tweaks can be made if needed."""
+        try:
+            if isinstance(text, (tuple, list)):
+                text = unicode(join).join(str(i).decode('utf-8','ignore').encode("utf-8") for i in text)
+            else:
+                text = text.replace('\\n', '\n')
+            for line in text.split('\n'):
+                try:
+                    print(line)
+                except (UnicodeEncodeError, UnicodeDecodeError):
+                    line = line.encode('utf-8').strip()
+                    print(line)
+                if self.queue is not None:
+                    self.queue.put(line)
+        except AttributeError:
+            print(text)
+            if self.queue is not None:
+                self.queue.put(text)
 
+            
 def _print(text, join=', '):
-    """Send everything here to print, so that tweaks can be made if needed."""
+    """Send everything here to print, so that tweaks can be made if needed.
+    TODO: Replaced with Message, this needs removing from all the code.
+    """
     try:
         if isinstance(text, (tuple, list)):
             text = unicode(join).join(str(i).decode('utf-8','ignore').encode("utf-8") for i in text)

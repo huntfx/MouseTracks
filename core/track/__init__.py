@@ -11,7 +11,8 @@ import traceback
 from multiprocessing import Process, Queue
 from threading import Thread
 
-from core.compatibility import get_items, _print
+from core.api import start_message_server
+from core.compatibility import get_items, Message
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
@@ -71,8 +72,14 @@ def _start_tracking():
     no_detection_wait = 2
     
     try:
+        
+        q_msg = Queue()
+        q_feedback = Queue()
+        message = Message(q_msg).send
+        start_message_server(q_msg, q_feedback=q_feedback)
+    
         NOTIFY(MT_PATH)
-        _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         CONFIG.save()
         
         timer = {'UpdateScreen': CONFIG['Advanced']['CheckResolution'],
@@ -119,7 +126,7 @@ def _start_tracking():
         
         ticks = 0
         NOTIFY(START_MAIN)
-        _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         while True:
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
                 
@@ -138,7 +145,7 @@ def _start_tracking():
                     pass
                 
                 while not q_rp_recv.empty():
-                    _print(u'{} {}'.format(time_format(limiter.time), q_rp_recv.get()))
+                    message(u'{} {}'.format(time_format(limiter.time), q_rp_recv.get()))
                 
                 #Print any messages from previous loop
                 notify_extra = ''
@@ -165,18 +172,23 @@ def _start_tracking():
                     else:
                         store['Save']['Finished'] = True
                         store['Save']['Next'] = ticks + timer['Save']
-                    
-                if received_data:
-                    notify_extra = u' | '.join(received_data)
-                notify_output = NOTIFY.get_output()
                 
-                if notify_extra:
-                    if notify_output:
-                        notify_output = notify_extra + ' | ' + notify_output
-                    else:
-                        notify_output = notify_extra
-                if notify_output:
-                    _print(u'{} {}'.format(time_format(limiter.time), notify_output))
+                output_list = [received_data]
+                    
+                #Add on output from Notify class
+                output_list.append(NOTIFY.get_output())
+                
+                received_data = []
+                while not q_feedback.empty():
+                    received_data.append(q_feedback.get())
+                output_list.append(received_data)
+                
+                #output_list.append(u' | '.join(received_data))
+                
+                output = u' | '.join(u' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group
+                                     for msg_group in output_list if msg_group)
+                if output:
+                    message(u'{} {}'.format(time_format(limiter.time), output))
 
                 frame_data = {}
                 frame_data_rp = {}
@@ -555,5 +567,5 @@ def _start_tracking():
                 pass
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
-        _print(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         handle_error()

@@ -10,11 +10,20 @@ from threading import Thread, currentThread
 from queue import Empty
 import socket
 
+from core.compatibility import Message
 from core.sockets import *
 
 
-POLLING_RATE = 0.1
+POLLING_RATE = 1
 
+
+def _print_message(text, q_feedback):
+    """Send message to main thread if set, otherwise print."""
+    if q_feedback is not None:
+        q_feedback.put(text)
+    else:
+        Message().send(text)
+    
 
 def client_thread(client_id, sock, q_recv, q_send):
     """Send data to the connected clients."""
@@ -29,7 +38,10 @@ def client_thread(client_id, sock, q_recv, q_send):
     #Send each item to the client
     thread = currentThread()
     while getattr(thread, 'running', True):
-        message = q_recv.get()
+        try:
+            message = q_recv.get()
+        except (IOError, EOFError):
+            return
         try:
             send_msg(conn, '{}: {}'.format(client_id, message))
         except (socket.error, KeyboardInterrupt):
@@ -45,6 +57,8 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
             message = q_main.get(timeout=POLLING_RATE)
         except Empty:
             pass
+        except (IOError, EOFError):
+            return
         else:
             for q in q_list:
                 try:
@@ -54,7 +68,7 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
                         return
                         
 
-def server_thread(host='localhost', port=0, q_main=None, close_port=False):
+def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_feedback=None):
     """Run a server to send messages to all the connected clients."""
 
     #Setup temporary queue if none provided
@@ -64,25 +78,25 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False):
         debug = True
     
     #Create server socket
-    print 'Starting server...'
+    _print_message('Starting server...', q_feedback)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except socket.error as e:
         if e.errno == 10048:
-            print 'Port {} currently in use.'.format(port)
+            _print_message('Port {} currently in use.'.format(port))
             if close_port:
-                print 'Closing process...'
+                _print_message('Closing process...', q_feedback)
                 force_close_port(port)
             else:
-                print 'Selecting a new one...'
+                _print_message('Selecting a new one...', q_feedback)
                 port = 0
             sock.bind((host, port))
         else:
             raise socket.error('unable to start server')
     sock.listen(5)
     
-    print 'Port set to {}'.format(sock.getsockname())
+    _print_message('Bound connection to {}:{}.'.format(*sock.getsockname()), q_feedback)
     
     q_conn = Queue()
     threads = []
@@ -110,18 +124,25 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False):
             #Loop is needed so that KeyboardInterrupt can be intercepted
             if debug:
                 q_main.put('Waiting for new connection...')
+                _print_message('Waiting for new connection...', q_feedback)
             while True:
                 try:
                     addr = q_conn.get(timeout=POLLING_RATE)
                 #No connection yet
                 except Empty:
                     pass
+                except (IOError, EOFError):
+                    sock.close()
+                    return
                 #New client connected
                 else:
+                    client_conn_msg = 'Client {}:{} connected to server.'.format(*addr)
                     if debug:
-                        q_main.put('{}:{} connected.'.format(*addr))
+                        q_main.put(client_conn_msg)
+                    _print_message(client_conn_msg, q_feedback)
                     client_id += 1
                     break
+                #Closed pipe
 
             #Delete closed connections
             invalid = []
