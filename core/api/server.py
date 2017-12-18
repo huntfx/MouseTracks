@@ -43,7 +43,7 @@ def client_thread(client_id, sock, q_recv, q_send):
         except (IOError, EOFError):
             return
         try:
-            send_msg(conn, '{}: {}'.format(client_id, message))
+            send_msg(conn, message)
         except (socket.error, KeyboardInterrupt):
             conn.close()
             return
@@ -131,9 +131,6 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_fee
                 #No connection yet
                 except Empty:
                     pass
-                except (IOError, EOFError):
-                    sock.close()
-                    return
                 #New client connected
                 else:
                     client_conn_msg = 'Client {}:{} connected to server.'.format(*addr)
@@ -156,9 +153,12 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_fee
     
     #Safely shut down threads and queues
     except KeyboardInterrupt:
+        sock.close()
         for thread in threads:
             thread.running = False
         for q in queues:
             q.close()
         helper.running = False
+        
+    except (IOError, EOFError):
         sock.close()

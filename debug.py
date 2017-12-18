@@ -4,7 +4,8 @@ from core.compatibility import _print, input
 
 options = [
     ('get_focused_application_name', 'Get name, executable and resolution of currently focused application'),
-    ('get_key_press', 'Get character codes of pressed keys')
+    ('get_key_press', 'Get character codes of pressed keys'),
+    ('client_connect', 'Connect a client to the main script (receives messages only)')
 ]
 
 _print('Here is a list of possible options.')
