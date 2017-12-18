@@ -22,7 +22,7 @@ def _print_message(text, q_feedback):
     if q_feedback is not None:
         q_feedback.put(text)
     else:
-        Message().send(text)
+        Message(text)
     
 
 def client_thread(client_id, sock, q_recv, q_send):
@@ -66,6 +66,8 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
                 except AssertionError:
                     if exit_on_disconnect:
                         return
+                except (IOError, EOFError):
+                    return
                         
 
 def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_feedback=None):
@@ -139,7 +141,6 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_fee
                     _print_message(client_conn_msg, q_feedback)
                     client_id += 1
                     break
-                #Closed pipe
 
             #Delete closed connections
             invalid = []
@@ -153,12 +154,12 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_fee
     
     #Safely shut down threads and queues
     except KeyboardInterrupt:
-        sock.close()
         for thread in threads:
             thread.running = False
         for q in queues:
             q.close()
-        helper.running = False
+        middleman.running = False
+        sock.close()
         
     except (IOError, EOFError):
         sock.close()

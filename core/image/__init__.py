@@ -10,7 +10,7 @@ import zlib
 
 from core.base import format_file_path
 from core.constants import UPDATES_PER_SECOND, DEFAULT_NAME
-from core.compatibility import get_items, _print, pickle
+from core.compatibility import get_items, Message, pickle
 from core.config import CONFIG, _config_defaults
 from core.export import ExportCSV
 from core.files import LoadData, format_name
@@ -279,7 +279,7 @@ class RenderImage(object):
     
         track_data = self.data.get_tracks()
         if track_data is None:
-            _print('No tracking data found.')
+            Message('No tracking data found.')
             return None
             
         top_resolution, (min_value, max_value), tracks = track_data
@@ -297,9 +297,9 @@ class RenderImage(object):
             
         if self.save:
             create_folder(file_name)
-            _print('Saving image to "{}"...'.format(file_name))
+            Message('Saving image to "{}"...'.format(file_name))
             image_output.save(file_name)
-            _print('Finished saving.')
+            Message('Finished saving.')
 
     def double_clicks(self, last_session=False, file_name=None):
         return self.clicks(last_session=last_session, file_name=file_name, _double_click=True)
@@ -337,9 +337,9 @@ class RenderImage(object):
             
         if self.save:
             create_folder(file_name)
-            _print('Saving image to "{}"...'.format(file_name))
+            Message('Saving image to "{}"...'.format(file_name))
             image_output.save(file_name)
-            _print('Finished saving.')
+            Message('Finished saving.')
         
     def keyboard(self, last_session=False, file_name=None):
         """Generate the keyboard image."""
@@ -352,6 +352,6 @@ class RenderImage(object):
             
         if self.save:
             create_folder(file_name)
-            _print('Saving image to "{}"...'.format(file_name))
+            Message('Saving image to "{}"...'.format(file_name))
             image_output.save(file_name)
-            _print('Finished saving.')
+            Message('Finished saving.')

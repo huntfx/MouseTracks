@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 from threading import Thread
 
 from core.api import start_message_server
-from core.compatibility import get_items, Message
+from core.compatibility import get_items, MessageWithQueue
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
@@ -75,7 +75,7 @@ def _start_tracking():
         
         q_msg = Queue()
         q_feedback = Queue()
-        message = Message(q_msg).send
+        message = MessageWithQueue(q_msg).send
         start_message_server(q_msg, q_feedback=q_feedback)
     
         NOTIFY(MT_PATH)
@@ -178,13 +178,13 @@ def _start_tracking():
                 #Add on output from Notify class
                 output_list.append(NOTIFY.get_output())
                 
+                #Add output from server
                 received_data = []
                 while not q_feedback.empty():
                     received_data.append(q_feedback.get())
                 output_list.append(received_data)
                 
-                #output_list.append(u' | '.join(received_data))
-                
+                #Join all valid outputs together
                 output = u' | '.join(u' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group
                                      for msg_group in output_list if msg_group)
                 if output:

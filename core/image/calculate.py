@@ -10,7 +10,7 @@ from PIL import Image
 
 import core.numpy as numpy
 from core.image.scipy import blur, upscale
-from core.compatibility import range, _print, get_items
+from core.compatibility import range, Message, get_items
 from core.config import CONFIG
 from core.maths import round_int
 
@@ -73,7 +73,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
             num_arrays += 1
 
     #Upscale each array
-    _print('Upscaling arrays to {}x{}...'.format(target_resolution[0], target_resolution[1]))
+    Message('Upscaling arrays to {}x{}...'.format(target_resolution[0], target_resolution[1]))
     processed = 0
     output = []
     for resolution, array_list in get_items(arrays):
@@ -85,7 +85,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
             if i in skip:
                 continue
             processed += 1
-            _print('Processing array for {}x{} ({}/{})'.format(resolution[0], resolution[1], processed, num_arrays))
+            Message('Processing array for {}x{} ({}/{})'.format(resolution[0], resolution[1], processed, num_arrays))
             zoom_factor = (target_resolution[1] / resolution[1],
                            target_resolution[0] / resolution[0])
             upscaled = upscale(array, zoom_factor)
@@ -96,7 +96,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
 def convert_to_rgb(image_array, colour_range):
     """Convert an array into colours."""
     
-    _print('Converting {} points to RGB values... (this may take a few seconds)'.format(image_array.size))
+    Message('Converting {} points to RGB values... (this may take a few seconds)'.format(image_array.size))
     return colour_range.convert_array(image_array)
     
     
@@ -108,21 +108,21 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
     """
     
     #Add all arrays together
-    _print('Merging arrays...')
+    Message('Merging arrays...')
     merged_arrays = numpy.merge(numpy_arrays, 'add', 'float64')
     
     #Set to constant values
-    _print('Flattening values...')
+    Message('Flattening values...')
     flattened = numpy.remap_to_range(merged_arrays)
     
     #Blur the array
     if gaussian_size:
-        _print('Applying gaussian blur...')
+        Message('Applying gaussian blur...')
         heatmap = blur(flattened, gaussian_size)
     else:
         heatmap = flattened
     
-    _print('Finding range limits...')
+    Message('Finding range limits...')
     min_value = numpy.min(heatmap)
     
     #Lower the maximum value a little

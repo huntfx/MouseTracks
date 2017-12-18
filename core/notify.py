@@ -6,7 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 from core.base import format_file_path
-from core.compatibility import _print
+from core.compatibility import Message
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, DEFAULT_PATH
 from core.language import Language
@@ -379,8 +379,8 @@ class Notify(object):
         output = [capitalize(u' | '.join(self.message_queue[i])) for i in allowed_levels][::-1]
         message = u' | '.join(i for i in output if i)
         for msg in self._debug:
-            _print(msg)
-                
+            Message(msg)
+        
         self.reset()
         return message
 

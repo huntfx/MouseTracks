@@ -6,7 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import core.numpy as numpy
-from core.compatibility import range, get_items, _print
+from core.compatibility import range, get_items, Message
 from core.config import CONFIG
 from core.files import load_data
 from core.os import create_folder
@@ -28,7 +28,7 @@ class ExportCSV(object):
    
     def tracks(self, image_name):
         
-        _print('Generating CSV from tracks...')
+        Message('Generating CSV from tracks...')
         for resolution in self.data['Maps']['Tracks']:
             CONFIG['GenerateImages']['_TempResolutionX'], CONFIG['GenerateImages']['_TempResolutionY'] = resolution
             
@@ -43,7 +43,7 @@ class ExportCSV(object):
         
         mouse_buttons = ['LMB', 'MMB', 'RMB']
         
-        _print('Generating CSV from clicks...')
+        Message('Generating CSV from clicks...')
         
         for i, mouse_button in enumerate(self.data['Maps']['Click']['Single']):
             CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = i == 0
@@ -64,7 +64,7 @@ class ExportCSV(object):
     
     def keyboard(self, image_name):
         
-        _print('Generating CSV from keyboard...')
+        Message('Generating CSV from keyboard...')
         result = ['Key,Count,Time']
         for key in self.data['Keys']['All']['Pressed']:
             result.append('{},{},{}'.format(key, 

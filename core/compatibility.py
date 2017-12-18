@@ -106,7 +106,10 @@ def get_items(d):
         return d.items()
 
         
-class Message(object):
+class MessageWithQueue(object):
+    """Print all messages with an optional queue to send them to.
+    Message(text) may be used instsead in the case of no queue.
+    """
     def __init__(self, queue=None):
         self.queue = queue
     
@@ -130,20 +133,5 @@ class Message(object):
             if self.queue is not None:
                 self.queue.put(text)
 
-            
-def _print(text, join=', '):
-    """Send everything here to print, so that tweaks can be made if needed.
-    TODO: Replaced with Message, this needs removing from all the code.
-    """
-    try:
-        if isinstance(text, (tuple, list)):
-            text = unicode(join).join(str(i).decode('utf-8','ignore').encode("utf-8") for i in text)
-        else:
-            text = text.replace('\\n', '\n')
-        for line in text.split('\n'):
-            try:
-                print(line)
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                print(line.encode('utf-8').strip())
-    except AttributeError:
-        print(text)
+#Alternative non queue option
+Message = MessageWithQueue().send

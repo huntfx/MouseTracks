@@ -8,7 +8,7 @@ from __future__ import absolute_import, division
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
-from core.compatibility import get_items, range, _print
+from core.compatibility import get_items, range, Message
 from core.config import CONFIG
 from core.language import Language
 from core.files import load_data
@@ -368,7 +368,7 @@ class DrawKeyboard(object):
         
         self.name = profile_name
         self.last_session = last_session
-        _print(self._string['profile']['load'])
+        Message(self._string['profile']['load'])
         self.reload(data)
     
     def reload(self, data=None):
@@ -383,7 +383,7 @@ class DrawKeyboard(object):
         self.grid = self._create_grid()
     
     def _create_grid(self):
-        _print(self.string['layout'])
+        Message(self.string['layout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
         layout = Language().get_keyboard_layout()
         for row in layout:
@@ -399,7 +399,7 @@ class DrawKeyboard(object):
         return grid
     
     def calculate(self):
-        _print(self.string['coordinates'])
+        Message(self.string['coordinates'])
         (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
         return {'Width': width,
                 'Height': height,
@@ -417,26 +417,26 @@ class DrawKeyboard(object):
         #Add drop shadow
         shadow = (64, 64, 64)
         if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'][:3] == (255, 255, 255):
-            _print(self.string['draw']['shadow'])
+            Message(self.string['draw']['shadow'])
             shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
                 for x, y in data['Coordinates']['Fill'][colour]:
                     pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
     
         #Fill colours
-        _print(self.string['draw']['keys'])
+        Message(self.string['draw']['keys'])
         for colour in data['Coordinates']['Fill']:
             for x, y in data['Coordinates']['Fill'][colour]:
                 pixels[x, y] = colour
 
         #Draw border
-        _print(self.string['draw']['outline'])
+        Message(self.string['draw']['outline'])
         border = tuple(255 - i for i in data['Coordinates']['Background'])
         for x, y in data['Coordinates']['Outline']:
             pixels[x, y] = border
     
         #Draw text
-        _print(self.string['draw']['text'])
+        Message(self.string['draw']['text'])
         draw = ImageDraw.Draw(image)
         font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
         font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
@@ -492,7 +492,7 @@ class DrawKeyboard(object):
             draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
 
         if file_path:
-            _print(self._string['image']['save']['start'])
+            Message(self._string['image']['save']['start'])
             image.save(file_path, CONFIG['GenerateImages']['FileType'])
-            _print(self._string['image']['save']['end'])
+            Message(self._string['image']['save']['end'])
         return image

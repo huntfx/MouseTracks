@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from core.compatibility import _print
+from core.compatibility import Message
 from core.os import get_key_press
 from core.track import RefreshRateLimiter
 
@@ -12,4 +12,4 @@ while True:
             if get_key_press(i):
                 keys.append(i)
         if keys:
-            _print(keys)
+            Message(keys)

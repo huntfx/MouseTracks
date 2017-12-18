@@ -6,7 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 from core.applications import AppList
-from core.compatibility import _print, input
+from core.compatibility import input
 from core.config import CONFIG
 from core.constants import APP_LIST_FILE
 

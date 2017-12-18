@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import sys
 
 from core.base import format_file_path
-from core.compatibility import input, _print, PYTHON_VERSION
+from core.compatibility import input, Message, PYTHON_VERSION
 from core.constants import DEFAULT_PATH
 from core.language import Language
 from core.os import OPERATING_SYSTEM
@@ -28,7 +28,7 @@ def handle_error(trace=None, log=True):
             file_name = format_file_path('{}\\error.txt'.format(DEFAULT_PATH))
             with open(file_name, 'w') as f:
                 f.write(output)
-        _print(trace)
+        Message(trace)
         
         string = Language().get_strings()
         input(string['string']['exit'])

@@ -11,7 +11,7 @@ import webbrowser
 from multiprocessing import freeze_support
 
 from core.applications import RunningApplications, AppList
-from core.compatibility import input, _print, get_items
+from core.compatibility import input, Message, get_items
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.files import list_data_files, format_name, load_data
@@ -42,7 +42,7 @@ def user_generate():
     string = all_strings['string']['image']
     word = all_strings['word']
 
-    _print(string['profile']['list'].format(L=word['list']))
+    Message(string['profile']['list'].format(L=word['list']))
     profile = input()
 
     if profile.lower() == word['list'].lower():
@@ -50,8 +50,8 @@ def user_generate():
         #Read the data folder and format names
         all_files = list_data_files()
         if not all_files:
-            _print(string['profile']['empty'])
-            _print(all_strings['exit'])
+            Message(string['profile']['empty'])
+            Message(all_strings['exit'])
             input()
             sys.exit()
         programs = {format_name(DEFAULT_NAME): DEFAULT_NAME}
@@ -79,11 +79,11 @@ def user_generate():
                     program_name = programs[r]
                 except KeyError:
                     program_name = r
-                _print('{}: {}'.format(i + offset + 1, program_name))
-            _print(string['page']['current'].format(C=page, T=total_pages, P=word['page']))
+                Message('{}: {}'.format(i + offset + 1, program_name))
+            Message(string['page']['current'].format(C=page, T=total_pages, P=word['page']))
             
-            _print(change_sort[0].format(S='{} {}'.format(word['sort'], change_sort[1])))
-            _print(string['profile']['number']['input'])
+            Message(change_sort[0].format(S='{} {}'.format(word['sort'], change_sort[1])))
+            Message(string['profile']['number']['input'])
 
             profile = input()
             last_page = page
@@ -95,7 +95,7 @@ def user_generate():
                     if not 0 < page <= total_pages:
                         raise ValueError
                 except IndexError:
-                    _print(string['page']['invalid'])
+                    Message(string['page']['invalid'])
                 except ValueError:
                     if page > total_pages:
                         page = total_pages
@@ -147,7 +147,7 @@ def user_generate():
                 except ValueError:
                     break
                 except IndexError:
-                    _print(string['profile']['number']['nomatch'])
+                    Message(string['profile']['number']['nomatch'])
 
         try:
             profile = programs[profile]
@@ -155,14 +155,14 @@ def user_generate():
             pass
     
     #Load functions
-    _print(_string['import'])
+    Message(_string['import'])
     from core.image import RenderImage
 
-    _print(_string['profile']['load'].format(P=profile))
+    Message(_string['profile']['load'].format(P=profile))
     try:
         r = RenderImage(profile)
     except ValueError:
-        _print('Error: Selected profile is empty or doesn\'t exist.')
+        Message('Error: Selected profile is empty or doesn\'t exist.')
         return
     
     #Check if profile is running
@@ -174,14 +174,14 @@ def user_generate():
         selected_profile = format_name(profile)
         
         if current_profile == selected_profile:
-            _print(string['profile']['running']['warning'])
+            Message(string['profile']['running']['warning'])
             
             save_time = ticks_to_seconds(CONFIG['Save']['Frequency'], 1)
             metadata = load_data(profile, _metadata_only=True)
             if metadata['Modified'] is None:
-                _print(string['save']['wait'])
-                _print(string['save']['frequency'].format(T=save_time))
-                _print(_string['exit'])
+                Message(string['save']['wait'])
+                Message(string['save']['frequency'].format(T=save_time))
+                Message(_string['exit'])
                 input()
                 sys.exit()
             else:
@@ -189,7 +189,7 @@ def user_generate():
                 next_save_time = CONFIG['Save']['Frequency'] - last_save_time
                 last_save = ticks_to_seconds(last_save_time, 1, allow_decimals=False)
                 next_save = ticks_to_seconds(next_save_time, 1, allow_decimals=False)
-                _print(string['save']['next'].format(T1=last_save, T2=next_save))
+                Message(string['save']['next'].format(T1=last_save, T2=next_save))
 
 
     generate_tracks = False
@@ -205,13 +205,13 @@ def user_generate():
         default_options[2] = False
         kb_string = '{} ({})'.format(kb_string, string['name']['low']['keyboard']).format(C=round(kph, 2))
     
-    _print(string['option']['generate'])
+    Message(string['option']['generate'])
     default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
-    _print(string['option']['select'].format(V=default_option_text))
-    _print('1: {}'.format(string['name']['track']))
-    _print('2: {}'.format(string['name']['click']))
-    _print('3: {}'.format(kb_string))
-    _print('4: {}'.format(string['name']['csv']))
+    Message(string['option']['select'].format(V=default_option_text))
+    Message('1: {}'.format(string['name']['track']))
+    Message('2: {}'.format(string['name']['click']))
+    Message('3: {}'.format(kb_string))
+    Message('4: {}'.format(string['name']['csv']))
     
     selection = list(map(int, input().split()))
     result = value_select(selection, default_options, start=1)
@@ -222,17 +222,17 @@ def user_generate():
     if result[1]:
         
         generate_heatmap = True
-        _print('Which mouse buttons should be included in the heatmap?.')
+        Message('Which mouse buttons should be included in the heatmap?.')
         
         default_options = [CONFIG['GenerateHeatmap']['_MouseButtonLeft'], 
                            CONFIG['GenerateHeatmap']['_MouseButtonMiddle'],
                            CONFIG['GenerateHeatmap']['_MouseButtonRight']]
         default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
-        _print(string['option']['select'].format(V=default_option_text))
+        Message(string['option']['select'].format(V=default_option_text))
         
-        _print('1: {}'.format(word['mousebutton']['left']))
-        _print('2: {}'.format(word['mousebutton']['middle']))
-        _print('3: {}'.format(word['mousebutton']['right']))
+        Message('1: {}'.format(word['mousebutton']['left']))
+        Message('2: {}'.format(word['mousebutton']['middle']))
+        Message('3: {}'.format(word['mousebutton']['right']))
         selection = list(map(int, input().split()))
         heatmap_buttons = value_select(selection, default_options, start=1)
         CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = heatmap_buttons[0]
@@ -260,15 +260,15 @@ def user_generate():
         
         else:
             while True:
-                _print(string['option']['session']['select'])
+                Message(string['option']['session']['select'])
                 
-                _print('1: {} [{}]'.format(string['option']['session']['all'].format(T=all_time), word['default']))
-                _print('2: {}'.format(string['option']['session']['last'].format(T=last_session_time)))
+                Message('1: {} [{}]'.format(string['option']['session']['all'].format(T=all_time), word['default']))
+                Message('2: {}'.format(string['option']['session']['last'].format(T=last_session_time)))
 
                 selection = list(map(int, input().split()))
                 result = value_select(selection, [True, False], start=1)
                 if result[0] and result[1]:
-                    _print(string['option']['error']['single'])
+                    Message(string['option']['error']['single'])
                 elif result[1]:
                     last_session = True
                     break
@@ -286,11 +286,11 @@ def user_generate():
         if generate_csv:
             r.csv()
         if CONFIG['GenerateImages']['OpenOnFinish']:
-            _print(string['option']['open'])
+            Message(string['option']['open'])
             open_folder(r.name.generate())
         
     else:
-        _print(string['option']['error']['nothing'])
+        Message(string['option']['error']['nothing'])
 
         
 if __name__ == '__main__':
