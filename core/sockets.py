@@ -77,4 +77,7 @@ def force_close_port(port, process_name=None):
                     pass
                 else:
                     if process_name is None or proc.name().startswith(process_name):
-                        proc.kill()
+                        try:
+                            proc.kill()
+                        except psutil.NoSuchProcess:
+                            pass
