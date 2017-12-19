@@ -8,7 +8,7 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Pipe
 from threading import Thread
 
 from core.api import start_message_server
@@ -65,6 +65,15 @@ def start_tracking():
         else:
             handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
 
+            
+def create_link(queue=True):
+    """Create a sending and receiving object to work with multiprocessing."""
+    if queue:
+        recv, send = Queue(), Queue()
+    else:
+        recv, send = Pipe()
+    return recv, send
+    
     
 def _start_tracking():
     
@@ -73,15 +82,19 @@ def _start_tracking():
     
     try:
         
-        q_msg = Queue()
-        q_feedback = Queue()
-        message = MessageWithQueue(q_msg).send
-        start_message_server(q_msg, q_feedback=q_feedback)
-    
+        #Setup message server
+        if CONFIG['API']['RunServer']:
+            q_msg = Queue()
+            q_feedback = Queue()
+            message = MessageWithQueue(q_msg).send
+            start_message_server(q_msg, q_feedback=q_feedback)
+        
+        #Start main script
         NOTIFY(MT_PATH)
         message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
         CONFIG.save()
         
+        #Adjust timings to account for tick rate
         timer = {'UpdateScreen': CONFIG['Advanced']['CheckResolution'],
                  'UpdatePrograms': CONFIG['Advanced']['CheckRunningApplications'],
                  'Save': CONFIG['Save']['Frequency'] * UPDATES_PER_SECOND,
@@ -112,15 +125,13 @@ def _start_tracking():
         mouse_pos = store['Mouse']['Position']
         
         #Start background processes
-        q_bg_send = Queue()
-        q_bg_recv = Queue()
+        q_bg_recv, q_bg_send = create_link(queue=True)
         _background_process = Process(target=background_process, args=(q_bg_send, q_bg_recv))
         _background_process.daemon = True
         _background_process.start()
         
-        q_rp_send = Queue()
-        q_rp_recv = Queue()
-        _running_programs = ThreadHelper(running_processes, q_rp_send, q_rp_recv, q_bg_send)
+        q_rp_recv, q_rp_send = create_link(queue=True)
+        _running_programs = Thread(target=running_processes, args=(q_rp_send, q_rp_recv, q_bg_send))
         _running_programs.daemon = True
         _running_programs.start()
         
@@ -179,10 +190,11 @@ def _start_tracking():
                 output_list.append(NOTIFY.get_output())
                 
                 #Add output from server
-                received_data = []
-                while not q_feedback.empty():
-                    received_data.append(q_feedback.get())
-                output_list.append(received_data)
+                if CONFIG['API']['RunServer']:
+                    received_data = []
+                    while not q_feedback.empty():
+                        received_data.append(q_feedback.get())
+                    output_list.append(received_data)
                 
                 #Join all valid outputs together
                 output = u' | '.join(u' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group

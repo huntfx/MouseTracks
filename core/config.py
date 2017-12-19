@@ -254,6 +254,8 @@ _config_defaults = {
         '_GenerateKeyboard': (True, bool)
     },
     'API': {
+        'RunServer': (True, bool, 'Run a server so that a client can connect and receive messages.'),
+        'RunWeb': (True, bool, 'Run a web service to send and get simple requests to the main script.'),
         'AutomaticallyChoosePorts': (False, bool),
         'ForceCloseProcessUsingPort': (False, bool, ('If this is set, the program will attempt to shut down whatever is using the requested port,'
                                                      ' otherwise a random port will be chosen.')),
