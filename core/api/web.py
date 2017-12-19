@@ -65,22 +65,22 @@ def script_exit():
 @app.route('/port/')
 def get_port():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    server_port, web_port = app.config['PIPE_PORT_RECV'].recv()
-    return jsonify({'server': server_port, 'web': web_port})
+    ports = app.config['PIPE_PORT_RECV'].recv()
+    return jsonify(ports)
 
 
 @app.route('/port/web')
 def get_port_web():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    server_port, web_port = app.config['PIPE_PORT_RECV'].recv()
-    return web_port
+    ports = app.config['PIPE_PORT_RECV'].recv()
+    return jsonify(ports['web'])
 
 
 @app.route('/port/server')
 def get_port_server():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    server_port, web_port = app.config['PIPE_PORT_RECV'].recv()
-    return server_port
+    ports = app.config['PIPE_PORT_RECV'].recv()
+    return jsonify(ports['server'])
     
     
 #json example for future reference

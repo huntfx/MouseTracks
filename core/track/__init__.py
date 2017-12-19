@@ -67,9 +67,23 @@ def _start_tracking():
             q_msg = Queue()
             q_feedback = Queue()
             message = MessageWithQueue(q_msg).send
-            start_message_server(q_msg, q_feedback=q_feedback)
+            server_port = get_free_port()
+            local_message_server(q_msg, q_feedback=q_feedback, port=server_port)
         else:
             message = MessageWithQueue().send
+            server_port = None
+            
+        #Setup web server
+        if CONFIG['API']['RunWeb']:
+            app.config.update(create_pipe('REQUEST', duplex=False))
+            app.config.update(create_pipe('CONTROL', duplex=False))
+            app.config.update(create_pipe('STATUS', duplex=False))
+            app.config.update(create_pipe('PORT', duplex=False))
+            web_port = get_free_port()
+            local_web_server(app, web_port)
+        else:
+            web_port = None
+            
         
         #Start main script
         NOTIFY(MT_PATH)
@@ -103,19 +117,11 @@ def _start_tracking():
                  'Save': {'Finished': True,
                           'Next': timer['Save']},
                  'Gamepad': {'ButtonsPressed': {}},
-                 'FlaskApp': None
+                 'Flask': {'App': app if web_port is not None else None,
+                           'Port': {'Web': web_port,
+                                    'Server': server_port}}
                 }
         mouse_pos = store['Mouse']['Position']
-            
-        #Setup web server
-        if CONFIG['API']['RunWeb']:
-            store['FlaskApp'] = app
-            store['FlaskApp'].config.update(create_pipe('REQUEST', duplex=False))
-            store['FlaskApp'].config.update(create_pipe('CONTROL', duplex=False))
-            store['FlaskApp'].config.update(create_pipe('STATUS', duplex=False))
-            
-            web_port = get_free_port()
-            start_web_server(app, web_port)
         
         #Start background processes
         q_bg_recv = Queue()
@@ -138,20 +144,20 @@ def _start_tracking():
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
                 
                 #Handle web server API requests
-                if store['FlaskApp'] is not None:
+                if store['Flask']['App'] is not None:
                     
                     #Control state of script
-                    if app.config['PIPE_CONTROL_RECV'].poll():
-                        script_status = app.config['PIPE_CONTROL_RECV'].recv()
+                    if store['Flask']['App'].config['PIPE_CONTROL_RECV'].poll():
+                        script_status = store['Flask']['App'].config['PIPE_CONTROL_RECV'].recv()
                     
                     #Requests that require response
-                    if store['FlaskApp'].config['PIPE_REQUEST_RECV'].poll():
-                        request_id = store['FlaskApp'].config['PIPE_REQUEST_RECV'].recv()
+                    if store['Flask']['App'].config['PIPE_REQUEST_RECV'].poll():
+                        request_id = store['Flask']['App'].config['PIPE_REQUEST_RECV'].recv()
                         if request_id == FEEDBACK_STATUS:
-                            store['FlaskApp'].config['PIPE_STATUS_SEND'].send(script_status)
+                            store['Flask']['App'].config['PIPE_STATUS_SEND'].send(script_status)
                         elif request_id == FEEDBACK_PORT:
-                            #TODO: send actual ports
-                            store['FlaskApp'].config['PIPE_STATUS_SEND'].send((0, 1))
+                            store['Flask']['App'].config['PIPE_PORT_SEND'].send({'server': store['Flask']['Port']['Server'],
+                                                                                 'web': store['Flask']['Port']['Web']})
                     
                 if script_status != STATUS_RUNNING:
                     continue
