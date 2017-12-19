@@ -58,6 +58,15 @@ def get_port(sock):
     """Get the port the socket is bound to."""
     return sock.getsockname()[1]
     
+
+def get_free_port():
+    """Find a free port resulting from using port 0."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('localhost', 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
+    
     
 def force_close_port(port, process_name=None):
     """Terminate a process that is bound to a port.
