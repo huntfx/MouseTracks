@@ -43,20 +43,21 @@ def get_running_status():
 @app.route('/status/start')
 @app.route('/status/run')
 def script_resume():
-    app.config['PIPE_CONTROL_SEND'].send(SCRIPT_RUN)
+    app.config['PIPE_CONTROL_SEND'].send(STATUS_RUNNING)
     return get_running_status()
 
 
 @app.route('/status/pause')
 def script_pause():
-    app.config['PIPE_CONTROL_SEND'].send(SCRIPT_PAUSE)
+    app.config['PIPE_CONTROL_SEND'].send(STATUS_PAUSED)
     return get_running_status()
 
 
 @app.route('/status/stop')
 @app.route('/status/exit')
+@app.route('/status/terminate')
 def script_exit():
-    app.config['PIPE_CONTROL_SEND'].send(SCRIPT_EXIT)
+    app.config['PIPE_CONTROL_SEND'].send(STATUS_TERMINATED)
     shutdown_server()
     abort(503)
 

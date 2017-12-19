@@ -68,15 +68,8 @@ def _start_tracking():
             q_feedback = Queue()
             message = MessageWithQueue(q_msg).send
             start_message_server(q_msg, q_feedback=q_feedback)
-            
-        #Setup web server
-        if CONFIG['API']['RunWeb']:
-            app.config.update(create_pipe('REQUEST', duplex=False))
-            app.config.update(create_pipe('CONTROL', duplex=False))
-            app.config.update(create_pipe('STATUS', duplex=False))
-            
-            web_port = get_free_port()
-            start_web_server(app, web_port)
+        else:
+            message = MessageWithQueue().send
         
         #Start main script
         NOTIFY(MT_PATH)
@@ -109,9 +102,20 @@ def _start_tracking():
                  'LastSent': 0,
                  'Save': {'Finished': True,
                           'Next': timer['Save']},
-                 'Gamepad': {'ButtonsPressed': {}}
+                 'Gamepad': {'ButtonsPressed': {}},
+                 'FlaskApp': None
                 }
         mouse_pos = store['Mouse']['Position']
+            
+        #Setup web server
+        if CONFIG['API']['RunWeb']:
+            store['FlaskApp'] = app
+            store['FlaskApp'].config.update(create_pipe('REQUEST', duplex=False))
+            store['FlaskApp'].config.update(create_pipe('CONTROL', duplex=False))
+            store['FlaskApp'].config.update(create_pipe('STATUS', duplex=False))
+            
+            web_port = get_free_port()
+            start_web_server(app, web_port)
         
         #Start background processes
         q_bg_recv = Queue()
@@ -129,8 +133,28 @@ def _start_tracking():
         ticks = 0
         NOTIFY(START_MAIN)
         message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
-        while True:
+        script_status = STATUS_RUNNING
+        while script_status != STATUS_TERMINATED:
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
+                
+                #Handle web server API requests
+                if store['FlaskApp'] is not None:
+                    
+                    #Control state of script
+                    if app.config['PIPE_CONTROL_RECV'].poll():
+                        script_status = app.config['PIPE_CONTROL_RECV'].recv()
+                    
+                    #Requests that require response
+                    if store['FlaskApp'].config['PIPE_REQUEST_RECV'].poll():
+                        request_id = store['FlaskApp'].config['PIPE_REQUEST_RECV'].recv()
+                        if request_id == FEEDBACK_STATUS:
+                            store['FlaskApp'].config['PIPE_STATUS_SEND'].send(script_status)
+                        elif request_id == FEEDBACK_PORT:
+                            #TODO: send actual ports
+                            store['FlaskApp'].config['PIPE_STATUS_SEND'].send((0, 1))
+                    
+                if script_status != STATUS_RUNNING:
+                    continue
                 
                 #Send data to thread
                 try:
