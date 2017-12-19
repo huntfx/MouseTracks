@@ -8,10 +8,10 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
-from multiprocessing import Process, Queue, Pipe
+from multiprocessing import Process, Queue
 from threading import Thread
 
-from core.api import start_message_server
+from core.api import *
 from core.compatibility import get_items, MessageWithQueue
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
@@ -20,6 +20,7 @@ from core.files import Lock
 from core.messages import time_format
 from core.notify import *
 from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
+from core.sockets import get_free_port
 from core.track.background import background_process, running_processes, monitor_offset
 from core.track.xinput import Gamepad
 
@@ -43,18 +44,6 @@ class RefreshRateLimiter(object):
         except IOError: #Interrupted function call (when quitting program)
             pass
 
-
-class ThreadHelper(Thread):
-    """Run a function in a background thread."""
-    def __init__(self, function, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        Thread.__init__(self)
-        self.function = function
-
-    def run(self):
-        self.function(*self.args, **self.kwargs)
-
         
 def start_tracking():
     """Put a lock on the main script to stop more than one instance running."""
@@ -64,15 +53,6 @@ def start_tracking():
             _start_tracking()
         else:
             handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
-
-            
-def create_link(queue=True):
-    """Create a sending and receiving object to work with multiprocessing."""
-    if queue:
-        recv, send = Queue(), Queue()
-    else:
-        recv, send = Pipe()
-    return recv, send
     
     
 def _start_tracking():
@@ -88,6 +68,15 @@ def _start_tracking():
             q_feedback = Queue()
             message = MessageWithQueue(q_msg).send
             start_message_server(q_msg, q_feedback=q_feedback)
+            
+        #Setup web server
+        if CONFIG['API']['RunWeb']:
+            app.config.update(create_pipe('REQUEST', duplex=False))
+            app.config.update(create_pipe('CONTROL', duplex=False))
+            app.config.update(create_pipe('STATUS', duplex=False))
+            
+            web_port = get_free_port()
+            start_web_server(app, web_port)
         
         #Start main script
         NOTIFY(MT_PATH)
@@ -125,12 +114,14 @@ def _start_tracking():
         mouse_pos = store['Mouse']['Position']
         
         #Start background processes
-        q_bg_recv, q_bg_send = create_link(queue=True)
+        q_bg_recv = Queue()
+        q_bg_send = Queue()
         _background_process = Process(target=background_process, args=(q_bg_send, q_bg_recv))
         _background_process.daemon = True
         _background_process.start()
         
-        q_rp_recv, q_rp_send = create_link(queue=True)
+        q_rp_recv = Queue()
+        q_rp_send = Queue()
         _running_programs = Thread(target=running_processes, args=(q_rp_send, q_rp_recv, q_bg_send))
         _running_programs.daemon = True
         _running_programs.start()

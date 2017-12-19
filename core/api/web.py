@@ -1,10 +1,24 @@
 from __future__ import absolute_import
 
 from flask import Flask, jsonify, abort, request
+from multiprocessing import Pipe
+#import logging
+#logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-from core.api.constants import *
+#Temporary - just for testing in the same folder
+try:
+    from core.api.constants import *
+except ImportError:
+    from constants import *
 
 
+def create_pipe(name, duplex=False):
+    name_recv = 'PIPE_{}_RECV'.format(name)
+    name_send = 'PIPE_{}_SEND'.format(name)
+    recv, send = Pipe(duplex=duplex)
+    return {name_recv: recv, name_send: send}
+    
+    
 def shutdown_server():
     """End the Flask server.
     Needs to be called within a Flask function,
@@ -55,14 +69,14 @@ def get_port():
 
 
 @app.route('/port/web')
-def get_port():
+def get_port_web():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
     server_port, web_port = app.config['PIPE_PORT_RECV'].recv()
     return web_port
 
 
 @app.route('/port/server')
-def get_port():
+def get_port_server():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
     server_port, web_port = app.config['PIPE_PORT_RECV'].recv()
     return server_port
