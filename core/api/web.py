@@ -6,6 +6,7 @@ import logging
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 from core.api.constants import *
+from core.config import get_items
 from core.notify import *
 
 
@@ -91,8 +92,11 @@ def get_port_server():
     return jsonify(_get_ports()['server'])
     
     
-@app.route('/config/')
-def config():
+@app.route('/config/set/<string:conf_head>', methods=['GET'])
+def config(conf_head):
+    for conf_var, conf_val in get_items(request.args):
+        app.config['PIPE_CONTROL_SEND'].send(CONFIG_SET)
+        app.config['PIPE_CONFIG_UPDATE_SEND'].send((conf_head, conf_var, conf_val))
     return jsonify(_get_config())
     
     

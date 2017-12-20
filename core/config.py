@@ -168,10 +168,10 @@ class SimpleConfig(object):
         TODO: Remove comments and hidden variables.
         """
         for k, v in get_items(self.data):
-            yield k, v
+            yield k, {k: v for k, v in get_items(v) if not k.startswith('_')}
         
-def get_config_default(heading, value):
-    return _config_defaults[heading][value][0]
+def get_config_default(heading, value, var_type=False):
+    return _config_defaults[heading][value][var_type]
         
         
 try:
