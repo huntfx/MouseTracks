@@ -116,10 +116,13 @@ class MessageWithQueue(object):
     def send(self, text, join=', '):
         """Send everything here to print, so that tweaks can be made if needed."""
         try:
+            #Join text
             if isinstance(text, (tuple, list)):
                 text = unicode(join).join(str(i).decode('utf-8','ignore').encode("utf-8") for i in text)
             else:
                 text = text.replace('\\n', '\n')
+
+            #Split by line
             for line in text.split('\n'):
                 try:
                     print(line)
@@ -128,10 +131,18 @@ class MessageWithQueue(object):
                     print(line)
                 if self.queue is not None:
                     self.queue.put(line)
+                    
         except AttributeError:
             print(text)
             if self.queue is not None:
                 self.queue.put(text)
 
+    def _send(self, text):
+        """Only print if queue doesn't exist."""
+        if self.queue is None:
+            send(text)
+        else:
+            self.queue.put(text)
+                
 #Alternative non queue option
 Message = MessageWithQueue().send

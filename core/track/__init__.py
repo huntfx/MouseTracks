@@ -44,6 +44,18 @@ class RefreshRateLimiter(object):
         except IOError: #Interrupted function call (when quitting program)
             pass
 
+
+class PrintFormat(object):
+    def __init__(self, message_object):
+        self.message = message_object
+    
+    def __call__(self, text, current_time=None):
+        if not text:
+            return
+        if current_time is None:
+            current_time = time.time()
+        self.message(u'{} {}'.format(time_format(current_time), text))
+            
         
 def start_tracking():
     """Put a lock on the main script to stop more than one instance running."""
@@ -62,16 +74,17 @@ def _start_tracking():
     
     try:
         
+        q_feedback = Queue()
         #Setup message server
         if CONFIG['API']['RunServer']:
             q_msg = Queue()
-            q_feedback = Queue()
-            message = MessageWithQueue(q_msg).send
+            message = PrintFormat(MessageWithQueue(q_msg).send)
             server_port = get_free_port()
-            local_message_server(q_msg, q_feedback=q_feedback, port=server_port)
+            local_message_server(port=server_port, q_main=q_msg, q_feedback=q_feedback)
         else:
-            message = MessageWithQueue().send
+            message = PrintFormat(MessageWithQueue().send)
             server_port = None
+        #message(NOTIFY.get_output())
             
         #Setup web server
         if CONFIG['API']['RunWeb']:
@@ -80,14 +93,14 @@ def _start_tracking():
             app.config.update(create_pipe('STATUS', duplex=False))
             app.config.update(create_pipe('PORT', duplex=False))
             web_port = get_free_port()
-            local_web_server(app, web_port)
+            local_web_server(app=app, port=web_port, q_feedback=q_feedback)
         else:
             web_port = None
+        message(NOTIFY.get_output())
             
-        
         #Start main script
         NOTIFY(MT_PATH)
-        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(NOTIFY.get_output())
         CONFIG.save()
         
         #Adjust timings to account for tick rate
@@ -138,7 +151,7 @@ def _start_tracking():
         
         ticks = 0
         NOTIFY(START_MAIN)
-        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(NOTIFY.get_output())
         script_status = STATUS_RUNNING
         while script_status != STATUS_TERMINATED:
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
@@ -177,7 +190,7 @@ def _start_tracking():
                     pass
                 
                 while not q_rp_recv.empty():
-                    message(u'{} {}'.format(time_format(limiter.time), q_rp_recv.get()))
+                    message(q_rp_recv.get(), limiter.time)
                 
                 #Print any messages from previous loop
                 notify_extra = ''
@@ -221,7 +234,7 @@ def _start_tracking():
                 output = u' | '.join(u' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group
                                      for msg_group in output_list if msg_group)
                 if output:
-                    message(u'{} {}'.format(time_format(limiter.time), output))
+                    message(output, limiter.time)
 
                 frame_data = {}
                 frame_data_rp = {}
@@ -600,5 +613,5 @@ def _start_tracking():
                 pass
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
-        message(u'{} {}'.format(time_format(time.time()), NOTIFY.get_output()))
+        message(NOTIFY.get_output())
         handle_error()

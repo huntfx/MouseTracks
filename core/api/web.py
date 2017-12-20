@@ -2,14 +2,11 @@ from __future__ import absolute_import
 
 from flask import Flask, jsonify, abort, request
 from multiprocessing import Pipe
-#import logging
-#logging.getLogger('werkzeug').setLevel(logging.ERROR)
+import logging
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-#Temporary - just for testing in the same folder
-try:
-    from core.api.constants import *
-except ImportError:
-    from constants import *
+from core.api.constants import *
+from core.notify import *
 
 
 def create_pipe(name, duplex=False):
@@ -29,16 +26,28 @@ def shutdown_server():
         raise RuntimeError('Not running with the Werkzeug Server')
     func()
 
+
+def _get_ports():
+    """Get the server and socket ports."""
+    app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
+    return app.config['PIPE_PORT_RECV'].recv()
+
     
 app = Flask(__name__)
 
+@app.route('/')
+def main_page():
+    status = get_running_status()
+    ports = _get_ports()
+    return jsonify({'status': status, 'port': ports})
 
+    
 @app.route('/status/')
 def get_running_status():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_STATUS)
     status = app.config['PIPE_STATUS_RECV'].recv()
-    return ['running', 'paused', 'stopped'][status]
-
+    return ['running', 'stopped'][status]
+    
 
 @app.route('/status/start')
 @app.route('/status/run')
@@ -48,38 +57,34 @@ def script_resume():
 
 
 @app.route('/status/pause')
+@app.route('/status/stop')
 def script_pause():
     app.config['PIPE_CONTROL_SEND'].send(STATUS_PAUSED)
     return get_running_status()
 
 
-@app.route('/status/stop')
-@app.route('/status/exit')
-@app.route('/status/terminate')
+@app.route('/server/terminate')
 def script_exit():
     app.config['PIPE_CONTROL_SEND'].send(STATUS_TERMINATED)
     shutdown_server()
     abort(503)
 
-
+    
 @app.route('/port/')
-def get_port():
-    app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    ports = app.config['PIPE_PORT_RECV'].recv()
+def get_port(json=True):
+    ports = _get_ports()
     return jsonify(ports)
 
 
 @app.route('/port/web')
 def get_port_web():
-    app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    ports = app.config['PIPE_PORT_RECV'].recv()
+    ports = _get_ports()
     return jsonify(ports['web'])
 
 
 @app.route('/port/server')
 def get_port_server():
-    app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
-    ports = app.config['PIPE_PORT_RECV'].recv()
+    ports = _get_ports()
     return jsonify(ports['server'])
     
     

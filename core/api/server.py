@@ -10,19 +10,11 @@ from threading import Thread, currentThread
 from queue import Empty
 import socket
 
-from core.compatibility import Message
+from core.notify import *
 from core.sockets import *
 
 
 POLLING_RATE = 1
-
-
-def _print_message(text, q_feedback):
-    """Send message to main thread if set, otherwise print."""
-    if q_feedback is not None:
-        q_feedback.put(text)
-    else:
-        Message(text)
     
 
 def client_thread(client_id, sock, q_recv, q_send):
@@ -70,35 +62,29 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
                     return
                         
 
-def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_feedback=None):
+def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback=None):
     """Run a server to send messages to all the connected clients."""
-
-    #Setup temporary queue if none provided
-    debug = False
-    if q_main is None:
-        q_main = Queue()
-        debug = True
     
     #Create server socket
-    _print_message('Starting server...', q_feedback)
+    NOTIFY(SERVER_SOCKET_START)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except socket.error as e:
         if e.errno == 10048:
-            _print_message('Port {} currently in use.'.format(port))
+            NOTIFY(SERVER_PORT_TAKEN, port)
             if close_port:
-                _print_message('Closing process...', q_feedback)
+                NOTIFY(SERVER_PORT_CLOSE)
                 force_close_port(port)
             else:
-                _print_message('Selecting a new one...', q_feedback)
+                NOTIFY(SERVER_PORT_NEW)
                 port = 0
             sock.bind((host, port))
         else:
             raise socket.error('unable to start server')
     sock.listen(5)
     
-    _print_message('Bound connection to {}:{}.'.format(*sock.getsockname()), q_feedback)
+    NOTIFY(SERVER_SOCKET_PORT, sock.getsockname()[1])
     
     q_conn = Queue()
     threads = []
@@ -124,21 +110,18 @@ def server_thread(host='localhost', port=0, q_main=None, close_port=False, q_fee
             
             #Check for new connection (the latest thread is idle until then)
             #Loop is needed so that KeyboardInterrupt can be intercepted
-            if debug:
-                q_main.put('Waiting for new connection...')
-                _print_message('Waiting for new connection...', q_feedback)
+            NOTIFY(SERVER_SOCKET_WAIT)
             while True:
                 try:
                     addr = q_conn.get(timeout=POLLING_RATE)
+                    
                 #No connection yet
                 except Empty:
                     pass
+                    
                 #New client connected
                 else:
-                    client_conn_msg = 'Client {}:{} connected to server.'.format(*addr)
-                    if debug:
-                        q_main.put(client_conn_msg)
-                    _print_message(client_conn_msg, q_feedback)
+                    NOTIFY(SERVER_SOCKET_CONNECT, addr[0], addr[1])
                     client_id += 1
                     break
 
