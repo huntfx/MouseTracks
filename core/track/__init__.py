@@ -92,6 +92,7 @@ def _start_tracking():
             app.config.update(create_pipe('CONTROL', duplex=False))
             app.config.update(create_pipe('STATUS', duplex=False))
             app.config.update(create_pipe('PORT', duplex=False))
+            app.config.update(create_pipe('CONFIG', duplex=False))
             web_port = get_free_port()
             local_web_server(app=app, port=web_port, q_feedback=q_feedback)
         else:
@@ -171,6 +172,8 @@ def _start_tracking():
                         elif request_id == FEEDBACK_PORT:
                             store['Flask']['App'].config['PIPE_PORT_SEND'].send({'server': store['Flask']['Port']['Server'],
                                                                                  'web': store['Flask']['Port']['Web']})
+                        elif request_id == FEEDBACK_CONFIG:
+                            store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(dict(CONFIG))
                     
                 if script_status != STATUS_RUNNING:
                     continue

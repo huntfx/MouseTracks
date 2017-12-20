@@ -398,25 +398,25 @@ class Notify(object):
             q2(s['server']['web']['start'])
             
         elif message_id == SERVER_SOCKET_PORT:
-            q1(s['server']['socket']['port'].format(P=args[0]))
+            q2(s['server']['socket']['port'].format(P=args[0]))
             
         elif message_id == SERVER_WEB_PORT:
-            q1(s['server']['web']['port'].format(P=args[0]))
+            q2(s['server']['web']['port'].format(P=args[0]))
             
         elif message_id == SERVER_SOCKET_CONNECT:
             q2(s['server']['socket']['client']['connect'].format(H=args[0], P=args[1]))
             
         elif message_id == SERVER_SOCKET_WAIT:
-            q3(s['server']['socket']['client']['wait'])
+            q0(s['server']['socket']['client']['wait'])
             
         elif message_id == SERVER_PORT_NEW:
-            q2(s['server']['port']['new'])
+            q1(s['server']['port']['new'])
             
         elif message_id == SERVER_PORT_TAKEN:
-            q2(s['server']['port']['taken'].format(P=args[0]))
+            q1(s['server']['port']['taken'].format(P=args[0]))
             
         elif message_id == SERVER_PORT_CLOSE:
-            q2(s['server']['port']['close'])
+            q1(s['server']['port']['close'])
         
         return self
 

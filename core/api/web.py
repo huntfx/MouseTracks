@@ -32,14 +32,20 @@ def _get_ports():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
     return app.config['PIPE_PORT_RECV'].recv()
 
+def _get_config():
+    app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_CONFIG)
+    return app.config['PIPE_CONFIG_RECV'].recv()
+    
     
 app = Flask(__name__)
 
 @app.route('/')
 def main_page():
-    status = get_running_status()
-    ports = _get_ports()
-    return jsonify({'status': status, 'port': ports})
+    all = {}
+    all['status'] = get_running_status()
+    all['ports'] = _get_ports()
+    all['config'] = _get_config()
+    return jsonify(all)
 
     
 @app.route('/status/')
@@ -72,20 +78,22 @@ def script_exit():
     
 @app.route('/port/')
 def get_port(json=True):
-    ports = _get_ports()
-    return jsonify(ports)
+    return jsonify(_get_ports())
 
 
 @app.route('/port/web')
 def get_port_web():
-    ports = _get_ports()
-    return jsonify(ports['web'])
+    return jsonify(_get_ports()['web'])
 
 
 @app.route('/port/server')
 def get_port_server():
-    ports = _get_ports()
-    return jsonify(ports['server'])
+    return jsonify(_get_ports()['server'])
+    
+    
+@app.route('/config/')
+def config():
+    return jsonify(_get_config())
     
     
 #json example for future reference

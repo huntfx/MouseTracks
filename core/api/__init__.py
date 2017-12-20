@@ -16,7 +16,7 @@ from core.sockets import *
 
 def local_message_server(q_main, port=0, close_port=False, q_feedback=None):
     """Start a threaded server to send queue information to connected clients."""
-    kwargs = {'q_main': q_main, 'port': port, close_port': close_port, 'q_feedback': q_feedback}
+    kwargs = {'q_main': q_main, 'port': port, 'close_port': close_port, 'q_feedback': q_feedback}
     server = Thread(target=server_thread, kwargs=(kwargs))
     server.daemon = True
     server.start()

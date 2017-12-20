@@ -162,7 +162,13 @@ class SimpleConfig(object):
             
     def __getitem__(self, item):
         return self.data[item]
-
+        
+    def __iter__(self):
+        """Yield self.data to work with dict().
+        TODO: Remove comments and hidden variables.
+        """
+        for k, v in get_items(self.data):
+            yield k, v
         
 def get_config_default(heading, value):
     return _config_defaults[heading][value][0]
