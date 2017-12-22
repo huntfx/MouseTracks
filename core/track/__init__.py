@@ -185,7 +185,7 @@ def _start_tracking():
                             store['Flask']['App'].config['PIPE_PORT_SEND'].send({'server': store['Flask']['Port']['Server'],
                                                                                  'web': store['Flask']['Port']['Web']})
                         elif request_id == FEEDBACK_CONFIG:
-                            store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(CONFIG.as_dict())
+                            store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(CONFIG)
                     
                 if script_status != STATUS_RUNNING:
                     continue

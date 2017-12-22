@@ -539,6 +539,9 @@ class _ConfigItemStr(str, _ConfigItem):
     @property
     def valid(self):
         return self._data.get('valid', None)
+    @property
+    def type(self):
+        return str
 
         
 class _ConfigItemInt(int, _ConfigItemNumber):
@@ -546,6 +549,9 @@ class _ConfigItemInt(int, _ConfigItemNumber):
     def __new__(cls, config_dict):
         cls._data = dict(config_dict)
         return int.__new__(cls, cls._data['value'])
+    @property
+    def type(self):
+        return int
     
         
 class _ConfigItemFloat(float, _ConfigItemNumber):
@@ -553,6 +559,9 @@ class _ConfigItemFloat(float, _ConfigItemNumber):
     def __new__(cls, config_dict):
         cls._data = dict(config_dict)
         return float.__new__(cls, cls._data['value'])
+    @property
+    def type(self):
+        return float
 
         
 class _ConfigItemBool(int, _ConfigItem):
@@ -561,6 +570,9 @@ class _ConfigItemBool(int, _ConfigItem):
         cls._data = dict(config_dict)
         cls._data['default'] = int(cls._data['default'])
         return int.__new__(cls, cls._data['value'])
+    @property
+    def type(self):
+        return bool
 
 
 _CONFIG_ITEMS = {str: _ConfigItemStr, int: _ConfigItemInt,
@@ -616,7 +628,14 @@ class _ConfigDict(dict):
             max_value = info.get('max', None)
             if max_value is not None:
                 value = min(value, max_value)
-
+        
+        elif info['type'] == bool:
+            #Check string for possible False values
+            if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
+                value = False
+            else:
+                value = True
+                
         self._data[item]['value'] = info['type'](value)
         return True
 
@@ -728,15 +747,6 @@ class Config(dict):
             output.append('')
         return '\n'.join(output[:-1])
 
-    def as_dict(self):
-        """Return data as a plain dictionary."""
-        new_dict = {}
-        for header, variables in get_items(self._data):
-            new_dict[header] = {}
-            for variable, info in get_items(variables):
-                new_dict[header][variable] = info['value']
-        return new_dict
-
     def load(self, config_file, default_file=None):
         """Load first from the default file, then from the main file."""
         if default_file is not None:
@@ -751,5 +761,15 @@ class Config(dict):
         with open(file_name, 'w') as f:
             f.write(output)
         return self
+
+      
+def config_to_dict(cfg):
+        new_dict = {}
+        for header, variables in get_items(cfg):
+            new_dict[header] = {}
+            for variable, info in get_items(variables):
+                new_dict[header][variable] = info['type'](info['value'])
+        return new_dict
+            
             
 CONFIG = Config(DEFAULTS).load(CONFIG_PATH)

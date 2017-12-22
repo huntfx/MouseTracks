@@ -6,7 +6,8 @@ import logging
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 from core.api.constants import *
-from core.config import get_items
+from core.compatibility import get_items
+from core.config import config_to_dict
 from core.notify import *
 
 
@@ -94,7 +95,8 @@ def get_port(port_type=None):
 @app.route('/config/', methods=['GET'])
 @app.route('/config/<string:heading>/', methods=['GET'])
 @app.route('/config/<string:heading>/<string:variable>/', methods=['GET'])
-def config_controls(heading, variable=None):
+@app.route('/config/<string:heading>/<string:variable>/<string:property>', methods=['GET'])
+def config_controls(heading, variable=None, property=None):
 
     #Set config value
     if heading is not None and variable is not None:
@@ -104,13 +106,32 @@ def config_controls(heading, variable=None):
                 app.config['PIPE_CONFIG_UPDATE_SEND'].send((heading, variable, v))
 
     #Return config
+    _config = _get_config()
+    config = config_to_dict(_config)
     if heading is None:
-        return jsonify(_get_config())
+        return jsonify(config)
     try:
         if variable is None:
-            return jsonify(_get_config()[heading])
+            return jsonify(config[heading])
         else:
-            return jsonify(_get_config()[heading][variable])
+            if property is not None:
+                property = property.lower()
+                try:
+                    if property == 'min':
+                        return jsonify(_config[heading][variable].min)
+                    elif property == 'max':
+                        return jsonify(_config[heading][variable].max)
+                    elif property == 'default':
+                        if _config[heading][variable].type == bool:
+                            return jsonify(bool(_config[heading][variable].default))
+                        return jsonify(_config[heading][variable].default)
+                    elif property == 'valid':
+                        return jsonify(_config[heading][variable].valid)
+                    elif property == 'type':
+                        return jsonify(_config[heading][variable].type.__name__)
+                except AttributeError:
+                    abort(404)
+            return jsonify(config[heading][variable])
     except KeyError:
         abort(404)
     
