@@ -10,312 +10,746 @@ from locale import getdefaultlocale
 
 from core.base import format_file_path
 from core.compatibility import get_items
-from core.constants import CONFIG_PATH, DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
+from core.constants import DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
 
 
-class SimpleConfig(object):
-    def __init__(self, file_name, default_data, group_order=None):
-        self.file_name = format_file_path(file_name)
-        self._default_data = default_data
-        self.default_data = {}
-        self.order = list(group_order) if group_order is not None else []
-        for group, data in get_items(self._default_data):
-            self.default_data[group] = self._default_data[group]
-        self.load()
-    
-    def load(self):
-        """Open config file and validate values.
-        
-        Allowed formats:
-            value, type, [comment] 
-            value, int/float, [min, [max]], [comment]
-            value, str, [is case sensitive, item1, item2...], [comment]
-        """
-        try:
-            with open(self.file_name, 'r') as f:
-                config_lines = [i.strip() for i in f.readlines()]
-        except IOError:
-            config_lines = []
-        
-        #Read user values
-        config_data = {}
-        for line in config_lines:
-            if not line:
-                continue
-            
-            #Start new heading
-            if line.startswith('['):
-                current_group = line[1:].split(']', 1)[0]
-                config_data[current_group] = {}
-            
-            #Skip comment
-            elif line[0] in (';', '/', '#'):
-                pass
-            
-            #Process value
-            else:
-                name, value = [i.strip() for i in line.split('=', 1)]
-                value = value.replace('#', ';').replace('//', ';').split(';', 1)[0].strip()
-                
-                #Compare value in file to default settings
-                try:
-                    default_value, default_type = self.default_data[current_group][name][:2]
-                except KeyError:
-                    pass
-                else:
-                    #Process differently depending on variable type
-                    if default_type == bool:
-                        if value.lower() in ('0', 'false'):
-                            value = False
-                        elif value.lower() in ('1', 'true'):
-                            value = True
-                        else:
-                            value = default_value
-                            
-                    elif default_type == int:
-                        if '.' in value:
-                            value = value.split('.')[0]
-                        try:
-                            value = int(value)
-                        except ValueError:
-                            value = default_value
-                            
-                    elif default_type == str:
-                        value = str(value).rstrip()
-                        
-                    else:
-                        value = default_type(value)
-                    
-                    #Handle min/max values
-                    if default_type in (int, float):
-                        no_text = [i for i in self.default_data[current_group][name] if not isinstance(i, str)]
-                        if len(no_text) >= 3:
-                            if no_text[2] is not None and no_text[2] > value:
-                                value = no_text[2]
-                            elif len(no_text) >= 4:
-                                if no_text[3] is not None and no_text[3] < value:
-                                    value = no_text[3]
-                    if default_type == str:
-                        if len(self.default_data[current_group][name]) >= 3:
-                            if isinstance(self.default_data[current_group][name][2], tuple):
-                                allowed_values = list(self.default_data[current_group][name][2])
-                                case_sensitive = allowed_values.pop(0)
-                                if case_sensitive:
-                                    if not any(value == i for i in allowed_values):
-                                        value = default_value
-                                else:
-                                    value_lower = value.lower()
-                                    if not any(value_lower == i.lower() for i in allowed_values):
-                                        value = default_value
-                            
-                config_data[current_group][name] = value
-        
-        #Add any remaining values that weren't in the file
-        for group, variables in get_items(self.default_data):
-            for variable, defaults in get_items(variables):
-                try:
-                    config_data[group][variable]
-                except KeyError:
-                    try:
-                        config_data[group][variable] = defaults[0]
-                    except KeyError:
-                        config_data[group] = {variable: defaults[0]}
+CONFIG_PATH = format_file_path('{}\\config.ini'.format(DEFAULT_PATH))
 
-        self.data = config_data        
-        return self.data
+CONFIG_DEFAULT = 'config-default.ini'
 
-    def save(self):
-        """Save config with currently loaded values."""
-        extra_items = list(set(self._default_data.keys()) - set(self.order))
-        
-        output = []
-        for group in self.order + extra_items:
-            variables = self._default_data[group]
-            if output:
-                output.append('')
-            output.append('[{}]'.format(group))
-            if '__note__' in variables:
-                for note in variables.pop('__note__'):
-                    output.append('// {}'.format(note))
-            for variable in sorted(variables.keys()):
-                if variable.startswith('_'):
-                    continue
-                defaults = variables[variable]
-                try:
-                    value = self.data[group][variable]
-                except KeyError:
-                    value = defaults[0]
-                output.append('{} = {}'.format(variable, value))
-                try:
-                    if isinstance(defaults[-1], str) and defaults[-1]:
-                        output[-1] += '    // {}'.format(defaults[-1])
-                except IndexError:
-                    pass
-        try:
-            with open(self.file_name, 'w') as f:
-                f.write('\n'.join(output))
-        except IOError:
-            create_folder(self.file_name)
-            with open(self.file_name, 'w') as f:
-                f.write('\n'.join(output))
-            
-    def __getitem__(self, item):
-        return self.data[item]
-        
-    def __iter__(self):
-        """Yield self.data to work with dict().
-        TODO: Remove comments and hidden variables.
-        """
-        for k, v in get_items(self.data):
-            yield k, {k: v for k, v in get_items(v) if not k.startswith('_')}
-        
-def get_config_default(heading, value, var_type=False):
-    return _config_defaults[heading][value][var_type]
-        
-        
 try:
     _language = getdefaultlocale()[0]
 except ValueError:
-    #Fix for a mac error saying unknown locale
     _language = DEFAULT_LANGUAGE
 
 _save_freq = 20 if OS_DEBUG else 180
-    
-_config_defaults = {
+
+DEFAULTS = {
     'Main': {
-        'Language': (_language, str, 'Choose a language. If there is any issue or the files don\'t exit yet,'
-                                     ' {} will be used.'.format(_language, DEFAULT_LANGUAGE)),
-        'HistoryLength': (7200, int, 0, 'How many seconds to store of the track history.',
-                                     ' Each hour increases the file size by roughly 1.5mb.')
-    },
-    'Save': {
-        'Frequency': (180, int, 0, 'Choose how often to save the file, don\'t set it too low'
-                                    ' or the program won\'t be able to keep up.'
-                                    ' Set to 0 to disable.'),
-        'MaximumAttemptsNormal': (3, int, 1, 'Maximum number of failed save attempts'
-                                             ' before the tracking continues.'),
-        'MaximumAttemptsSwitch': (24, int, 1, 'Maximum number of failed save attempts'
-                                          ' when switching profile.'
-                                          ' If this fails then the latest data will be lost.'),
-        'WaitAfterFail': (5, int, 1, 'How many seconds to wait before trying again.')
+        '__priority__': 1,
+        'Language': {
+            '__info__': 'Choose a language. If there is any issue or the files don\'t exit yet, {} will be used.'.format(_language, DEFAULT_LANGUAGE),
+            '__priority__': 1,
+            'value': _language,
+            'type': str,
+        },
+        'HistoryLength': {
+            '__info__': 'How many seconds to store of the track history. Each hour increases the file size by roughly 1.5mb.',
+            '__priority__': 2,
+            'value': 7200,
+            'type': int,
+            'min': 0
+        }
     },
     'Paths': {
-        '__note__': ['You may use environment variables such as %APPDATA%.'],
-        'Data': ('{}\\Data\\'.format(DEFAULT_PATH), str),
-        'AppList': ('{}\\{}'.format(DEFAULT_PATH, APP_LIST_FILE), str),
-        'Images': ('{}\\Images\\[Name]'.format(DEFAULT_PATH), str, 'Default place to save images. [Name] is replaced by the name of the application.')
-        
+        '__info__': 'You may use environment variables such as %APPDATA%.',
+        '__priority__': 2,
+        'Data': {
+            '__priority__': 1,
+            'value': '{}\\Data\\'.format(DEFAULT_PATH),
+            'type': str
+        },
+        'Images': {
+            '__info__': 'Default place to save images. [Name] is replaced by the name of the application.',
+            '__priority__': 2,
+            'value': '{}\\Images\\[Name]'.format(DEFAULT_PATH),
+            'type': str
+        },
+        'AppList': {
+            '__priority__': 3,
+            'value': '{}\\{}'.format(DEFAULT_PATH, APP_LIST_FILE),
+            'type': str
+        }
     },
     'Internet': {
-        'Enable': (True, bool),
-        'UpdateApplications': (86400, int, 0, 'How often (in minutes) to update the list from the internet. Set to 0 to disable.')
+        '__priority__': 3,
+        'Enable': {
+            '__priority__': 1,
+            'value': True,
+            'type': bool
+        },
+        'UpdateApplications': {
+            '__info__': 'How often (in minutes) to update the list from the internet. Set to 0 to disable.',
+            'value': 86400,
+            'type': int,
+            'min': 0
+        }
+    },
+    'Save': {
+        '__priority__': 4,
+        'Frequency': {
+            '__info__': 'Choose how often to save the file, don\'t set it too low or the program won\'t be able to keep up. Set to 0 to disable.',
+            '__priority__': 1,
+            'value': 180,
+            'type': int,
+            'min': 0
+        },
+        'MaximumAttemptsNormal': {
+            '__info__': 'Maximum number of failed save attempts before the tracking continues.',
+            'value': 3,
+            'type': int,
+            'min': 1
+        },
+        'MaximumAttemptsSwitch': {
+            '__info__': 'Maximum number of failed save attempts when switching profile.',
+            'value': 24,
+            'type': int,
+            'min': 1
+        },
+        'WaitAfterFail': {
+            '__info__': 'How many seconds to wait before trying again.',
+            'value': 5,
+            'type': int,
+            'min': 0
+        }
     },
     'GenerateImages': {
-        '_UpscaleResolutionX': (0, int),
-        '_UpscaleResolutionY': (0, int),
-        '_OutputResolutionX': (0, int),
-        '_OutputResolutionY': (0, int),
-        'HighPrecision': (False, bool, 'Enable this for higher quality images'
-                                       ' that take longer to generate.'),
-        'AutomaticResolution': (True, bool, 'If disabled, OutputResolutionX/Y must be set.'),
-        'OutputResolutionX': (0, int),
-        'OutputResolutionY': (0, int),
-        'FileType': ('png', str, (False, 'jpg', 'png'), 'Choose if you want jpg (smaller size) or png (higher quality) image.'),
-        'OpenOnFinish': (True, bool, 'Enable to open the image folder after generating.')
-    },
-    'GenerateHeatmap': {
-        'FileName': ('[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]', str),
-        '_MouseButtonLeft': (True, bool),
-        '_MouseButtonMiddle': (True, bool),
-        '_MouseButtonRight': (True, bool),
-        '_GaussianBlurBase': (0.0125, float, 0),
-        'GaussianBlurMultiplier': (1.0, float, 0, 'Change the size multiplier of the gaussian blur.'
-                                                  ' Smaller values are less smooth but show more detail.'),
-        'ColourProfile': ('Jet', str)
+        '__priority__': 5,
+        '_UpscaleResolutionX': {
+            'type': int,
+        },
+        '_UpscaleResolutionY': {
+            'type': int,
+        },
+        '_OutputResolutionX': {
+            'type': int,
+        },
+        '_OutputResolutionY': {
+            'type': int,
+        },
+        'HighPrecision': {
+            '__info__': 'Enable this for higher quality images. Increases render time.',
+            '__priority__': 2,
+            'value': False,
+            'type': bool,
+        },
+        'AutomaticResolution': {
+            '__priority__': 3,
+            'value': True,
+            'type': bool,
+        },
+        'OutputResolutionX': {
+            '__priority__': 4,
+            '__info__': 'Custom image width to use if AutomaticResolution is disabled.',
+            'type': int,
+            'min': 0
+        },
+        'OutputResolutionY': {
+            '__priority__': 5,
+            '__info__': 'Custom image height to use if AutomaticResolution is disabled.',
+            'type': int,
+            'min': 0
+        },
+        'FileType': {
+            '__priority__': 1,
+            '__info__': 'Choose if you want jpg (smaller size) or png (higher quality) image.',
+            'value': 'png',
+            'type': str,
+            'case_sensitive': False,
+            'valid': ('jpg', 'jpeg', 'png')
+        },
+        'OpenOnFinish': {
+            '__priority__': 6,
+            '__info__': 'Open the folder containing the image(s) once the render is complete.',
+            'value': True,
+            'type': bool
+        }
     },
     'GenerateTracks': {
-        'FileName': ('[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]', str),
-        'ColourProfile': ('Citrus', str)
+        '__priority__': 6,
+        'FileName': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]]Tracks - [ColourProfile] [HighPrecision]',
+            'type': str
+        },
+        'ColourProfile': {
+            '__priority__': 2,
+            'value': 'Citrus',
+            'type': str
+        }
     },
-    'GenerateKeyboard':{
-        'FileName': ('[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])', str),
-        'ColourProfile': ('Aqua', str),
-        'ExtendedKeyboard': (True, bool, 'If the full keyboard should be shown, or just the main section.'),
-        'SizeMultiplier': (1.0, float, 0, 'Change the size of everything at once.'),
-        'LinearMapping': (False, bool, 'Set if a linear mapping for colours should be used.'),
-        'LinearPower': (1.0, float, 0, 'Set the exponential to raise the linear values to.'),
-        'DataSet': ('time', str, (False, 'time', 'press'), 'Set if the colours should be determined by the'
-                                                          ' total time the key has been held (time),'
-                                                          ' or the number of presses (press).')
+    'GenerateHeatmap': {
+        '__priority__': 7,
+        'FileName': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]',
+            'type': str
+        },
+        'ColourProfile': {
+            '__priority__': 2,
+            'value': 'Jet',
+            'type': str
+        },
+        'GaussianBlurMultiplier': {
+            '__info__': 'Change the size multiplier of the gaussian blur. Smaller values are less smooth but show more detail.',
+            '__priority__': 3,
+            'value': 1.0,
+            'type': float,
+            'min': 0
+        },
+        '_MouseButtonLeft': {
+            'value': True,
+            'type': bool
+        },
+        '_MouseButtonMiddle': {
+            'value': True,
+            'type': bool
+        },
+        '_MouseButtonRight': {
+            'value': True,
+            'type': bool
+        },
+        '_GaussianBlurBase': {
+            'value': 0.0125,
+            'type': float,
+            'min': 0
+        }
     },
-    'GenerateCSV':{
-        '__note__': ['This is for anyone who may want to use the recorded data in their own projects.'],
-        'FileNameTracks': ('[[RunningTimeSeconds]] Tracks ([Width], [Height])', str),
-        'FileNameClicks': ('[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]', str),
-        'FileNameKeyboard': ('[[RunningTimeSeconds]] Keyboard', str),
-        'MinimumPoints': (50, int, 0, 'Files will not be generated for any resolutions that have fewer points than this recorded.'),
-        '_GenerateTracks': (True, bool),
-        '_GenerateClicks': (True, bool),
-        '_GenerateKeyboard': (True, bool)
+    'GenerateKeyboard': {
+        '__priority__': 8,
+        'FileName': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])',
+            'type': str
+        },
+        'ColourProfile': {
+            '__priority__': 2,
+            'value': 'Aqua',
+            'type': str
+        },
+        'ExtendedKeyboard': {
+            '__info__': 'If the full keyboard should be shown, or just the main section.',
+            '__priority__': 3,
+            'value': True,
+            'type': bool
+        },
+        'SizeMultiplier': {
+            '__info__': 'Change the size of everything at once.',
+            'value': 1,
+            'type': float
+        },
+        'DataSet': {
+            '__info__': 'Set if the colours should be determined by the total time the key has been held (time), or the number of presses (press).',
+            '__priority__': 4,
+            'value': 'time',
+            'type': str,
+            'case_sensitive': False,
+            'valid': ('time', 'press')
+            
+        },
+        'LinearMapping': {
+            '__note__': 'Set if a linear mapping for colours should be used.',
+            '__priority__': 10,
+            'value': False,
+            'type': bool
+        
+        },
+        'LinearPower': {
+            '__note__': 'Set the exponential to raise the linear values to.',
+            '__priority__': 11,
+            'value': 1.0,
+            'type': float
+        }
+    },
+    'GenerateCSV': {
+        '__info__': 'This is for anyone who may want to use the recorded data in their own projects.',
+        '__priority__': 9,
+        'FileNameTracks': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]] Tracks ([Width], [Height])',
+            'type': str
+        },
+        'FileNameClicks': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]] Clicks ([Width], [Height]) [MouseButton]',
+            'type': str
+        },
+        'FileNameKeyboard': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]] Keyboard',
+            'type': str
+        },
+        'MinimumPoints': {
+            '__info__': 'Files will not be generated for any resolutions that have fewer points than this recorded.',
+            'value': 50,
+            'type': int
+        },
+        '_GenerateTracks': {
+            'value': True,
+            'type': bool
+        },
+        '_GenerateClicks': {
+            'value': True,
+            'type': bool
+        },
+        '_GenerateKeyboard': {
+            'value': True,
+            'type': bool
+        }
     },
     'API': {
-        'RunServer': (True, bool, 'Run a server so that a client can connect and receive messages.'),
-        'RunWeb': (True, bool, 'Run a web service to send and get simple requests to the main script.'),
-        'AutomaticallyChoosePorts': (False, bool),
-        'ForceCloseProcessUsingPort': (False, bool, ('If this is set, the program will attempt to shut down whatever is using the requested port,'
-                                                     ' otherwise a random port will be chosen.')),
-        'ServerPort': (60315, int, 1025, 65535, 'Set the port to run the message server.'),
-        'WebPort': (60316, int, 1025, 65535, 'Set the port to run the web API.')
+        '__priority__': 4,
+        'RunServer': {
+            '__info__': 'Run a server so that a client can connect and receive messages.',
+            '__priority__': 1,
+            'value': True,
+            'type': bool
+        },
+        'RunWeb': {
+            '__info__': 'Run a web service to communicate with the main script.',
+            '__priority__': 1,
+            'value': True,
+            'type': bool
+        },
+        'ServerPort': {
+            '__priority__': 2,
+            'value': 60315,
+            'type': int,
+            'min': 1025,
+            'max': 65535
+        },
+        'WebPort': {
+            '__priority__': 2,
+            'value': 60316,
+            'type': int,
+            'min': 1025,
+            'max': 65535
+        },
+        'AutomaticallyChoosePorts': {
+            '__priority__': 3,
+            'value': False,
+            'type': bool
+        },
+        'ForceCloseProcessUsingPort': {
+            '__info__': 'If this is set, the program will attempt to shut down whatever is using the requested port, otherwise a random port will be chosen.',
+            '__priority__': 3,
+            'value': False,
+            'type': bool
+        }
     },
     'Advanced': {
-        'MessageLevel': (int(not OS_DEBUG), int, 0, 3, 'Choose the level of messages to show.'
-                                                   ' 0 will show everything, and 3 will show nothing.'),
-        'HeatmapRangeClipping': (0.005, float, 0, 1, 'Lower the highest value when generating a heatmap.'),
-        'CompressTrackMax': (425000, int, 0, MAX_INT, 'Maximum number of of ticks before compression happens.'
-                                                      ' Set to 0 to disable.'),
-        'CompressTrackAmount': (1.1, float, 1.001, 'How much to divide each pixel by when compression happens.'),
-        'CheckResolution': (60, int, 0, 'How many ticks to wait between checking the resolution.'),
-        'CheckRunningApplications': (60, int, 0, 'How many ticks to wait between checking if something is running.'),
-        'ReloadApplicationList': (18000, int, 0, 'How many ticks to wait before reloading {}.'.format(APP_LIST_FILE)),
-        'ShowQueuedCommands': (1200, int, 'How many ticks to wait before showing the number of commands waiting to be processed.'),
-        'RepeatKeyPress': (0, int, 0, 'How many ticks to wait before recording a new key press'
-                                          ' if a key is being held down (set to 0 to disable).'),
-        'RepeatClicks': (14, int, 0, 'How many ticks to wait before recording a click'
-                                         ' if a mouse button is being held down (set to 0 to disable).'),
-        'RepeatButtonPress': (0, int, 0, 'How many ticks to wait before recording a new gamepad button press'
-                                         ' if a button is being held down (set to 0 to disable).'),
-        'KeyboardKeySize': (65.0, float, 0),
-        'KeyboardKeyCornerRadius': (3.0, float, 0),
-        'KeyboardKeyPadding': (8.0, float, 0),
-        'KeyboardKeyBorder': (0.6, float, 0),
-        'KeyboardDropShadowX': (1.25, float, 0),
-        'KeyboardDropShadowY': (1.5, float, 0),
-        'KeyboardImagePadding': (16.0, float, 0),
-        'KeyboardFontSizeMain': (17.0, float, 0),
-        'KeyboardFontSizeStats': (13.0, float, 0),
-        'KeyboardFontHeightOffset': (5.0, float),
-        'KeyboardFontWidthOffset': (5.0, float),
-        'KeyboardFontSpacing': (5.0, float),
-        'HistoryCheck': (1200, int, 0, 'How many ticks to wait before checking the history length and trimming if needed.'),
-        'RunAsAdministrator': (True, bool, 'This fixes some issues with keyboard tracking.'),
-        'RefreshGamepads': (600, int, 1, 'How many ticks to wait before refreshing the list of connected gamepads.')
+        'MessageLevel': {
+            '__info__': 'Choose the level of messages to show. 0 will show everything, and 3 will show nothing.',
+            'value': int(not OS_DEBUG),  #If debug, show more messages
+            'type': int,
+            'min': 0,
+            'max': 3
+        },
+        'HeatmapRangeClipping': {
+            '__info__': 'Lower the highest value when generating a heatmap.',
+            'value': 0.005,
+            'type': float,
+            'min': 0,
+            'max': 1
+        },
+        'CompressTrackMax': {
+            '__info__': 'Maximum number of of ticks before compression happens. Set to 0 to disable.',
+            'value': 425000,
+            'type': int,
+            'min': 0,
+            'max': MAX_INT
+        },
+        'CompressTrackAmount': {
+            '__info__': 'How much to divide each pixel by when compression happens.',
+            'value': 1.1,
+            'type': float,
+            'min': 1.001
+        },
+        'CheckResolution': {
+            '__info__': 'How many ticks to wait between checking the resolution.',
+            'value': 60,
+            'type': int,
+            'min': 0
+        },
+        'CheckRunningApplications': {
+            '__info__': 'How many ticks to wait between checking if something is running.',
+            'value': 60,
+            'type': int,
+            'min': 0
+        },
+        'ReloadApplicationList': {
+            '__info__': 'How many ticks to wait before reloading {}.'.format(APP_LIST_FILE),
+            'value': 18000,
+            'type': int,
+            'min': 0
+        },
+        'ShowQueuedCommands': {
+            '__info__': 'How many ticks to wait before showing the number of commands waiting to be processed.',
+            'value': 1200,
+            'type': int,
+            'min': 0
+        },
+        'RepeatKeyPress': {
+            '__info__': 'How many ticks to wait before recording a new key press if a key is being held down (set to 0 to disable).',
+            'value': 0,
+            'type': int,
+            'min': 0
+        },
+        'RepeatClicks': {
+            '__info__': 'How many ticks to wait before recording a click if a mouse button is being held down (set to 0 to disable).',
+            'value': 14,
+            'type': int,
+            'min': 0
+        },
+        'RepeatButtonPress': {
+            '__info__': 'How many ticks to wait before recording a new gamepad button press if a button is being held down (set to 0 to disable).',
+            'value': 0,
+            'type': int,
+            'min': 0
+        },
+        'KeyboardKeySize': {
+            'value': 65.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardKeyCornerRadius': {
+            'value': 3.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardKeyPadding': {
+            'value': 8.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardKeyBorder': {
+            'value': 0.6,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardDropShadowX': {
+            'value': 1.25,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardDropShadowY': {
+            'value': 1.5,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardImagePadding': {
+            'value': 16.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardFontSizeMain': {
+            'value': 17.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardFontSizeStats': {
+            'value': 13.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardFontHeightOffset': {
+            'value': 5.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardFontWidthOffset': {
+            'value': 5.0,
+            'type': float,
+            'min': 0
+        },
+        'KeyboardFontSpacing': {
+            'value': 5.0,
+            'type': float,
+            'min': 0
+        },
+        'HistoryCheck': {
+            '__info__': 'How many ticks to wait before checking the history length and trimming if needed.',
+            'value': 1200,
+            'type': int,
+            'min': 0
+        },
+        'RunAsAdministrator': {
+            '__info__': 'This fixes tracking not working on elevated programs.',
+            'value': True,
+            'type': bool,
+        },
+        'RefreshGamepads': {
+            '__info__': 'How many ticks to wait before refreshing the list of connected gamepads.',
+            'value': 600,
+            'type': int,
+            'min': 1
+        }
     }
 }
 
-_config_order = [
-    'Main',
-    'Paths',
-    'Internet',
-    'Save',
-    'GenerateImages',
-    'GenerateTracks',
-    'GenerateHeatmap',
-    'GenerateKeyboard',
-    'GenerateCSV', 
-    'Advanced',
-    'API'
-]
+def _get_priority_order(values, key='__priority__', default=None):
+    """Use the __priority__ key to build a sorted list of config values.
+
+    The list starts from the lowest value, and by default,
+    the first gap will be filled with anything without a value.
+    Changing default will instead assign all those values
+    to a particular priority
+    """
+    #Build dict of values grouped by priority
+    priorities = {}
+    for k, v in get_items(values):
+        if not k.startswith('_'):
+            priority = v.get(key, default)
+            try:
+                priorities[priority].append(k)
+            except KeyError:
+                priorities[priority] = [k]
+                
+    #Build list of sorted values
+    try:
+        current = min(i for i in priorities if i is not None)
+    except ValueError:
+        current = 0
+    order = []
+    while priorities:
+        try:
+            order += sorted(priorities.pop(current))
+        except KeyError:
+            try:
+                order += sorted(priorities.pop(None))
+            except KeyError:
+                pass
+        current += 1
+    return order
 
 
-CONFIG = SimpleConfig(CONFIG_PATH, _config_defaults, _config_order)
+class _ConfigItem(object):
+    """Inheritance class to provide the .default option."""
+    @property
+    def default(self):
+        return self._data['default']
+
+
+class _ConfigItemNumber(_ConfigItem):
+    """Inheritance class to provide the .min and .max options for float and int."""
+    @property
+    def min(self):
+        return self._data.get('min', None)
+    @property
+    def max(self):
+        return self._data.get('max', None)
+
+        
+class _ConfigItemStr(str, _ConfigItem):
+    """Override str."""
+    def __new__(cls, config_dict):
+        cls._data = dict(config_dict)
+        return str.__new__(cls, cls._data['value'])
+    @property
+    def valid(self):
+        return self._data.get('valid', None)
+
+        
+class _ConfigItemInt(int, _ConfigItemNumber):
+    """Override int."""
+    def __new__(cls, config_dict):
+        cls._data = dict(config_dict)
+        return int.__new__(cls, cls._data['value'])
+    
+        
+class _ConfigItemFloat(float, _ConfigItemNumber):
+    """Override float."""
+    def __new__(cls, config_dict):
+        cls._data = dict(config_dict)
+        return float.__new__(cls, cls._data['value'])
+
+        
+class _ConfigItemBool(int, _ConfigItem):
+    """Override bool (and treat as int due to Python limits)."""
+    def __new__(cls, config_dict):
+        cls._data = dict(config_dict)
+        cls._data['default'] = int(cls._data['default'])
+        return int.__new__(cls, cls._data['value'])
+
+
+_CONFIG_ITEMS = {str: _ConfigItemStr, int: _ConfigItemInt,
+                 float: _ConfigItemFloat, bool: _ConfigItemBool}
+
+
+class _ConfigDict(dict):
+    """Handle the variables inside the config.
+    Here is where all the dictionary functions should affect the variables.
+    """
+    def __init__(self, config_dict, show_hidden=False):
+        self._data = config_dict
+        super(_ConfigDict, self).__init__(self._data)
+        self.hidden = not show_hidden
+
+    def __repr__(self):
+        return dict(self.__iter__()).__repr__()
+        
+    def __iter__(self):
+        for k, v in get_items(self):
+            if self.hidden and k.startswith('_'):
+                continue
+            yield k, v['value']
+
+    def __getitem__(self, item):
+        return _CONFIG_ITEMS[self._data[item]['type']](self._data[item])
+
+    def __setitem__(self, item, value):
+        """Set a new value and make sure it follows any set limits."""
+        info = self._data[item]
+
+        #Handle allowed string values
+        if info['type'] == str:
+            case_sensitive = info.get('case_sensitive', False)
+            valid_list = info.get('valid', None)
+            if valid_list is not None:
+                value = str(value)
+                if not case_sensitive:
+                    valid_list = [i.lower() for i in valid_list]
+                    value = value.lower()
+                if value not in valid_list:
+                    return False
+            
+        #Handle mix/max numbers
+        elif info['type'] in (int, float):
+            try:
+                value = info['type'](value)
+            except ValueError:
+                return False
+            min_value = info.get('min', None)
+            if min_value is not None:
+                value = max(value, min_value)
+            max_value = info.get('max', None)
+            if max_value is not None:
+                value = min(value, max_value)
+
+        self._data[item]['value'] = info['type'](value)
+        return True
+
+
+class Config(dict):
+    """Store all the variables used within the config file.
+    The validation is done on setting variables, so do not convert to a dictionary at any point.
+    Each value also contains a '.default' property, and numbers contain '.min' and ',max'.
+    
+    Inheritance:
+        Config
+            _ConfigDict
+                _ConfigItem
+                    _ConfigItemStr
+                    _ConfigItemNumber
+                        _ConfigItemInt
+                        _ConfigItemFloat
+    
+        Example:
+            >>> c = Config
+            >>> type(c)
+            <class '__main__.Config'>
+            >>> type(c['Main'])
+            <class '__main__._ConfigDict'>
+            >>> type(c['Main']['Language'])
+            <class '__main__._ConfigItemStr'>
+    """
+
+    _DEFAULT_VALUES = {int: 0, float: 0.0, str: '', bool: False}
+    
+    def __init__(self, defaults=DEFAULTS, show_hidden=False):
+        self._data = {}
+        self._load_from_dict(defaults)
+        self.hidden = not show_hidden
+        super(Config, self).__init__(self._data)
+
+    def __repr__(self):
+        """Convert to dict and use __repr__ from that."""
+        return dict(self.__iter__()).__repr__()
+
+    def __iter__(self):
+        """Show only values when converting to dict."""
+        for k, v in get_items(self):
+            yield k, _ConfigDict(v)
+                
+    def __getitem__(self, item):
+        """Return all values under a heading."""
+        return _ConfigDict(self._data[item], show_hidden=not self.hidden)
+
+    def _load_from_dict(self, config_dict):
+        """Read data from the default dictionary."""
+        for heading, var_data in get_items(config_dict):
+            self._data[heading] = {}
+            
+            for var, info in get_items(var_data):
+                if not isinstance(info, dict):
+                    continue
+                    
+                #Fill in type or value if not set
+                if 'type' not in info:
+                    info['type'] = type(info['value'])
+                elif 'value' not in info:
+                    info['value'] = self._DEFAULT_VALUES[info['type']]
+                info['default'] = info['value']
+
+                self._data[heading][var] = info
+
+    def _update_from_file(self, file_name):
+        """Replace all the default values with one from a file."""
+        try:
+            with open(file_name, 'r') as f:
+                config_lines = [i.strip() for i in f.readlines()]
+        except IOError:
+            config_lines = []
+        for line in config_lines:
+            line = line.split('//')[0].strip()
+            if not line:
+                continue
+
+            if line[0] == '[' and line[-1] == ']':
+                header = line[1:-1]
+            else:
+                variable, value = (i.strip() for i in line.split('='))
+                if value:
+                    self[header][variable] = value
+                
+    def _build_for_file(self):
+        output = []
+        for heading in _get_priority_order(DEFAULTS):
+            #Add heading
+            output.append('[{}]'.format(heading))
+
+            #Add heading help if set
+            try:
+                header_info = DEFAULTS[heading]['__info__']
+            except KeyError:
+                pass
+            else:
+                for line in header_info.split('\n'):
+                    output.append('// {}'.format(line))
+
+            #Add each variable
+            for variable in _get_priority_order(DEFAULTS[heading]):
+                output.append('{} = {}'.format(variable, DEFAULTS[heading][variable]['value']))
+                try:
+                    output[-1] += '\t\t// {}'.format(DEFAULTS[heading][variable]['__info__'])
+                except KeyError:
+                    pass
+            output.append('')
+        return '\n'.join(output[:-1])
+
+    def as_dict(self):
+        """Return data as a plain dictionary."""
+        new_dict = {}
+        for header, variables in get_items(self._data):
+            new_dict[header] = {}
+            for variable, info in get_items(variables):
+                new_dict[header][variable] = info['value']
+        return new_dict
+
+    def load(self, config_file, default_file=None):
+        """Load first from the default file, then from the main file."""
+        if default_file is not None:
+            self._update_from_file(default_file)
+        self._update_from_file(config_file)
+        return self
+
+    def save(self, file_name=CONFIG_PATH):
+        """Save the config to a file."""
+        output = self._build_for_file()
+        create_folder(file_name)
+        with open(file_name, 'w') as f:
+            f.write(output)
+        return self
+            
+CONFIG = Config(DEFAULTS).load(CONFIG_PATH)

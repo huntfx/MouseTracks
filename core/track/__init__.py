@@ -13,7 +13,7 @@ from threading import Thread
 
 from core.api import *
 from core.compatibility import get_items, MessageWithQueue
-from core.config import CONFIG, get_config_default
+from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
 from core.files import Lock
@@ -95,6 +95,7 @@ def _start_tracking():
             app.config.update(create_pipe('CONFIG', duplex=False))
             app.config.update(create_pipe('CONFIG_UPDATE', duplex=False))
             web_port = get_free_port()
+            web_port = 65043
             local_web_server(app=app, port=web_port, q_feedback=q_feedback)
         else:
             web_port = None
@@ -170,14 +171,10 @@ def _start_tracking():
                             script_status = api_control
                         
                         #Set config values
-                        #TODO: adhere to min/max, will require function in config class
                         if api_control == CONFIG_SET:
                             config_header, config_var, config_val = store['Flask']['App'].config['PIPE_CONFIG_UPDATE_RECV'].recv()
-                            try:
-                                CONFIG[config_header][config_var] = get_config_default(config_header, config_var, var_type=True)(config_val)
-                                print 'Set {}.{} to {}'.format(config_header, config_var, config_val)
-                            except KeyError:
-                                print 'Failed to set {}.{} to {}'.format(config_header, config_var, config_val)
+                            CONFIG[config_header][config_var] = config_val
+                            print 'Set {}.{} to {}'.format(config_header, config_var, CONFIG[config_header][config_var])
                     
                     #Requests that require response
                     if store['Flask']['App'].config['PIPE_REQUEST_RECV'].poll():
@@ -188,7 +185,7 @@ def _start_tracking():
                             store['Flask']['App'].config['PIPE_PORT_SEND'].send({'server': store['Flask']['Port']['Server'],
                                                                                  'web': store['Flask']['Port']['Web']})
                         elif request_id == FEEDBACK_CONFIG:
-                            store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(dict(CONFIG))
+                            store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(CONFIG.as_dict())
                     
                 if script_status != STATUS_RUNNING:
                     continue
