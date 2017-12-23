@@ -521,18 +521,35 @@ class _ConfigItem(object):
     @property
     def default(self):
         return self._data['default']
-        
+    
     @property
     def lock(self):
         return self._data.get('lock', False)
-        
+    
     @lock.setter
     def lock(self, value):
         self._data['lock'] = True
+    
+    @property
+    def raw(self):
+        return self._data['value']
 
 
 class _ConfigItemNumber(_ConfigItem):
     """Inheritance class to provide the .min and .max options for float and int."""
+    def validate(self, value):
+        try:
+            value = self._data['type'](value)
+        except ValueError:
+            return None
+        min_value = self._data.get('min', None)
+        if min_value is not None:
+            value = max(value, min_value)
+        max_value = self._data.get('max', None)
+        if max_value is not None:
+            value = min(value, max_value)
+        return value
+            
     @property
     def min(self):
         return self._data.get('min', None)
@@ -547,11 +564,23 @@ class _ConfigItemStr(str, _ConfigItem):
     def __new__(cls, config_dict):
         cls._data = config_dict
         return str.__new__(cls, cls._data['value'])
-        
+    
+    def validate(self, value):
+        value = str(value)
+        case_sensitive = self._data.get('case_sensitive', False)
+        valid_list = self._data.get('valid', None)
+        if valid_list is not None:
+            if not case_sensitive:
+                valid_list = [i.lower() for i in valid_list]
+                value = value.lower()
+            if value not in valid_list:
+                return None
+        return value
+    
     @property
     def valid(self):
         return self._data.get('valid', None)
-        
+    
     @property
     def type(self):
         return str
@@ -573,7 +602,7 @@ class _ConfigItemFloat(float, _ConfigItemNumber):
     def __new__(cls, config_dict):
         cls._data = config_dict
         return float.__new__(cls, cls._data['value'])
-        
+    
     @property
     def type(self):
         return float
@@ -585,7 +614,15 @@ class _ConfigItemBool(int, _ConfigItem):
         cls._data = config_dict
         cls._data['default'] = int(cls._data['default'])
         return int.__new__(cls, cls._data['value'])
-        
+    
+    def validate(self, value):
+        if isinstance(value, str):
+            if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
+                return False
+            else:
+                return True
+        return None
+    
     @property
     def type(self):
         return bool
@@ -595,6 +632,10 @@ _CONFIG_ITEMS = {str: _ConfigItemStr, int: _ConfigItemInt,
                  float: _ConfigItemFloat, bool: _ConfigItemBool}
 
 
+def create_config_item(config_dict, item_type=None):
+    return _CONFIG_ITEMS[item_type or config_dict['type']](config_dict)   
+
+    
 class _ConfigDict(dict):
     """Handle the variables inside the config.
     Here is where all the dictionary functions should affect the variables.
@@ -614,56 +655,22 @@ class _ConfigDict(dict):
             yield k, v['value']
 
     def __getitem__(self, item):
-        return _CONFIG_ITEMS[self._data[item]['type']](self._data[item])
+        return create_config_item(self._data[item])
 
     def __setitem__(self, item, value):
         """Set a new value and make sure it follows any set limits."""
         info = self._data[item]
 
         if info.get('lock', False):
-            return False
+            return
         
-        #Handle allowed string values
-        if info['type'] == str:
-            case_sensitive = info.get('case_sensitive', False)
-            valid_list = info.get('valid', None)
-            if valid_list is not None:
-                value = str(value)
-                if not case_sensitive:
-                    valid_list = [i.lower() for i in valid_list]
-                    value = value.lower()
-                if value not in valid_list:
-                    return False
-            
-        #Handle mix/max numbers
-        elif info['type'] in (int, float):
-            try:
-                value = info['type'](value)
-            except ValueError:
-                return False
-            min_value = info.get('min', None)
-            if min_value is not None:
-                value = max(value, min_value)
-            max_value = info.get('max', None)
-            if max_value is not None:
-                value = min(value, max_value)
-        
-        elif info['type'] == bool:
-            #Check string for possible False values
-            if isinstance(value, str):
-                if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
-                    value = False
-                else:
-                    value = True
-                
-        self._data[item]['value'] = info['type'](value)
-        return True
+        validated = create_config_item(self._data[item]).validate(value)
+        if validated is not None:
+            self._data[item]['value'] = validated
 
 
 class Config(dict):
     """Store all the variables used within the config file.
-    The validation is done on setting variables, so do not convert to a dictionary at any point.
-    Each value also contains a '.default' property, and numbers contain '.min' and ',max'.
     
     Inheritance:
         Config
@@ -740,6 +747,7 @@ class Config(dict):
                     self[header][variable] = value
                 
     def _build_for_file(self):
+        """Generate lines for a config file."""
         output = []
         for heading in _get_priority_order(DEFAULTS):
             #Add heading
@@ -787,12 +795,12 @@ class Config(dict):
 
       
 def config_to_dict(conf):
-        new_dict = {}
-        for header, variables in get_items(conf):
-            new_dict[header] = {}
-            for variable, info in get_items(variables):
-                new_dict[header][variable] = info['type'](info['value'])
-        return new_dict
+    new_dict = {}
+    for header, variables in get_items(conf):
+        new_dict[header] = {}
+        for variable, info in get_items(variables):
+            new_dict[header][variable] = info['type'](info['value'])
+    return new_dict
             
             
 CONFIG = Config(DEFAULTS).load(CONFIG_PATH).save()
