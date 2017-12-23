@@ -515,10 +515,16 @@ def _get_priority_order(values, key='__priority__', default=None):
 
 
 class _ConfigItem(object):
-    """Inheritance class to provide the .default option."""
+    """Inheritance class to provide the .default and .lock options."""
     @property
     def default(self):
         return self._data['default']
+    @property
+    def lock(self):
+        return self._data.get('lock', False)
+    @lock.setter
+    def lock(self, value):
+        self._data['lock'] = True
 
 
 class _ConfigItemNumber(_ConfigItem):
@@ -534,7 +540,8 @@ class _ConfigItemNumber(_ConfigItem):
 class _ConfigItemStr(str, _ConfigItem):
     """Override str."""
     def __new__(cls, config_dict):
-        cls._data = dict(config_dict)
+        #cls._data = dict(config_dict)
+        cls._data = config_dict
         return str.__new__(cls, cls._data['value'])
     @property
     def valid(self):
@@ -542,6 +549,7 @@ class _ConfigItemStr(str, _ConfigItem):
     @property
     def type(self):
         return str
+        
 
         
 class _ConfigItemInt(int, _ConfigItemNumber):
@@ -604,6 +612,9 @@ class _ConfigDict(dict):
         """Set a new value and make sure it follows any set limits."""
         info = self._data[item]
 
+        if info.get('lock', False):
+            return False
+        
         #Handle allowed string values
         if info['type'] == str:
             case_sensitive = info.get('case_sensitive', False)

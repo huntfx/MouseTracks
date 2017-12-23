@@ -18,8 +18,8 @@ try:
     from core.api.web import app
 except ImportError:
     CONFIG['API']['RunWeb'] = False
+    CONFIG['API']['RunWeb'].lock = True
     NOTIFY(IMPORT_FAILED, 'Flask')
-    #TODO: CONFIG['API']['RunWeb'].lock = True
     app = None
 
 def local_message_server(q_main, port=0, close_port=False, q_feedback=None):
