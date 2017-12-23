@@ -467,7 +467,7 @@ DEFAULTS = {
         'RunAsAdministrator': {
             '__info__': 'This fixes tracking not working on elevated programs.',
             'value': True,
-            'type': bool,
+            'type': bool
         },
         'RefreshGamepads': {
             '__info__': 'How many ticks to wait before refreshing the list of connected gamepads.',
@@ -515,13 +515,17 @@ def _get_priority_order(values, key='__priority__', default=None):
 
 
 class _ConfigItem(object):
-    """Inheritance class to provide the .default and .lock options."""
+    """Inheritance class to provide the .default and .lock options.
+    Lock is used when a value should not be modified, such as if an import fails.
+    """
     @property
     def default(self):
         return self._data['default']
+        
     @property
     def lock(self):
         return self._data.get('lock', False)
+        
     @lock.setter
     def lock(self, value):
         self._data['lock'] = True
@@ -532,6 +536,7 @@ class _ConfigItemNumber(_ConfigItem):
     @property
     def min(self):
         return self._data.get('min', None)
+        
     @property
     def max(self):
         return self._data.get('max', None)
@@ -540,23 +545,24 @@ class _ConfigItemNumber(_ConfigItem):
 class _ConfigItemStr(str, _ConfigItem):
     """Override str."""
     def __new__(cls, config_dict):
-        #cls._data = dict(config_dict)
         cls._data = config_dict
         return str.__new__(cls, cls._data['value'])
+        
     @property
     def valid(self):
         return self._data.get('valid', None)
+        
     @property
     def type(self):
         return str
-        
 
         
 class _ConfigItemInt(int, _ConfigItemNumber):
     """Override int."""
     def __new__(cls, config_dict):
-        cls._data = dict(config_dict)
+        cls._data = config_dict
         return int.__new__(cls, cls._data['value'])
+        
     @property
     def type(self):
         return int
@@ -565,8 +571,9 @@ class _ConfigItemInt(int, _ConfigItemNumber):
 class _ConfigItemFloat(float, _ConfigItemNumber):
     """Override float."""
     def __new__(cls, config_dict):
-        cls._data = dict(config_dict)
+        cls._data = config_dict
         return float.__new__(cls, cls._data['value'])
+        
     @property
     def type(self):
         return float
@@ -575,9 +582,10 @@ class _ConfigItemFloat(float, _ConfigItemNumber):
 class _ConfigItemBool(int, _ConfigItem):
     """Override bool (and treat as int due to Python limits)."""
     def __new__(cls, config_dict):
-        cls._data = dict(config_dict)
+        cls._data = config_dict
         cls._data['default'] = int(cls._data['default'])
         return int.__new__(cls, cls._data['value'])
+        
     @property
     def type(self):
         return bool
