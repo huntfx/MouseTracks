@@ -139,6 +139,8 @@ SERVER_PORT_TAKEN = 151
 
 SERVER_PORT_CLOSE = 152
 
+IMPORT_FAILED = 160
+
 
 def get_plural(word, amount):
     return word['single'] if amount == 1 else word['plural']
@@ -157,6 +159,7 @@ class Notify(object):
         all_strings = Language().get_strings()
         self.strings = all_strings['string']
         self.word = all_strings['word']
+        self._failed_imports = set()
         
         self.reset()
     
@@ -417,6 +420,11 @@ class Notify(object):
             
         elif message_id == SERVER_PORT_CLOSE:
             q1(s['server']['port']['close'])
+            
+        elif message_id == IMPORT_FAILED:
+            if args[0] not in self._failed_imports:
+                self._failed_imports.add(args[0])
+                q2('Import of "{}" failed.'.format(args[0]))
         
         return self
 

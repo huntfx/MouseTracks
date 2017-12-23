@@ -18,6 +18,7 @@ try:
     from core.api.web import app
 except ImportError:
     CONFIG['API']['RunWeb'] = False
+    NOTIFY(IMPORT_FAILED, 'Flask')
     #TODO: CONFIG['API']['RunWeb'].lock = True
     app = None
 
