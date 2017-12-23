@@ -88,7 +88,7 @@ def get_port(port_type=None):
 @app.route('/config/<string:heading>/', methods=['GET'])
 @app.route('/config/<string:heading>/<string:variable>/', methods=['GET'])
 @app.route('/config/<string:heading>/<string:variable>/<string:property>', methods=['GET'])
-def config_controls(heading, variable=None, property=None):
+def config_controls(heading=None, variable=None, property=None):
 
     #Set config value
     if heading is not None and variable is not None:
