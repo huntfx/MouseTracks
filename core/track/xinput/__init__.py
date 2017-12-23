@@ -87,7 +87,7 @@ if __name__ == '__main__':
         for gamepad in gamepads:
             with gamepad as gamepad_input:
                 for axis, amount in gamepad_input.get_button().iteritems():
-                    print axis, amount
+                    print('{}, {}'.format(axis, amount))
                 for button, state in gamepad_input.get_axis().iteritems():
-                    print button, state
+                    print('{}, {}'.format(button, state))
         time.sleep(1/60)

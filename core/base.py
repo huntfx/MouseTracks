@@ -6,6 +6,8 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import, division
 
 from re import sub
+import os
+import sys
 
 from core.os import get_documents_path, read_env_var
 
@@ -46,3 +48,11 @@ def format_file_path(path):
     if repeat:
         return format_file_path(final_path)
     return final_path
+    
+    
+def _get_script_path():
+    return os.path.dirname(os.path.realpath(sys.argv[0]))
+    
+
+def get_script_file(file_name):
+    return os.path.join(_get_script_path(), file_name)

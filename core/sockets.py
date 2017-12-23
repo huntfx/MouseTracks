@@ -5,17 +5,18 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-import cPickle
 import psutil
 import socket
 import struct
 from select import select
 
+from core.compatibility import pickle
+
 
 def send_msg(sock, msg):
     """Prefix each messge with length."""
     
-    msg = cPickle.dumps(msg)
+    msg = pickle.dumps(msg)
     msg = struct.pack('>I', len(msg)) + msg
     sock.sendall(msg)
     
@@ -30,7 +31,7 @@ def recv_msg(sock):
     msglen = struct.unpack('>I', raw_msglen)[0]
     
     #Read message data
-    return cPickle.loads(recvall(sock, msglen))
+    return pickle.loads(recvall(sock, msglen))
 
     
 def recvall(sock, n):

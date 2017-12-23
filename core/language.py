@@ -8,6 +8,7 @@ from __future__ import absolute_import
 import codecs
 
 import core.utf8
+from core.base import get_script_file
 from core.config import CONFIG
 from core.constants import DEFAULT_LANGUAGE
 
@@ -19,6 +20,8 @@ LANGUAGE_FOLDER = 'language'
 KEYBOARD_LAYOUT_FOLDER = 'keyboard_layout'
 
 CONSOLE_STRINGS_FOLDER = 'console'
+
+LANGUAGE_BASE_PATH = get_script_file(LANGUAGE_FOLDER)
 
 
 def follow_file_links(file_name, extension, path, visited=None):
@@ -56,7 +59,7 @@ class Language(object):
         language_order = (language, fallback_language)
         for language in language_order:
         
-            links = follow_file_links(language, 'txt', LANGUAGE_FOLDER)
+            links = follow_file_links(language, 'txt', LANGUAGE_BASE_PATH)
             for link in links:
                 var, value = [i.strip() for i in link.split('=')]
                 link_parts = var.split('.')
@@ -70,13 +73,13 @@ class Language(object):
                 break
         
         if self.strings is None or self.keyboard is None:
-            raise IOError('no language file found')
+            raise IOError('no language file found in the folder "{}\\"'.format(LANGUAGE_BASE_PATH))
                 
         
     def get_keyboard_layout(self, extended=True):
         keyboard_layout = []
         
-        keyboard_layout_folder = '{}/{}'.format(LANGUAGE_FOLDER, KEYBOARD_LAYOUT_FOLDER)
+        keyboard_layout_folder = '{}/{}'.format(LANGUAGE_BASE_PATH, KEYBOARD_LAYOUT_FOLDER)
         try:
             data = follow_file_links(self.keyboard, 'txt', keyboard_layout_folder)
         except AttributeError:
@@ -139,7 +142,7 @@ class Language(object):
     
     def get_strings(self):
         try:
-            data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_FOLDER, CONSOLE_STRINGS_FOLDER))
+            data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_BASE_PATH, CONSOLE_STRINGS_FOLDER))
         except AttributeError:
             return {}
         strings = {}

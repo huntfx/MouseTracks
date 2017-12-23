@@ -35,8 +35,6 @@ def user_generate():
         Ask to open folder (will require image path rewrite for a base path)
         Loop back to start if required
     """
-    CONFIG.save()
-    
     all_strings = Language().get_strings()
     _string = all_strings['string']
     string = all_strings['string']['image']

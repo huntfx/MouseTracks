@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import time
 from locale import getdefaultlocale
 
-from core.base import format_file_path
+from core.base import format_file_path, get_script_file
 from core.compatibility import get_items
 from core.constants import DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
@@ -16,7 +16,7 @@ from core.os import get_resolution, create_folder, OS_DEBUG
 
 CONFIG_PATH = format_file_path('{}\\config.ini'.format(DEFAULT_PATH))
 
-CONFIG_DEFAULT = 'config-default.ini'
+CONFIG_DEFAULT = get_script_file('config-default.ini')
 
 try:
     _language = getdefaultlocale()[0]
@@ -631,10 +631,11 @@ class _ConfigDict(dict):
         
         elif info['type'] == bool:
             #Check string for possible False values
-            if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
-                value = False
-            else:
-                value = True
+            if isinstance(value, str):
+                if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
+                    value = False
+                else:
+                    value = True
                 
         self._data[item]['value'] = info['type'](value)
         return True
@@ -705,11 +706,8 @@ class Config(dict):
 
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
-        try:
-            with open(file_name, 'r') as f:
-                config_lines = [i.strip() for i in f.readlines()]
-        except IOError:
-            config_lines = []
+        with open(file_name, 'r') as f:
+            config_lines = [i.strip() for i in f.readlines()]
         for line in config_lines:
             line = line.split('//')[0].strip()
             if not line:
@@ -747,11 +745,17 @@ class Config(dict):
             output.append('')
         return '\n'.join(output[:-1])
 
-    def load(self, config_file, default_file=None):
+    def load(self, config_file, default_file=CONFIG_DEFAULT):
         """Load first from the default file, then from the main file."""
         if default_file is not None:
-            self._update_from_file(default_file)
-        self._update_from_file(config_file)
+            try:
+                self._update_from_file(default_file)
+            except IOError:
+                pass
+        try:
+            self._update_from_file(config_file)
+        except IOError:
+            pass
         return self
 
     def save(self, file_name=CONFIG_PATH):
@@ -763,13 +767,13 @@ class Config(dict):
         return self
 
       
-def config_to_dict(cfg):
+def config_to_dict(conf):
         new_dict = {}
-        for header, variables in get_items(cfg):
+        for header, variables in get_items(conf):
             new_dict[header] = {}
             for variable, info in get_items(variables):
                 new_dict[header][variable] = info['type'](info['value'])
         return new_dict
             
             
-CONFIG = Config(DEFAULTS).load(CONFIG_PATH)
+CONFIG = Config(DEFAULTS).load(CONFIG_PATH).save()

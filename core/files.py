@@ -189,9 +189,6 @@ class LoadData(dict):
         self.version = self['Version']
         self.name = profile_name
     
-    def __repr__(self):
-        return dict(self)
-    
     def get_tracks(self, session=False):
         """Return dictionary of tracks along with top resolution and range of values.
         

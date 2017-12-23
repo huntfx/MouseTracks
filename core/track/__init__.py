@@ -174,7 +174,7 @@ def _start_tracking():
                         if api_control == CONFIG_SET:
                             config_header, config_var, config_val = store['Flask']['App'].config['PIPE_CONFIG_UPDATE_RECV'].recv()
                             CONFIG[config_header][config_var] = config_val
-                            print 'Set {}.{} to {}'.format(config_header, config_var, CONFIG[config_header][config_var])
+                            print('Set {}.{} to {}'.format(config_header, config_var, CONFIG[config_header][config_var]))
                     
                     #Requests that require response
                     if store['Flask']['App'].config['PIPE_REQUEST_RECV'].poll():

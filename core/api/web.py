@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from flask import Flask, jsonify, abort, request
-from multiprocessing import Pipe
 import logging
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
@@ -9,13 +8,6 @@ from core.api.constants import *
 from core.compatibility import get_items
 from core.config import config_to_dict
 from core.notify import *
-
-
-def create_pipe(name, duplex=False):
-    name_recv = 'PIPE_{}_RECV'.format(name)
-    name_send = 'PIPE_{}_SEND'.format(name)
-    recv, send = Pipe(duplex=duplex)
-    return {name_recv: recv, name_send: send}
     
     
 def shutdown_server():
