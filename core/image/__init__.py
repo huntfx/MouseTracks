@@ -11,7 +11,7 @@ import zlib
 from core.base import format_file_path
 from core.constants import UPDATES_PER_SECOND, DEFAULT_NAME
 from core.compatibility import get_items, Message, pickle
-from core.config import CONFIG, _config_defaults
+from core.config import CONFIG
 from core.export import ExportCSV
 from core.files import LoadData, format_name
 from core.maths import round_int
@@ -272,7 +272,7 @@ class RenderImage(object):
         try:
             colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'])
         except ValueError:
-            colour_map = calculate_colour_map(get_config_default(config_heading, 'ColourProfile'))
+            colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'].default)
         return ColourRange(min_value, max_value, colour_map)
 
     def tracks(self, last_session=False, file_name=None):
