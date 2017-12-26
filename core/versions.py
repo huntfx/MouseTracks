@@ -75,7 +75,7 @@ def _get_id(id):
         return 0
 
 
-def upgrade_version(data={}, update_metadata=True):
+def upgrade_version(data={}, _reset_sessions=True, update_metadata=True):
     """Files from an older version will be run through this function.
     It will always be compatible between any two versions.
     """
@@ -353,13 +353,16 @@ def upgrade_version(data={}, update_metadata=True):
         for i in range(start_version, FILE_VERSION+1):
             data['VersionHistory'][i] = current_time
     
-    if update_metadata: 
-            
-        data['Version'] = VERSION
-        data['FileVersion'] = FILE_VERSION 
+    if update_metadata or _reset_sessions: 
+        
+        if update_metadata:
+            data['Version'] = VERSION
+            data['FileVersion'] = FILE_VERSION 
                 
         #Only count as new session if updated or last save was over an hour ago
-        if version_update or not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified']:
+        new_session = _reset_sessions and (not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified'])
+        if new_session or version_update and original_version < 27:
+            
             data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
             data['Ticks']['Session']['Total'] = data['Ticks']['Total']
             data['Keys']['Session']['Pressed'] = {}

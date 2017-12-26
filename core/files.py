@@ -136,7 +136,7 @@ def decode_file(f, legacy=False):
     return data
     
 
-def load_data(profile_name=None, _update_metadata=True, _create_new=True):
+def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _create_new=True):
     """Read a profile (or create new one) and run it through the update.
     Use LoadData class instead of this.
     """
@@ -173,16 +173,16 @@ def load_data(profile_name=None, _update_metadata=True, _create_new=True):
         else:
             return None
     
-    return upgrade_version(loaded_data, update_metadata=_update_metadata)
+    return upgrade_version(loaded_data, _reset_sessions=_reset_sessions, update_metadata=_update_metadata)
 
     
 class LoadData(dict):
     """Wrapper for the load_data function to allow for custom functions."""
-    def __init__(self, profile_name=None, empty=False, _update_metadata=True):
+    def __init__(self, profile_name=None, empty=False, _reset_sessions=True, _update_metadata=True):
         if empty:
             data = upgrade_version()
         else:
-            data = load_data(profile_name=profile_name, _update_metadata=_update_metadata, _create_new=True)
+            data = load_data(profile_name=profile_name, _reset_sessions=_reset_sessions, _update_metadata=_update_metadata, _create_new=True)
                          
         super(LoadData, self).__init__(data)
         
@@ -273,7 +273,6 @@ def save_data(profile_name, data, _compress=True):
     Instead of overwriting, it will save as a temprary file and attempt to rename.
     At any point in time there are two copies of the save.
     """
-    
     #This is to allow pre-compressed data to be sent in
     if _compress:
         data = prepare_file(data)
