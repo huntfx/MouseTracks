@@ -17,3 +17,8 @@ def value_select(selection, default, start=0):
             result.append(i + start in selection)
         return result
     return list(default)
+    
+    
+def is_yes(string):
+    """If a y/n answer is requested, run it through here."""
+    return string and string[0].lower() in ('y', 't')

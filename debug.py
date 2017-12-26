@@ -5,15 +5,17 @@ from core.compatibility import Message, input
 options = [
     ('get_focused_application_name', 'Get name, executable and resolution of currently focused application'),
     ('get_key_press', 'Get character codes of pressed keys'),
-    ('client_connect', 'Connect a client to the main script (receives messages only)')
+    ('client_connect', 'Connect a client to the main script (receives messages only)'),
+    ('fix_poe_mine_issue', 'Fix an issue caused by playing a mine build in Path of Exile')
 ]
 
 Message('Here is a list of possible options.')
-Message('Once you select an option, it will continue running until you close it.')
-Message('')
+Message('Once you select an option, you must reload this file to pick a different one.')
+Message()
 for i, (name, description) in enumerate(options):
     Message('{}: {}'.format(i + 1, description))
 
 selection = input('Choose an option to run: ')
+Message()
 
 __import__('debug.{}'.format(options[int(selection) - 1][0]))

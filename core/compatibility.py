@@ -113,7 +113,7 @@ class MessageWithQueue(object):
     def __init__(self, queue=None):
         self.queue = queue
     
-    def send(self, text, join=', '):
+    def send(self, text='', join=', '):
         """Send everything here to print, so that tweaks can be made if needed."""
         try:
             #Join text
