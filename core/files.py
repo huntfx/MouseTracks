@@ -173,7 +173,7 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
         else:
             return None
     
-    return upgrade_version(loaded_data, _reset_sessions=_reset_sessions, update_metadata=_update_metadata)
+    return upgrade_version(loaded_data, reset_sessions=_reset_sessions, update_metadata=_update_metadata)
 
     
 class LoadData(dict):
