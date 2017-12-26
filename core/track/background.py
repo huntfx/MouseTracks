@@ -572,21 +572,26 @@ def background_process(q_recv, q_send):
             #Trim the history list if too long
             if 'HistoryCheck' in received_data and CONFIG['Main']['HistoryLength']:
                 history = store['Data']['HistoryAnimation']['Tracks']
-                history_len = [len(i) - 1 for i in history]
                 max_length = CONFIG['Main']['HistoryLength'] * UPDATES_PER_SECOND
                 
-                if sum(history_len) > max_length:
-                    count = 0
-                    for i, value in enumerate(history):
-                        count += history_len[i]
-                        if count >= max_length:
-                            history = history[i:]
-                            if count > max_length:
-                                offset = history_len[i] - max_length
-                                history[0] = [value[0]] + value[offset+1:]
-                            break
-                    store['Data']['HistoryAnimation']['Tracks'] = history
-
+                #No point checking if it's too long first, it will probably take just as long
+                total = 0
+                for count, items in enumerate(history[::-1]):
+                    total += len(items) - 1
+                    
+                    if total >= max_length:
+                        
+                        #Cut off the earlier resolutions
+                        start_point = len(history) - count - 1
+                        history = history[start_point:]
+                        
+                        #Trim the first record if not exact
+                        if total > max_length:
+                            history[0] = [history[0][0]] + history[0][total-max_length+1:]
+                        
+                        store['Data']['HistoryAnimation']['Tracks'] = history
+                        break
+                        
             store['Data']['Ticks']['Recorded'] += 1
             
             if 'Quit' in received_data or 'Exit' in received_data:
