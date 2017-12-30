@@ -10,12 +10,12 @@ import time
 import traceback
 
 import core.numpy as numpy
-from core.track.background.helper import *
 from core.applications import RunningApplications
 from core.compatibility import range, get_items
 from core.config import CONFIG
 from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND
 from core.files import LoadData, save_data, prepare_file
+from core.maths import find_distance, calculate_line
 from core.notify import *
 from core.os import MULTI_MONITOR, monitor_info
     
