@@ -29,15 +29,23 @@ except NameError:
 
 
 #Define any functions
-def _get_folder_path(file_path):
-    """Remove the last item from a path if it is a file."""
+def _get_folder_path(file_path, force_file=False, force_folder=False):
+    """Remove the last item from a path if it is a file.
+    Returns a tuple of the folder path, and file name if set or None.
+    
+    As a file or folder may be in the format "/.file" or "/.folder",
+    if it doesn't already exist, you may set force_file or force_folder.
+    """
+    #If location exists
     if os.path.exists(file_path):
         if os.path.isfile(file_path):
             folders = file_path.replace('\\', '/').split('/')
             return '/'.join(folders[:-1]), folders[-1]
         return file_path, None
+    
+    #If location doesn't exist
     folders = file_path.replace('\\', '/').split('/')
-    if '.' in folders[-1]:
+    if force_file or not force_folder and '.' in folders[-1]:
         return '/'.join(folders[:-1]), folders[-1]
     return file_path, None
     
@@ -62,9 +70,11 @@ def file_exists(file_name):
     return os.path.isfile(file_name)
     
 
-def create_folder(folder_path):
+def create_folder(folder_path, is_file=None):
     
-    folder_path, file_path = _get_folder_path(folder_path)
+    force_file = False if is_file is None else is_file
+    force_folder = False if is_file is None else not is_file
+    folder_path, file_path = _get_folder_path(folder_path, force_file=force_file, force_folder=force_folder)
     
     try:
         os.makedirs(folder_path)

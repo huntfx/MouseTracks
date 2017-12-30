@@ -158,7 +158,7 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
             new_file = True
             
             #Move corrupt file into a folder instead of just silently delete
-            if create_folder(paths['CorruptedFolder']):
+            if create_folder(paths['CorruptedFolder'], is_file=False):
                 hide_file(paths['CorruptedFolder'])
             rename_file(paths['Main'], '{}.{}'.format(paths['Corrupted'], int(time.time())))
     
@@ -279,9 +279,9 @@ def save_data(profile_name, data, _compress=True):
     
     paths = _get_paths(profile_name)
     
-    if create_folder(paths['BackupFolder']):
+    if create_folder(paths['BackupFolder'], is_file=False):
         hide_file(paths['BackupFolder'])
-    if create_folder(paths['TempFolder']):
+    if create_folder(paths['TempFolder'], is_file=False):
         hide_file(paths['TempFolder'])
     with open(paths['Temp'], 'wb') as f:
         f.write(data)
