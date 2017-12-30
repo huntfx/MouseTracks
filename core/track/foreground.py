@@ -57,14 +57,16 @@ class PrintFormat(object):
         self.message(u'{} {}'.format(time_format(current_time), text))
             
         
-def start_tracking():
+def start_tracking(lock=True):
     """Put a lock on the main script to stop more than one instance running."""
-    
-    with Lock() as lock:
-        if lock:
-            _start_tracking()
-        else:
-            handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
+    if lock:
+        with Lock() as locked:
+            if locked:
+                _start_tracking()
+            else:
+                handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
+    else:
+        _start_tracking()
     
     
 def _start_tracking():
@@ -127,7 +129,8 @@ def _start_tracking():
                            'LastClickTime': 0,
                            'OffScreen': False,
                            'DoubleClickTime': get_double_click_time() / 1000 * UPDATES_PER_SECOND},
-                 'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()}},
+                 'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()},
+                              'KeysInvalid': set()},
                  'LastActivity': 0,
                  'LastSent': 0,
                  'Save': {'Finished': True,
@@ -366,11 +369,18 @@ def _start_tracking():
                 keys_held = []
                 key_status = store['Keyboard']['KeysPressed']
                 key_press_repeat = CONFIG['Advanced']['RepeatKeyPress']
+                key_invalid = store['Keyboard']['KeysInvalid']
                 _keys_held = []
                 _keys_pressed = []
                 _keys_released = []
                 for k in KEYS:
                     if get_key_press(KEYS[k]):
+                        
+                        #Ignore if held down from last profile
+                        #TODO: Get program change from background process
+                        if k in key_invalid:
+                            continue
+                        
                         keys_held.append(k)
                         
                         #If key is currently being held down
@@ -391,6 +401,12 @@ def _start_tracking():
                     elif key_status[k]:
                         key_status[k] = False
                         _keys_released.append(k)
+                        
+                        #Mark key as valid again
+                        try:
+                            key_invalid.remove(k)
+                        except KeyError:
+                            pass
                         
                 if keys_pressed:
                     frame_data['KeyPress'] = keys_pressed
