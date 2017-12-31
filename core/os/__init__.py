@@ -123,7 +123,11 @@ def join_path(path, create=False):
     
     
 def open_folder(path):
-    os.startfile(path)
+    try:
+        os.startfile(path)
+    except (OSError, FileNotFoundError, WindowsError):
+        return False
+    return True
     
 
 #Functions to be used with commands
