@@ -51,7 +51,7 @@ def calculate_resolution(resolutions, output_resolution=None):
 
     return output_resolution, max_resolution
 
-    
+
 def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
     """Upscale a dict of arrays to a certain resolution.
     The dictionary key must be a resolution,
@@ -91,15 +91,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
             upscaled = upscale(array, zoom_factor)
             output.append(upscaled)
     return output
-    
-    
-def convert_to_rgb(image_array, colour_range):
-    """Convert an array into colours."""
-    
-    Message('Converting {} points to RGB values... (this may take a few seconds)'.format(image_array.size))
-    return colour_range.convert_array(image_array)
-    
-    
+
 
 def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
     """Convert list of arrays into a heatmap.
@@ -139,4 +131,4 @@ def arrays_to_colour(colour_range, numpy_arrays):
     if max_array is None:
         return None
     
-    return Image.fromarray(convert_to_rgb(max_array, colour_range))
+    return Image.fromarray(colour_range.convert_to_rgb(max_array))

@@ -6,9 +6,10 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import, division
 
 from core.base import get_script_file
-from core.compatibility import range, get_items
+from core.compatibility import Message, range, get_items
 from core.files import format_name
 from core.os import join_path
+import core.numpy as numpy
 
 
 COLOUR_FILE = get_script_file('colours.txt')
@@ -117,11 +118,17 @@ class ColourRange(object):
         else:
             return tuple(i * mix_ratio_r + j * mix_ratio for i, j in zip(base_colour, mix_colour))
 
-    def convert_array(self, array):
-        """Convert numpy array to fit the cache for a huge speed boost."""
-        import core.numpy as numpy
+    def convert_to_rgb(self, array):
+        """Convert an array into an RGB numpy array."""
         
-        new = numpy.round(numpy.divide(numpy.array(array) - self.min, self._step_size), 0, 'int64')
+        message = 'Converting {} points to RGB values... (this may take a few seconds)'
+        try:
+            Message(message.format(array.size))
+        except AttributeError:
+            array = numpy.array(array)
+            Message(message.format(array.size))
+        
+        new = numpy.round(numpy.divide(array - self.min, self._step_size), 0, 'int64')
     
         start_colour = self.cache[0]
         end_colour = self.cache[-1]

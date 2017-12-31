@@ -18,7 +18,7 @@ from core.maths import round_int
 from core.os import create_folder, remove_file, join_path
 from core.versions import VERSION
 from core.image.keyboard import DrawKeyboard
-from core.image.calculate import convert_to_rgb, arrays_to_heatmap, arrays_to_colour, gaussian_size, calculate_resolution, upscale_arrays_to_resolution
+from core.image.calculate import arrays_to_heatmap, arrays_to_colour, gaussian_size, calculate_resolution, upscale_arrays_to_resolution
 from core.image.colours import ColourRange, calculate_colour_map
 
 
@@ -369,7 +369,7 @@ class RenderImage(object):
 
         colour_range = self._get_colour_range(min_value, max_value, 'GenerateHeatmap')
         
-        image_output = Image.fromarray(convert_to_rgb(heatmap, colour_range))
+        image_output = Image.fromarray(colour_range.convert_to_rgb(heatmap))
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
 
         if file_name is None:
