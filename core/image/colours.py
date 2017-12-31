@@ -150,7 +150,7 @@ class ColourRange(object):
         return image
         
             
-def parse_colour_text(colour_string):
+def parse_colour_text(colours):
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
     as it was first written to only use capitals.
@@ -185,7 +185,8 @@ def parse_colour_text(colour_string):
         + TripleCyanBlueToTripleCyanYellowToCyanYellowTo
         + CyanTripleYellowToYellowToOrangeToRedOrangeToRed 
     """
-    colour_string = format_name(colour_string, '#')
+    
+    colour_string = format_name(colours, '#')
     colour_data = parse_colour_file()['Colours']
 
     current_mix = [[]]
@@ -272,7 +273,7 @@ def parse_colour_text(colour_string):
         colour_string = colour_string[1:]
     
     if not current_mix[0]:
-        raise ValueError('invalid colour map')
+        raise ValueError('invalid colour map: "{}"'.format(colours))
 
     #Merge colours together
     final_mix = []
