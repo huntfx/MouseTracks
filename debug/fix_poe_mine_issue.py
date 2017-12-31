@@ -62,10 +62,11 @@ def fix_poe_mine_build(profile_name, numpad_key):
 
     return save_data(profile_name, data)
 
-    
+
 Message('This is a fix for the numlock mine trick in Path of Exile.')
 Message('The trick fools the computer into thinking the key is held down, but it doesn\'t release when the game is quit.')
 Message('This fix replaces the \'held down\' time of the key with an average from the other numpad keys.')
+Message('The issue is now fixed for other profiles, as the held down keys will be ignored after a profile switch.')
 profile_name = input('Type the name of the profile to fix: ')
 numpad_key = input('Type which numpad key is being used for mines: ')
 Message('Please wait while the fix is completed...')

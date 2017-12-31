@@ -98,6 +98,7 @@ def running_processes(q_recv, q_send, background_send):
                 
                 if send:
                     background_send.put(send)
+                    q_send.put(send)
     
     #Catch error after KeyboardInterrupt
     except EOFError:

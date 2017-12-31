@@ -207,8 +207,19 @@ def _start_tracking():
                 except NameError:
                     pass
                 
+                #Get messages from running program thread
                 while not q_rp_recv.empty():
-                    message(q_rp_recv.get(), limiter.time)
+                    received = q_rp_recv.get()
+                    if isinstance(received, str):
+                        message(received, limiter.time)
+                        
+                    #Do not continue tracking held down keys
+                    #This behaviour is sometimes abused for games
+                    #but it will continue well after the game is quit
+                    elif isinstance(received, dict):
+                        if 'Program' in received:
+                            store['Keyboard']['KeysInvalid'] |= set([k for k, v in get_items(store['Keyboard']['KeysPressed']) if v])
+                        
                 
                 #Print any messages from previous loop
                 notify_extra = ''
@@ -377,7 +388,6 @@ def _start_tracking():
                     if get_key_press(KEYS[k]):
                         
                         #Ignore if held down from last profile
-                        #TODO: Get program change from background process
                         if k in key_invalid:
                             continue
                         
