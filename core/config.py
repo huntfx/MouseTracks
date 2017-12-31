@@ -169,8 +169,21 @@ DEFAULTS = {
             'type': str
         }
     },
-    'GenerateHeatmap': {
+    'GenerateSpeed': {
         '__priority__': 7,
+        'FileName': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]]Speed - [ColourProfile] [HighPrecision]',
+            'type': str
+        },
+        'ColourProfile': {
+            '__priority__': 2,
+            'value': 'BlackToWhite',
+            'type': str
+        }
+    },
+    'GenerateHeatmap': {
+        '__priority__': 8,
         'FileName': {
             '__priority__': 1,
             'value': '[[RunningTimeSeconds]]Clicks ([MouseButton]) - [ColourProfile]',
@@ -207,7 +220,7 @@ DEFAULTS = {
         }
     },
     'GenerateKeyboard': {
-        '__priority__': 8,
+        '__priority__': 9,
         'FileName': {
             '__priority__': 1,
             'value': '[[RunningTimeSeconds]]Keyboard - [ColourProfile] ([DataSet])',
@@ -254,7 +267,7 @@ DEFAULTS = {
     },
     'GenerateCSV': {
         '__info__': 'This is for anyone who may want to use the recorded data in their own projects.',
-        '__priority__': 9,
+        '__priority__': 10,
         'FileNameTracks': {
             '__priority__': 1,
             'value': '[[RunningTimeSeconds]] Tracks ([Width], [Height])',
@@ -515,29 +528,36 @@ def _get_priority_order(values, key='__priority__', default=None):
 
 
 class _ConfigItem(object):
-    """Inheritance class to provide the .default and .lock options.
-    Lock is used when a value should not be modified, such as if an import fails.
+    """Base class for values in the config file.
+    All types inhert off this, which means they can be locked if needed.
     """
     @property
     def default(self):
+        """Get the default value set by the config."""
         return self._data['default']
     
     @property
     def lock(self):
+        """Lock the variable from being modified."""
         return self._data.get('lock', False)
     
     @lock.setter
     def lock(self, value):
+        """Change the lock state."""
         self._data['lock'] = True
     
     @property
     def raw(self):
+        """Return the actual value."""
         return self._data['value']
 
 
 class _ConfigItemNumber(_ConfigItem):
-    """Inheritance class to provide the .min and .max options for float and int."""
+    """Base class for floats and integerss.
+    Inherits from _ConfigItem.
+    """
     def validate(self, value):
+        """Return a validated number or None."""
         try:
             value = self._data['type'](value)
         except ValueError:
@@ -560,12 +580,13 @@ class _ConfigItemNumber(_ConfigItem):
 
         
 class _ConfigItemStr(str, _ConfigItem):
-    """Override str."""
+    """Add controls to strings."""
     def __new__(cls, config_dict):
         cls._data = config_dict
         return str.__new__(cls, cls._data['value'])
     
     def validate(self, value):
+        """Return a validated string or None."""
         value = str(value)
         case_sensitive = self._data.get('case_sensitive', False)
         valid_list = self._data.get('valid', None)
@@ -579,6 +600,7 @@ class _ConfigItemStr(str, _ConfigItem):
     
     @property
     def valid(self):
+        """Return tuple of all valid options, or None if not set."""
         return self._data.get('valid', None)
     
     @property
@@ -587,7 +609,7 @@ class _ConfigItemStr(str, _ConfigItem):
 
         
 class _ConfigItemInt(int, _ConfigItemNumber):
-    """Override int."""
+    """Add controls to integers."""
     def __new__(cls, config_dict):
         cls._data = config_dict
         return int.__new__(cls, cls._data['value'])
@@ -598,7 +620,7 @@ class _ConfigItemInt(int, _ConfigItemNumber):
     
         
 class _ConfigItemFloat(float, _ConfigItemNumber):
-    """Override float."""
+    """Add controls to floats."""
     def __new__(cls, config_dict):
         cls._data = config_dict
         return float.__new__(cls, cls._data['value'])
@@ -609,7 +631,11 @@ class _ConfigItemFloat(float, _ConfigItemNumber):
 
         
 class _ConfigItemBool(int, _ConfigItem):
-    """Override bool (and treat as int due to Python limits)."""
+    """Add controls to booleans.
+    
+    Due to a limitation with Python not allowing bool inheritance,
+    the values are actually stored as integers.
+    """
     def __new__(cls, config_dict):
         cls._data = config_dict
         cls._data['default'] = int(cls._data['default'])
@@ -628,18 +654,14 @@ class _ConfigItemBool(int, _ConfigItem):
         return bool
 
 
-_CONFIG_ITEMS = {str: _ConfigItemStr, int: _ConfigItemInt,
-                 float: _ConfigItemFloat, bool: _ConfigItemBool}
-
-
 def create_config_item(config_dict, item_type=None):
-    return _CONFIG_ITEMS[item_type or config_dict['type']](config_dict)   
+    """Convert a normal variable into a config item."""
+    config_items = {str: _ConfigItemStr, int: _ConfigItemInt, float: _ConfigItemFloat, bool: _ConfigItemBool}
+    return config_items[item_type or config_dict['type']](config_dict)   
 
     
 class _ConfigDict(dict):
-    """Handle the variables inside the config.
-    Here is where all the dictionary functions should affect the variables.
-    """
+    """Handle the variables inside the config."""
     def __init__(self, config_dict, show_hidden=False):
         self._data = config_dict
         super(_ConfigDict, self).__init__(self._data)
@@ -655,6 +677,7 @@ class _ConfigDict(dict):
             yield k, v['value']
 
     def __getitem__(self, item):
+        """Return a config item instance."""
         return create_config_item(self._data[item])
 
     def __setitem__(self, item, value):

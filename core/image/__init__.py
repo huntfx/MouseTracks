@@ -28,6 +28,8 @@ class ImageName(object):
     Potential additions:
         Date formatting (eg. [j]-[M]-[Y])
         Inline if/else
+        
+    TODO: Full rewrite. It works but is way too messy.
     """
     
     # To do: Add date format strings to it, like [j]-[M]-[Y]
@@ -76,6 +78,7 @@ class ImageName(object):
         g_im = CONFIG['GenerateImages']
         g_hm = CONFIG['GenerateHeatmap']
         g_t = CONFIG['GenerateTracks']
+        g_s = CONFIG['GenerateSpeed']
         g_kb = CONFIG['GenerateKeyboard']
     
         self.width = str(g_im['_OutputResolutionX'])
@@ -102,6 +105,8 @@ class ImageName(object):
         self.heatmap_gaussian = str(g_hm['GaussianBlurMultiplier'])
 
         self.track_colour = str(g_t['ColourProfile'])
+        
+        self.speed_colour = str(g_s['ColourProfile'])
 
         self.keyboard_colour = str(g_kb['ColourProfile'])
         self.keyboard_set = g_kb['DataSet'][0].upper() + g_kb['DataSet'][1:].lower()
@@ -132,6 +137,7 @@ class ImageName(object):
         #Lookup the name in the config file
         lookup = {'clicks': 'GenerateHeatmap',
                   'tracks': 'GenerateTracks',
+                  'speed': 'GenerateSpeed',
                   'keyboard': 'GenerateKeyboard',
                   'csv-tracks': 'FileNameTracks',
                   'csv-clicks': 'FileNameClicks',
@@ -193,6 +199,9 @@ class ImageName(object):
         elif image_type == 'tracks':
             name = name.replace('[Colours]', self.track_colour)
             
+        elif image_type == 'speed':
+            name = name.replace('[Colours]', self.speed_colour)
+            
         elif image_type == 'keyboard':
             name = name.replace('[Exponential]', self.keyboard_exponential)
             name = name.replace('[Colours]', self.keyboard_colour)
@@ -237,6 +246,8 @@ class RenderImage(object):
 
     def keys_per_hour(self, session=False):
         """Detect if the game has keyboard tracking or not.
+        This is for if the script is not elevated while running.
+        
         Based on my own tracks, a game may range from 100 to 4000 normally.
         Without keyboard tracking, it's generally between 0.01 and 5.
         """
@@ -253,7 +264,7 @@ class RenderImage(object):
         return 3600 * total_presses / ticks
         
     def csv(self):
-        
+        """Export data as CSV files."""
         export = ExportCSV(self.profile, self.data)
         
         if CONFIG['GenerateCSV']['_GenerateTracks']:
@@ -274,8 +285,9 @@ class RenderImage(object):
         except ValueError:
             colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'].default)
         return ColourRange(min_value, max_value, colour_map)
-
+    
     def tracks(self, last_session=False, file_name=None):
+        """Render track image."""
     
         track_data = self.data.get_tracks()
         if track_data is None:
@@ -300,12 +312,40 @@ class RenderImage(object):
             Message('Saving image to "{}"...'.format(file_name))
             image_output.save(file_name)
             Message('Finished saving.')
+            
+    def speed(self, last_session=False, file_name=None):
+        """Render speed track image."""
+    
+        track_data = self.data.get_speed()
+        if track_data is None:
+            Message('No tracking data found.')
+            return None
+            
+        top_resolution, (min_value, max_value), tracks = track_data
+        
+        output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
+        upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
+
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateSpeed')
+        
+        image_output = arrays_to_colour(colour_range, upscaled_arrays)
+        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+
+        if file_name is None:
+            file_name = self.name.generate('Speed', reload=True)
+            
+        if self.save:
+            create_folder(file_name)
+            Message('Saving image to "{}"...'.format(file_name))
+            image_output.save(file_name)
+            Message('Finished saving.')
 
     def double_clicks(self, last_session=False, file_name=None):
+        """Render heatmap of double clicks."""
         return self.clicks(last_session=last_session, file_name=file_name, _double_click=True)
 
     def clicks(self, last_session=False, file_name=None, _double_click=False):
-        pass
+        """Render heatmap of clicks."""
 
         top_resolution, (min_value, max_value), clicks = self.data.get_clicks(session=last_session, double_click=_double_click)
         output_resolution, upscale_resolution = calculate_resolution(clicks.keys(), top_resolution)
@@ -342,7 +382,7 @@ class RenderImage(object):
             Message('Finished saving.')
         
     def keyboard(self, last_session=False, file_name=None):
-        """Generate the keyboard image."""
+        """Render keyboard image."""
         kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
         
         image_output = kb.draw_image()

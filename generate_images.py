@@ -191,11 +191,12 @@ def user_generate():
 
 
     generate_tracks = False
+    generate_speed = False
     generate_heatmap = False
     generate_keyboard = False
     generate_csv = False
     
-    default_options = [True, True, True, False]
+    default_options = [True, False, True, True, False]
     
     kb_string = string['name']['keyboard']
     kph = r.keys_per_hour()
@@ -207,9 +208,10 @@ def user_generate():
     default_option_text = ' '.join(str(i+1) for i, v in enumerate(default_options) if v)
     Message(string['option']['select'].format(V=default_option_text))
     Message('1: {}'.format(string['name']['track']))
-    Message('2: {}'.format(string['name']['click']))
-    Message('3: {}'.format(kb_string))
-    Message('4: {}'.format(string['name']['csv']))
+    Message('2: {}'.format(string['name']['speed']))
+    Message('3: {}'.format(string['name']['click']))
+    Message('4: {}'.format(kb_string))
+    Message('5: {}'.format(string['name']['csv']))
     
     selection = list(map(int, input().split()))
     result = value_select(selection, default_options, start=1)
@@ -218,6 +220,9 @@ def user_generate():
         generate_tracks = True
         
     if result[1]:
+        generate_speed = True
+        
+    if result[2]:
         
         generate_heatmap = True
         Message('Which mouse buttons should be included in the heatmap?.')
@@ -239,13 +244,13 @@ def user_generate():
         if not any(heatmap_buttons):
             generate_heatmap = False
 
-    if result[2]:
+    if result[3]:
         generate_keyboard = True
         
-    if result[3]:
+    if result[4]:
         generate_csv = True
 
-    if generate_tracks or generate_heatmap or generate_keyboard or generate_csv:
+    if any((generate_tracks, generate_speed, generate_heatmap, generate_keyboard, generate_csv)):
 
         last_session_start = r.data['Ticks']['Session']['Total']
         last_session_end = r.data['Ticks']['Total']
@@ -277,6 +282,8 @@ def user_generate():
         #Generate
         if generate_tracks:
             r.tracks(last_session)
+        if generate_speed:
+            r.speed(last_session)
         if generate_heatmap:
             r.clicks(last_session)
         if generate_keyboard:

@@ -189,12 +189,12 @@ class LoadData(dict):
         self.version = self['Version']
         self.name = profile_name
     
-    def get_tracks(self, session=False):
+    def _get_track_map(self, track_type, session=False):
         """Return dictionary of tracks along with top resolution and range of values.
         
-        TODO: Test sum of arrays vs length of arrays
+        TODO: Test sum of arrays vs length of arrays to get top resolution
         """
-        start_time = self['Ticks']['Session']['Tracks'] if session else 0
+        start_time = self['Ticks']['Session'][track_type] if session else 0
         
         top_resolution = None
         max_records = 0
@@ -202,7 +202,7 @@ class LoadData(dict):
         max_value = -float('inf')
         result = {}
         for resolution, maps in get_items(self['Resolution']):
-            array = numpy.max(maps['Tracks'] - start_time, 0)
+            array = numpy.max(maps[track_type] - start_time, 0)
             num_records = numpy.count(array)
             if num_records:
                 result[resolution] = array
@@ -220,6 +220,14 @@ class LoadData(dict):
             return None
         
         return top_resolution, (int(min_value), int(max_value)), result
+        
+    def get_tracks(self, session=False):
+        """Return top resolution, min/max values, and dictionary of normal tracks."""
+        return self._get_track_map('Tracks', session=session)
+        
+    def get_speed(self, session=False):
+        """Return top resolution, min/max values, and dictionary of speed tracks."""
+        return self._get_track_map('Speed', session=session)
     
     def get_clicks(self, double_click=False, session=False):
         session = 'Session' if session else 'All'

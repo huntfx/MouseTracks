@@ -11,7 +11,7 @@ import core.numpy as numpy
 from core.compatibility import get_items, unicode
 
 
-FILE_VERSION = 27
+FILE_VERSION = 28
 
 VERSION = '1.0 beta'
 
@@ -343,7 +343,11 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     if file_version < 27:
         data['VersionHistory'] = {}
         data['Distance'] = {'Tracks': 0.0}
-        
+    
+    #Add speed maps
+    if file_version < 28:
+        for resolution in data['Resolution']:
+            data['Resolution'][resolution]['Speed'] = numpy.array(resolution, create=True)
         
     version_update = data.get('FileVersion', '0') != FILE_VERSION
     

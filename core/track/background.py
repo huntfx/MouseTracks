@@ -162,7 +162,8 @@ def background_process(q_recv, q_send):
                  'KeyTrack': {'LastKey': None,
                               'Time': None,
                               'Backspace': False},
-                 'FirstLoad': True
+                 'FirstLoad': True,
+                 'LastTrackUpdate': 0
                 }
         
         NOTIFY(DATA_LOADED)
@@ -367,7 +368,9 @@ def check_resolution(data, resolution):
         raise ValueError('incorrect resolution: {}'.format(resolution))
         
     if resolution not in data['Resolution']:
-        data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True), 'Clicks': {}}
+        data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True), 
+                                          'Speed': numpy.array(resolution, create=True),
+                                          'Clicks': {}}
         clicks = data['Resolution'][resolution]['Clicks']
         clicks['All'] = {'Single': {'Left': numpy.array(resolution, create=True),
                                     'Middle': numpy.array(resolution, create=True),
@@ -617,7 +620,10 @@ def record_mouse_move(store, received_data):
             if resolution != _resolution:
                 check_resolution(store['Data'], resolution)
             _resolutions = [resolution, _resolution]
-            
+    
+    #Find if part of continous mouse move
+    continous = store['LastTrackUpdate'] + 1 == store['Data']['Ticks']['Total']
+    
     #Write each pixel to the dictionary
     for (x, y) in mouse_coordinates:
     
@@ -627,5 +633,9 @@ def record_mouse_move(store, received_data):
             continue
             
         store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
-            
+        if continous:
+            old_value = store['Data']['Resolution'][resolution]['Speed'][y][x]
+            store['Data']['Resolution'][resolution]['Speed'][y][x] = max(distance, old_value)
+    
+    store['LastTrackUpdate'] = store['Data']['Ticks']['Total']
     store['Data']['Ticks']['Tracks'] += 1
