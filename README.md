@@ -69,11 +69,13 @@ By default, the tracking area is limited to the application window, but with no 
 
 <b>Requirements:</b>
  - [Numpy](https://pypi.python.org/pypi/numpy)
- - [psutil](https://pypi.python.org/pypi/psutil) (required for application focus detection)
+ - [psutil](https://pypi.python.org/pypi/psutil)
  - [Pillow](https://pypi.python.org/pypi/Pillow) (required to generate images)
  - ~~[scipy](https://pypi.python.org/pypi/scipy) (required to generate images)~~ - included in code
  - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - preferred method of Windows tracking)
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8) (required for Mac tracking)
+ - [xlib](https://pypi.python.org/pypi/python-xlib) (required for Linux tracking)
+ - [Flask](http://flask.pocoo.org/) (required for web based API)
  - ~~[pyxhook](https://github.com/JeffHoogland/pyxhook/blob/master/pyxhook.py) (required for Linux tracking)~~ - included in code
  - ~~[pyglet](https://pypi.python.org/pypi/pyglet/1.3.0)~~ - included in code
- - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (required for gamepad tracking)~~ - included in code
+ - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (required for gamepad tracking (Windows only))~~ - included in code
