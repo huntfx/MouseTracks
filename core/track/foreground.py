@@ -436,116 +436,117 @@ def _start_tracking():
                     NOTIFY(KEYBOARD_RELEASED, *_keys_released)
                 
                 
-                #Reload list of gamepads (in case one was plugged in)
-                if timer['RefreshGamepads'] and not ticks % timer['RefreshGamepads']:
-                    try:
-                        old_gamepads = set(gamepads)
-                    except UnboundLocalError:
-                        old_gamepads = set()
-                    gamepads = {gamepad.device_number: gamepad for gamepad in Gamepad.list_gamepads()}
-                    difference = set(gamepads) - old_gamepads
-                    for i, id in enumerate(difference):
-                        NOTIFY(GAMEPAD_FOUND, id)
-                        store['Gamepad']['ButtonsPressed'][id] = {}
-                
-                #Gamepad tracking (multiple controllers not tested yet)
-                button_repeat = CONFIG['Advanced']['RepeatButtonPress']
-                invalid_ids = []
-                buttons_held = {}
-                _buttons_pressed = {}
-                _buttons_released = {}
-                
-                for id, gamepad in get_items(gamepads):
-                    
-                    #Repeat presses
-                    if button_repeat:
-                        for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
-                            if last_update < ticks - button_repeat:
-                                try:
-                                    buttons_held[id].append(button_id)
-                                except KeyError:
-                                    buttons_held[id] = [button_id]
-                                store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
-                    
-                    with gamepad as gamepad_input:
-                    
-                        #Break the connection if controller can't be found
-                        if not gamepad.connected:
-                            NOTIFY(GAMEPAD_LOST, id)
-                            invalid_ids.append(id)
-                            continue
-                        
-                        #Axis events (thumbsticks, triggers, etc)
-                        #Send an update every tick, but only print the changes
-                        #The dead zone can be tracked now and ignored later
-                        printable = {}
-                        axis_updates = gamepad_input.get_axis(printable=printable)
-                        if axis_updates:
-                            store['LastActivity'] = ticks
-                            try:
-                                frame_data['GamepadAxis'].append(axis_updates)
-                            except KeyError:
-                                frame_data['GamepadAxis'] = [axis_updates]
-                            for axis, value in get_items(printable):
-                                NOTIFY(GAMEPAD_AXIS, id, axis, value)
-                            
-                        #Button events
-                        button_presses = gamepad_input.get_button()
-                        if button_presses:
-                            for button_id, state in get_items(button_presses):
-                                
-                                #Button pressed
-                                if state:
-                                    try:
-                                        frame_data['GamepadButtonPress'].append(button_id)
-                                    except KeyError:
-                                        frame_data['GamepadButtonPress'] = [button_id]
-                                    store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
-                                    try:
-                                        _buttons_pressed[id].append(button_id)
-                                    except KeyError:
-                                        _buttons_pressed[id] = [button_id]
-                                
-                                #Button has been released
-                                elif button_id in store['Gamepad']['ButtonsPressed'][id]:
-                                    held_length = ticks - store['Gamepad']['ButtonsPressed'][id][button_id]
-                                    del store['Gamepad']['ButtonsPressed'][id][button_id]
-                                    try:
-                                        _buttons_released[id].append(button_id)
-                                    except KeyError:
-                                        _buttons_released[id] = [button_id]
-                
-                #Send held buttons each frame
-                for id, held_buttons in get_items(store['Gamepad']['ButtonsPressed']):
-                    if held_buttons:
+                if CONFIG['Main']['_TrackGamepads']:
+                    #Reload list of gamepads (in case one was plugged in)
+                    if timer['RefreshGamepads'] and not ticks % timer['RefreshGamepads']:
                         try:
-                            frame_data['GamepadButtonHeld'].add(held_buttons)
-                        except KeyError:
-                            frame_data['GamepadButtonHeld'] = set(held_buttons)
-                
-                #Cleanup disconnected controllers
-                for id in invalid_ids:
-                    del gamepads[id]
-                    del store['Gamepad']['ButtonsPressed'][id]
+                            old_gamepads = set(gamepads)
+                        except UnboundLocalError:
+                            old_gamepads = set()
+                        gamepads = {gamepad.device_number: gamepad for gamepad in Gamepad.list_gamepads()}
+                        difference = set(gamepads) - old_gamepads
+                        for i, id in enumerate(difference):
+                            NOTIFY(GAMEPAD_FOUND, id)
+                            store['Gamepad']['ButtonsPressed'][id] = {}
+                    
+                    #Gamepad tracking (multiple controllers not tested yet)
+                    button_repeat = CONFIG['Advanced']['RepeatButtonPress']
+                    invalid_ids = []
+                    buttons_held = {}
+                    _buttons_pressed = {}
+                    _buttons_released = {}
+                    
+                    for id, gamepad in get_items(gamepads):
                         
-                if buttons_held:
-                    try:
-                        frame_data['GamepadButtonPress'] += buttons_held
-                    except KeyError:
-                        frame_data['GamepadButtonPress'] = buttons_held
-                    store['LastActivity'] = ticks
-                    for id, buttons in get_items(buttons_held):
-                        NOTIFY(GAMEPAD_BUTTON_HELD, id, buttons)
+                        #Repeat presses
+                        if button_repeat:
+                            for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
+                                if last_update < ticks - button_repeat:
+                                    try:
+                                        buttons_held[id].append(button_id)
+                                    except KeyError:
+                                        buttons_held[id] = [button_id]
+                                    store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
+                        
+                        with gamepad as gamepad_input:
+                        
+                            #Break the connection if controller can't be found
+                            if not gamepad.connected:
+                                NOTIFY(GAMEPAD_LOST, id)
+                                invalid_ids.append(id)
+                                continue
+                            
+                            #Axis events (thumbsticks, triggers, etc)
+                            #Send an update every tick, but only print the changes
+                            #The dead zone can be tracked now and ignored later
+                            printable = {}
+                            axis_updates = gamepad_input.get_axis(printable=printable)
+                            if axis_updates:
+                                store['LastActivity'] = ticks
+                                try:
+                                    frame_data['GamepadAxis'].append(axis_updates)
+                                except KeyError:
+                                    frame_data['GamepadAxis'] = [axis_updates]
+                                for axis, value in get_items(printable):
+                                    NOTIFY(GAMEPAD_AXIS, id, axis, value)
+                                
+                            #Button events
+                            button_presses = gamepad_input.get_button()
+                            if button_presses:
+                                for button_id, state in get_items(button_presses):
+                                    
+                                    #Button pressed
+                                    if state:
+                                        try:
+                                            frame_data['GamepadButtonPress'].append(button_id)
+                                        except KeyError:
+                                            frame_data['GamepadButtonPress'] = [button_id]
+                                        store['Gamepad']['ButtonsPressed'][id][button_id] = ticks
+                                        try:
+                                            _buttons_pressed[id].append(button_id)
+                                        except KeyError:
+                                            _buttons_pressed[id] = [button_id]
+                                    
+                                    #Button has been released
+                                    elif button_id in store['Gamepad']['ButtonsPressed'][id]:
+                                        held_length = ticks - store['Gamepad']['ButtonsPressed'][id][button_id]
+                                        del store['Gamepad']['ButtonsPressed'][id][button_id]
+                                        try:
+                                            _buttons_released[id].append(button_id)
+                                        except KeyError:
+                                            _buttons_released[id] = [button_id]
                     
-                if _buttons_pressed:
-                    store['LastActivity'] = ticks
-                    for id, buttons in get_items(_buttons_pressed):
-                        NOTIFY(GAMEPAD_BUTTON_PRESS, id, buttons)
+                    #Send held buttons each frame
+                    for id, held_buttons in get_items(store['Gamepad']['ButtonsPressed']):
+                        if held_buttons:
+                            try:
+                                frame_data['GamepadButtonHeld'].add(held_buttons)
+                            except KeyError:
+                                frame_data['GamepadButtonHeld'] = set(held_buttons)
                     
-                if _buttons_released:
-                    store['LastActivity'] = ticks
-                    for id, buttons in get_items(_buttons_released):
-                        NOTIFY(GAMEPAD_BUTTON_RELEASED, id, buttons)
+                    #Cleanup disconnected controllers
+                    for id in invalid_ids:
+                        del gamepads[id]
+                        del store['Gamepad']['ButtonsPressed'][id]
+                            
+                    if buttons_held:
+                        try:
+                            frame_data['GamepadButtonPress'] += buttons_held
+                        except KeyError:
+                            frame_data['GamepadButtonPress'] = buttons_held
+                        store['LastActivity'] = ticks
+                        for id, buttons in get_items(buttons_held):
+                            NOTIFY(GAMEPAD_BUTTON_HELD, id, buttons)
+                        
+                    if _buttons_pressed:
+                        store['LastActivity'] = ticks
+                        for id, buttons in get_items(_buttons_pressed):
+                            NOTIFY(GAMEPAD_BUTTON_PRESS, id, buttons)
+                        
+                    if _buttons_released:
+                        store['LastActivity'] = ticks
+                        for id, buttons in get_items(_buttons_released):
+                            NOTIFY(GAMEPAD_BUTTON_RELEASED, id, buttons)
                 
                 
                 #Resolution

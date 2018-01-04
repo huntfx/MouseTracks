@@ -40,6 +40,10 @@ DEFAULTS = {
             'value': 7200,
             'type': int,
             'min': 0
+        },
+        '_TrackGamepads': {
+            'value': True,
+            'type': bool
         }
     },
     'Paths': {
