@@ -31,10 +31,10 @@
 from __future__ import division, print_function, absolute_import
 import numpy
 
-from core.compatibility import PythonVersion
+from core.compatibility import PYTHON_VERSION
 
 
-STRING_TYPE = str if PythonVersion() > 2 else basestring
+STRING_TYPE = str if PYTHON_VERSION > 2 else basestring
 
 
 def _extend_mode_to_code(mode):

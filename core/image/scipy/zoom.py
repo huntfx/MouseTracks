@@ -32,7 +32,11 @@ from __future__ import division, absolute_import
 import numpy
 import math
 
-from core.image.scipy import _ni_support, _nd_image
+from core.image.scipy import _ni_support
+try:
+    from core.image.scipy import _nd_image
+except ImportError:
+    from scipy.ndimage import _nd_image
 
 
 def _extend_mode_to_code(mode):
