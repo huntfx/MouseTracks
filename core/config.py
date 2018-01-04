@@ -759,6 +759,7 @@ class Config(dict):
 
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
+            
         with open(file_name, 'r') as f:
             config_lines = [i.strip() for i in f.readlines()]
         for line in config_lines:
@@ -771,7 +772,11 @@ class Config(dict):
             else:
                 variable, value = (i.strip() for i in line.split('='))
                 if value:
-                    self[header][variable] = value
+                    #Make sure it's a valid config item
+                    try:
+                        self[header][variable] = value
+                    except KeyError:
+                        pass
                 
     def _build_for_file(self):
         """Generate lines for a config file."""
