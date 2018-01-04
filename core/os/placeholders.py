@@ -34,8 +34,13 @@ def get_running_processes():
     return {i.name(): i.pid for i in psutil.process_iter()}
 
     
-def hide_file():
+def hide_file(file_name):
     """Set a file as hidden."""
+    return None
+
+    
+def show_file(file_name):
+    """Unhide a file."""
     return None
     
     
@@ -99,3 +104,7 @@ class WindowFocusData(object):
     def get_rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
+        
+
+def elevate(*args):
+    return False
