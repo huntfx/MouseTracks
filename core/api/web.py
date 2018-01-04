@@ -41,9 +41,9 @@ app = Flask(__name__)
 @app.route('/')
 def main_page():
     all = {}
-    all['status'] = get_running_status()
+    all['status'] = _get_status()
     all['ports'] = _get_ports()
-    all['config'] = _get_config()
+    all['config'] = config_to_dict(_get_config())
     return jsonify(all)
 
     
