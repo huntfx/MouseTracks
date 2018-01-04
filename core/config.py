@@ -651,7 +651,7 @@ class _ConfigItemBool(int, _ConfigItem):
                 return False
             else:
                 return True
-        return None
+        return bool(value)
     
     @property
     def type(self):
