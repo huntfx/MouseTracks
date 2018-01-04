@@ -66,7 +66,6 @@ def get_cursor_pos():
         (x, y) coordinates as a tuple.
         None if it can't be detected.
     """
-    Message('Unable to read mouse position.')
     return None
     
     
@@ -75,7 +74,6 @@ def get_mouse_click():
     Returns:
         list of True/False if any clicks have been detected or not.
     """
-    Message('Unable to read mouse clicks.')
     return (False, False, False)
 
     
@@ -85,7 +83,6 @@ def get_key_press(key):
     Returns:
         True/False if the selected key has been pressed or not.
     """
-    Message('Unable to read key presses.')
     return False
     
     
@@ -110,3 +107,26 @@ class WindowFocusData(object):
     def get_rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
+        
+        
+def set_priority(level, pid=None):
+    """Set the priority/nice of the application."""
+    process = psutil.Process(pid)
+    try:
+        level = level.lower().replace(' ', '')
+        
+        if level == 'realtime':
+            process.nice(-20)
+        elif level == 'high':
+            process.nice(-13)
+        elif level == 'abovenormal':
+            process.nice(-7)
+        elif level == 'normal':
+            process.nice(0)
+        elif level == 'belownormal':
+            process.nice(7)
+        if level == 'low':
+            process.nice(13)
+            
+    except AttributeError:
+        process.nice(int(level))

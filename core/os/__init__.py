@@ -130,34 +130,6 @@ def open_folder(path):
     return True
     
 
-class Priority(object):
-    """Set the priority of the application."""
-    def __init__(self, pid=None):
-        self.process = psutil.Process(pid)
-    
-    def get(self):
-        return self.process.nice()
-    
-    def set(self, level):
-        try:
-            level = level.lower().replace(' ', '')
-        except AttributeError:
-            level = min(5, max(0, level))
-            
-        if level in (0, 'low'):
-            self.process.nice(psutil.IDLE_PRIORITY_CLASS)
-        elif level in (1, 'belownormal'):
-            self.process.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
-        elif level in (2, 'normal'):
-            self.process.nice(psutil.NORMAL_PRIORITY_CLASS)
-        elif level in (3, 'abovenormal'):
-            self.process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
-        elif level in (4, 'high'):
-            self.process.nice(psutil.HIGH_PRIORITY_CLASS)
-        elif level in (5, 'realtime'):
-            self.process.nice(psutil.REALTIME_PRIORITY_CLASS)
-    
-
 #Functions to be used with commands
 def load_executable(path):
     
