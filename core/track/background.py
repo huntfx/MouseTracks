@@ -17,7 +17,7 @@ from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_P
 from core.files import LoadData, save_data, prepare_file
 from core.maths import find_distance, calculate_line
 from core.notify import *
-from core.os import MULTI_MONITOR, monitor_info
+from core.os import MULTI_MONITOR, monitor_info, Priority
     
 
 def running_processes(q_recv, q_send, background_send):
@@ -149,6 +149,8 @@ def background_process(q_recv, q_send):
     try:
         NOTIFY(START_THREAD)
         NOTIFY.send(q_send)
+        
+        Priority().set('low')
         
         store = {'Data': LoadData(),
                  'LastProgram': None,
