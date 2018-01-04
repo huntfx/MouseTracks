@@ -7,9 +7,9 @@ from __future__ import absolute_import
 
 from multiprocessing import Queue
 from threading import Thread, currentThread
-from queue import Empty
 import socket
 
+from core.compatibility import queue
 from core.notify import *
 from core.sockets import *
 
@@ -47,7 +47,7 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
     while getattr(thread, 'running', True):
         try:
             message = q_main.get(timeout=POLLING_RATE)
-        except Empty:
+        except queue.Empty:
             pass
         except (IOError, EOFError):
             return
@@ -116,7 +116,7 @@ def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback
                     addr = q_conn.get(timeout=POLLING_RATE)
                     
                 #No connection yet
-                except Empty:
+                except queue.Empty:
                     pass
                     
                 #New client connected

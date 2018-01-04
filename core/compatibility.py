@@ -81,15 +81,17 @@ class PythonVersion(object):
 PYTHON_VERSION = PythonVersion()
 
 if PYTHON_VERSION < 3:
-    import cPickle as pickle
     from cStringIO import StringIO
+    import cPickle as pickle
+    import Queue as queue
     BytesIO = StringIO
     input = raw_input
     range = xrange
     unicode = unicode
 else:
-    import pickle
     from io import StringIO, BytesIO
+    import pickle
+    import queue
     input = input
     range = range
     unicode = str
