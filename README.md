@@ -71,7 +71,7 @@ By default, the tracking area is limited to the application window, but with no 
  - [Numpy](https://pypi.python.org/pypi/numpy)
  - [psutil](https://pypi.python.org/pypi/psutil)
  - [Pillow](https://pypi.python.org/pypi/Pillow) (required to generate images)
- - ~~[scipy](https://pypi.python.org/pypi/scipy) (required to generate images)~~ - included in code
+ - [scipy](https://pypi.python.org/pypi/scipy) (required to generate images) - included in code for Windows only
  - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - preferred method of Windows tracking)
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8) (required for Mac tracking)
  - [xlib](https://pypi.python.org/pypi/python-xlib) (required for Linux tracking)
