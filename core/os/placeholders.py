@@ -8,6 +8,8 @@ from __future__ import absolute_import
 import os
 import psutil
 
+from core.compatibility import Message
+
 
 def elevate():
     """Run the script as an administrator.
@@ -49,7 +51,8 @@ def get_resolution():
     Returns:
         (x, y) resolution as a tuple.
     """
-    raise NotImplementedError('not able to read the resolution')
+    Message('Unable to read resolution, set to default of 1920x1080.')
+    return (1920, 1080)
     
     
 def get_monitor_locations():
@@ -63,6 +66,7 @@ def get_cursor_pos():
         (x, y) coordinates as a tuple.
         None if it can't be detected.
     """
+    Message('Unable to read mouse position.')
     return None
     
     
@@ -71,6 +75,7 @@ def get_mouse_click():
     Returns:
         list of True/False if any clicks have been detected or not.
     """
+    Message('Unable to read mouse clicks.')
     return (False, False, False)
 
     
@@ -80,6 +85,7 @@ def get_key_press(key):
     Returns:
         True/False if the selected key has been pressed or not.
     """
+    Message('Unable to read key presses.')
     return False
     
     
@@ -104,7 +110,3 @@ class WindowFocusData(object):
     def get_rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
-        
-
-def elevate(*args):
-    return False
