@@ -5,18 +5,25 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import random
+import socket
 from multiprocessing import Queue
 from threading import Thread, currentThread
-import socket
 
-from core.compatibility import queue
+from core.compatibility import queue, range
 from core.notify import *
 from core.sockets import *
 
 
 POLLING_RATE = 1
-    
 
+
+def _generate_code(length):
+    """Generate a random code."""
+    allowed = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
+    return ''.join(random.choice(allowed) for _ in range(length))
+
+    
 def client_thread(client_id, sock, q_recv, q_send):
     """Send data to the connected clients."""
     #Connect to client and send feedback
@@ -85,6 +92,10 @@ def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback
     sock.listen(5)
     
     NOTIFY(SERVER_SOCKET_PORT, sock.getsockname()[1])
+    
+    #Generate a code needed for connections
+    connection_code = _generate_code(15)
+    NOTIFY(SERVER_SECRET_SET, connection_code)
     
     q_conn = Queue()
     threads = []

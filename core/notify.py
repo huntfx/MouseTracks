@@ -139,6 +139,12 @@ SERVER_PORT_TAKEN = 151
 
 SERVER_PORT_CLOSE = 152
 
+SERVER_SECRET_SET = 153
+
+SERVER_SECRET_SUCCESS = 154
+
+SERVER_SECRET_SFAIL = 155
+
 IMPORT_FAILED = 160
 
 
@@ -420,6 +426,15 @@ class Notify(object):
             
         elif message_id == SERVER_PORT_CLOSE:
             q1(s['server']['port']['close'])
+            
+        elif message_id == SERVER_SECRET_SET:
+            q1(s['server']['socket']['secret']['set'].format(S=args[0]))
+            
+        elif message_id == SERVER_SECRET_SUCCESS:
+            q1(s['server']['socket']['secret']['success'])
+            
+        elif message_id == SERVER_SECRET_FAIL:
+            q1(s['server']['socket']['secret']['fail'])
             
         elif message_id == IMPORT_FAILED:
             if args[0] not in self._failed_imports:
