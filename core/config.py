@@ -6,10 +6,10 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import time
+from future.utils import iteritems
 from locale import getdefaultlocale
 
 from core.base import format_file_path, get_script_file
-from core.compatibility import get_items
 from core.constants import DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
 
@@ -37,7 +37,7 @@ DEFAULTS = {
         'HistoryLength': {
             '__info__': 'How many seconds to store of the track history. Each hour increases the file size by roughly 1.5mb.',
             '__priority__': 2,
-            'value': 7200,
+            'value': 3600,
             'type': int,
             'min': 0
         },
@@ -47,7 +47,7 @@ DEFAULTS = {
         }
     },
     'Paths': {
-        '__info__': 'You may use environment variables such as %APPDATA%.',
+        '__info__': 'You may use environment variables such as %APPDATA%. %DOCUMENTS% points to a different location depending on the operating system.',
         '__priority__': 2,
         'Data': {
             '__priority__': 1,
@@ -505,7 +505,7 @@ def _get_priority_order(values, key='__priority__', default=None):
     """
     #Build dict of values grouped by priority
     priorities = {}
-    for k, v in get_items(values):
+    for k, v in iteritems(values):
         if not k.startswith('_'):
             priority = v.get(key, default)
             try:
@@ -675,7 +675,7 @@ class _ConfigDict(dict):
         return dict(self.__iter__()).__repr__()
         
     def __iter__(self):
-        for k, v in get_items(self):
+        for k, v in iteritems(self):
             if self.hidden and k.startswith('_'):
                 continue
             yield k, v['value']
@@ -732,7 +732,7 @@ class Config(dict):
 
     def __iter__(self):
         """Show only values when converting to dict."""
-        for k, v in get_items(self):
+        for k, v in iteritems(self):
             yield k, _ConfigDict(v)
                 
     def __getitem__(self, item):
@@ -741,10 +741,10 @@ class Config(dict):
 
     def _load_from_dict(self, config_dict):
         """Read data from the default dictionary."""
-        for heading, var_data in get_items(config_dict):
+        for heading, var_data in iteritems(config_dict):
             self._data[heading] = {}
             
-            for var, info in get_items(var_data):
+            for var, info in iteritems(var_data):
                 if not isinstance(info, dict):
                     continue
                     
@@ -828,9 +828,9 @@ class Config(dict):
       
 def config_to_dict(conf):
     new_dict = {}
-    for header, variables in get_items(conf):
+    for header, variables in iteritems(conf):
         new_dict[header] = {}
-        for variable, info in get_items(variables):
+        for variable, info in iteritems(variables):
             new_dict[header][variable] = info['type'](info['value'])
     return new_dict
             

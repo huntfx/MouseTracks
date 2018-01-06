@@ -11,7 +11,7 @@ import webbrowser
 from multiprocessing import freeze_support
 
 from core.applications import RunningApplications, AppList
-from core.compatibility import input, Message, get_items
+from core.compatibility import input, Message
 from core.config import CONFIG
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.files import list_data_files, format_name, load_data

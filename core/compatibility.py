@@ -96,17 +96,6 @@ else:
     range = range
     unicode = str
 
-
-def get_items(d):
-    """Iterate through the keys and values of a dictionary.
-    As Python 2 and 3 have different ways of getting items,
-    any attempt should be wrapped in this function.
-    """
-    if PYTHON_VERSION < 3:
-        return d.iteritems()
-    else:
-        return d.items()
-
         
 class MessageWithQueue(object):
     """Print all messages with an optional queue to send them to.

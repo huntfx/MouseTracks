@@ -6,8 +6,8 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import time
+from future.utils import iteritems
 
-from core.compatibility import get_items
 from core.config import CONFIG
 from core.constants import APP_LIST_URL
 from core.notify import *
@@ -170,10 +170,10 @@ class AppList(object):
     def save(self, path=None):
         """Save the sorted application list."""
         result = []
-        for executable, names in get_items(self.data):
+        for executable, names in iteritems(self.data):
             for ext in self.extensions:
                 if executable.lower().endswith(ext):
-                    for window_name, app_name in get_items(names):
+                    for window_name, app_name in iteritems(names):
                         if window_name is None:
                             if app_name == executable[:-self.extensions[ext]['len']]:
                                 result.append(executable)
@@ -200,7 +200,7 @@ class AppList(object):
         url_data = self._read(url=url)
         if not url_data:
             return False
-        for executable, names in get_items(url_data):
+        for executable, names in iteritems(url_data):
             if executable not in self.data:
                 self.data[executable] = url_data[executable]
             else:

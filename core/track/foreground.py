@@ -8,11 +8,12 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
+from future.utils import iteritems
 from multiprocessing import Process, Queue
 from threading import Thread
 
 from core.api import *
-from core.compatibility import get_items, MessageWithQueue
+from core.compatibility import MessageWithQueue
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
@@ -218,7 +219,7 @@ def _start_tracking():
                     #but it will continue well after the game is quit
                     elif isinstance(received, dict):
                         if 'Program' in received:
-                            store['Keyboard']['KeysInvalid'] |= set([k for k, v in get_items(store['Keyboard']['KeysPressed']) if v])
+                            store['Keyboard']['KeysInvalid'] |= set([k for k, v in iteritems(store['Keyboard']['KeysPressed']) if v])
                         
                 
                 #Print any messages from previous loop
@@ -456,11 +457,11 @@ def _start_tracking():
                     _buttons_pressed = {}
                     _buttons_released = {}
                     
-                    for id, gamepad in get_items(gamepads):
+                    for id, gamepad in iteritems(gamepads):
                         
                         #Repeat presses
                         if button_repeat:
-                            for button_id, last_update in get_items(store['Gamepad']['ButtonsPressed'][id]):
+                            for button_id, last_update in iteritems(store['Gamepad']['ButtonsPressed'][id]):
                                 if last_update < ticks - button_repeat:
                                     try:
                                         buttons_held[id].append(button_id)
@@ -487,13 +488,13 @@ def _start_tracking():
                                     frame_data['GamepadAxis'].append(axis_updates)
                                 except KeyError:
                                     frame_data['GamepadAxis'] = [axis_updates]
-                                for axis, value in get_items(printable):
+                                for axis, value in iteritems(printable):
                                     NOTIFY(GAMEPAD_AXIS, id, axis, value)
                                 
                             #Button events
                             button_presses = gamepad_input.get_button()
                             if button_presses:
-                                for button_id, state in get_items(button_presses):
+                                for button_id, state in iteritems(button_presses):
                                     
                                     #Button pressed
                                     if state:
@@ -517,7 +518,7 @@ def _start_tracking():
                                             _buttons_released[id] = [button_id]
                     
                     #Send held buttons each frame
-                    for id, held_buttons in get_items(store['Gamepad']['ButtonsPressed']):
+                    for id, held_buttons in iteritems(store['Gamepad']['ButtonsPressed']):
                         if held_buttons:
                             try:
                                 frame_data['GamepadButtonHeld'].add(held_buttons)
@@ -535,17 +536,17 @@ def _start_tracking():
                         except KeyError:
                             frame_data['GamepadButtonPress'] = buttons_held
                         store['LastActivity'] = ticks
-                        for id, buttons in get_items(buttons_held):
+                        for id, buttons in iteritems(buttons_held):
                             NOTIFY(GAMEPAD_BUTTON_HELD, id, buttons)
                         
                     if _buttons_pressed:
                         store['LastActivity'] = ticks
-                        for id, buttons in get_items(_buttons_pressed):
+                        for id, buttons in iteritems(_buttons_pressed):
                             NOTIFY(GAMEPAD_BUTTON_PRESS, id, buttons)
                         
                     if _buttons_released:
                         store['LastActivity'] = ticks
-                        for id, buttons in get_items(_buttons_released):
+                        for id, buttons in iteritems(_buttons_released):
                             NOTIFY(GAMEPAD_BUTTON_RELEASED, id, buttons)
                 
                 

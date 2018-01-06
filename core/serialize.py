@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 
 import math
-
-from core.compatibility import get_items
+from future.utils import iteritems
 
 
 _CACHE = {bin: {}, int: {}}
@@ -126,7 +125,7 @@ def dumps(x, _sign=True):
     elif item_type == dict:
         length_bytes = int_to_bin(len(x))
         current += '0'*(len(length_bytes)-1) + '1' + length_bytes
-        for k, v in get_items(x):
+        for k, v in iteritems(x):
             current += dumps(k) + dumps(v)
     
     return current

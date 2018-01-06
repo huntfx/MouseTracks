@@ -6,9 +6,10 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import time
+from future.utils import iteritems
 
 import core.numpy as numpy
-from core.compatibility import get_items, unicode
+from core.compatibility import unicode
 
 
 FILE_VERSION = 28
@@ -21,7 +22,7 @@ class IterateMaps(object):
         self.maps = maps
         
     def _iterate(self, maps, command, extra=None, _legacy=False):            
-        for key, value in get_items(maps):
+        for key, value in iteritems(maps):
             
             #Old format where resolution was separate for each map
             if _legacy and isinstance(key, (str, unicode)):
@@ -175,7 +176,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                    'MULTIPLY': 'ASTERISK',
                    'AT': 'APOSTROPHE',
                    'HASH': 'NUMBER'}
-        for old, new in get_items(changes):
+        for old, new in iteritems(changes):
             try:
                 data['Keys']['All']['Pressed'][new] = data['Keys']['All']['Pressed'].pop(old)
                 data['Keys']['All']['Held'][new] = data['Keys']['All']['Held'].pop(old)
@@ -375,7 +376,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             data['Keys']['Session']['Mistakes'] = {}
             
             #Empty session arrays
-            for resolution, values in get_items(data['Resolution']):
+            for resolution, values in iteritems(data['Resolution']):
                 if 'Session' not in values['Clicks']:
                     values['Clicks']['Session'] = {'Single': {'Left': numpy.array(resolution, create=True),
                                                               'Middle': numpy.array(resolution, create=True),

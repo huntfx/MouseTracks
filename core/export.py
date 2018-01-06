@@ -5,8 +5,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+from future.utils import iteritems
+
 import core.numpy as numpy
-from core.compatibility import range, get_items, Message
+from core.compatibility import range, Message
 from core.config import CONFIG
 from core.files import load_data
 from core.os import create_folder
@@ -50,7 +52,7 @@ class ExportCSV(object):
             CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = i == 1
             CONFIG['GenerateHeatmap']['_MouseButtonRight'] = i == 2
             
-            for resolution, array in get_items(self.data['Maps']['Click']['Single'][mouse_button]):
+            for resolution, array in iteritems(self.data['Maps']['Click']['Single'][mouse_button]):
                 CONFIG['GenerateImages']['_TempResolutionX'], CONFIG['GenerateImages']['_TempResolutionY'] = resolution
             
                 result = self._generate(resolution, array)

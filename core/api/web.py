@@ -1,15 +1,16 @@
 from __future__ import absolute_import
 
 from flask import Flask, jsonify, abort, request
+from future.utils import iteritems
+
+from core.api.constants import *
+from core.config import config_to_dict
+from core.notify import *
+
 import logging
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-from core.api.constants import *
-from core.compatibility import get_items
-from core.config import config_to_dict
-from core.notify import *
-    
-    
+
 def shutdown_server():
     """End the Flask server.
     Needs to be called within a Flask function,
@@ -92,7 +93,7 @@ def config_controls(heading=None, variable=None, property=None):
 
     #Set config value
     if heading is not None and variable is not None:
-        for k, v in get_items(request.args):
+        for k, v in iteritems(request.args):
             if k == 'set':
                 app.config['PIPE_CONTROL_SEND'].send(CONFIG_SET)
                 app.config['PIPE_CONFIG_UPDATE_SEND'].send((heading, variable, v))

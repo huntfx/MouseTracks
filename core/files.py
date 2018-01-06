@@ -9,13 +9,14 @@ import time
 import zlib
 import os
 import zipfile
+from future.utils import iteritems
 from operator import itemgetter
 from tempfile import gettempdir
 
 import core.numpy as numpy
 from core.base import format_file_path, format_name
 from core.config import CONFIG
-from core.compatibility import PYTHON_VERSION, get_items, BytesIO, unicode, pickle
+from core.compatibility import PYTHON_VERSION, BytesIO, unicode, pickle
 from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
 from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps
@@ -201,7 +202,7 @@ class LoadData(dict):
         min_value = float('inf')
         max_value = -float('inf')
         result = {}
-        for resolution, maps in get_items(self['Resolution']):
+        for resolution, maps in iteritems(self['Resolution']):
             array = numpy.max(maps[track_type] - start_time, 0)
             num_records = numpy.count(array)
             if num_records:
@@ -238,7 +239,7 @@ class LoadData(dict):
         min_value = float('inf')
         max_value = -float('inf')
         result = {}
-        for resolution, maps in get_items(self['Resolution']):
+        for resolution, maps in iteritems(self['Resolution']):
             click_maps = (maps['Clicks'][session][click_type]['Left'],
                           maps['Clicks'][session][click_type]['Middle'],
                           maps['Clicks'][session][click_type]['Right'])
@@ -310,7 +311,7 @@ def list_data_files():
     if all_files is None:
         return []
     date_modified = {f: get_modified_time(os.path.join(DATA_FOLDER, f)) for f in all_files}
-    date_sort = sorted(get_items(date_modified), key=itemgetter(1))
+    date_sort = sorted(iteritems(date_modified), key=itemgetter(1))
     return [k.replace(DATA_EXTENSION, '') for k, v in date_sort if k.endswith(DATA_EXTENSION)][::-1]
 
     

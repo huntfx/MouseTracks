@@ -8,10 +8,11 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
+from future.utils import iteritems
 
 import core.numpy as numpy
 from core.applications import RunningApplications
-from core.compatibility import range, get_items
+from core.compatibility import range
 from core.config import CONFIG
 from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND
 from core.files import LoadData, save_data, prepare_file
@@ -484,7 +485,7 @@ def record_click_double(store, received_data):
 
 def compress_tracks(store, multiplier):
     
-    for resolution, maps in get_items(store['Data']['Resolution']):
+    for resolution, maps in iteritems(store['Data']['Resolution']):
         maps['Tracks'] = numpy.divide(maps['Tracks'], multiplier, as_int=True)
             
     store['Data']['Ticks']['Tracks'] //= multiplier
@@ -515,7 +516,7 @@ def record_gamepad_held(store, received_data):
 
 def record_gamepad_axis(store, received_data):
         for controller_axis in received_data:
-            for axis, amount in get_items(controller_axis):
+            for axis, amount in iteritems(controller_axis):
                 try:
                     store['Data']['Gamepad']['All']['Axis'][axis][amount] += 1
                 except KeyError:
