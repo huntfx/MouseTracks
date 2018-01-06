@@ -340,14 +340,14 @@ def background_process(q_recv, q_send):
                 record_click_double(store, received_data['DoubleClick'])
             
             #Trim the history list if too long
-            if 'HistoryCheck' in received_data and CONFIG['Main']['HistoryLength']:
+            if 'HistoryCheck' in received_data:
                 max_length = CONFIG['Main']['HistoryLength'] * UPDATES_PER_SECOND
                 history_trim(store, max_length)
                         
             store['Data']['Ticks']['Recorded'] += 1
             
             if 'Quit' in received_data or 'Exit' in received_data:
-                break
+                return
 
             NOTIFY.send(q_send)
         
@@ -434,6 +434,11 @@ def history_trim(store, desired_length):
     """Trim the history animation to the desired length."""
     
     history = store['Data']['HistoryAnimation']['Tracks']
+    
+    #Delete all history
+    if not desired_length:
+        store['Data']['HistoryAnimation']['Tracks'] = [history[-1][0]]
+        return True
     
     #No point checking if it's too long first, it will probably take just as long
     total = 0
