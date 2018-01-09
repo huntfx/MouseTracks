@@ -60,14 +60,25 @@ class PrintFormat(object):
         
 def start_tracking(lock=True):
     """Put a lock on the main script to stop more than one instance running."""
-    if lock:
+    
+    #Attempt to run the tracking script, with or without a lock
+    error = None
+    if lock and False:
         with Lock() as locked:
             if locked:
-                _start_tracking()
+                error = _start_tracking()
             else:
                 handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
     else:
-        _start_tracking()
+        error = _start_tracking()
+    
+    #Release lock and handle error
+    if error:
+        try:
+            locked.release()
+        except UnboundLocalError:
+            pass
+        handle_error(error)
     
     
 def _start_tracking():
@@ -644,7 +655,7 @@ def _start_tracking():
                 q_bg_send.put({'Quit': True})
             except IOError:
                 pass
-        handle_error(traceback.format_exc())
+        return traceback.format_exc()
         
     except KeyboardInterrupt:
         if _background_process is not None:
@@ -655,4 +666,3 @@ def _start_tracking():
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
         message(NOTIFY.get_output())
-        handle_error()
