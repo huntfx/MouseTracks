@@ -14,7 +14,7 @@ import core.numpy as numpy
 from core.applications import RunningApplications
 from core.compatibility import range
 from core.config import CONFIG
-from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND
+from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND, KEY_STATS
 from core.files import LoadData, save_data, prepare_file
 from core.maths import find_distance, calculate_line
 from core.notify import *
@@ -559,33 +559,38 @@ def _record_keypress(key_dict, *args):
         session[args[-1]] += 1
     except KeyError:
         session[args[-1]] = 1
-        
-        
+
+
 def record_key_press(store, received_data):
     for key in received_data:
     
         _record_keypress(store['Data']['Keys'], 'Pressed', key)
         
-        #Record mistakes
-        #Only records the key if a single backspace is used
-        if key == 'BACK':
-            last = store['KeyTrack']['LastKey']
-            if last is not None and last != 'BACK':
-                store['KeyTrack']['Backspace'] = last
-            else:
+        if key not in KEY_STATS:
+            store['KeyTrack']['LastKey'] = None
+            
+        else:
+            #Record mistakes
+            #Only records the key if a single backspace is used
+            if key == 'BACK':
+                last = store['KeyTrack']['LastKey']
+                if last is not None and last != 'BACK':
+                    store['KeyTrack']['Backspace'] = last
+                else:
+                    store['KeyTrack']['Backspace'] = False
+            elif store['KeyTrack']['Backspace']:
+                _record_keypress(store['Data']['Keys'], 'Mistakes', store['KeyTrack']['Backspace'], key)
                 store['KeyTrack']['Backspace'] = False
-        elif store['KeyTrack']['Backspace']:
-            _record_keypress(store['Data']['Keys'], 'Mistakes', store['KeyTrack']['Backspace'], key)
-            store['KeyTrack']['Backspace'] = False
-        
-        #Record interval between key presses
-        if store['KeyTrack']['Time'] is not None:
-            time_difference = store['Data']['Ticks']['Total'] - store['KeyTrack']['Time']
-            _record_keypress(store['Data']['Keys'], 'Intervals', 'Total', time_difference)
-            _record_keypress(store['Data']['Keys'], 'Intervals', 'Individual', store['KeyTrack']['LastKey'], key, time_difference)
-        
-        store['KeyTrack']['LastKey'] = key
-        store['KeyTrack']['Time'] = store['Data']['Ticks']['Total']
+            
+            #Record interval between key presses
+            CONFIG['Advanced']['KeypressIntervalMax'] = 60
+            if store['KeyTrack']['Time'] is not None and store['KeyTrack']['LastKey'] is not None:
+                time_difference = store['Data']['Ticks']['Total'] - store['KeyTrack']['Time']
+                if CONFIG['Advanced']['KeypressIntervalMax'] < 0 or time_difference <= CONFIG['Advanced']['KeypressIntervalMax']:
+                    _record_keypress(store['Data']['Keys'], 'Intervals', 'Total', time_difference)
+                    _record_keypress(store['Data']['Keys'], 'Intervals', 'Individual', store['KeyTrack']['LastKey'], key, time_difference)
+            store['KeyTrack']['LastKey'] = key
+            store['KeyTrack']['Time'] = store['Data']['Ticks']['Total']
         
 
 def record_key_held(store, received_data):

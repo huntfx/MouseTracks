@@ -491,6 +491,11 @@ DEFAULTS = {
             'value': 600,
             'type': int,
             'min': 1
+        },
+        'KeypressIntervalMax': {
+            '__info__': 'Maximum number of ticks between recorded keypresses. Set to a negative number for infinite.',
+            'value': 600,
+            'type': int
         }
     }
 }

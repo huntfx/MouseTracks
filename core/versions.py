@@ -10,9 +10,10 @@ from future.utils import iteritems
 
 import core.numpy as numpy
 from core.compatibility import unicode
+from core.constants import KEY_STATS
 
 
-FILE_VERSION = 28
+FILE_VERSION = 29
 
 VERSION = '1.0 beta'
 
@@ -349,6 +350,30 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     if file_version < 28:
         for resolution in data['Resolution']:
             data['Resolution'][resolution]['Speed'] = numpy.array(resolution, create=True)
+        
+    #Reset all intervals due to bug in how they were calculated, and clean mistakes
+    if file_version < 29:
+        data['Keys']['All']['Intervals'] = {'Total': {}, 'Individual': {}}
+        
+        #Build list of invalid keys
+        invalid = []
+        for first_key, values in iteritems(data['Keys']['All']['Mistakes']):
+        
+            if first_key not in KEY_STATS:
+                invalid.append(first_key)
+                continue
+                
+            for last_key in values:
+                if last_key not in KEY_STATS:
+                    invalid.append((first_key, last_key))
+        
+        #Remove invalid keys
+        for key in invalid:
+            if isinstance(key, (str, unicode)):
+                del data['Keys']['All']['Mistakes'][key]
+            else:
+                first_key, last_key = key
+                del data['Keys']['All']['Mistakes'][first_key][last_key]
         
     version_update = data.get('FileVersion', '0') != FILE_VERSION
     
