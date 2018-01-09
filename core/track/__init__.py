@@ -5,4 +5,4 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-from core.track.foreground import start_tracking
+from core.track.foreground import RefreshRateLimiter, start_tracking

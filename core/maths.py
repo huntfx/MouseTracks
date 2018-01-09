@@ -106,7 +106,7 @@ def calculate_circle(radius, segments=(True, True, True, True)):
     """
 
     if isinstance(segments, int):
-        segments = [False if i != segments else True for i in range(4)]
+        segments = [i == segments for i in range(4)]
         
     #Parse text input
     elif isinstance(segments, str):
@@ -133,7 +133,6 @@ def calculate_circle(radius, segments=(True, True, True, True)):
     area = set()
     x = 0
     y = radius
-    i = 0
     last_y = None
     last_x = None
     while x <= y:
