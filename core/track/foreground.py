@@ -63,7 +63,7 @@ def start_tracking(lock=True):
     
     #Attempt to run the tracking script, with or without a lock
     error = None
-    if lock and False:
+    if lock:
         with Lock() as locked:
             if locked:
                 error = _start_tracking()
