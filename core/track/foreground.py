@@ -198,9 +198,8 @@ def _start_tracking():
                 try:
                     if frame_data or frame_data_rp:
                         last_sent = ticks - store['LastSent']
+                        frame_data['Ticks'] = last_sent
                         if frame_data:
-                            if last_sent:
-                                frame_data['Ticks'] = last_sent
                             q_bg_send.put(frame_data)
                         if frame_data_rp:
                             q_rp_send.put(frame_data_rp)
@@ -406,7 +405,6 @@ def _start_tracking():
                             keys_pressed.append(k)
                             _keys_pressed.append(k)
                             key_status[k] = ticks
-                            notify_key_press = list(keys_pressed)
 
                     #If key has been released
                     elif key_status[k]:
