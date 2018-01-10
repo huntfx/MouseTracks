@@ -190,9 +190,6 @@ class Tray(object):
         """Add internal IDs to menu options."""
         result = []
         for menu_option in menu_options:
-            if menu_option.get('hidden', False):
-                continue
-                
             action = menu_option.get('action', None)
             
             #Submenu
@@ -244,7 +241,7 @@ class Tray(object):
             if menu_option.get('hidden', False):
                 continue
         
-            text = menu_option.get('name')
+            text = menu_option.get('name', 'Option')
             icon = menu_option.get('icon', None)
             action = menu_option.get('action', None)
             id = menu_option.get('_id')
