@@ -14,7 +14,7 @@ import win32gui
 import win32process
 from win32com.shell import shell, shellcon
 
-from core.os.windows.pywin32.tray import start_program as tray_menu
+from core.os.windows.pywin32 import tray
 
 
 def hide_file(file_name):
