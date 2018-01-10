@@ -390,7 +390,19 @@ class CustomOpen(object):
         
         
 class Lock(object):
-    """Stop two versions of the script from being loaded at the same time."""
+    """Stop two versions of the script from being loaded at the same time.
+    
+    TODO: Figure out how to make Python actually close the damn files when I want them closed.
+    This has to be disabled if a script restart option is provided, because this happens with multiprocessing:
+        >>> file = open(filename, 'w')
+        >>> file.closed
+        False
+        >>> file.close()
+        >>> file.closed
+        True
+        >>> rename(filename, newname)
+        #ERROR FILE ISNT CLOSED (fu python)
+    """
     def __init__(self, file_name=LOCK_FILE):
         self._name = file_name
         self.closed = False
@@ -413,10 +425,11 @@ class Lock(object):
         return self._file
     
     def create(self):
-        """Open a new locked file, or return None if it already exists."""
+        """Open a new locked file, or return None if it already exists.
+        Do not hide the file or Python can't close it.
+        """
         if not file_exists(self._name) or remove_file(self._name):
             f = open(self._name, 'w')
-            hide_file(self._name)
         else:
             f = None
         return f
