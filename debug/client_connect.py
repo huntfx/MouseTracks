@@ -7,26 +7,38 @@ from __future__ import absolute_import
 
 import socket
 
-from core.api import AUTOMATIC_PORT, SERVER_PORT
 from core.compatibility import input
+from core.cryptography import Crypt, DecryptionError
 from core.sockets import *
 
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    port = int(input('Type a port to connect to, or leave blank to use {}:'.format(SERVER_PORT)))
-except (TypeError, ValueError):
-    port = SERVER_PORT
-sock.connect(('localhost', SERVER_PORT))
-
-try:
-    #Print every received message
-    while True:
-        message = recv_msg(sock)
-        if message is None:
-            sock.close()
-            break
-        print(message)
+def server_connect(port=None):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if port is None:
+        while True:
+            try:
+                port = int(input('Type a port to connect to: '))
+            except (TypeError, ValueError):
+                pass
+            else:
+                break
+        password = input('Type the password to decode the messages: ')
+        sock.connect(('localhost', port))
         
-except KeyboardInterrupt:
-    sock.close()
+    crypt = Crypt(password)
+    try:
+        #Print every received message
+        while True:
+            try:
+                message = crypt.decrypt(recv_msg(sock))
+            except DecryptionError:
+                print('Incorrect password provided.')
+                break
+            if message is None:
+                print('Server appears to have stopped.')
+                break
+            print(message)
+        sock.close()
+        
+    except KeyboardInterrupt:
+        sock.close()

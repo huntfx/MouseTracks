@@ -11,6 +11,7 @@ from multiprocessing import Queue
 from threading import Thread, currentThread
 
 from core.compatibility import queue, range
+from core.cryptography import Crypt
 from core.notify import *
 from core.sockets import *
 
@@ -48,8 +49,10 @@ def client_thread(client_id, sock, q_recv, q_send):
             return
             
             
-def middleman_thread(q_main, q_list, exit_on_disconnect=True):
+def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
     """Handle the incoming queue and duplicate for all clients."""
+    crypt = Crypt(encrypt_code)
+    
     thread = currentThread()
     while getattr(thread, 'running', True):
         try:
@@ -59,6 +62,7 @@ def middleman_thread(q_main, q_list, exit_on_disconnect=True):
         except (IOError, EOFError):
             return
         else:
+            message = crypt.encrypt(message)
             for q in q_list:
                 try:
                     q.put(message)
@@ -115,7 +119,7 @@ def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback
                 middleman.join()
             except NameError:
                 pass
-            middleman = Thread(target=middleman_thread, args=(q_main, tuple(queues)))
+            middleman = Thread(target=middleman_thread, args=(connection_code, q_main, tuple(queues)))
             middleman.daemon = True
             middleman.start()
             
