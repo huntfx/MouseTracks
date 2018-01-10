@@ -15,22 +15,33 @@ from core.os import OPERATING_SYSTEM
 from core.versions import VERSION, FILE_VERSION
 
 
-def handle_error(trace=None, log=True):
+def handle_error(trace=None, log=True, console=True):
     """Any errors are sent to here."""
     if trace is not None:
     
+        #Generate output
         output = ['Mouse Tracks {} ({}) | Python {} | {}'.format(VERSION, FILE_VERSION, PYTHON_VERSION, OPERATING_SYSTEM)]
         output.append('')
         output.append(trace)
         output = '\n'.join(output)
         
+        #Write to file
         if log:
             file_name = format_file_path('{}\\error.txt'.format(DEFAULT_PATH))
             with open(file_name, 'w') as f:
                 f.write(output)
-        Message(trace)
+        Message(trace.strip())
         
-        string = Language().get_strings()
-        input(string['string']['exit'])
-    
+        #Output information to quit/restart
+        try:
+            error_message = Language().get_strings()['string']['error']
+        except KeyError:
+            error_message = 'An error occurred.'
+        if console:
+            input(error_message)
+        else:
+            if error_message:
+                Message(error_message)
+            return
     sys.exit(0)
+            
