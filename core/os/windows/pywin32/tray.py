@@ -35,8 +35,9 @@ class Tray:
 
     FIRST_ID = 1023
 
-    def __init__(self, menu_options):
+    def __init__(self, menu_options, program_name='Python Demo'):
     
+        self.program_name = program_name
         self._refresh_menu(menu_options)
     
         msg_TaskbarRestart = win32gui.RegisterWindowMessage("TaskbarCreated");
@@ -68,7 +69,197 @@ class Tray:
                 0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
                 0, 0, hinst, None)
         win32gui.UpdateWindow(self.hwnd)
-        self._DoCreateIcons()
+        self._set_icon()
+
+    def OnRestart(self, hwnd, msg, wparam, lparam):
+        self._set_icon()
+
+    def OnDestroy(self, hwnd, msg, wparam, lparam):
+        nid = (self.hwnd, 0)
+        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        win32gui.PostQuitMessage(0) # Terminate the app.
+
+    def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
+        """Receive click events from the taskbar."""
+        #Left click
+        if lparam==win32con.WM_LBUTTONUP:
+            pass
+            
+        #Double click
+        elif lparam==win32con.WM_LBUTTONDBLCLK:
+            quit(self)
+        
+        #Right click
+        elif lparam==win32con.WM_RBUTTONUP:
+            self.show_menu()
+        return 1
+
+    def OnCommand(self, hwnd, msg, wparam, lparam):
+        """Run functions from ID."""
+        id = win32api.LOWORD(wparam)
+        
+        #Handle case when action isn't set
+        try:
+            action, args, kwargs = self.menu_actions_by_id[id]
+        except KeyError:
+            pass
+        else:
+            action(self, *args, **kwargs)
+
+    def _set_icon(self, icon_path=None):
+        """Load the tray icon.
+        Doesn't appear to be editable once it's been set.
+        """
+        
+        #Try and find a custom icon
+        if icon_path is None:
+            icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], 'pyc.ico'))
+        
+            #Look in DLLs dir
+            if not os.path.isfile(icon_path):
+                icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], 'DLLs', 'pyc.ico'))
+            
+            #Look in the source tree
+            if not os.path.isfile(icon_path):
+                icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], '..\\PC\\pyc.ico'))
+        
+        #Load icon as an image
+        try:
+            if not os.path.isfile(icon_path):
+                raise TypeError
+            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+            hinst = win32api.GetModuleHandle(None)
+            hicon = win32gui.LoadImage(hinst, icon_path, win32con.IMAGE_ICON, 0, 0, icon_flags)
+        
+        #Fallback to default windows icon
+        except TypeError:
+            hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
+        
+        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, hicon, self.program_name)
+        try:
+            win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
+        except win32gui.error:
+            # This is common when windows is starting, and this code is hit
+            # before the taskbar has been created.
+            # but keep running anyway - when explorer starts, we get the
+            # TaskbarCreated message.
+            pass
+                
+    def _set_icon_menu(self, icon):
+        """Load icons into the tray items.
+        
+        Got from https://stackoverflow.com/a/45890829
+        """
+        ico_x = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
+        ico_y = win32api.GetSystemMetrics(win32con.SM_CYSMICON)
+        hIcon = win32gui.LoadImage(0, icon, win32con.IMAGE_ICON, ico_x, ico_y, win32con.LR_LOADFROMFILE)
+
+        hwndDC = win32gui.GetWindowDC(self.hwnd)
+        dc = win32ui.CreateDCFromHandle(hwndDC)
+        memDC = dc.CreateCompatibleDC()
+        iconBitmap = win32ui.CreateBitmap()
+        iconBitmap.CreateCompatibleBitmap(dc, ico_x, ico_y)
+        oldBmp = memDC.SelectObject(iconBitmap)
+        brush = win32gui.GetSysColorBrush(win32con.COLOR_MENU)
+
+        win32gui.FillRect(memDC.GetSafeHdc(), (0, 0, ico_x, ico_y), brush)
+        win32gui.DrawIconEx(memDC.GetSafeHdc(), 0, 0, hIcon, ico_x, ico_y, 0, 0, win32con.DI_NORMAL)
+
+        memDC.SelectObject(oldBmp)
+        memDC.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, hwndDC)
+
+        return iconBitmap.GetHandle()
+        
+    def _refresh_menu(self, menu_options=None):
+        """Recalculate the menu options."""
+        #Redraw from original or set new original
+        if menu_options is None:
+            menu_options = self._menu_options
+        else:
+            self._menu_options = list(menu_options)
+        
+        #Assign the IDs
+        self._next_action_id = self.FIRST_ID
+        self.menu_actions_by_id = {}
+        self.menu_options = self._add_ids_to_menu_options(self._menu_options)
+        del self._next_action_id
+    
+    def _add_ids_to_menu_options(self, menu_options):
+        """Add internal IDs to menu options."""
+        result = []
+        for menu_option in menu_options:
+            action = menu_option.get('action', None)
+            
+            #Submenu
+            if isinstance(action, tuple):
+                result.append({k: v for k, v in iteritems(menu_option) if k != 'action'})
+                result[-1]['action'] = self._add_ids_to_menu_options(action)
+                result[-1]['_id'] = self._next_action_id
+                
+            #No action provided
+            elif action is None:
+                result.append(menu_option)
+                
+            #Function
+            else:
+                args = menu_option.get('args', [])
+                kwargs = menu_option.get('kwargs', {})
+                self.menu_actions_by_id[self._next_action_id] = (action, args, kwargs)
+                result.append(menu_option)
+                result[-1]['_id'] = self._next_action_id
+            self._next_action_id += 1
+            
+        return result
+
+    def show_menu(self):
+        """Draw the popup menu."""
+        menu = win32gui.CreatePopupMenu()
+        self._create_menu(menu, self.menu_options)
+        
+        pos = win32gui.GetCursorPos()
+        # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
+        win32gui.SetForegroundWindow(self.hwnd)
+        win32gui.TrackPopupMenu(menu,
+                                win32con.TPM_LEFTALIGN,
+                                pos[0],
+                                pos[1],
+                                0,
+                                self.hwnd,
+                                None)
+        win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
+
+    def _create_menu(self, menu, menu_options):
+        """Generate the popup menu just before drawing.
+        This is needed as it recursively runs on submenus.
+        """
+        
+        for menu_option in menu_options[::-1]:
+        
+            text = menu_option.get('name')
+            icon = menu_option.get('icon', None)
+            action = menu_option.get('action', None)
+            id = menu_option.get('_id')
+            
+            if icon:
+                try:
+                    icon = self._set_icon_menu(icon)
+                except pywintypes.error:
+                    icon = None
+            
+            if id in self.menu_actions_by_id or action is None:                
+                item, extras = win32gui_struct.PackMENUITEMINFO(text=text,
+                                                                hbmpItem=icon,
+                                                                wID=id)
+                win32gui.InsertMenuItem(menu, 0, 1, item)
+            else:
+                submenu = win32gui.CreatePopupMenu()
+                self._create_menu(submenu, action)
+                item, extras = win32gui_struct.PackMENUITEMINFO(text=text,
+                                                                hbmpItem=icon,
+                                                                hSubMenu=submenu)
+                win32gui.InsertMenuItem(menu, 0, 1, item)
         
     def set_menu_item(self, menu_id, _menu_options=None, **kwargs):
         """Change a menu item where the ID matches the input."""
@@ -107,7 +298,10 @@ class Tray:
         matching_items = []
         for menu_option in menu_options:
             
-            invalid = not kwargs
+            #Check if all kwargs match
+            #Use "invalid = not kwargs" to fail when no kwargs are set,
+            #otherwise all items will be returned by default
+            invalid = False
             for k, v in iteritems(kwargs):
                 try:
                     if menu_option[k] != v:
@@ -124,190 +318,6 @@ class Tray:
             if isinstance(action, tuple):
                 matching_items += self.get_menu_item(_menu_options=action, **kwargs)
         return matching_items
-        
-    def _refresh_menu(self, menu_options=None):
-        """Recalculate the menu options."""
-        if menu_options is None:
-            menu_options = self._menu_options
-        else:
-            self._menu_options = list(menu_options)
-            
-        self._next_action_id = self.FIRST_ID
-        self.menu_actions_by_id = {}
-        self.menu_options = self._add_ids_to_menu_options(self._menu_options)
-        del self._next_action_id
-    
-    def _add_ids_to_menu_options(self, menu_options):
-        """Add internal IDs to the menu options."""
-        result = []
-        for menu_option in menu_options:
-            option_text = menu_option.get('name')
-            option_icon = menu_option.get('icon', None)
-            option_action = menu_option.get('action', None)
-            option_args = menu_option.get('args', [])
-            option_kwargs = menu_option.get('kwargs', {})
-            
-            if isinstance(option_action, tuple):
-                result.append({k: v for k, v in iteritems(menu_option) if k != 'action'})
-                result[-1]['action'] = self._add_ids_to_menu_options(option_action)
-                result[-1]['_id'] = self._next_action_id
-            elif option_action is None:
-                result.append(menu_option)
-            else:
-                self.menu_actions_by_id[self._next_action_id] = (option_action, option_args, option_kwargs)
-                result.append(menu_option)
-                result[-1]['_id'] = self._next_action_id
-            
-            '''
-            if callable(option_action) or option_action in self.SPECIAL_ACTIONS:
-                self.menu_actions_by_id[self._next_action_id] = (option_action, option_args, option_kwargs)
-                result.append(menu_option)
-                result[-1]['_id'] = self._next_action_id
-                
-            elif non_string_iterable(option_action):
-                result.append({k: v for k, v in iteritems(menu_option) if k != 'action'})
-                result[-1]['action'] = self._add_ids_to_menu_options(option_action)
-                result[-1]['_id'] = self._next_action_id
-            else:
-                print 'Unknown item', option_text, option_icon, option_action
-                '''
-            self._next_action_id += 1
-        return result
-
-    def _DoCreateIcons(self):
-        # Try and find a custom icon
-        hinst =  win32api.GetModuleHandle(None)
-        iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "pyc.ico" ))
-        if not os.path.isfile(iconPathName):
-            # Look in DLLs dir, a-la py 2.5
-            iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "DLLs", "pyc.ico" ))
-        if not os.path.isfile(iconPathName):
-            # Look in the source tree.
-            iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "..\\PC\\pyc.ico" ))
-        if os.path.isfile(iconPathName):
-            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-            hicon = win32gui.LoadImage(hinst, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
-        else:
-            print "Can't find a Python icon file - using default"
-            hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-
-        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, hicon, "Python Demo")
-        try:
-            win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
-        except win32gui.error:
-            # This is common when windows is starting, and this code is hit
-            # before the taskbar has been created.
-            print "Failed to add the taskbar icon - is explorer running?"
-            # but keep running anyway - when explorer starts, we get the
-            # TaskbarCreated message.
-
-    def OnRestart(self, hwnd, msg, wparam, lparam):
-        self._DoCreateIcons()
-
-    def OnDestroy(self, hwnd, msg, wparam, lparam):
-        nid = (self.hwnd, 0)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-        win32gui.PostQuitMessage(0) # Terminate the app.
-
-    def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
-        """Receive click events from the taskbar."""
-        if lparam==win32con.WM_LBUTTONUP:
-            print "You clicked me."
-        elif lparam==win32con.WM_LBUTTONDBLCLK:
-            print "You double-clicked me - goodbye"
-            win32gui.DestroyWindow(self.hwnd)
-        elif lparam==win32con.WM_RBUTTONUP:
-            print "You right clicked me."
-            self.show_menu()
-        return 1
-
-    def OnCommand(self, hwnd, msg, wparam, lparam):
-        """Run functions from ID."""
-        id = win32api.LOWORD(wparam)
-        
-        #Handle case when action isn't set
-        try:
-            action, args, kwargs = self.menu_actions_by_id[id]
-        except KeyError:
-            pass
-        else:
-            action(self, *args, **kwargs)
-
-    def show_menu(self):
-        """Draw the popup menu."""
-        menu = win32gui.CreatePopupMenu()
-        self._create_menu(menu, self.menu_options)
-        
-        pos = win32gui.GetCursorPos()
-        # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
-        win32gui.SetForegroundWindow(self.hwnd)
-        win32gui.TrackPopupMenu(menu,
-                                win32con.TPM_LEFTALIGN,
-                                pos[0],
-                                pos[1],
-                                0,
-                                self.hwnd,
-                                None)
-        win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
-
-    def _create_menu(self, menu, menu_options):
-        """Generate the popup menu just before drawing.
-        This is needed as it recursively runs on submenus.
-        """
-        
-        for menu_option in menu_options[::-1]:
-        
-            option_text = menu_option.get('name')
-            option_icon = menu_option.get('icon', None)
-            option_action = menu_option.get('action', None)
-            option_id = menu_option.get('_id')
-            
-            if option_icon:
-                try:
-                    option_icon = self.prep_menu_icon(option_icon)
-                except pywintypes.error:
-                    option_icon = None
-            
-            if option_id in self.menu_actions_by_id or option_action is None:                
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
-                                                                hbmpItem=option_icon,
-                                                                wID=option_id)
-                win32gui.InsertMenuItem(menu, 0, 1, item)
-            else:
-                submenu = win32gui.CreatePopupMenu()
-                self._create_menu(submenu, option_action)
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
-                                                                hbmpItem=option_icon,
-                                                                hSubMenu=submenu)
-                win32gui.InsertMenuItem(menu, 0, 1, item)
-                
-    def prep_menu_icon(self, icon):
-        """Load icons into the tray.
-        
-        Got from https://stackoverflow.com/a/45890829
-        """
-        # First load the icon.
-        ico_x = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
-        ico_y = win32api.GetSystemMetrics(win32con.SM_CYSMICON)
-        hIcon = win32gui.LoadImage(0, icon, win32con.IMAGE_ICON, ico_x, ico_y, win32con.LR_LOADFROMFILE)
-
-        hwndDC = win32gui.GetWindowDC(self.hwnd)
-        dc = win32ui.CreateDCFromHandle(hwndDC)
-        memDC = dc.CreateCompatibleDC()
-        iconBitmap = win32ui.CreateBitmap()
-        iconBitmap.CreateCompatibleBitmap(dc, ico_x, ico_y)
-        oldBmp = memDC.SelectObject(iconBitmap)
-        brush = win32gui.GetSysColorBrush(win32con.COLOR_MENU)
-
-        win32gui.FillRect(memDC.GetSafeHdc(), (0, 0, ico_x, ico_y), brush)
-        win32gui.DrawIconEx(memDC.GetSafeHdc(), 0, 0, hIcon, ico_x, ico_y, 0, 0, win32con.DI_NORMAL)
-
-        memDC.SelectObject(oldBmp)
-        memDC.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, hwndDC)
-
-        return iconBitmap.GetHandle()
 
 
 def start_program(menu_options):
@@ -320,11 +330,14 @@ def quit(cls):
     win32gui.DestroyWindow(cls.hwnd)
 
 
+#Example usage
 if __name__ == '__main__':
+
     def print_input(cls, *args, **kwargs):
         """Test that both args and kwargs have been sent."""
         print(args)
         print(kwargs)
+        
     def increment_item(cls, id):
         """Rename "Item 1" to "Item x" where x is the lowest unused integer."""
         item = cls.get_menu_item(id=id)[0]
@@ -338,7 +351,6 @@ if __name__ == '__main__':
                 print('Renamed {} to {}'.format(name, new_name))
                 break
         
-        self.set_menu_item('it1', name='Item 3')
     menu_options = (
         {'id': 'it1', 'name': 'Item 1', 'icon': 'path/to/img.ico', 'action': print_input, 'args': [1, 2], 'kwargs': {'key': 'value'}},
         {'name': 'Increment First Item', 'action': increment_item, 'args': ['it1']},
