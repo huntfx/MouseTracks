@@ -16,6 +16,9 @@ from core.config import CONFIG
 try:
     from Crypto.Cipher import AES
 except ImportError:
+    CONFIG['API']['_ServerEncryption'].lock = False
+    CONFIG['API']['_ServerEncryption'] = False
+    CONFIG['API']['_ServerEncryption'].lock = True
     class AES:
         MODE_ECB = 0
         class new(object):

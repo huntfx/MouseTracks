@@ -343,6 +343,11 @@ DEFAULTS = {
             '__priority__': 3,
             'value': False,
             'type': bool
+        },
+        '_ServerEncryption': {
+            'value': True,
+            'type': bool,
+            'lock': True
         }
     },
     'Advanced': {
