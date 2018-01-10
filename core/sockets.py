@@ -77,7 +77,7 @@ def force_close_port(port, process_name=None):
     """
     for proc in psutil.process_iter():
         for conn in proc.connections():
-            if x.laddr[1] == port:
+            if conn.laddr[1] == port:
                 #Don't close if it belongs to SYSTEM
                 #On windows using .username() results in AccessDenied
                 #Needs testing on other operating systems
@@ -89,5 +89,5 @@ def force_close_port(port, process_name=None):
                     if process_name is None or proc.name().startswith(process_name):
                         try:
                             proc.kill()
-                        except psutil.NoSuchProcess:
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
