@@ -28,8 +28,10 @@ class Tray(object):
     """
     FIRST_ID = 1023
 
-    def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
+    def __init__(self, menu_options, program_name='Python Taskbar', menu_open=None, menu_close=None, _internal_class_name='PythonTaskbar'):
     
+        self.on_menu_open = menu_open
+        self.on_menu_close = menu_close
         self.program_name = program_name
         self._refresh_menu(menu_options)
     
@@ -74,6 +76,7 @@ class Tray(object):
 
     def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
         """Receive click events from the taskbar."""
+        
         #Left click
         if lparam==win32con.WM_LBUTTONUP:
             pass
@@ -84,7 +87,11 @@ class Tray(object):
         
         #Right click
         elif lparam==win32con.WM_RBUTTONUP:
+            if self.on_menu_open is not None:
+                self.on_menu_open(self)
             self.show_menu()
+            if self.on_menu_close is not None:
+                self.on_menu_close(self)
         return 1
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
@@ -183,6 +190,9 @@ class Tray(object):
         """Add internal IDs to menu options."""
         result = []
         for menu_option in menu_options:
+            if menu_option.get('hidden', False):
+                continue
+                
             action = menu_option.get('action', None)
             
             #Submenu
@@ -214,6 +224,7 @@ class Tray(object):
         pos = win32gui.GetCursorPos()
         # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
         win32gui.SetForegroundWindow(self.hwnd)
+        #pywintypes.error: (0, 'SetForegroundWindow', 'No error message is available')
         win32gui.TrackPopupMenu(menu,
                                 win32con.TPM_LEFTALIGN,
                                 pos[0],
@@ -229,6 +240,9 @@ class Tray(object):
         """
         
         for menu_option in menu_options[::-1]:
+        
+            if menu_option.get('hidden', False):
+                continue
         
             text = menu_option.get('name')
             icon = menu_option.get('icon', None)
@@ -311,6 +325,7 @@ class Tray(object):
             if isinstance(action, tuple):
                 matching_items += self.get_menu_item(_menu_options=action, **kwargs)
         return matching_items
+
 
     def listen(self):
         """Run the tray program."""
