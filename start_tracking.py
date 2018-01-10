@@ -28,7 +28,7 @@ if __name__ == '__main__':
         from threading import Thread
         
         from core.api import local_address, shutdown_server
-        from core.compatibility import Message
+        from core.compatibility import Message, input
         from core.internet import get_url_json, send_request
         from core.files import Lock
         from core.notify import *
@@ -87,7 +87,7 @@ if __name__ == '__main__':
             if status == 'running':
                 cls.set_menu_item('track', name='Pause Tracking', hidden=False)
             elif status == 'stopped':
-                cls.set_menu_item('track', name='Start Tracking', hidden=False)
+                cls.set_menu_item('track', name='Resume Tracking', hidden=False)
             cls._refresh_menu()
                 
         def on_menu_close(cls):
@@ -95,17 +95,16 @@ if __name__ == '__main__':
             cls.set_menu_item('track', hidden=True)
             
         
-        web_port = get_free_port()
-        thread = _start_tracking(None, web_port)
-        menu_options = (
-            {'id': 'track', 'name': 'wat', 'action': toggle_tracking, 'hidden': True, 'kwargs': {'web_port': web_port}},
-            {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
-            {'id': 'exit', 'name': 'Quit', 'action': quit, 'kwargs': {'web_port': web_port, 'thread': thread}},
-        )
-        
-        with Lock() as locking:
-            if locking is not None:
-                t = tray.Tray(menu_options, menu_open=on_menu_open, menu_close=on_menu_close)
-                t.listen()
+        with Lock() as locked:
+            if locked:
+                web_port = get_free_port()
+                thread = _start_tracking(None, web_port)
+                menu_options = (
+                    {'id': 'track', 'name': 'wat', 'action': toggle_tracking, 'hidden': True, 'kwargs': {'web_port': web_port}},
+                    {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
+                    {'id': 'exit', 'name': 'Quit', 'action': quit, 'kwargs': {'web_port': web_port, 'thread': thread}},
+                )
+                tray.Tray(menu_options, menu_open=on_menu_open, menu_close=on_menu_close).listen()
             else:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())
+                input()
