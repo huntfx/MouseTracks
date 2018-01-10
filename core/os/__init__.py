@@ -282,6 +282,11 @@ elif OPERATING_SYSTEM == 'Darwin':
 else:
     raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
 
+try:
+    tray_menu
+except NameError:
+    tray_menu = None
+    
 #Import placeholders if the function doesn't exist in the namespace
 def _add_placeholders(variables, functions_only=False):
     """Use placeholder functions if the counterpart doesn't exist."""
