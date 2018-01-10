@@ -7,40 +7,33 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import os
 import pywintypes
+import sys
 import win32api
 import win32gui
 import win32con
 import win32gui_struct
 import winerror
 import win32ui
-import sys
-import os
 from future.utils import iteritems
 from multiprocessing import freeze_support
 
 
-def non_string_iterable(obj):
-    try:
-        iter(obj)
-    except TypeError:
-        return False
-    else:
-        return not isinstance(obj, basestring)
-
-
-class Tray:
-    QUIT = 'QUIT'
-    SPECIAL_ACTIONS = [QUIT]
-
+class Tray(object):
+    """Create a tray program.
+    Submenus can be used and any item can be modified.
+    
+    See at the bottom of the file for example usage.
+    """
     FIRST_ID = 1023
 
-    def __init__(self, menu_options, program_name='Python Demo'):
+    def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
     
         self.program_name = program_name
         self._refresh_menu(menu_options)
     
-        msg_TaskbarRestart = win32gui.RegisterWindowMessage("TaskbarCreated");
+        msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
         message_map = {
             msg_TaskbarRestart: self.OnRestart,
             win32con.WM_DESTROY: self.OnDestroy,
@@ -50,7 +43,7 @@ class Tray:
         # Register the Window class.
         wc = win32gui.WNDCLASS()
         hinst = wc.hInstance = win32api.GetModuleHandle(None)
-        wc.lpszClassName = "PythonTaskbarDemo"
+        wc.lpszClassName = _internal_class_name
         wc.style = win32con.CS_VREDRAW | win32con.CS_HREDRAW;
         wc.hCursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
         wc.hbrBackground = win32con.COLOR_WINDOW
@@ -63,9 +56,9 @@ class Tray:
             if err_info.winerror!=winerror.ERROR_CLASS_ALREADY_EXISTS:
                 raise
 
-        # Create the Window.
+        #Create the Window.
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        self.hwnd = win32gui.CreateWindow(wc.lpszClassName, "Taskbar Demo", style, \
+        self.hwnd = win32gui.CreateWindow(wc.lpszClassName, _internal_class_name, style, \
                 0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
                 0, 0, hinst, None)
         win32gui.UpdateWindow(self.hwnd)
@@ -319,10 +312,9 @@ class Tray:
                 matching_items += self.get_menu_item(_menu_options=action, **kwargs)
         return matching_items
 
-
-def start_program(menu_options):
-    t = Tray(menu_options)
-    win32gui.PumpMessages()
+    def listen(self):
+        """Run the tray program."""
+        win32gui.PumpMessages()
 
 
 def quit(cls):
@@ -359,4 +351,5 @@ if __name__ == '__main__':
         )},
         {'name': 'Quit', 'action': quit},
     )
-    start_program(menu_options)
+    t = Tray(menu_options, 'My Taskbar')
+    t.listen()
