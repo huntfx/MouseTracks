@@ -58,7 +58,7 @@ class PrintFormat(object):
         self.message(u'{} {}'.format(time_format(current_time), text))
             
         
-def start_tracking(lock=True):
+def start_tracking(lock=True, web_port=None, server_port=None, console=True):
     """Put a lock on the main script to stop more than one instance running."""
     
     #Attempt to run the tracking script, with or without a lock
@@ -66,39 +66,36 @@ def start_tracking(lock=True):
     if lock:
         with Lock() as locked:
             if locked:
-                error = _start_tracking()
+                error, web_port = _start_tracking(web_port=web_port, server_port=server_port)
             else:
-                handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False)
+                handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False, console=console)
     else:
-        error = _start_tracking()
+        error, web_port = _start_tracking(web_port=web_port, server_port=server_port)
     
-    #Release lock and handle error
     if error:
-        try:
-            locked.release()
-        except UnboundLocalError:
-            pass
-        handle_error(error)
-    
-    
-def _start_tracking():
+        shutdown_server(web_port)
+        handle_error(error, console=console)
+
+
+def _start_tracking(web_port=None, server_port=None):
     
     _background_process = None
     no_detection_wait = 2
     
     try:
-        
+    
         q_feedback = Queue()
+        
         #Setup message server
         if CONFIG['API']['RunServer']:
             q_msg = Queue()
             message = PrintFormat(MessageWithQueue(q_msg).send)
-            server_port = get_free_port()
+            if server_port is None:
+                server_port = get_free_port()
             local_message_server(port=server_port, q_main=q_msg, q_feedback=q_feedback)
         else:
             message = PrintFormat(MessageWithQueue().send)
             server_port = None
-        #message(NOTIFY.get_output())
             
         #Setup web server
         if CONFIG['API']['RunWeb']:
@@ -108,13 +105,13 @@ def _start_tracking():
             app.config.update(create_pipe('PORT', duplex=False))
             app.config.update(create_pipe('CONFIG', duplex=False))
             app.config.update(create_pipe('CONFIG_UPDATE', duplex=False))
-            web_port = get_free_port()
-            web_port = 65043
+            if web_port is None:
+                web_port = get_free_port()
             local_web_server(app=app, port=web_port, q_feedback=q_feedback)
         else:
             web_port = None
         message(NOTIFY.get_output())
-            
+        
         #Start main script
         NOTIFY(MT_PATH)
         message(NOTIFY.get_output())
@@ -153,7 +150,6 @@ def _start_tracking():
                                     'Server': server_port}}
                 }
         mouse_pos = store['Mouse']['Position']
-        
         #Start background processes
         q_bg_recv = Queue()
         q_bg_send = Queue()
@@ -184,6 +180,10 @@ def _start_tracking():
                         #Change if running or paused, or exit script
                         if api_control in (STATUS_RUNNING, STATUS_PAUSED, STATUS_TERMINATED):
                             script_status = api_control
+                            options = {STATUS_RUNNING: TRACKING_RESUME,
+                                       STATUS_PAUSED: TRACKING_PAUSE,
+                                       STATUS_TERMINATED: TRACKING_TERMINATE}
+                            NOTIFY(options[script_status])
                         
                         #Set config values
                         if api_control == CONFIG_SET:
@@ -201,9 +201,6 @@ def _start_tracking():
                                                                                  'web': store['Flask']['Port']['Web']})
                         elif request_id == FEEDBACK_CONFIG:
                             store['Flask']['App'].config['PIPE_CONFIG_SEND'].send(CONFIG)
-                    
-                if script_status != STATUS_RUNNING:
-                    continue
                 
                 #Send data to thread
                 try:
@@ -243,7 +240,7 @@ def _start_tracking():
                     try:
                         if received_message.startswith('Traceback (most recent call last)'):
                             q_bg_send.put({'Quit': True})
-                            handle_error(received_message)
+                            return received_message, store['Flask']['Port']['Web']
                     except AttributeError:
                         pass
                     else:
@@ -275,10 +272,14 @@ def _start_tracking():
                                      for msg_group in output_list if msg_group)
                 if output:
                     message(output, limiter.time)
+                
+                #Break if script is not running
+                #Below here is all the tracking
+                if script_status != STATUS_RUNNING:
+                    continue
 
                 frame_data = {}
                 frame_data_rp = {}
-                
                 
                 #Mouse Movement
                 mouse_pos['Current'] = get_cursor_pos()
@@ -648,14 +649,14 @@ def _start_tracking():
                 else:
                     mouse_pos['Previous'] = mouse_pos['Current']
                 ticks += 1
-            
+                
     except Exception as e:
         if _background_process is not None:
             try:
                 q_bg_send.put({'Quit': True})
             except IOError:
                 pass
-        return traceback.format_exc()
+        return traceback.format_exc(), store['Flask']['Port']['Web']
         
     except KeyboardInterrupt:
         if _background_process is not None:
@@ -666,3 +667,5 @@ def _start_tracking():
         NOTIFY(THREAD_EXIT)
         NOTIFY(PROCESS_EXIT)
         message(NOTIFY.get_output())
+        
+    return None, store['Flask']['Port']['Web']

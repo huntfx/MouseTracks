@@ -11,15 +11,13 @@ import logging
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 
-def shutdown_server():
-    """End the Flask server.
-    Needs to be called within a Flask function,
-    otherwise the request context will be wrong.
+def _shutdown_server():
+    """End the Flask Werkzeug server.
+    Can only be called within a Flask function.
     """
     func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
+    if func is not None:
+        func()
 
 
 def _get_ports():
@@ -27,9 +25,11 @@ def _get_ports():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_PORT)
     return app.config['PIPE_PORT_RECV'].recv()
 
+    
 def _get_config():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_CONFIG)
     return app.config['PIPE_CONFIG_RECV'].recv()
+    
     
 def _get_status():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_STATUS)
@@ -67,10 +67,10 @@ def script_pause():
     return jsonify(_get_status())
 
 
-@app.route('/server/terminate')
+@app.route('/status/terminate')
 def script_exit():
     app.config['PIPE_CONTROL_SEND'].send(STATUS_TERMINATED)
-    shutdown_server()
+    _shutdown_server()
     abort(503)
 
     

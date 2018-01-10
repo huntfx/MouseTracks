@@ -11,9 +11,13 @@ try:
 except ImportError:
     import urllib.request as urllib2
 
+from core.notify import *
 
-def send_request(url, timeout=None):
+    
+def send_request(url, timeout=None, output=False):
     """Send URL request."""
+    if output:
+        NOTIFY(URL_REQUEST, url)
     try:
         return urllib2.urlopen(url, timeout=timeout)
     except (urllib2.URLError, urllib2.HTTPError):

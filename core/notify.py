@@ -143,9 +143,19 @@ SERVER_SECRET_SET = 153
 
 SERVER_SECRET_SUCCESS = 154
 
-SERVER_SECRET_SFAIL = 155
+SERVER_SECRET_FAIL = 155
 
 IMPORT_FAILED = 160
+
+TRACKING_RESUME = 176
+
+TRACKING_PAUSE = 177
+
+TRACKING_TERMINATE = 178
+
+TRACKING_RESTART = 179
+
+URL_REQUEST = 192
 
 
 def get_plural(word, amount):
@@ -440,6 +450,21 @@ class Notify(object):
             if args[0] not in self._failed_imports:
                 self._failed_imports.add(args[0])
                 q2('Import of "{}" failed.'.format(args[0]))
+            
+        elif message_id == TRACKING_RESUME:
+            q2(s['server']['status']['resume'])
+            
+        elif message_id == TRACKING_PAUSE:
+            q2(s['server']['status']['pause'])
+            
+        elif message_id == TRACKING_TERMINATE:
+            q2(s['server']['status']['stop'])
+            
+        elif message_id == TRACKING_RESTART:
+            q2(s['server']['status']['restart'])
+            
+        elif message_id == URL_REQUEST:
+            q0(s['url']['request'].format(U=args[0]))
         
         return self
 
