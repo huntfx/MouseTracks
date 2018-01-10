@@ -553,7 +553,7 @@ class _ConfigItem(object):
     @lock.setter
     def lock(self, value):
         """Change the lock state."""
-        self._data['lock'] = True
+        self._data['lock'] = value
     
     @property
     def raw(self):
