@@ -8,11 +8,13 @@ from __future__ import absolute_import
 import os
 import psutil
 
-from core.compatibility import PYTHON_VERSION
+from core.compatibility import PYTHON_VERSION, Message
+
 
 try:
     from core.os.windows.pywin32 import *
-except ImportError:
+except ImportError as e:
+    Message('PyWin32 import failed: {}. Falling back to ctypes.'.format(e))
     from core.os.windows.ctypes import *
 
 

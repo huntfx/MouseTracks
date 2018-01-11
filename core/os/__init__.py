@@ -262,22 +262,13 @@ for c in list('ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'):
 #Load in modules from operating system
 OPERATING_SYSTEM = platform.system()
 if OPERATING_SYSTEM == 'Windows':
-    try:
-        from core.os.windows import *
-    except ImportError:
-        raise ImportError('missing required modules for windows')
+    from core.os.windows import *
     OS_DEBUG = False
 elif OPERATING_SYSTEM == 'Linux':
-    try:
-        from core.os.linux import *
-    except ImportError:
-        raise ImportError('missing required modules for linux')
+    from core.os.linux import *
     OS_DEBUG = True
 elif OPERATING_SYSTEM == 'Darwin':
-    try:
-        from core.os.mac import *
-    except ImportError:
-        raise ImportError('missing required modules for mac')
+    from core.os.mac import *
     OS_DEBUG = True
 else:
     raise ImportError('unknown operating system: "{}"'.format(OPERATING_SYSTEM))
@@ -324,9 +315,10 @@ try:
     
     #Detect if code exists to detect window focus
     try:
-        WindowFocusData
+        WindowHandle
         FOCUS_DETECTION = True
     except NameError:
+        WindowHandle = None
         FOCUS_DETECTION = False
         
 except NameError:
@@ -345,91 +337,78 @@ if FOCUS_DETECTION:
     class WindowFocus(object):
         """Get information about the currently focused window.
         
-        The WindowFocusData class will be queried first, 
+        The WindowHandle class will be queried first, 
         and psutil will be used if the function doesn't exist.
         """
         def __init__(self):
-            self.window_data = WindowFocusData()
-            self._psutil = None
+            self.window_data = WindowHandle()
+            
+            self.pid = self.window_data.pid
+            self.psutil = psutil.Process(self.pid)
         
         def __str__(self):
-            return 'Process {} ({}): "{}" ({})'.format(self.pid(), self.exe(), self.name(), '{}x{}'.format(*self.resolution()))
+            return 'Process {} ({}): "{}" ({})'.format(self.pid, self.exe, self.name, '{}x{}'.format(*self.resolution))
     
-        def psutil(self):
-            if self._psutil is None:
-                self._psutil = psutil.Process(self.pid())
-            return self._psutil
-    
-        def pid(self):
-            """Get the process ID of the focused window."""
-            return self.window_data.get_pid()
-        
+        @property
+        def rect(self):
+            try:
+                return self.window_data.rect
+            except AttributeError:
+                return (0, 0, 0, 0)
+                
+        @property
         def exe(self):
             """Get the name of the currently running process."""
             try:
-                return self.window_data.get_exe()
+                return self.window_data.exe
             except AttributeError:
                 try:
-                    return self.psutil().name()
+                    return self.psutil.name()
                 except psutil.NoSuchProcess:
                     return None
         
-        def rect(self):
-            """Get the corner coordinates of the focused window."""
-            return self.window_data.get_rect()
-        
+        @property
         def resolution(self):
             try:
-                return self.window_data.get_resolution()
+                return self.window_data.resolution
             except AttributeError:
-                x0, y0, x1, y1 = self.rect()
+                x0, y0, x1, y1 = self.rect
                 x_res = x1 - x0
                 y_res = y1 - y0
                 return (x_res, y_res)
         
+        @property
         def name(self):
             try:
-                return self.window_data.get_name()
+                return self.window_data.name
             except AttributeError:
                 return True
         
-        #Not in use but may be useful later
+        #Not in use but may have use later
         def percentage_memory_usage(self):
             try:
-                return self.window_data.get_memory_percentage()
-            except AttributeError:
-                try:
-                    return _get_memory_percent(self.psutil())
-                except psutil.NoSuchProcess:
-                    return 0
+                return _get_memory_percent(self.psutil)
+            except psutil.NoSuchProcess:
+                return 0
         
         def memory_usage(self):
             try:
-                memory_size = get_memory_size()
-            except NameError:
-                try:
-                    memory_size = psutil.virtual_memory().total
-                except psutil.NoSuchProcess:
-                    return 0
+                memory_size = psutil.virtual_memory().total
+            except psutil.NoSuchProcess:
+                return 0
             return int(memory_size * self.percentage_memory_usage() / 100)
         
         def cmd_args(self):
             try:
-                return self.window_data.get_cmdline()
-            except AttributeError:
-                try:
-                    return self.psutil().cmdline()
-                except psutil.NoSuchProcess:
-                    return None
+                return self.psutil.cmdline()
+            except psutil.NoSuchProcess:
+                return None
             
         def working_directory(self):
             try:
-                return self.window_data.get_working_directory()
-            except AttributeError:
-                try:
-                    return self.psutil().cwd()
-                except psutil.NoSuchProcess:
-                    return None
+                return self.psutil.cwd()
+            except psutil.NoSuchProcess:
+                return None
             
 else:
     WindowFocus = None

@@ -256,8 +256,8 @@ class RunningApplications(object):
             self.processes = get_running_processes()
         else:
             self.focus = WindowFocus()
-            self.focused_exe = self.focus.exe()
-            self.focused_name = self.focus.name()
+            self.focused_exe = self.focus.exe
+            self.focused_name = self.focus.name
 
     def all_loaded_apps(self):
         """Get list of every loaded program."""

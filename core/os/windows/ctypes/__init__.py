@@ -142,44 +142,71 @@ def get_documents_path():
     ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
     return buf.value
     
-
-class WindowFocusData(object):
-
-    def __init__(self):
-        """Get the handle of the currently focused window."""
-        self.hwnd = self._get_parent()
     
-    def _get_parent(self):
-        while True:
-            try:
-                parent = ctypes.windll.user32.GetParent(hwnd)
-            except UnboundLocalError:
-                hwnd = ctypes.windll.user32.GetForegroundWindow()
+def get_window_handle(parent=True, console=False):
+    command = ctypes.windll.kernel32.GetConsoleWindow if console else ctypes.windll.user32.GetForegroundWindow
+    if not parent:
+        return command()
+    
+    #Find the parent windows until there are none left
+    while True:
+        try:
+            parent = ctypes.windll.user32.GetParent(hwnd)
+        except UnboundLocalError:
+            hwnd = command()
+        except win32api.error:
+            break
+        else:
+            if parent:
+                hwnd = parent
             else:
-                if parent:
-                    hwnd = parent
-                else:
-                    break
-        return hwnd
+                break
+    return hwnd
     
-    def get_pid(self):
-        """Get the process ID of a window."""
+
+class WindowHandle(object):
+
+    def __init__(self, parent=True, console=False):
+        """Get the handle of the currently focused window."""
+        self.hwnd = get_window_handle(parent, console)
+        
         process_id = ctypes.c_int()
         ctypes.windll.user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
-        return process_id.value
+        self.pid = process_id.value
         
-    def get_rect(self):
+    @property
+    def rect(self):
         """Get the coordinates of a window."""
         win_rect = _RECT()
         ctypes.windll.user32.GetWindowRect(self.hwnd, ctypes.byref(win_rect))
         return win_rect.dump()
     
-    def get_name(self):
+    @property
+    def name(self):
         length = ctypes.windll.user32.GetWindowTextLengthW(self.hwnd) + 1
         buff = ctypes.create_unicode_buffer(length)
         ctypes.windll.user32.GetWindowTextW(self.hwnd, buff, length)
         return buff.value
+    
+    #Tray icon commands (not in use)
+    @property
+    def minimised(self):
+        return ctypes.windll.user32.IsIconic(self.hwnd)
 
+    def bring_to_front(self):
+        ctypes.windll.user32.ShowWindow(self.hwnd, 9)
+        ctypes.windll.user32.SetForegroundWindow(self.hwnd)
+        
+    def minimise(self):
+        ctypes.windll.user32.ShowWindow(self.hwnd, 6)
+        
+    def hide(self):
+        self.minimise()
+        ctypes.windll.user32.ShowWindow(self.hwnd, 0)
+        ctypes.windll.user32.SetWindowLongA(self.hwnd, -20,
+                                            ctypes.windll.user32.GetWindowLongA(self.hwnd, -20) | 128)
+        ctypes.windll.user32.ShowWindow(self.hwnd, 5)
+        
     
 def elevate(console=True, _argument='forced_elevate'):
     """Elevate the program to admin permissions."""

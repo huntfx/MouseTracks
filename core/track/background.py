@@ -59,7 +59,7 @@ def running_processes(q_recv, q_send, background_send):
                         application_resolution = None
                     
                     else:
-                        application_resolution = (running_apps.focus.rect(), running_apps.focus.resolution())
+                        application_resolution = (running_apps.focus.rect, running_apps.focus.resolution)
                         
                         if current_app == previous_app:
                             if application_resolution[1] != last_resolution:

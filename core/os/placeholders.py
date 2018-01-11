@@ -51,7 +51,6 @@ def get_resolution():
     Returns:
         (x, y) resolution as a tuple.
     """
-    Message('Unable to read resolution, set to default of 1920x1080.')
     return (1920, 1080)
     
     
@@ -96,17 +95,33 @@ def get_double_click_time():
     return 500
     
     
-class WindowFocusData(object):
+class WindowHandle(object):
     def __init__(self):
-        pass
-        
-    def get_pid(self):
-        """Return the process ID of the focused window."""
-        return 0
-        
-    def get_rect(self):
+        self.pid = 0
+    
+    @property
+    def rect(self):
         """Return the edge coordinates of the focused window."""
         return (0, 0, 0, 0)
+        
+    @property
+    def name(self):
+        return 'Application'
+    
+    #Tray icon commands (not currently in use outside of Windows)
+    @property
+    def minimised(self):
+        return False
+    
+    def bring_to_front(self):
+        pass
+        
+    def minimise(self):
+        pass
+        
+    def hide(self):
+        self.minimise()
+        pass
         
         
 def set_priority(level, pid=None):
@@ -130,3 +145,6 @@ def set_priority(level, pid=None):
             
     except AttributeError:
         process.nice(int(level))
+
+
+tray = None

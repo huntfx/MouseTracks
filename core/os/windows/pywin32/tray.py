@@ -20,6 +20,8 @@ import win32ui
 from future.utils import iteritems
 from multiprocessing import freeze_support
 
+from core.os.windows.pywin32.main import *
+
 
 class Tray(object):
     """Create a tray program.
@@ -34,7 +36,7 @@ class Tray(object):
         self.on_menu_open = menu_open
         self.on_menu_close = menu_close
         self.program_name = program_name
-        self._hwnd = win32console.GetConsoleWindow()
+        self._hwnd = WindowHandle(parent=False, console=True)
         self._refresh_menu(menu_options)
     
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
@@ -85,17 +87,11 @@ class Tray(object):
             
         #Double click (minimise/maximise)
         elif lparam==win32con.WM_LBUTTONDBLCLK:
-            if win32gui.IsIconic(self._hwnd):
-                win32gui.ShowWindow(self._hwnd, win32con.SW_RESTORE)
-                win32gui.SetForegroundWindow(self._hwnd)
+        
+            if self._hwnd.minimised:
+                self._hwnd.bring_to_front()
             else:
-                win32gui.ShowWindow(self._hwnd, win32con.SW_MINIMIZE)
-                
-                #Hide window
-                win32gui.ShowWindow(self._hwnd, win32con.SW_HIDE)
-                win32gui.SetWindowLong(self._hwnd, win32con.GWL_EXSTYLE,
-                                       win32gui.GetWindowLong(self._hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW);
-                win32gui.ShowWindow(self._hwnd, win32con.SW_SHOW);
+                self._hwnd.hide()
         
         #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:
@@ -249,7 +245,6 @@ class Tray(object):
         """
         
         for menu_option in menu_options[::-1]:
-        
             if menu_option.get('hidden', False):
                 continue
         
@@ -258,17 +253,21 @@ class Tray(object):
             action = menu_option.get('action', None)
             id = menu_option.get('_id')
             
+            #Set icon
             if icon:
                 try:
                     icon = self._set_icon_menu(icon)
                 except pywintypes.error:
                     icon = None
             
+            #Add menu item
             if id in self.menu_actions_by_id or action is None:                
                 item, extras = win32gui_struct.PackMENUITEMINFO(text=text,
                                                                 hbmpItem=icon,
                                                                 wID=id)
                 win32gui.InsertMenuItem(menu, 0, 1, item)
+            
+            #Add submenu
             else:
                 submenu = win32gui.CreatePopupMenu()
                 self._create_menu(submenu, action)
