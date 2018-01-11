@@ -33,6 +33,7 @@ class Tray(object):
 
     def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
     
+        self.store = {}
         self.hidden = False
         self.on_menu_open = None
         self.on_menu_close = None

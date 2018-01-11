@@ -56,16 +56,18 @@ if __name__ == '__main__':
         
             #Set new port
             if cls is not None and _thread:
-                cls.set_menu_item('track', name='Pause Tracking', kwargs={'web_port': web_port})
-                cls.set_menu_item('exit', kwargs={'web_port': web_port, 'thread': thread})
+                cls.store['WebPort'] = web_port
+                cls.store['Thread'] = thread
+                cls.set_menu_item('track', name='Pause Tracking')
                 if _thread:
-                    cls.set_menu_item('restart', kwargs={'_thread': thread})
+                    cls.set_menu_item('restart', kwargs={'web_port': web_port, '_thread': thread})
             return thread
 
-        def toggle_tracking(cls, web_port):
+        def toggle_tracking(cls):
             """Pause or resume tracking.
             Add a timeout for if the script crashes.
             """
+            web_port = cls.store['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=1)
             
@@ -74,13 +76,16 @@ if __name__ == '__main__':
             elif status == 'stopped':
                 send_request('{}/start'.format(status_url), timeout=1, output=True)
             
-        def quit(cls, thread, web_port):
+        def quit(cls):
             """End the script and close the window."""
+            web_port = cls.store.pop('WebPort')
+            thread = cls.store.pop('Thread')
             _end_thread(thread, web_port)
             tray.quit(cls)
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
+            web_port = cls.store['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=0.25)
             
@@ -114,14 +119,16 @@ if __name__ == '__main__':
                 web_port = get_free_port()
                 thread = _start_tracking(None, web_port)
                 menu_options = (
-                    {'id': 'track', 'name': 'wat', 'action': toggle_tracking, 'hidden': True, 'kwargs': {'web_port': web_port}},
+                    {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': bool(CONFIG['Main']['StartMinimised'])},
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not CONFIG['Main']['StartMinimised']},
-                    {'id': 'exit', 'name': 'Quit', 'action': quit, 'kwargs': {'web_port': web_port, 'thread': thread}},
+                    {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )
                 t = tray.Tray(menu_options)
                 t.minimise_override = CONFIG['Main']['StartMinimised']
+                t.store['Thread'] = thread
+                t.store['WebPort'] = web_port
                 t.on_menu_open = on_menu_open
                 t.on_menu_close = on_menu_close
                 t.on_hide = on_hide
