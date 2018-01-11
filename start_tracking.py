@@ -56,8 +56,8 @@ if __name__ == '__main__':
         
             #Set new port
             if cls is not None and _thread:
-                cls.store['WebPort'] = web_port
-                cls.store['Thread'] = thread
+                cls.cache['WebPort'] = web_port
+                cls.cache['Thread'] = thread
                 cls.set_menu_item('track', name='Pause Tracking')
                 if _thread:
                     cls.set_menu_item('restart', kwargs={'web_port': web_port, '_thread': thread})
@@ -67,7 +67,7 @@ if __name__ == '__main__':
             """Pause or resume tracking.
             Add a timeout for if the script crashes.
             """
-            web_port = cls.store['WebPort']
+            web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=1)
             
@@ -78,14 +78,14 @@ if __name__ == '__main__':
             
         def quit(cls):
             """End the script and close the window."""
-            web_port = cls.store.pop('WebPort')
-            thread = cls.store.pop('Thread')
+            web_port = cls.cache.pop('WebPort')
+            thread = cls.cache.pop('Thread')
             _end_thread(thread, web_port)
             tray.quit(cls)
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
-            web_port = cls.store['WebPort']
+            web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=0.25)
             
@@ -125,14 +125,14 @@ if __name__ == '__main__':
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not CONFIG['Main']['StartMinimised']},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )
-                t = tray.Tray(menu_options)
+                t = tray.Tray(menu_options, program_name='Mouse Tracks')
                 t.minimise_override = CONFIG['Main']['StartMinimised']
-                t.store['Thread'] = thread
-                t.store['WebPort'] = web_port
-                t.on_menu_open = on_menu_open
-                t.on_menu_close = on_menu_close
-                t.on_hide = on_hide
-                t.on_restore = on_restore
+                t.cache['Thread'] = thread
+                t.cache['WebPort'] = web_port
+                t.set_event('OnMenuOpen', on_menu_open)
+                t.set_event('OnMenuClose', on_menu_close)
+                t.set_event('OnWindowHide', on_hide)
+                t.set_event('OnWindowRestore', on_restore)
                 t.listen()
             else:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())

@@ -33,16 +33,16 @@ class Tray(object):
 
     def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
     
-        self.store = {}
-        self.hidden = False
-        self.on_menu_open = None
-        self.on_menu_close = None
-        self.on_hide = None
-        self.on_restore = None
+        self.cache = {}
+        self._commands = {'OnMenuOpen': [],
+                          'OnMenuClose': [],
+                          'OnWindowHide': [],
+                          'OnWindowRestore': []}
         self.program_name = program_name
         self.console_hwnd = WindowHandle(parent=False, console=True)
         self._refresh_menu(menu_options)
-    
+        
+        #Set up callbacks
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
         message_map = {
             msg_TaskbarRestart: self.OnRestart,
@@ -50,7 +50,7 @@ class Tray(object):
             win32con.WM_COMMAND: self.OnCommand,
             win32con.WM_USER+20: self.OnTaskbarNotify,
         }
-        # Register the Window class.
+        #Register the Window class.
         wc = win32gui.WNDCLASS()
         hinst = wc.hInstance = win32api.GetModuleHandle(None)
         wc.lpszClassName = _internal_class_name
@@ -59,7 +59,7 @@ class Tray(object):
         wc.hbrBackground = win32con.COLOR_WINDOW
         wc.lpfnWndProc = message_map # could also specify a wndproc.
 
-        # Don't blow up if class already registered to make testing easier
+        #Don't blow up if class already registered to make testing easier
         try:
             classAtom = win32gui.RegisterClass(wc)
         except win32gui.error, err_info:
@@ -80,7 +80,7 @@ class Tray(object):
     def OnDestroy(self, hwnd, msg, wparam, lparam):
         nid = (self.hwnd, 0)
         win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-        win32gui.PostQuitMessage(0) # Terminate the app.
+        win32gui.PostQuitMessage(0)
 
     def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
         """Receive click events from the taskbar."""
@@ -101,8 +101,8 @@ class Tray(object):
         
         #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:
-            if self.on_menu_open is not None:
-                self.on_menu_open(self)
+            for func in self._commands['OnMenuOpen']:
+                func(self)
             while True:
                 try:
                     self.show_menu()
@@ -110,8 +110,8 @@ class Tray(object):
                     print('Error opening tray icon. Retrying...')
                 else:
                     break
-            if self.on_menu_close is not None:
-                self.on_menu_close(self)
+            for func in self._commands['OnMenuClose']:
+                func(self)
         return 1
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
@@ -126,23 +126,45 @@ class Tray(object):
         else:
             action(self, *args, **kwargs)
 
+    def set_event(self, trigger, *args):
+        """Set which functions to run for certain events.
+        
+        Currently supported:
+            OnMenuOpen
+            OnMenuClose
+            OnWindowHide
+            OnWindowRestore
+        """
+        if trigger not in self._commands:
+            return
+        valid_functions = []
+        for func in args:
+            if callable(func):
+                valid_functions.append(func)
+        self._commands[trigger] = valid_functions
+            
     def minimise_to_tray(self):
+        """Remove the console window."""
+        if self.console_hwnd.minimised:
+            self.console_hwnd.restore()
+            
         self.console_hwnd.hide()
-        if self.on_hide is not None:
-            self.on_hide(self)
+        for func in self._commands['OnWindowHide']:
+            func(self)
         
         if self.__dict__.get('minimise_override', None):
             del self.minimise_override
             self.bring_to_front()
             
     def bring_to_front(self):
+        """Bring the console window to the front."""
         if self.__dict__.get('minimise_override', None):
             del self.minimise_override
             self.minimise_to_tray()
         self.console_hwnd.bring_to_front()
         
-        if self.on_restore is not None:
-            self.on_restore(self)
+        for func in self._commands['OnWindowRestore']:
+            func(self)
             
     def _set_icon(self, icon_path=None):
         """Load the tray icon.
