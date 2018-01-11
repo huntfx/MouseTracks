@@ -102,7 +102,13 @@ class Tray(object):
         elif lparam==win32con.WM_RBUTTONUP:
             if self.on_menu_open is not None:
                 self.on_menu_open(self)
-            self.show_menu()
+            while True:
+                try:
+                    self.show_menu()
+                except pywintypes.error:
+                    print('Error opening tray icon. Retrying...')
+                else:
+                    break
             if self.on_menu_close is not None:
                 self.on_menu_close(self)
         return 1
@@ -252,7 +258,6 @@ class Tray(object):
         pos = win32gui.GetCursorPos()
         # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
         win32gui.SetForegroundWindow(self.hwnd)
-        #pywintypes.error: (0, 'SetForegroundWindow', 'No error message is available')
         win32gui.TrackPopupMenu(menu,
                                 win32con.TPM_LEFTALIGN,
                                 pos[0],
