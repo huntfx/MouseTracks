@@ -11,7 +11,7 @@ from core.config import CONFIG
 from core.track import start_tracking
 from core.os import elevate, tray
 
-    
+
 if __name__ == '__main__':
     
     freeze_support()
@@ -134,6 +134,8 @@ if __name__ == '__main__':
                 t.set_event('OnWindowHide', on_hide)
                 t.set_event('OnWindowRestore', on_restore)
                 t.listen()
-            else:
+                
+            #If start minimised is enabled, this line won't ever be seen, so disable
+            elif not CONFIG['Main']['StartMinimised']:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())
                 input()
