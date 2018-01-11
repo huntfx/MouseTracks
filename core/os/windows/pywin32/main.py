@@ -137,9 +137,12 @@ class WindowHandle(object):
     @property
     def minimised(self):
         return win32gui.IsIconic(self.hwnd)
+        
+    def restore(self):
+        win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
     
     def bring_to_front(self):
-        win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        self.restore()
         win32gui.SetForegroundWindow(self.hwnd)
         
     def minimise(self):

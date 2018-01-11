@@ -192,9 +192,12 @@ class WindowHandle(object):
     @property
     def minimised(self):
         return ctypes.windll.user32.IsIconic(self.hwnd)
+        
+    def restore(self):
+        ctypes.windll.user32.ShowWindow(self.hwnd, 9)
 
     def bring_to_front(self):
-        ctypes.windll.user32.ShowWindow(self.hwnd, 9)
+        self.restore()
         ctypes.windll.user32.SetForegroundWindow(self.hwnd)
         
     def minimise(self):
