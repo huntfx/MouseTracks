@@ -11,7 +11,7 @@ from core.config import CONFIG
 from core.track import start_tracking
 from core.os import elevate, tray
 
-
+    
 if __name__ == '__main__':
     
     freeze_support()
@@ -93,7 +93,21 @@ if __name__ == '__main__':
         def on_menu_close(cls):
             """Run this after the menu has closed."""
             cls.set_menu_item('track', hidden=True)
+        
+        def hide_in_tray(cls):
+            cls.minimise_to_tray()
+        
+        def bring_to_front(cls):
+            cls.bring_to_front()
             
+        def on_hide(cls):
+            cls.set_menu_item('hide', hidden=True)
+            cls.set_menu_item('restore', hidden=False)
+            
+        def on_restore(cls):
+            cls.set_menu_item('hide', hidden=False)
+            cls.set_menu_item('restore', hidden=True)
+        
         
         with Lock() as locked:
             if locked:
@@ -102,10 +116,16 @@ if __name__ == '__main__':
                 menu_options = (
                     {'id': 'track', 'name': 'wat', 'action': toggle_tracking, 'hidden': True, 'kwargs': {'web_port': web_port}},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
+                    {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': bool(CONFIG['Main']['StartMinimised'])},
+                    {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not CONFIG['Main']['StartMinimised']},
                     {'id': 'exit', 'name': 'Quit', 'action': quit, 'kwargs': {'web_port': web_port, 'thread': thread}},
                 )
-                t = tray.Tray(menu_options, menu_open=on_menu_open, menu_close=on_menu_close)
+                t = tray.Tray(menu_options)
                 t.minimise_override = CONFIG['Main']['StartMinimised']
+                t.on_menu_open = on_menu_open
+                t.on_menu_close = on_menu_close
+                t.on_hide = on_hide
+                t.on_restore = on_restore
                 t.listen()
             else:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())

@@ -31,12 +31,15 @@ class Tray(object):
     """
     FIRST_ID = 1023
 
-    def __init__(self, menu_options, program_name='Python Taskbar', menu_open=None, menu_close=None, main_hwnd=None, _internal_class_name='PythonTaskbar'):
+    def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
     
-        self.on_menu_open = menu_open
-        self.on_menu_close = menu_close
+        self.hidden = False
+        self.on_menu_open = None
+        self.on_menu_close = None
+        self.on_hide = None
+        self.on_restore = None
         self.program_name = program_name
-        self._hwnd = WindowHandle(parent=False, console=True)
+        self.console_hwnd = WindowHandle(parent=False, console=True)
         self._refresh_menu(menu_options)
     
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
@@ -85,18 +88,15 @@ class Tray(object):
         if lparam==win32con.WM_LBUTTONUP:
             pass
             
-        #Double click (minimise/maximise)
+        #Double click (bring to front)
         elif lparam==win32con.WM_LBUTTONDBLCLK:
-        
-            if self._hwnd.minimised:
-                self._hwnd.bring_to_front()
+            
+            always_bring_to_front = True
+            
+            if always_bring_to_front or self.console_hwnd.minimised:
+                self.bring_to_front()
             else:
-                self._hwnd.hide()
-                
-                #A one off reverse as the 'hidden' window is not actually minimised
-                if self.__dict__.get('minimise_override', None):
-                    self._hwnd.bring_to_front()
-                    del self.minimise_override
+                self.minimise_to_tray()
         
         #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:
@@ -119,6 +119,24 @@ class Tray(object):
         else:
             action(self, *args, **kwargs)
 
+    def minimise_to_tray(self):
+        self.console_hwnd.hide()
+        if self.on_hide is not None:
+            self.on_hide(self)
+        
+        if self.__dict__.get('minimise_override', None):
+            del self.minimise_override
+            self.bring_to_front()
+            
+    def bring_to_front(self):
+        if self.__dict__.get('minimise_override', None):
+            del self.minimise_override
+            self.minimise_to_tray()
+        self.console_hwnd.bring_to_front()
+        
+        if self.on_restore is not None:
+            self.on_restore(self)
+            
     def _set_icon(self, icon_path=None):
         """Load the tray icon.
         Doesn't appear to be editable once it's been set.
