@@ -8,7 +8,7 @@ from __future__ import absolute_import, division
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
-from core.compatibility import get_items, range, Message
+from core.compatibility import range, Message
 from core.config import CONFIG
 from core.language import Language
 from core.files import load_data

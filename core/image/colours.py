@@ -5,8 +5,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
+from future.utils import iteritems
+
 from core.base import get_script_file
-from core.compatibility import Message, range, get_items
+from core.compatibility import Message, range
 from core.files import format_name
 from core.os import join_path
 import core.numpy as numpy
@@ -203,7 +205,7 @@ def parse_colour_text(colours):
 
         #Check for colours
         colour_selection = None
-        for colour, data in get_items(colour_data):
+        for colour, data in iteritems(colour_data):
             if colour_string.startswith(colour):
                 colour_string = colour_string[len(colour):]
                 colour_selection = data['Colour']
@@ -437,7 +439,7 @@ def rgb_to_hex(rgb):
 def gradient_preview(folder, width=720, height=80):
     """Save each colour map as a gradient in a folder."""
     
-    for map_lowercase, data in get_items(parse_colour_file()['Maps']):
+    for map_lowercase, data in iteritems(parse_colour_file()['Maps']):
         colours = calculate_colour_map(map_lowercase)
         image = ColourRange(0, 1, colours)._preview_gradient(width, height)
         if data['Type']['tracks']:

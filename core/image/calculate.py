@@ -5,12 +5,13 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
+from future.utils import iteritems
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
 import core.numpy as numpy
 from core.image.scipy import blur, upscale
-from core.compatibility import range, Message, get_items
+from core.compatibility import range, Message
 from core.config import CONFIG
 from core.maths import round_int
 
@@ -65,7 +66,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
 
     #Count number of arrays
     num_arrays = 0
-    for resolution, array_list in get_items(arrays):
+    for resolution, array_list in iteritems(arrays):
         if isinstance(array_list, (list, tuple)):
             array_len = len(array_list)
             num_arrays += array_len - len([i for i in range(array_len) if i in skip])
@@ -76,7 +77,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
     Message('Upscaling arrays to {}x{}...'.format(target_resolution[0], target_resolution[1]))
     processed = 0
     output = []
-    for resolution, array_list in get_items(arrays):
+    for resolution, array_list in iteritems(arrays):
 
         if not isinstance(array_list, (list, tuple)):
             array_list = [array_list]

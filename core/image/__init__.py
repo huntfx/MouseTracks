@@ -5,12 +5,13 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
+from future.utils import iteritems
 from PIL import Image
 import zlib
 
 from core.base import format_file_path
 from core.constants import UPDATES_PER_SECOND, DEFAULT_NAME
-from core.compatibility import get_items, Message, pickle
+from core.compatibility import Message, pickle
 from core.config import CONFIG
 from core.export import ExportCSV
 from core.files import LoadData, format_name
@@ -91,7 +92,7 @@ class ImageName(object):
         self.heatmap_buttons = {'LMB': g_hm['_MouseButtonLeft'],
                                 'MMB': g_hm['_MouseButtonMiddle'],
                                 'RMB': g_hm['_MouseButtonRight']}
-        selected_buttons = [k for k, v in get_items(self.heatmap_buttons) if v]
+        selected_buttons = [k for k, v in iteritems(self.heatmap_buttons) if v]
         if len(selected_buttons) == 3:
            self.heatmap_button_group = 'Combined'
         elif len(selected_buttons) == 2:
@@ -157,7 +158,7 @@ class ImageName(object):
         name = join_path((CONFIG['Paths']['Images'], name))
         
         #Rename alternative variables
-        for k, v in get_items(self.ALTERNATIVES):
+        for k, v in iteritems(self.ALTERNATIVES):
             k = '[{}]'.format(k)
             for i in v:
                 i = '[{}]'.format(i)
@@ -260,7 +261,7 @@ class RenderImage(object):
             ticks = self.data['Ticks']['Total']
             
         include = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '
-        total_presses = sum(v for k, v in get_items(all_clicks) if k in include)
+        total_presses = sum(v for k, v in iteritems(all_clicks) if k in include)
         return 3600 * total_presses / ticks
         
     def csv(self):
