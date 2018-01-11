@@ -92,6 +92,11 @@ class Tray(object):
                 self._hwnd.bring_to_front()
             else:
                 self._hwnd.hide()
+                
+                #A one off reverse as the 'hidden' window is not actually minimised
+                if self.__dict__.get('minimise_override', None):
+                    self._hwnd.bring_to_front()
+                    del self.minimise_override
         
         #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:

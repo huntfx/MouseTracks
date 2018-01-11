@@ -17,7 +17,7 @@ if __name__ == '__main__':
     freeze_support()
     
     if CONFIG['Advanced']['RunAsAdministrator']:
-        elevate()
+        elevate(console=not CONFIG['Main']['StartMinimised'])
     
     #Run normally
     if tray is None or not CONFIG['API']['RunWeb']:
@@ -104,7 +104,9 @@ if __name__ == '__main__':
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'exit', 'name': 'Quit', 'action': quit, 'kwargs': {'web_port': web_port, 'thread': thread}},
                 )
-                tray.Tray(menu_options, menu_open=on_menu_open, menu_close=on_menu_close).listen()
+                t = tray.Tray(menu_options, menu_open=on_menu_open, menu_close=on_menu_close)
+                t.minimise_override = CONFIG['Main']['StartMinimised']
+                t.listen()
             else:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())
                 input()

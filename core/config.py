@@ -34,6 +34,11 @@ DEFAULTS = {
             'value': _language,
             'type': str,
         },
+        'StartMinimised': {
+            '__info__': 'Quietly launch the program and have it appear in the tray. Only works on Windows.',
+            'value': False,
+            'type': bool
+        },
         'HistoryLength': {
             '__info__': 'How many seconds to store of the track history. Each hour increases the file size by roughly 1.5mb.',
             '__priority__': 2,
