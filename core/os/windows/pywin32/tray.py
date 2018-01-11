@@ -3,7 +3,7 @@ This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 #Create a basic tray icon to perform simple API commands
-#Lightly modified from a mix of win32gui_taskbar and http://www.brunningonline.net/simon/blog/archives/SysTrayIcon.py.html
+#Modified from a mix of win32gui_taskbar and http://www.brunningonline.net/simon/blog/archives/SysTrayIcon.py.html
 
 from __future__ import absolute_import
 
@@ -13,6 +13,7 @@ import sys
 import win32api
 import win32gui
 import win32con
+import win32console
 import win32gui_struct
 import winerror
 import win32ui
@@ -28,11 +29,12 @@ class Tray(object):
     """
     FIRST_ID = 1023
 
-    def __init__(self, menu_options, program_name='Python Taskbar', menu_open=None, menu_close=None, _internal_class_name='PythonTaskbar'):
+    def __init__(self, menu_options, program_name='Python Taskbar', menu_open=None, menu_close=None, main_hwnd=None, _internal_class_name='PythonTaskbar'):
     
         self.on_menu_open = menu_open
         self.on_menu_close = menu_close
         self.program_name = program_name
+        self._hwnd = win32console.GetConsoleWindow()
         self._refresh_menu(menu_options)
     
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
@@ -81,11 +83,21 @@ class Tray(object):
         if lparam==win32con.WM_LBUTTONUP:
             pass
             
-        #Double click
+        #Double click (minimise/maximise)
         elif lparam==win32con.WM_LBUTTONDBLCLK:
-            quit(self)
+            if win32gui.IsIconic(self._hwnd):
+                win32gui.ShowWindow(self._hwnd, win32con.SW_RESTORE)
+                win32gui.SetForegroundWindow(self._hwnd)
+            else:
+                win32gui.ShowWindow(self._hwnd, win32con.SW_MINIMIZE)
+                
+                #Hide window
+                win32gui.ShowWindow(self._hwnd, win32con.SW_HIDE)
+                win32gui.SetWindowLong(self._hwnd, win32con.GWL_EXSTYLE,
+                                       win32gui.GetWindowLong(self._hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW);
+                win32gui.ShowWindow(self._hwnd, win32con.SW_SHOW);
         
-        #Right click
+        #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:
             if self.on_menu_open is not None:
                 self.on_menu_open(self)
