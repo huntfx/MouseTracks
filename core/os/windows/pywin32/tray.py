@@ -103,13 +103,13 @@ class Tray(object):
         elif lparam==win32con.WM_RBUTTONUP:
             for func in self._commands['OnMenuOpen']:
                 func(self)
-            while True:
-                try:
-                    self.show_menu()
-                except pywintypes.error:
-                    print('Error opening tray icon. Retrying...')
-                else:
-                    break
+            
+            #Occasionally the menu may fail to load for some reason, so skip
+            try:
+                self.show_menu()
+            except pywintypes.error:
+                return 0
+                
             for func in self._commands['OnMenuClose']:
                 func(self)
         return 1
