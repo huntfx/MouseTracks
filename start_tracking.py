@@ -124,12 +124,11 @@ if __name__ == '__main__':
             cls.set_menu_item('restore', hidden=True)
         
         
+        is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised']
         with Lock() as locked:
             if locked:
                 web_port = get_free_port()
                 thread = _start_tracking(None, web_port)
-                
-                is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised']
                 menu_options = (
                     {'id': 'generate', 'name': 'Generate Images', 'action': generate_images},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
@@ -148,7 +147,9 @@ if __name__ == '__main__':
                 t.set_event('OnWindowRestore', on_restore)
                 t.listen()
                 
-            #If start minimised is enabled, this line won't ever be seen, so disable
-            elif not CONFIG['Main']['StartMinimised']:
+            else:
                 Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())
-                input()
+                
+                #If program is hidden, don't wait for input
+                if not is_hidden:
+                    input()
