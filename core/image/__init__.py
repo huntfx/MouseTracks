@@ -259,7 +259,10 @@ class RenderImage(object):
         else:
             all_clicks = self.data['Keys']['All']['Held']
             ticks = self.data['Ticks']['Total']
-            
+        
+        if not ticks:
+            return 0
+        
         include = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '
         total_presses = sum(v for k, v in iteritems(all_clicks) if k in include)
         return 3600 * total_presses / ticks

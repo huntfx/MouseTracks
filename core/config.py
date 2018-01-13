@@ -739,6 +739,7 @@ class Config(dict):
         self._data = {}
         self._load_from_dict(defaults)
         self.hidden = not show_hidden
+        self.is_new = False
         super(Config, self).__init__(self._data)
 
     def __repr__(self):
@@ -829,7 +830,7 @@ class Config(dict):
         try:
             self._update_from_file(config_file)
         except IOError:
-            pass
+            self.is_new = True
         return self
 
     def save(self, file_name=CONFIG_PATH):
@@ -840,7 +841,7 @@ class Config(dict):
             f.write(output)
         return self
 
-      
+
 def config_to_dict(conf):
     new_dict = {}
     for header, variables in iteritems(conf):

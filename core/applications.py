@@ -9,7 +9,7 @@ import time
 from future.utils import iteritems
 
 from core.config import CONFIG
-from core.constants import APP_LIST_URL
+from core.constants import APP_LIST_URL, UPDATES_PER_SECOND
 from core.notify import *
 from core.files import format_file_path
 from core.os import get_running_processes, WindowFocus, get_modified_time
@@ -225,7 +225,7 @@ class RunningApplications(object):
     def reload_file(self):
         #Download from the internet and combine with the current list
         last_updated = get_modified_time(APP_LIST_PATH)
-        update_frequency = CONFIG['Internet']['UpdateApplications'] * 60
+        update_frequency = CONFIG['Internet']['UpdateApplications'] * UPDATES_PER_SECOND
         
         if not CONFIG['Internet']['Enable'] or not update_frequency:
             return
