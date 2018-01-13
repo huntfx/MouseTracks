@@ -40,10 +40,10 @@ if __name__ == '__main__':
         
         from core.api import local_address, shutdown_server
         from core.compatibility import Message, input
+        from core.constants import APP_LIST_FILE
         from core.internet import get_url_json, send_request
         from core.files import Lock
         from core.notify import *
-        from core.os import KEYS, get_key_press
         from core.sockets import get_free_port
             
         
@@ -101,6 +101,8 @@ if __name__ == '__main__':
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
+            from core.os import KEYS, get_key_press
+            
             web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=0.25)
@@ -135,6 +137,11 @@ if __name__ == '__main__':
             cls.set_menu_item('hide', hidden=False)
             cls.set_menu_item('restore', hidden=True)
             
+        def applist_update(cls):
+            from core.applications import AppList
+            
+            AppList().update()
+            
         
         is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised'] and console.is_elevated()
         
@@ -144,11 +151,14 @@ if __name__ == '__main__':
                 thread = _start_tracking(None, web_port)
                 menu_options = (
                     {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': [console.IMAGEGEN]},
-                    {'id': 'debug', 'name': 'Debug Commands', 'action': new_window, 'args': [console.DEBUG], 'hidden': True},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not is_hidden},
+                    {'id': 'debug', 'name': 'Advanced', 'hidden': True, 'action': (
+                        {'name': 'Debug Commands', 'action': new_window, 'args': [console.DEBUG]},
+                        {'name': 'Force Update "{}" (requires internet)'.format(APP_LIST_FILE), 'action': applist_update, 'hidden': not CONFIG['Internet']['Enable']},
+                    )},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )
                 t = tray.Tray(menu_options, program_name='Mouse Tracks')
