@@ -9,7 +9,7 @@ from multiprocessing import freeze_support
 
 from core.config import CONFIG
 from core.track import start_tracking
-from core.os import elevate, tray
+from core.os import elevate, tray, launch_new_console
 
 
 if __name__ == '__main__':
@@ -25,8 +25,10 @@ if __name__ == '__main__':
     
     #Create tray icon
     else:
+        import sys
         from threading import Thread
         
+        from generate_images import user_generate
         from core.api import local_address, shutdown_server
         from core.compatibility import Message, input
         from core.internet import get_url_json, send_request
@@ -34,6 +36,9 @@ if __name__ == '__main__':
         from core.notify import *
         from core.sockets import get_free_port
         
+        if 'GenerateImages' in sys.argv:
+            user_generate()
+            
         
         def _end_thread(thread, web_port):
             """Close the tracking thread."""
@@ -83,6 +88,10 @@ if __name__ == '__main__':
             _end_thread(thread, web_port)
             tray.quit(cls)
         
+        def generate_images(cls):
+            launch_new_console(add_arguments=['GenerateImages'], remove_arguments=['Elevate'])
+            #user_generate()
+        
         def on_menu_open(cls):
             """Run this just before the menu opens."""
             web_port = cls.cache['WebPort']
@@ -119,6 +128,7 @@ if __name__ == '__main__':
                 web_port = get_free_port()
                 thread = _start_tracking(None, web_port)
                 menu_options = (
+                    {'id': 'generate', 'name': 'Generate Image', 'action': generate_images},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': bool(CONFIG['Main']['StartMinimised'])},

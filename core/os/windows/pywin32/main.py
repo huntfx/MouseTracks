@@ -154,19 +154,28 @@ class WindowHandle(object):
         win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE,
                                win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW)
         win32gui.ShowWindow(self.hwnd, win32con.SW_SHOW)
-        
-        
-def elevate(console=True, _argument='forced_elevate'):
-    """Elevate the program to admin permissions."""
-    if shell.IsUserAnAdmin() or sys.argv[-1] == _argument:
-        return True
+
+
+def launch_new_console(show=True, add_arguments=[], remove_arguments=[]):
+    if isinstance(add_arguments, str):
+        add_arguments = [add_arguments]
+    if isinstance(remove_arguments, str):
+        remove_arguments = [remove_arguments]
         
     script = os.path.abspath(sys.argv[0])
-    params = ' '.join([script] + sys.argv[1:] + [_argument])
+    params = ' '.join([script] + [i for i in sys.argv[1:] if i not in remove_arguments] + list(add_arguments))
     try:
-        shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5 if console else 0)
+        shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params, nShow=5 if show else 0)
     except pywintypes.error:
-        pass
-    else:
+        return False
+    return True
+    
+
+def elevate(console=True, _argument='Elevate'):
+    """Elevate the program to admin permissions."""
+    if shell.IsUserAnAdmin() or _argument in sys.argv:
+        return True
+    
+    if launch_new_console(show=console, add_arguments=_argument):
         sys.exit(0)
     return False
