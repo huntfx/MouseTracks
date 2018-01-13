@@ -35,7 +35,7 @@ DEFAULTS = {
             'type': str,
         },
         'StartMinimised': {
-            '__info__': 'Quietly launch the program and have it appear in the tray. Only works on Windows.',
+            '__info__': 'Launch the program and have it only appear in the tray. Only works in Windows if the elevation is allowed through UAC.',
             'value': False,
             'type': bool
         },

@@ -122,9 +122,10 @@ if __name__ == '__main__':
         def on_restore(cls):
             cls.set_menu_item('hide', hidden=False)
             cls.set_menu_item('restore', hidden=True)
+            
         
+        is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised'] and console.is_elevated()
         
-        is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised']
         with Lock() as locked:
             if locked:
                 web_port = get_free_port()
@@ -138,7 +139,7 @@ if __name__ == '__main__':
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )
                 t = tray.Tray(menu_options, program_name='Mouse Tracks')
-                t.minimise_override = CONFIG['Main']['StartMinimised']
+                t.minimise_override = is_hidden
                 t.cache['Thread'] = thread
                 t.cache['WebPort'] = web_port
                 t.set_event('OnMenuOpen', on_menu_open)
