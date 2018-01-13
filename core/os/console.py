@@ -11,9 +11,11 @@ import sys
 from core.os._load_from_os import *
 
 
-ARGUMENT_ELEVATE = 'Elevate'
+ELEVATE = 'ElevateProgram'
 
-ARGUMENT_IMAGEGEN = 'GenerateImage'
+IMAGEGEN = 'GenerateImage'
+
+DEBUG = 'DebugOptions'
 
 
 def _launch(add_arguments=[], remove_arguments=[], visible=True):
@@ -28,27 +30,25 @@ def _launch(add_arguments=[], remove_arguments=[], visible=True):
     return launch_console(params=params, visible=visible)
 
     
-def should_generate_image():
-    return ARGUMENT_IMAGEGEN in sys.argv
-
-    
 def has_been_elevated():
-    return ARGUMENT_ELEVATE in sys.argv
+    return ELEVATE in sys.argv
     
 
 def elevate(visible=True):
     """Attempt to elevate the current script and quit the original if successful."""
-    if is_elevated() or ARGUMENT_ELEVATE in sys.argv:
+    if is_elevated() or ELEVATE in sys.argv:
         return True
     
-    if _launch(visible=visible, add_arguments=[ARGUMENT_ELEVATE]):
+    if _launch(visible=visible, add_arguments=[ELEVATE]):
         sys.exit(0)
     
     return False
+    
+def new(*args):
+    _launch(visible=True, add_arguments=list(args), remove_arguments=[ELEVATE])
 
 
-def generate_images():
-    """Launch new window to generate images.
-    Removes elevation as it's not needed, and we don't want UAC to fire again.
-    """
-    _launch(visible=True, add_arguments=[ARGUMENT_IMAGEGEN], remove_arguments=[ARGUMENT_ELEVATE])
+def is_set(*args):
+    for arg in args:
+        if arg in sys.argv:
+            return True

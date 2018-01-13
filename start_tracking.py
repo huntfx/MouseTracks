@@ -25,9 +25,14 @@ if __name__ == '__main__':
         start_tracking()
     
     #Generate images
-    elif console.should_generate_image():
+    elif console.is_set(console.IMAGEGEN):
         from generate_images import user_generate
         user_generate()
+    
+    #Debug options
+    elif console.is_set(console.DEBUG):
+        from debug_options import debug_options
+        debug_options()
     
     #Create tray icon
     else:
@@ -38,6 +43,7 @@ if __name__ == '__main__':
         from core.internet import get_url_json, send_request
         from core.files import Lock
         from core.notify import *
+        from core.os import KEYS, get_key_press
         from core.sockets import get_free_port
             
         
@@ -89,9 +95,9 @@ if __name__ == '__main__':
             _end_thread(thread, web_port)
             tray.quit(cls)
         
-        def generate_images(cls):
-            """Launch the generate images dialogue."""
-            console.generate_images()
+        def new_window(cls, arg):
+            """Launch a new console."""
+            console.new(arg)
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
@@ -103,11 +109,17 @@ if __name__ == '__main__':
                 cls.set_menu_item('track', name='Pause Tracking', hidden=False)
             elif status == 'stopped':
                 cls.set_menu_item('track', name='Resume Tracking', hidden=False)
+                
+            shift_held = get_key_press(KEYS['LSHIFT']) or get_key_press(KEYS['RSHIFT'])
+            if shift_held:
+                cls.set_menu_item('debug', hidden=False)
+                
             cls._refresh_menu()
                 
         def on_menu_close(cls):
             """Run this after the menu has closed."""
             cls.set_menu_item('track', hidden=True)
+            cls.set_menu_item('debug', hidden=True)
         
         def hide_in_tray(cls):
             cls.minimise_to_tray()
@@ -131,7 +143,8 @@ if __name__ == '__main__':
                 web_port = get_free_port()
                 thread = _start_tracking(None, web_port)
                 menu_options = (
-                    {'id': 'generate', 'name': 'Generate Images', 'action': generate_images},
+                    {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': [console.IMAGEGEN]},
+                    {'id': 'debug', 'name': 'Debug Commands', 'action': new_window, 'args': [console.DEBUG], 'hidden': True},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
