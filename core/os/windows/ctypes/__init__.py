@@ -211,24 +211,10 @@ class WindowHandle(object):
         ctypes.windll.user32.ShowWindow(self.hwnd, 5)
 
         
-def launch_new_console(show=True, add_arguments=[], remove_arguments=[]):
-    if isinstance(add_arguments, str):
-        add_arguments = [add_arguments]
-    if isinstance(remove_arguments, str):
-        remove_arguments = [remove_arguments]
+def launch_console(params, visible=True, process=sys.executable):
+    ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(process), params, None, 5 if visible else 0)
+    return int(ret) > 32:
         
-    script = os.path.abspath(sys.argv[0])
-    params = ' '.join([script] + [i for i in sys.argv[1:] if i not in remove_arguments] + list(add_arguments))
-    ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(sys.executable), params, None, 5 if show else 0)
-    if int(ret) > 32:
-        sys.exit(0)
-
-
-def elevate(console=True, _argument='Elevate'):
-    """Elevate the program to admin permissions."""
-    if ctypes.windll.shell32.IsUserAnAdmin() or _argument in sys.argv:
-        return True
-    
-    if launch_new_console(show=console, add_arguments=_argument):
-        sys.exit(0)
-    return False
+        
+def is_elevated():
+    return ctypes.windll.shell32.IsUserAnAdmin()

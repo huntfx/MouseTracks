@@ -5,11 +5,12 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import sys
 from multiprocessing import freeze_support
 
 from core.config import CONFIG
 from core.track import start_tracking
-from core.os import elevate, tray, launch_new_console
+from core.os import tray, console
 
 
 if __name__ == '__main__':
@@ -17,27 +18,27 @@ if __name__ == '__main__':
     freeze_support()
     
     if CONFIG['Advanced']['RunAsAdministrator']:
-        elevate(console=not CONFIG['Main']['StartMinimised'])
+        console.elevate(visible=not CONFIG['Main']['StartMinimised'])
     
     #Run normally
     if tray is None or not CONFIG['API']['RunWeb']:
         start_tracking()
     
+    #Generate images
+    elif console.should_generate_image():
+        from generate_images import user_generate
+        user_generate()
+    
     #Create tray icon
     else:
-        import sys
         from threading import Thread
         
-        from generate_images import user_generate
         from core.api import local_address, shutdown_server
         from core.compatibility import Message, input
         from core.internet import get_url_json, send_request
         from core.files import Lock
         from core.notify import *
         from core.sockets import get_free_port
-        
-        if 'GenerateImages' in sys.argv:
-            user_generate()
             
         
         def _end_thread(thread, web_port):
@@ -89,8 +90,8 @@ if __name__ == '__main__':
             tray.quit(cls)
         
         def generate_images(cls):
-            launch_new_console(add_arguments=['GenerateImages'], remove_arguments=['Elevate'])
-            #user_generate()
+            """Launch the generate images dialogue."""
+            console.generate_images()
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
@@ -127,12 +128,14 @@ if __name__ == '__main__':
             if locked:
                 web_port = get_free_port()
                 thread = _start_tracking(None, web_port)
+                
+                is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised']
                 menu_options = (
-                    {'id': 'generate', 'name': 'Generate Image', 'action': generate_images},
+                    {'id': 'generate', 'name': 'Generate Images', 'action': generate_images},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
-                    {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': bool(CONFIG['Main']['StartMinimised'])},
-                    {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not CONFIG['Main']['StartMinimised']},
+                    {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
+                    {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not is_hidden},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )
                 t = tray.Tray(menu_options, program_name='Mouse Tracks')

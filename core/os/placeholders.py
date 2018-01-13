@@ -7,15 +7,9 @@ from __future__ import absolute_import
 
 import os
 import psutil
+import sys
 
 from core.compatibility import Message
-
-
-def elevate():
-    """Run the script as an administrator.
-    Fixes issues with tracking keypresses of elevated programs.
-    """
-    pass
 
 
 def read_env_var(text):
@@ -145,6 +139,16 @@ def set_priority(level, pid=None):
             
     except AttributeError:
         process.nice(int(level))
+
+
+def launch_console(params, visible=True, process=sys.executable):
+    """Launch a new instance of Python."""
+    Message('Launching a new console is not yet supported.')
+
+
+def is_elevated():
+    """Detect if application is currently elevated."""
+    return False
 
 
 tray = None
