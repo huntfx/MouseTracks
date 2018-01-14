@@ -29,11 +29,12 @@ def client_thread(client_id, sock, q_recv, q_send):
     """Send data to the connected clients."""
     #Connect to client and send feedback
     conn, addr = sock.accept()
-    q_send.put(addr)
     
     #Remove items from queue sent before connection
     while not q_recv.empty():
-        q_recv.get()
+        hidden_message = q_recv.get()
+        
+    q_send.put(addr)
     
     #Send each item to the client
     thread = currentThread()
@@ -73,7 +74,7 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
                     return
                         
 
-def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback=None):
+def server_thread(q_main, host='localhost', port=0, server_secret=None, close_port=False, q_feedback=None):
     """Run a server to send messages to all the connected clients."""
     
     #Create server socket
@@ -98,8 +99,9 @@ def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback
     NOTIFY(SERVER_SOCKET_PORT, sock.getsockname()[1])
     
     #Generate a code needed for connections
-    connection_code = _generate_code(15)
-    NOTIFY(SERVER_SECRET_SET, connection_code)
+    if server_secret is None:
+        server_secret = _generate_code(15)
+    NOTIFY(SERVER_SECRET_SET, server_secret)
     
     q_conn = Queue()
     threads = []
@@ -119,7 +121,7 @@ def server_thread(q_main, host='localhost', port=0, close_port=False, q_feedback
                 middleman.join()
             except NameError:
                 pass
-            middleman = Thread(target=middleman_thread, args=(connection_code, q_main, tuple(queues)))
+            middleman = Thread(target=middleman_thread, args=(server_secret, q_main, tuple(queues)))
             middleman.daemon = True
             middleman.start()
             

@@ -313,34 +313,15 @@ DEFAULTS = {
     'API': {
         '__priority__': 4,
         'RunServer': {
-            '__info__': 'Run a server so that a client can connect and receive messages.',
+            '__info__': 'Run a server so that a client can connect and receive messages. Will be overriden by a GUI or tray icon.',
             '__priority__': 1,
-            'value': True,
+            'value': False,
             'type': bool
         },
         'RunWeb': {
-            '__info__': 'Run a web service to communicate with the main script.',
+            '__info__': 'Run a web service to communicate with the main script. Will be overriden by a GUI or tray icon.',
             '__priority__': 1,
             'value': True,
-            'type': bool
-        },
-        'ServerPort': {
-            '__priority__': 2,
-            'value': 60315,
-            'type': int,
-            'min': 1025,
-            'max': 65535
-        },
-        'WebPort': {
-            '__priority__': 2,
-            'value': 60316,
-            'type': int,
-            'min': 1025,
-            'max': 65535
-        },
-        'AutomaticallyChoosePorts': {
-            '__priority__': 3,
-            'value': False,
             'type': bool
         },
         'ForceCloseProcessUsingPort': {
