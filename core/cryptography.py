@@ -6,8 +6,8 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import hashlib
 import struct
-    
 
 from core.compatibility import pickle
 from core.config import CONFIG
@@ -47,8 +47,8 @@ def _unpad16(s):
 
 class Crypt(object):
     def __init__(self, password):
-        password = _pad16(password)
-        self.cipher = AES.new(password, AES.MODE_ECB)
+        pw_hash = hashlib.sha256(str(password)).digest()
+        self.cipher = AES.new(pw_hash, AES.MODE_ECB)
 
     def encrypt(self, s):
         s = _pad16(s)
