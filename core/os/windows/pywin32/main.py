@@ -80,7 +80,7 @@ def get_key_press(key):
     Returns:
         True/False if the selected key has been pressed or not.
     """
-    return win32api.GetAsyncKeyState(key)
+    return win32api.GetKeyState(key) < 0
 
 
 def get_monitor_locations():
@@ -136,27 +136,47 @@ class WindowHandle(object):
     #Tray icon commands
     @property
     def minimised(self):
+        """Find if window is minimised."""
         return win32gui.IsIconic(self.hwnd)
         
     def restore(self):
+        """Restore a window from being minimised."""
         win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
     
-    def bring_to_front(self):
-        self.restore()
+    def bring_to_front(self, new=True):
+        """Bring a window into focus.
+        Kept the old way just to be on the safe side.
+        """
+        if new:
+            win32gui.ShowWindow(self.hwnd, True)
+        else:
+            self.restore()
         win32gui.SetForegroundWindow(self.hwnd)
         
     def minimise(self):
+        """Minimise a window."""
         win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
         
-    def hide(self):
-        self.minimise()
-        win32gui.ShowWindow(self.hwnd, win32con.SW_HIDE)
-        win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE,
-                               win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW)
-        win32gui.ShowWindow(self.hwnd, win32con.SW_SHOW)
+    def hide(self, new=True):
+        """Hide a window from the task bar.
+        Kept the old way just to be on the safe side.
+        """
+        if new:
+            win32gui.ShowWindow(self.hwnd, False)
+        else:
+            self.minimise()
+            win32gui.ShowWindow(self.hwnd, win32con.SW_HIDE)
+            win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE,
+                                   win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW)
+            win32gui.ShowWindow(self.hwnd, win32con.SW_SHOW)
 
 
-def launch_console(params, visible=True, process=sys.executable):
+def launch_console(params, visible=True, process=sys.executable, visiblity_override=None):
+    if visiblity_override is not None:
+        if visiblity_override:
+            process.replace('pythonw', 'python')
+        else:
+            process = process.replace('python', 'pythonw').replace('pythonww', 'pythonw')
     try:
         shell.ShellExecuteEx(lpVerb='runas', lpFile=process, lpParameters=params, nShow=5 if visible else 0)
     except pywintypes.error:

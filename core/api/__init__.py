@@ -29,6 +29,7 @@ def local_message_server(q_main, port=0, close_port=False, server_secret=None, q
     server_thread = Thread(target=server, kwargs=(kwargs))
     server_thread.daemon = True
     server_thread.start()
+    return server_thread
 
     
 def local_message_connect(port=None, secret=None):
@@ -42,6 +43,7 @@ def local_web_server(app, port=0, q_feedback=None):
     web_thread.daemon = True
     web_thread.start()
     NOTIFY(SERVER_WEB_PORT, port)
+    return web_thread
 
 
 def create_pipe(name, duplex=False):

@@ -14,7 +14,7 @@ from core.compatibility import PYTHON_VERSION, Message
 try:
     from core.os.windows.pywin32 import *
 except ImportError as e:
-    Message('PyWin32 import failed: {}. Falling back to ctypes.'.format(e))
+    Message('PyWin32 import failed (reason: "{}"). Falling back to ctypes.'.format(e))
     from core.os.windows.ctypes import *
 
 

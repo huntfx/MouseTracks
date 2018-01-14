@@ -13,10 +13,6 @@ from core.os._load_from_os import *
 
 ELEVATE = 'ElevateProgram'
 
-IMAGEGEN = 'GenerateImage'
-
-DEBUG = 'DebugOptions'
-
 
 def _launch(add_arguments=[], remove_arguments=[], visible=True):
     """Launch a new instance of python with arguments provided."""
@@ -24,7 +20,6 @@ def _launch(add_arguments=[], remove_arguments=[], visible=True):
         add_arguments = [add_arguments]
     if isinstance(remove_arguments, str):
         remove_arguments = [remove_arguments]
-        
     script = os.path.abspath(sys.argv[0])
     params = ' '.join([script] + [i for i in sys.argv[1:] if i not in remove_arguments] + list(add_arguments))
     return launch_console(params=params, visible=visible)
@@ -43,7 +38,8 @@ def elevate(visible=True):
         sys.exit(0)
     
     return False
-    
+
+
 def new(*args):
     _launch(visible=True, add_arguments=list(args), remove_arguments=[ELEVATE])
 

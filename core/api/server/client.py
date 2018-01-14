@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 import socket
 
+from core.api import constants as api
 from core.compatibility import Message, input
 from core.cryptography import Crypt, DecryptionError
 from core.sockets import *
@@ -37,17 +38,24 @@ def server_connect(port=None, secret=None):
             received_message = recv_msg(sock)
             
             #End if server has shut down
-            if received_message is None:
-                Message('Server appears to have stopped.')
+            if received_message == api.MESSAGE_QUIT:
                 break
                 
-            #Decrypt message
-            try:
-                decoded_message = crypt.decrypt(received_message)
-            except DecryptionError:
-                Message('Incorrect password provided.')
+            elif received_message is None:
+                Message('Server appears to have stopped.')
                 break
-            print(decoded_message)
+            
+            #Decrypt message
+            else:
+                try:
+                    decoded_message = crypt.decrypt(received_message)
+                except DecryptionError:
+                    Message('Incorrect password provided.')
+                    break
+                except TypeError:
+                    Message('Unable to decrypt message.')
+                else:
+                    print(decoded_message)
         sock.close()
         
     except KeyboardInterrupt:

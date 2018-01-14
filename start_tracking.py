@@ -41,6 +41,7 @@ if __name__ == '__main__':
     #Create new message client
     elif console.is_set('MessageServer'):
         from core.api import local_message_connect
+        
         offset = sys.argv.index('MessageServer')
         port = int(sys.argv[offset+1])
         secret = sys.argv[offset+2]
@@ -60,32 +61,36 @@ if __name__ == '__main__':
         from core.sockets import get_free_port
             
         
-        def _end_thread(thread, web_port):
+        def _end_thread(cls):
             """Close the tracking thread."""
-            if web_port is not None:
-                shutdown_server(web_port)
-            thread.join()
+            quit_message_client(cls)
+            if cls.cache['WebPort'] is not None:
+                shutdown_server(cls.cache['WebPort'])
+            cls.cache['Thread'].join()
         
         def _start_tracking(cls, web_port=None, message_port=None, server_secret=None, _thread=None):
             """Start new tracking thread after closing old one."""
             #End old thread
             if _thread:
-                _end_thread(_thread, web_port)
+                _end_thread(cls)
                 NOTIFY(TRACKING_RESTART)
                 web_port = None
             
             #Start thread
             web_port = get_free_port() if web_port is None else web_port
+            message_port = get_free_port() if message_port is None else message_port
+            server_secret = uuid.uuid4() if server_secret is None else server_secret
             thread = Thread(target=start_tracking, kwargs={'web_port': web_port, 'message_port': message_port, 'console': False, 'lock': False, 'server_secret': server_secret})
             thread.start()
         
             #Set new port
-            if cls is not None and _thread:
+            if cls is not None:
                 cls.cache['WebPort'] = web_port
                 cls.cache['Thread'] = thread
                 cls.set_menu_item('track', name='Pause Tracking')
+                cls.set_menu_item('restore2', args=['MessageServer', str(message_port), str(server_secret)])
                 if _thread:
-                    cls.set_menu_item('restart', kwargs={'web_port': web_port, 'message_port': message_port, 'server_secret': server_secret, '_thread': thread})
+                    cls.set_menu_item('restart', kwargs={'web_port': web_port, '_thread': thread})
             return thread
 
         def toggle_tracking(cls):
@@ -103,9 +108,9 @@ if __name__ == '__main__':
             
         def quit(cls):
             """End the script and close the window."""
-            web_port = cls.cache.pop('WebPort')
-            thread = cls.cache.pop('Thread')
-            _end_thread(thread, web_port)
+            _end_thread(cls)
+            del cls.cache['WebPort']
+            del cls.cache['Thread']
             tray.quit(cls)
         
         def new_window(cls, *args):
@@ -154,6 +159,13 @@ if __name__ == '__main__':
             from core.applications import AppList
             AppList().update()
             
+        def quit_message_client(cls):
+            web_port = cls.cache['WebPort']
+            close_mesage_url = '{}/ports/message/close'.format(local_address(web_port))
+            status = send_request(close_mesage_url, timeout=1, output=True)
+        
+        def start_message_client(cls, port, secret):
+            new_window(None, 'MessageServer', str(port), str(secret))
         
         is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised'] and console.is_elevated()
         
@@ -173,12 +185,14 @@ if __name__ == '__main__':
                 menu_options = (
                     {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': ['GenerateImages']},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
-                    {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
+                    {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, 'message_port': message_port, 'server_secret': server_secret, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not is_hidden},
                     {'id': 'debug', 'name': 'Advanced', 'hidden': True, 'action': (
                         {'name': 'Debug Commands', 'action': new_window, 'args': ['DebugOptions']},
                         {'name': 'Force Update "{}" (requires internet)'.format(APP_LIST_FILE), 'action': applist_update, 'hidden': not CONFIG['Internet']['Enable']},
+                        {'name': 'Start message client', 'hidden': not CONFIG['API']['RunServer'], 'action': start_message_client, 'kwargs': {'port': message_port, 'secret': server_secret}},
+                        {'name': 'Close all message clients', 'hidden': not CONFIG['API']['RunServer'], 'action': quit_message_client},
                     )},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )

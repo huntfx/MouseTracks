@@ -85,6 +85,14 @@ def get_port(port_type=None):
         abort(404)
 
 
+@app.route('/ports/<string:port_type>/close/')
+def close_connection(port_type=None):
+    if port_type.lower() == 'message':
+        app.config['PIPE_CONTROL_SEND'].send(CLOSE_MESSAGE_CONNECTIONS)
+        return jsonify(True)
+    return jsonify(False)
+
+
 @app.route('/config/', methods=['GET'])
 @app.route('/config/<string:heading>/', methods=['GET'])
 @app.route('/config/<string:heading>/<string:variable>/', methods=['GET'])

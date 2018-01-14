@@ -191,29 +191,44 @@ class WindowHandle(object):
     #Tray icon commands (not in use)
     @property
     def minimised(self):
+        """Find if window is minimised."""
         return ctypes.windll.user32.IsIconic(self.hwnd)
         
     def restore(self):
+        """Restore a window from being minimised."""
         ctypes.windll.user32.ShowWindow(self.hwnd, 9)
 
-    def bring_to_front(self):
-        self.restore()
+    def bring_to_front(self, new=True):
+        """Bring a window into focus.
+        Kept the old way just to be on the safe side.
+        """
+        if new:
+            ctypes.windll.user32.ShowWindow(self.hwnd, True)
+        else:
+            self.restore()
         ctypes.windll.user32.SetForegroundWindow(self.hwnd)
         
     def minimise(self):
+        """Minimise a window."""
         ctypes.windll.user32.ShowWindow(self.hwnd, 6)
         
-    def hide(self):
-        self.minimise()
-        ctypes.windll.user32.ShowWindow(self.hwnd, 0)
-        ctypes.windll.user32.SetWindowLongA(self.hwnd, -20,
-                                            ctypes.windll.user32.GetWindowLongA(self.hwnd, -20) | 128)
-        ctypes.windll.user32.ShowWindow(self.hwnd, 5)
+    def hide(self, new=True):
+        """Hide a window from the task bar.
+        Kept the old way just to be on the safe side.
+        """
+        if new:
+            ctypes.windll.user32.ShowWindow(self.hwnd, False)
+        else:
+            self.minimise()
+            ctypes.windll.user32.ShowWindow(self.hwnd, 0)
+            ctypes.windll.user32.SetWindowLongA(self.hwnd, -20,
+                                                ctypes.windll.user32.GetWindowLongA(self.hwnd, -20) | 128)
+            ctypes.windll.user32.ShowWindow(self.hwnd, 5)
 
         
 def launch_console(params, visible=True, process=sys.executable):
     ret = ctypes.windll.shell32.ShellExecuteW(None, u'runas', unicode(process), params, None, 5 if visible else 0)
-    return int(ret) > 32:
+    return int(ret) > 32
         
         
 def is_elevated():

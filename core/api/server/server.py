@@ -10,6 +10,7 @@ import socket
 from multiprocessing import Queue
 from threading import Thread, currentThread
 
+from core.api import constants as api
 from core.compatibility import queue, range
 from core.cryptography import Crypt
 from core.notify import *
@@ -21,8 +22,8 @@ POLLING_RATE = 1
 
 def _generate_code(length):
     """Generate a random code."""
-    allowed = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
-    return ''.join(random.choice(allowed) for _ in range(length))
+    import uuid
+    return str(uuid.uuid4())
 
     
 def client_thread(client_id, sock, q_recv, q_send):
@@ -30,15 +31,20 @@ def client_thread(client_id, sock, q_recv, q_send):
     #Connect to client and send feedback
     conn, addr = sock.accept()
     
-    #Remove items from queue sent before connection
-    while not q_recv.empty():
-        hidden_message = q_recv.get()
-        
     q_send.put(addr)
     
+    #Remove items from queue sent before connection
+    try:
+        while not q_recv.empty():
+            if q_recv.get() == api.MESSAGE_IGNORE:
+                break
+    except IOError:
+        conn.close()
+        return
+    
     #Send each item to the client
-    thread = currentThread()
-    while getattr(thread, 'running', True):
+    t = currentThread()
+    while getattr(t, 'running', True):
         try:
             message = q_recv.get()
         except (IOError, EOFError):
@@ -54,8 +60,15 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
     """Handle the incoming queue and duplicate for all clients."""
     crypt = Crypt(encrypt_code)
     
-    thread = currentThread()
-    while getattr(thread, 'running', True):
+    #This will cut off all messages from before the previous connection
+    try:
+        q_list[-1].put(api.MESSAGE_IGNORE)
+    except (IOError, EOFError):
+        return
+    
+    #Loop through and wait for input messages
+    t = currentThread()
+    while getattr(t, 'running', True):
         try:
             message = q_main.get(timeout=POLLING_RATE)
         except queue.Empty:
@@ -63,8 +76,16 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
         except (IOError, EOFError):
             return
         else:
-            message = crypt.encrypt(message)
-            for q in q_list:
+            if message == api.MESSAGE_QUIT:
+                queues = q_list[:-1]
+            elif message == api.MESSAGE_IGNORE:
+                queues = q_list[-1]
+            else:
+                message = crypt.encrypt(message)
+                queues = q_list
+                
+            #Send to client threads
+            for q in queues:
                 try:
                     q.put(message)
                 except AssertionError:
@@ -108,7 +129,8 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
     queues = []
     client_id = 1
     try:
-        while True:
+        t = currentThread()
+        while getattr(t, 'running', True):
             #Start new client thread
             queues.append(Queue())
             threads.append(Thread(target=client_thread, args=(client_id, sock, queues[-1], q_conn)))
@@ -129,6 +151,15 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
             #Loop is needed so that KeyboardInterrupt can be intercepted
             NOTIFY(SERVER_SOCKET_WAIT)
             while True:
+            
+                #Close all client connections
+                if getattr(t, 'force_close_clients', False):
+                    try:
+                        q_main.put(api.MESSAGE_QUIT)
+                    except (IOError, EOFError):
+                        pass
+                    t.force_close_clients = False
+            
                 try:
                     addr = q_conn.get(timeout=POLLING_RATE)
                     

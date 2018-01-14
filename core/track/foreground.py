@@ -84,7 +84,6 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
     no_detection_wait = 2
     
     try:
-    
         q_feedback = Queue()
         
         #Setup message server
@@ -93,10 +92,11 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
             message = PrintFormat(MessageWithQueue(q_msg).send)
             if message_port is None:
                 message_port = get_free_port()
-            local_message_server(port=message_port, q_main=q_msg, q_feedback=q_feedback, server_secret=server_secret)
+            message_thread = local_message_server(port=message_port, q_main=q_msg, q_feedback=q_feedback, server_secret=server_secret)
         else:
             message = PrintFormat(MessageWithQueue().send)
             message_port = None
+            message_thread = None
             
         #Setup web server
         if CONFIG['API']['RunWeb']:
@@ -190,6 +190,11 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                             config_header, config_var, config_val = store['Flask']['App'].config['PIPE_CONFIG_UPDATE_RECV'].recv()
                             CONFIG[config_header][config_var] = config_val
                             print('Set {}.{} to {}'.format(config_header, config_var, CONFIG[config_header][config_var]))
+                    
+                        #Send request to close clients
+                        elif api_control == CLOSE_MESSAGE_CONNECTIONS:
+                            if message_thread is not None:
+                                message_thread.force_close_clients = True
                     
                     #Requests that require response
                     if store['Flask']['App'].config['PIPE_REQUEST_RECV'].poll():
