@@ -17,6 +17,10 @@ if __name__ == '__main__':
     
     freeze_support()
     
+    #TODO: Ask questions like check if keys should be tracked
+    if CONFIG.is_new:
+        pass
+    
     if CONFIG['Advanced']['RunAsAdministrator']:
         console.elevate(visible=not CONFIG['Main']['StartMinimised'])
     
@@ -25,17 +29,26 @@ if __name__ == '__main__':
         start_tracking()
     
     #Generate images
-    elif console.is_set(console.IMAGEGEN):
+    elif console.is_set('GenerateImages'):
         from generate_images import user_generate
         user_generate()
     
     #Debug options
-    elif console.is_set(console.DEBUG):
+    elif console.is_set('DebugOptions'):
         from debug_options import debug_options
         debug_options()
+        
+    #Create new message client
+    elif console.is_set('MessageServer'):
+        from core.api import local_message_connect
+        offset = sys.argv.index('MessageServer')
+        port = int(sys.argv[offset+1])
+        secret = sys.argv[offset+2]
+        local_message_connect(port=port, secret=secret)
     
     #Create tray icon
     else:
+        import uuid
         from threading import Thread
         
         from core.api import local_address, shutdown_server
@@ -53,7 +66,7 @@ if __name__ == '__main__':
                 shutdown_server(web_port)
             thread.join()
         
-        def _start_tracking(cls, web_port=None, _thread=None):
+        def _start_tracking(cls, web_port=None, message_port=None, server_secret=None, _thread=None):
             """Start new tracking thread after closing old one."""
             #End old thread
             if _thread:
@@ -63,7 +76,7 @@ if __name__ == '__main__':
             
             #Start thread
             web_port = get_free_port() if web_port is None else web_port
-            thread = Thread(target=start_tracking, kwargs={'web_port': web_port, 'console': False, 'lock': False})
+            thread = Thread(target=start_tracking, kwargs={'web_port': web_port, 'message_port': message_port, 'console': False, 'lock': False, 'server_secret': server_secret})
             thread.start()
         
             #Set new port
@@ -72,7 +85,7 @@ if __name__ == '__main__':
                 cls.cache['Thread'] = thread
                 cls.set_menu_item('track', name='Pause Tracking')
                 if _thread:
-                    cls.set_menu_item('restart', kwargs={'web_port': web_port, '_thread': thread})
+                    cls.set_menu_item('restart', kwargs={'web_port': web_port, 'message_port': message_port, 'server_secret': server_secret, '_thread': thread})
             return thread
 
         def toggle_tracking(cls):
@@ -95,9 +108,9 @@ if __name__ == '__main__':
             _end_thread(thread, web_port)
             tray.quit(cls)
         
-        def new_window(cls, arg):
+        def new_window(cls, *args):
             """Launch a new console."""
-            console.new(arg)
+            console.new(*args)
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
@@ -139,7 +152,6 @@ if __name__ == '__main__':
             
         def applist_update(cls):
             from core.applications import AppList
-            
             AppList().update()
             
         
@@ -148,15 +160,24 @@ if __name__ == '__main__':
         with Lock() as locked:
             if locked:
                 web_port = get_free_port()
-                thread = _start_tracking(None, web_port)
+                message_port = get_free_port()
+                server_secret = uuid.uuid4()
+                thread = _start_tracking(cls=None, web_port=web_port, message_port=message_port, server_secret=server_secret)
+                '''
+                TODO:
+                Force save
+                
+                message server link (need to figure how to close)
+                'action': new_window, 'args': ['MessageServer', str(message_port), str(server_secret)]
+                '''
                 menu_options = (
-                    {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': [console.IMAGEGEN]},
+                    {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': ['GenerateImages']},
                     {'id': 'track', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not is_hidden},
                     {'id': 'debug', 'name': 'Advanced', 'hidden': True, 'action': (
-                        {'name': 'Debug Commands', 'action': new_window, 'args': [console.DEBUG]},
+                        {'name': 'Debug Commands', 'action': new_window, 'args': ['DebugOptions']},
                         {'name': 'Force Update "{}" (requires internet)'.format(APP_LIST_FILE), 'action': applist_update, 'hidden': not CONFIG['Internet']['Enable']},
                     )},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
