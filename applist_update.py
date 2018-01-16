@@ -18,8 +18,10 @@ if __name__ == '__main__':
         if choice.lower().startswith('y') and 'no' not in choice:
             CONFIG['Internet']['Enable'] = True
 
+    applist = AppList()
     while True:
-        if AppList().update():
+        if applist.update():
+            applist.save()
             input('Finished, press enter to quit.')
             break
         else:
