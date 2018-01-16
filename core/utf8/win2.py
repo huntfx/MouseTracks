@@ -119,7 +119,10 @@ try:
                         self._stream.write(text)
                     else:
                         if not isinstance(text, unicode):
-                            text = str(text).decode('utf-8')
+                            try:
+                                text = str(text).decode('utf-8')
+                            except UnicodeDecodeError:
+                                text = str(text)
                         remaining = len(text)
                         while remaining:
                             n = DWORD(0)

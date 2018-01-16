@@ -835,7 +835,7 @@ QuantumBreak.exe: Quantum Break
 QUBEGame.exe: QUBE
 Questviewer.exe: Audiosurf
 Quiplash.exe
-RA3EP1.exe: Command and Conquer Red Alert 3
+RA3EP1.exe: Command and Conquer: Red Alert 3
 RaceTheSun.exe: Race The Sun
 Rage.exe: RAGE
 ragexe.exe: Ragnarok Online
