@@ -1,4 +1,4 @@
-// Add any applications you want to be tracked here.
+﻿// Add any applications you want to be tracked here.
 // Two separate applications can have the same name, and will be tracked under the same file.
 // Put each app on a new line, in the format "MyGame.exe: Game Name". The executable file is case sensitive.
 // You may also limit it to a certain window name, for example if the game uses a generic executable name.
@@ -70,6 +70,7 @@ BatmanAK.exe: Batman Arkham Knight
 BattleBlockTheater.exe: BattleBlock Theater
 battlefront.exe: Star Wars Battlefront
 BattlefrontII.exe: Star Wars Battlefront II
+Battlerite.exe
 battlevschess.exe: Battle vs Chess
 BC.exe: Battle Chasers: Nightwar
 BeatHazard.exe: Beat Hazard
@@ -349,7 +350,11 @@ Hexcells Plus.exe
 Hexcells.exe
 HexPatch.exe: Hex: Shards of Fate
 hl.exe: Half-Life
-hl2.exe: Element 120]
+hl2.exe: Half-Life 2
+hl2.exe[Portal 2]
+hl2.exe[Portal]
+hl2.exe[Transmissions: Element 120]
+hl2.exe[Team Fortress 2]
 HL2HL2.exe: Half Life 2
 hl2P.exe: Portal
 hl2TF.exe: Team Fortress 2
@@ -370,6 +375,7 @@ ibbobb.exe: ibb & obb
 ImpossibleGame.exe: The Impossible Game
 infantry.exe: Infantry
 Injustice2.exe: Injustice 2
+Injustice2.exe[DCF2 (x64)]: Ignore
 Insurgency.exe
 invisibleinc.exe: Invisible Inc.
 iracinglauncher.exe: iRacing
@@ -667,6 +673,7 @@ Stardew Valley.exe
 StarDrive.exe: Star Drive
 StarForge.exe
 starwarsbattlefront.exe: Star Wars: Battlefront
+stellaris.exe: Stellaris
 StepMania.exe: Step Mania
 strife-ve.exe: Strife: Veteran Edition
 strife.exe: Strife
@@ -762,6 +769,7 @@ TownOfSalem.exe: Town of Salem
 TOXIKK.exe
 TQ.exe: Titan Quest
 TR.exe: Trench Run
+Trailmakers.exe
 Transistor.exe
 trgame.exe: Tales Runner
 trials_fusion.exe: Trials Fusion
