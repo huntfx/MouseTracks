@@ -31,7 +31,7 @@ class Tray(object):
     """
     FIRST_ID = 1023
 
-    def __init__(self, menu_options, program_name='Python Taskbar', _internal_class_name='PythonTaskbar'):
+    def __init__(self, menu_options, program_name='Python Taskbar', window_name=None):
     
         self.cache = {}
         self._commands = {'OnMenuOpen': [],
@@ -41,6 +41,8 @@ class Tray(object):
         self.program_name = program_name
         self.console_hwnd = WindowHandle(parent=False, console=True)
         self._refresh_menu(menu_options)
+        if window_name is None:
+            window_name = program_name
         
         #Set up callbacks
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
@@ -53,7 +55,7 @@ class Tray(object):
         #Register the Window class.
         wc = win32gui.WNDCLASS()
         hinst = wc.hInstance = win32api.GetModuleHandle(None)
-        wc.lpszClassName = _internal_class_name
+        wc.lpszClassName = window_name
         wc.style = win32con.CS_VREDRAW | win32con.CS_HREDRAW;
         wc.hCursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
         wc.hbrBackground = win32con.COLOR_WINDOW
@@ -68,7 +70,7 @@ class Tray(object):
 
         #Create the Window.
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        self.hwnd = win32gui.CreateWindow(wc.lpszClassName, _internal_class_name, style, \
+        self.hwnd = win32gui.CreateWindow(wc.lpszClassName, window_name, style, \
                 0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
                 0, 0, hinst, None)
         win32gui.UpdateWindow(self.hwnd)

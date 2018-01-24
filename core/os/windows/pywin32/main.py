@@ -151,7 +151,13 @@ class WindowHandle(object):
             win32gui.ShowWindow(self.hwnd, True)
         else:
             self.restore()
-        win32gui.SetForegroundWindow(self.hwnd)
+            
+        #Sometimes it seems to fail, so try once more
+        try:
+            win32gui.SetForegroundWindow(self.hwnd)
+        except pywintypes.error:
+            win32gui.ShowWindow(self.hwnd, True)
+            win32gui.SetForegroundWindow(self.hwnd)
         
     def minimise(self):
         """Minimise a window."""

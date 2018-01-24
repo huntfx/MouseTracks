@@ -324,12 +324,6 @@ DEFAULTS = {
             'value': True,
             'type': bool
         },
-        'ForceCloseProcessUsingPort': {
-            '__info__': 'If this is set, the program will attempt to shut down whatever is using the requested port, otherwise a random port will be chosen.',
-            '__priority__': 3,
-            'value': False,
-            'type': bool
-        },
         '_ServerEncryption': {
             'value': True,
             'type': bool,

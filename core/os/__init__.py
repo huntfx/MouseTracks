@@ -280,7 +280,10 @@ if FOCUS_DETECTION:
             self.window_data = WindowHandle()
             
             self.pid = self.window_data.pid
-            self.psutil = psutil.Process(self.pid)
+            try:
+                self.psutil = psutil.Process(self.pid)
+            except psutil.NoSuchProcess:
+                pass
         
         def __str__(self):
             return 'Process {} ({}): "{}" ({})'.format(self.pid, self.exe, self.name, '{}x{}'.format(*self.resolution))
@@ -300,7 +303,7 @@ if FOCUS_DETECTION:
             except AttributeError:
                 try:
                     return self.psutil.name()
-                except psutil.NoSuchProcess:
+                except (psutil.NoSuchProcess, AttributeError):
                     return None
         
         @property
@@ -324,26 +327,26 @@ if FOCUS_DETECTION:
         def percentage_memory_usage(self):
             try:
                 return _get_memory_percent(self.psutil)
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, AttributeError):
                 return 0
         
         def memory_usage(self):
             try:
                 memory_size = psutil.virtual_memory().total
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, AttributeError):
                 return 0
             return int(memory_size * self.percentage_memory_usage() / 100)
         
         def cmd_args(self):
             try:
                 return self.psutil.cmdline()
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, AttributeError):
                 return None
             
         def working_directory(self):
             try:
                 return self.psutil.cwd()
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, AttributeError):
                 return None
             
 else:

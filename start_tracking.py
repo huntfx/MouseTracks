@@ -112,6 +112,9 @@ if __name__ == '__main__':
             del cls.cache['WebPort']
             del cls.cache['Thread']
             tray.quit(cls)
+            
+            #Bring back to front in case of console launch
+            bring_to_front(cls)
         
         def new_window(cls, *args):
             """Launch a new console."""
@@ -145,7 +148,15 @@ if __name__ == '__main__':
             cls.minimise_to_tray()
         
         def bring_to_front(cls):
+            """Bring to front or restart if it fails for whatever reason."""
             cls.bring_to_front()
+            
+            #Currently restart is disabled since returning False
+            #doesn't actually mean the script isn't working
+            if False and not cls.bring_to_front():
+                print('Unknown error. Automatically restarting program...')
+                _end_thread(cls)
+                _start_tracking(cls)
             
         def on_hide(cls):
             cls.set_menu_item('hide', hidden=True)

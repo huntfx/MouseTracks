@@ -123,6 +123,7 @@ class AppList(object):
                 continue
 
             #Check for each extensions
+            #TODO: Allow no extension, such as hl2_osx in OSX
             no_space = line.replace(' ', '').lower()
             for ext in self.extensions:
                 if ext in no_space:
@@ -209,8 +210,9 @@ class AppList(object):
                         self.data[executable][name] = names[name]
         return True
 
-    def get_names(self):
-        """Return a list of all applications."""
+    @property
+    def executables(self):
+        return self.data.keys()
         
 
 class RunningApplications(object):
