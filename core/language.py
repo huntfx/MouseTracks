@@ -59,16 +59,17 @@ class Language(object):
         language_order = (language, fallback_language)
         for language in language_order:
         
+            #Get the string and keyboard languages to use
             links = follow_file_links(language, 'txt', LANGUAGE_BASE_PATH)
             for link in links:
                 var, value = [i.strip() for i in link.split('=')]
                 link_parts = var.split('.')
                 if link_parts[0] == 'locale':
                     if link_parts[1] == 'strings':
-                        self.strings = link.split('=', 1)[1].strip()
+                        self.strings = value.strip()
                     elif link_parts[1] == 'keyboard':
                         if link_parts[2] == 'layout':
-                            self.keyboard = link.split('=', 1)[1].strip()
+                            self.keyboard = value.strip()
             if self.strings is not None and self.keyboard is not None:
                 break
         
@@ -92,8 +93,7 @@ class Language(object):
         else:
             del data[0]
         
-        data_len = len(data)
-        for i, row in enumerate(data):
+        for row in data:
             keyboard_layout.append([])
             
             #Handle half rows

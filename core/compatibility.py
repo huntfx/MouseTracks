@@ -130,13 +130,6 @@ class MessageWithQueue(object):
                     self.queue.put(text)
                 except AssertionError:
                     pass
-
-    def _send(self, text):
-        """Only print if queue doesn't exist."""
-        if self.queue is None:
-            send(text)
-        else:
-            self.queue.put(text)
                 
 #Alternative non queue option
 Message = MessageWithQueue().send

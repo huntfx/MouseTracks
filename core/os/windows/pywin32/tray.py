@@ -45,7 +45,7 @@ class Tray(object):
             window_name = program_name
         
         #Set up callbacks
-        msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated');
+        msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated')
         message_map = {
             msg_TaskbarRestart: self.OnRestart,
             win32con.WM_DESTROY: self.OnDestroy,
@@ -56,7 +56,7 @@ class Tray(object):
         wc = win32gui.WNDCLASS()
         hinst = wc.hInstance = win32api.GetModuleHandle(None)
         wc.lpszClassName = window_name
-        wc.style = win32con.CS_VREDRAW | win32con.CS_HREDRAW;
+        wc.style = win32con.CS_VREDRAW | win32con.CS_HREDRAW
         wc.hCursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
         wc.hbrBackground = win32con.COLOR_WINDOW
         wc.lpfnWndProc = message_map # could also specify a wndproc.

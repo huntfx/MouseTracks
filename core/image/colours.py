@@ -153,7 +153,7 @@ class ColourRange(object):
         height_range = range(height)
         for x in range(width):
             colour = colours[x]
-            for y in range(height):
+            for y in height_range:
                 pixels[x, y] = colour
                 
         return image

@@ -154,8 +154,6 @@ def get_window_handle(parent=True, console=False):
             parent = ctypes.windll.user32.GetParent(hwnd)
         except UnboundLocalError:
             hwnd = command()
-        except win32api.error:
-            break
         else:
             if parent:
                 hwnd = parent

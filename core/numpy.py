@@ -158,8 +158,8 @@ def remap_to_range(array, dtype=None):
 
     
 def csv(array):
-    f = StringIO
-    numpy.savetxt(f, array, fmt='%d', delimiter=',')
+    io = StringIO
+    numpy.savetxt(io, array, fmt='%d', delimiter=',')
     return io.getvalue()
     
 

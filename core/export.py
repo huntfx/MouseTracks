@@ -2,6 +2,7 @@
 This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Requires fixing
 
 from __future__ import absolute_import
 
@@ -42,8 +43,6 @@ class ExportCSV(object):
                     f.write(result)
    
     def clicks(self, image_name):
-        
-        mouse_buttons = ['LMB', 'MMB', 'RMB']
         
         Message('Generating CSV from clicks...')
         

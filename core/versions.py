@@ -64,17 +64,6 @@ class IterateMaps(object):
     def convert(self):
         """Convert the old map dictionaries to numpy arrays."""
         self._iterate(self.maps, 'convert', _legacy=True)
-        
-        
-def _get_id(id):
-    """Read the ID for upgrading versions.
-    If no ID exists, such as if the version may not be finished,
-    it'll default to the first ID and not upgrade.
-    """
-    try:
-        return VERSION_HISTORY.index(str(id))
-    except ValueError:
-        return 0
 
 
 def upgrade_version(data={}, reset_sessions=True, update_metadata=True):

@@ -30,8 +30,10 @@ def has_been_elevated():
     
 
 def elevate(visible=True):
-    """Attempt to elevate the current script and quit the original if successful."""
-    if is_elevated() or ELEVATE in sys.argv:
+    """Attempt to elevate the current script and quit the original if successful.
+    Ignore if being debugged. Ideally this part needs to figure out when it is acceptable to elevate.
+    """
+    if is_elevated() or has_been_elevated() or sys.argv[0].endswith('visualstudio_py_launcher.py'):
         return True
     
     if _launch(visible=visible, add_arguments=[ELEVATE]):

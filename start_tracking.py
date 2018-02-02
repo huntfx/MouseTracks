@@ -22,7 +22,7 @@ if __name__ == '__main__':
         pass
     
     if CONFIG['Advanced']['RunAsAdministrator']:
-        console.elevate(visible=not CONFIG['Main']['StartMinimised'])
+        console.elevate(visible=not CONFIG['Main']['StartMinimised'] or tray is None or not CONFIG['API']['RunWeb'])
     
     #Run normally
     if tray is None or not CONFIG['API']['RunWeb']:

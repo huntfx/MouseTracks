@@ -65,7 +65,7 @@ def rename_file(old_name, new_name):
     return True
 
     
-def file_exists(file_name):
+def is_file(file_name):
     return os.path.isfile(file_name)
     
 
