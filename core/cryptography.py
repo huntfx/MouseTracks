@@ -47,7 +47,7 @@ def _unpad16(s):
 
 class Crypt(object):
     def __init__(self, password):
-        pw_hash = hashlib.sha256(str(password)).digest()
+        pw_hash = hashlib.sha256(str(password).encode('utf-8')).digest()
         self.cipher = AES.new(pw_hash, AES.MODE_ECB)
 
     def encrypt(self, s):
