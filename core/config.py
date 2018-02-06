@@ -6,10 +6,10 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import time
-from future.utils import iteritems
 from locale import getdefaultlocale
 
 from core.base import format_file_path, get_script_file
+from core.compatibility import iteritems
 from core.constants import DEFAULT_PATH, DEFAULT_LANGUAGE, MAX_INT, APP_LIST_FILE
 from core.os import get_resolution, create_folder, OS_DEBUG
 

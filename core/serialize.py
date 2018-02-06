@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
 import math
-from future.utils import iteritems
+
+from core.compatibility import iteritems
 
 
 _CACHE = {bin: {}, int: {}}

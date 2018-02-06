@@ -5,13 +5,12 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
-from future.utils import iteritems
 from PIL import Image
 import zlib
 
 from core.base import format_file_path
 from core.constants import UPDATES_PER_SECOND, DEFAULT_NAME
-from core.compatibility import Message, pickle
+from core.compatibility import Message, pickle, iteritems
 from core.config import CONFIG
 from core.export import ExportCSV
 from core.files import LoadData, format_name

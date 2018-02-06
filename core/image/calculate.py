@@ -5,13 +5,12 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
-from future.utils import iteritems
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
 import core.numpy as numpy
 from core.image.scipy import blur, upscale
-from core.compatibility import range, Message
+from core.compatibility import range, iteritems, Message
 from core.config import CONFIG
 from core.maths import round_int
 

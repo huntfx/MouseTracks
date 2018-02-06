@@ -17,9 +17,9 @@ import win32console
 import win32gui_struct
 import winerror
 import win32ui
-from future.utils import iteritems
 from multiprocessing import freeze_support
 
+from core.compatibility import iteritems
 from core.os.windows.pywin32.main import *
 
 

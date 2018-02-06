@@ -8,12 +8,11 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
-from future.utils import iteritems
 from multiprocessing import Process, Queue
 from threading import Thread
 
 from core.api import *
-from core.compatibility import MessageWithQueue
+from core.compatibility import MessageWithQueue, iteritems
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND
 from core.error import handle_error
@@ -171,6 +170,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
                 
                 #Handle web server API requests
+                #TODO: Limiter to only run every few ticks
                 if store['Flask']['App'] is not None:
                     
                     #Control state of script

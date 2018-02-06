@@ -8,11 +8,10 @@ from __future__ import division, absolute_import
 
 import time
 import traceback
-from future.utils import iteritems
 
 import core.numpy as numpy
 from core.applications import RunningApplications
-from core.compatibility import range
+from core.compatibility import range, iteritems
 from core.config import CONFIG
 from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND, KEY_STATS
 from core.files import LoadData, save_data, prepare_file
@@ -39,7 +38,7 @@ def running_processes(q_recv, q_send, background_send):
             if 'Reload' in received_data:
                 try:
                     running_apps.reload_file()
-                except NameError:
+                except (NameError, UnboundLocalError):
                     running_apps = RunningApplications(queue=q_send)
                 NOTIFY(APPLICATION_RELOAD)
 

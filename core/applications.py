@@ -5,9 +5,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import codecs
 import time
-from future.utils import iteritems
 
+from core.compatibility import iteritems
 from core.config import CONFIG
 from core.constants import APP_LIST_URL, UPDATES_PER_SECOND
 from core.notify import *
@@ -96,24 +97,27 @@ class AppList(object):
         else:
             #Read from script directory
             try:
-                with open(path.replace('\\', '/').split('/')[-1], 'r') as f:
+                with codecs.open(path.replace('\\', '/').split('/')[-1], 'r', encoding='utf8') as f:
                     lines = [i.strip() for i in f.readlines()]
             except IOError:
                 lines = []
                 
             #Read from documents
             try:
-                with open(path, 'r') as f:
+                with codecs.open(path, 'r', encoding='utf8') as f:
                     lines += [i.strip() for i in f.readlines()]
             except IOError:
                 if not lines:
                     return {}
         
         #Remove any encoding at the start of the file
+        #May not be needed with codecs import, needs testing
+        '''
         for marker in _ENCODINGS:
             if lines[0].startswith(marker):
                 lines[0] = lines[0][len(marker):]
                 break
+                '''
 
         executable_files = {}
         for line in lines:

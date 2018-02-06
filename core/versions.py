@@ -6,10 +6,9 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import time
-from future.utils import iteritems
 
 import core.numpy as numpy
-from core.compatibility import unicode
+from core.compatibility import unicode, iteritems
 from core.constants import KEY_STATS
 
 

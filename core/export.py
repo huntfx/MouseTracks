@@ -6,10 +6,8 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-from future.utils import iteritems
-
 import core.numpy as numpy
-from core.compatibility import range, Message
+from core.compatibility import range, iteritems, Message
 from core.config import CONFIG
 from core.files import load_data
 from core.os import create_folder

@@ -88,6 +88,7 @@ if PYTHON_VERSION < 3:
     input = raw_input
     range = xrange
     unicode = unicode
+    iteritems = dict.iteritems
 else:
     from io import StringIO, BytesIO
     import pickle
@@ -95,6 +96,7 @@ else:
     input = input
     range = range
     unicode = str
+    iteritems = dict.items
 
         
 class MessageWithQueue(object):

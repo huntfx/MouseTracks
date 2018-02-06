@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 from flask import Flask, jsonify, abort, request
-from future.utils import iteritems
 
 from core.api.constants import *
+from core.compatibility import iteritems
 from core.config import config_to_dict
 from core.notify import *
 

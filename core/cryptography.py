@@ -34,7 +34,7 @@ class DecryptionError(Exception):
 def _pad16(s):
     s = pickle.dumps(s)
     t = struct.pack('>I', len(s)) + s
-    return t + '\x00' * ((16 - len(t) % 16) % 16)
+    return str(t) + '\x00' * ((16 - len(t) % 16) % 16)
 
 
 def _unpad16(s):
