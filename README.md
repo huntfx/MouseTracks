@@ -81,9 +81,9 @@ By default, the tracking area is limited to the application window, but with no 
  - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - used for the tray icon)
  - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (required for gamepad tracking in Windows)~~ - included in code
  
-<b>Requirements (Linux):</b>
+<b>Requirements (Linux) (WIP):</b>
  - [xlib](https://pypi.python.org/pypi/python-xlib)
   - ~~[pyxhook](https://github.com/JeffHoogland/pyxhook/blob/master/pyxhook.py)~~ - included in code
   
-<b>Requirements (Mac):</b>
+<b>Requirements (Mac) (WIP):</b>
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
