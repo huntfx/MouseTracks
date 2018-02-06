@@ -69,6 +69,7 @@ By default, the tracking area is limited to the application window, but with no 
 <img src="http://i.imgur.com/Y5tttVN.jpg">
 
 <b>Requirements:</b>
+ - Python 2.7 or 3.6 (written and tested in 2.7, but support for 3.6)
  - [Numpy](https://pypi.python.org/pypi/numpy)
  - [psutil](https://pypi.python.org/pypi/psutil)
  - [scipy](https://pypi.python.org/pypi/scipy) (required to generate images)
