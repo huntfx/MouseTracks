@@ -136,13 +136,24 @@ def decode_file(f, legacy=False):
     return data
     
 
-def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _create_new=True):
+def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _create_new=True, _metadata_only=False):
     """Read a profile (or create new one) and run it through the update.
     Use LoadData class instead of this.
     """
     paths = _get_paths(profile_name)
     new_file = False
     
+    if _metadata_only:
+        with CustomOpen(paths['Main'], 'rb') as f:
+            if f.zip is None:
+                metadata = {'modified': get_modified_time(paths['Main'])}
+            else:
+                metadata_files = [path for path in f.zip.namelist() if path.startswith('metadata/')]
+                metadata = {}
+                for path in metadata_files:
+                    metadata[path[9:-4]] = f.read(path)
+            return metadata
+
     #Load the main file
     try:
         with CustomOpen(paths['Main'], 'rb') as f:
@@ -174,6 +185,10 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
             return None
     
     return upgrade_version(loaded_data, reset_sessions=_reset_sessions, update_metadata=_update_metadata)
+
+
+def get_metadata(profile):
+    return load_data(profile, _metadata_only=True)
 
     
 class LoadData(dict):
@@ -302,8 +317,8 @@ def save_data(profile_name, data, _compress=True):
         return False
 
         
-def list_data_files():
-    """List the name of every saved profile in the data folder.
+def get_data_files():
+    """Get the name and metadata of every saved profile in the data folder.
     The extension is checked, but removed in the output list.
     """
     all_files = list_directory(DATA_FOLDER)
