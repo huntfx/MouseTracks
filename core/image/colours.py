@@ -394,7 +394,40 @@ def parse_colour_file(path=COLOUR_FILE):
                     colour_maps[map_name_l]['Type'][var_type] = True
                     
     return {'Colours': colours, 'Maps': colour_maps}
-                
+
+
+def get_map_matches(colour_dict=None, tracks=False, clicks=False, keyboard=False, linear=False):
+    """Get colour maps for particular map types.
+
+    Includes an optional linear argument to use the alternate linear colour variants.
+    This should be used when LinearMapping is set for the keyboard colours.
+    """
+    if colour_dict is None:
+        colour_dict = parse_colour_file()['Maps']
+
+    #Get valid maps for selection
+    result = set()
+    linear_dups = set()
+    for map_data in colour_dict.values():
+        if tracks and map_data['Type'].get('tracks', False) or clicks and map_data['Type'].get('clicks', False) or keyboard and map_data['Type'].get('keyboard', False):
+            result.add(map_data['UpperCase'])
+
+            #Find if item is a "linear" variant
+            if map_data['UpperCase'].startswith('Linear'):
+                no_linear = map_data['UpperCase'][6:]
+                linear_dups.add(no_linear)
+
+    #Delete linear/non linear variants
+    for linear_item in linear_dups:
+        if not linear:
+            linear_item = 'Linear' + linear_item
+        try:
+            result.remove(linear_item)
+        except KeyError:
+            pass
+
+    return result
+
     
 def hex_to_colour(h, _try_alt=True):
     """Convert a hex string to colour.
