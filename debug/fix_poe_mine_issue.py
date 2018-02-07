@@ -8,7 +8,7 @@ from __future__ import division
 from core.compatibility import Message, range, input
 from core.files import LoadData, save_data
 from core.image import RenderImage
-from core.input import is_yes
+from core.input import yes_or_no
 from core.maths import round_int
 
 
@@ -52,9 +52,8 @@ def fix_poe_mine_build(profile_name, numpad_key):
         except ZeroDivisionError:
             average_press_time = 0
             Message('Unable to get an average as no other keypad data exists.')
-            result = input('Do you want to delete the numpad key instead (y/n)? ')
-            if not is_yes(result):
-                 return False
+            if not yes_or_no('Do you want to delete the numpad key instead?'):
+                return False
 
         #Assign to numpad key
         new_held_time = round_int(data['Keys']['All']['Pressed'][_num] * average_press_time)
