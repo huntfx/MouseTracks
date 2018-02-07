@@ -319,14 +319,16 @@ def save_data(profile_name, data, _compress=True):
         
 def get_data_files():
     """Get the name and metadata of every saved profile in the data folder.
-    The extension is checked, but removed in the output list.
+    Some of the metadata may not exist in older files.
     """
-    all_files = list_directory(DATA_FOLDER)
+    all_files = list_directory(DATA_FOLDER, force_extension=DATA_EXTENSION, remove_extensions=True)
     if all_files is None:
         return []
-    date_modified = {f: get_modified_time(os.path.join(DATA_FOLDER, f)) for f in all_files}
-    date_sort = sorted(iteritems(date_modified), key=itemgetter(1))
-    return [k.replace(DATA_EXTENSION, '') for k, v in date_sort if k.endswith(DATA_EXTENSION)][::-1]
+    output = {}
+    for f in all_files:
+        metadata = get_metadata(f)
+        output[f.replace(DATA_EXTENSION, '')] = metadata
+    return output
 
     
 class CustomOpen(object):
