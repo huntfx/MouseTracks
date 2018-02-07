@@ -51,6 +51,9 @@ def format_file_path(path):
     
     
 def _get_script_path():
+    return os.getcwd()
+
+    #This has support for running from another folder, but may not always be correct
     return os.path.dirname(os.path.realpath(sys.argv[0]))
     
 
