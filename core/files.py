@@ -145,13 +145,18 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
     
     if _metadata_only:
         with CustomOpen(paths['Main'], 'rb') as f:
-            if f.zip is None:
-                metadata = {'modified': get_modified_time(paths['Main'])}
-            else:
+            metadata = {}
+
+            #Read metadata from zip file
+            if f.zip is not None:
                 metadata_files = [path for path in f.zip.namelist() if path.startswith('metadata/')]
-                metadata = {}
                 for path in metadata_files:
                     metadata[path[9:-4]] = f.read(path)
+
+            #Use inbuilt OS way to get modified time if no metadata
+            if 'modified' not in metadata:
+                metadata['modified'] = get_modified_time(paths['Main'])
+
             return metadata
 
     #Load the main file
@@ -188,7 +193,10 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
 
 
 def get_metadata(profile):
-    return load_data(profile, _metadata_only=True)
+    try:
+        return load_data(profile, _metadata_only=True)
+    except IOError:
+        return None
 
     
 class LoadData(dict):
