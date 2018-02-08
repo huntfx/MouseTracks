@@ -229,7 +229,7 @@ def background_process(q_recv, q_send):
                     #Check new resolution
                     try:
                         store['ApplicationResolution'] = received_data['ApplicationResolution']
-                    except AttributeError:
+                    except KeyError:
                         pass
                     if store['ApplicationResolution'] is None:
                         check_resolution(store['Data'], store['Resolution'])

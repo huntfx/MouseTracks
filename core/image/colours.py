@@ -296,6 +296,8 @@ def parse_colour_text(colours):
 
 
 def calculate_colour_map(colour_map):
+    if not colour_map:
+        raise ValueError('not enough colours to generate colour map')
     try:
         return parse_colour_text(parse_colour_file()['Maps'][format_name(colour_map)]['Colour'])
     except KeyError:

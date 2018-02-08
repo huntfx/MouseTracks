@@ -174,8 +174,8 @@ DEFAULTS = {
         },
         'ColourProfile': {
             '__priority__': 2,
-            'value': 'Citrus',
-            'type': str
+            'type': str,
+            'allow_empty': True
         }
     },
     'GenerateSpeed': {
@@ -187,8 +187,8 @@ DEFAULTS = {
         },
         'ColourProfile': {
             '__priority__': 2,
-            'value': 'BlackToWhite',
-            'type': str
+            'type': str,
+            'allow_empty': True
         }
     },
     'GenerateHeatmap': {
@@ -200,8 +200,8 @@ DEFAULTS = {
         },
         'ColourProfile': {
             '__priority__': 2,
-            'value': 'Jet',
-            'type': str
+            'type': str,
+            'allow_empty': True
         },
         'GaussianBlurMultiplier': {
             '__info__': 'Change the size multiplier of the gaussian blur. Smaller values are less smooth but show more detail.',
@@ -237,8 +237,8 @@ DEFAULTS = {
         },
         'ColourProfile': {
             '__priority__': 2,
-            'value': 'Aqua',
-            'type': str
+            'type': str,
+            'allow_empty': True
         },
         'ExtendedKeyboard': {
             '__info__': 'If the full keyboard should be shown, or just the main section.',
@@ -582,6 +582,8 @@ class _ConfigItemStr(str, _ConfigItem):
     def validate(self, value):
         """Return a validated string or None."""
         value = str(value)
+        if not value and self._data.get('allow_empty', False):
+            return value
         case_sensitive = self._data.get('case_sensitive', False)
         valid_list = self._data.get('valid', None)
         if valid_list is not None:
@@ -762,12 +764,12 @@ class Config(dict):
                 header = line[1:-1]
             else:
                 variable, value = (i.strip() for i in line.split('='))
-                if value:
-                    #Make sure it's a valid config item
-                    try:
-                        self[header][variable] = value
-                    except KeyError:
-                        pass
+
+                #Make sure it's a valid config item
+                try:
+                    self[header][variable] = value
+                except KeyError:
+                    pass
                 
     def _build_for_file(self):
         """Generate lines for a config file."""

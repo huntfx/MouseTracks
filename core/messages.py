@@ -93,3 +93,15 @@ def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, 
         result = output[-1]
 
     return result
+
+
+def list_to_str(l, separator=', ', final_separator=' and '):
+    """Join a list with an optional final separator."""
+    #Convert list/tuple in case of it being a generator
+    l = tuple(l)
+
+    if not l:
+        return ''
+    if len(l) == 1:
+        return str(l[0])
+    return separator.join(map(str, l[:-1])) + final_separator + str(l[-1])
