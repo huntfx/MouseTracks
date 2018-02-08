@@ -5,7 +5,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-from core.compatibility import input
+from core.compatibility import input, range
 
 
 def value_select(selection, default, start=0):
@@ -15,7 +15,7 @@ def value_select(selection, default, start=0):
     """
     result = []
     if selection:
-        for i, default_value in enumerate(default):
+        for i in range(len(default)):
             result.append(i + start in selection)
         return result
     return list(default)

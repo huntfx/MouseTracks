@@ -23,18 +23,8 @@ def time_format(t):
     return '[{}]'.format(datetime.fromtimestamp(t).strftime("%H:%M:%S"))
 
 
-def date_format(t):
+def date_format(t, include_time=True):
     dt = datetime.fromtimestamp(t)
-    hour = dt.hour
-    minute = dt.minute
-    if 0 <= hour < 12:
-        suffix = 'AM'
-    else:
-        suffix = 'PM'
-        hour %= 12
-    if not hour:
-        hour += 12
-    output_time = '{h}:{m}{s}'.format(h=hour, m=minute, s=suffix)
     
     day = str(dt.day)
     if day.endswith('1'):
@@ -49,13 +39,27 @@ def date_format(t):
     year = dt.year
     output_date = '{d} {m} {y}'.format(d=day, m=month, y=year)
 
-    return '{}, {}'.format(output_time, output_date)
+    if not include_time:
+        return output_date
+
+    hour = dt.hour
+    minute = dt.minute
+    if 0 <= hour < 12:
+        suffix = 'AM'
+    else:
+        suffix = 'PM'
+        hour %= 12
+    if not hour:
+        hour += 12
+    output_time = '{h}:{m}{s}'.format(h=hour, m=minute, s=suffix)
+
+    return '{} at {}'.format(output_date, output_time)
 
 
-def ticks_to_seconds(amount, tick_rate, output_length=2, allow_decimals=True, short=False):  
+def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, short=False):  
     """Simple function to convert ticks to a readable time for use in sentences.
     
-    This needs fixing up to allow decimals at any point.
+    TODO: Rounding with lower output lengths, allow decimals at any point
     """
 
     output = []

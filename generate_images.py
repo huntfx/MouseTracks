@@ -10,6 +10,11 @@ import sys
 import webbrowser
 from multiprocessing import freeze_support
 
+if __name__ == '__main__':
+    print('Sorry, this is being rewritten at the moment. I had to break a few things in the process so this won\'t work currently.')
+    input()
+    sys.exit()
+
 from core.applications import RunningApplications, AppList
 from core.compatibility import input, Message
 from core.config import CONFIG

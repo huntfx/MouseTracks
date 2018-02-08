@@ -396,19 +396,19 @@ def parse_colour_file(path=COLOUR_FILE):
     return {'Colours': colours, 'Maps': colour_maps}
 
 
-def get_map_matches(colour_dict=None, tracks=False, clicks=False, keyboard=False, linear=False):
+def get_map_matches(colour_maps=None, tracks=False, clicks=False, keyboard=False, linear=False):
     """Get colour maps for particular map types.
 
     Includes an optional linear argument to use the alternate linear colour variants.
     This should be used when LinearMapping is set for the keyboard colours.
     """
-    if colour_dict is None:
-        colour_dict = parse_colour_file()['Maps']
+    if colour_maps is None:
+        colour_maps = parse_colour_file()['Maps']
 
     #Get valid maps for selection
     result = set()
     linear_dups = set()
-    for map_data in colour_dict.values():
+    for map_data in colour_maps.values():
         if tracks and map_data['Type'].get('tracks', False) or clicks and map_data['Type'].get('clicks', False) or keyboard and map_data['Type'].get('keyboard', False):
             result.add(map_data['UpperCase'])
 

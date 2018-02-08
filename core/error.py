@@ -37,11 +37,18 @@ def handle_error(trace=None, log=True, console=True):
             error_message = Language().get_strings()['string']['error']
         except KeyError:
             error_message = 'An error occurred.'
+        try:
+            restart_message = Language().get_strings()['string']['restart']
+        except KeyError:
+            restart_message = 'Please restart the program...'
+        try:
+            exit_message = Language().get_strings()['string']['exit']
+        except KeyError:
+            exit_message = 'Press enter to exit..'
+
         if console:
-            input(error_message)
+            input('{} {}'.format(error_message, exit_message))
         else:
-            if error_message:
-                Message(error_message)
-            return
+            return Message('{} {}'.format(error_message, restart_message))
     sys.exit(0)
             
