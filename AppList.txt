@@ -190,6 +190,7 @@ CM Shock Force.exe: Combat Mission: Shock Force
 CMW.exe: Chivalry: Medieval
 CoD2MP_s.exe: Call of Duty 2
 CoD2SP_s.exe: Call of Duty 2
+Code.exe: Visual Studio Code
 CoDWaw.exe: Call of Duty: World at War
 CoDWaWmp.exe: Call of Duty: World at War
 CoJ.exe: Call of Juarez
@@ -259,6 +260,7 @@ DeSmuMe_0.9.11_x86.exe: DeSmuME
 destiny2.exe: Destiny 2
 DeusEx.exe: Deus Ex
 DeusEx_steam.exe: Deus Ex: The Fall
+devenv.exe: Visual Studio
 Devilian.exe
 DevilMayCry4_DX10.exe: Devil May Cry 4
 DevilMayCry4_DX9.exe: Devil May Cry 4
@@ -515,6 +517,7 @@ HexPatch.exe: Hex: Shards of Fate
 HillClimbRacing.Windows .exe: Hill Climb Racing
 hl.exe: Half-Life
 hl2.exe: Half-Life 2
+hl2.exe[Fistful of Frags]
 hl2.exe[Garry's Mod]
 hl2.exe[Left 4 Dead 2]
 hl2.exe[Left 4 Dead]
@@ -602,6 +605,7 @@ l2.exe: Lineage 2
 L2.exe: Lineage II
 Landmark64.exe: Landmark
 LANoire.exe: L.A. Noire
+Laser Disco Defenders.exe
 LawBreakers.exe
 lcgol.exe: Lara Croft and the Guardian of Light
 League of Legends.exe
@@ -679,7 +683,6 @@ minecraft.exe: Minecraft
 mirrorsedge.exe: Mirrors Edge
 MirrorsEdgeCatalyst.exe: Mirror's Edge: Catalyst
 misstake.exe: The Marvellous Miss Take
-MJ.exe: ã‚»ã‚¬NETéº»é›€MJ
 MK10.exe: Mortal Kombat 10
 MKKE.exe: Mortal Kombat Komplete Edition
 mm.exe: Dark Messiah of Might & Magic
@@ -915,6 +918,7 @@ Sakura Angels.exe
 Sakura Clicker.exe
 Sakura Spirit.exe
 salt.exe: Salt and Sanctuary
+Sausage.exe: Stephen's Sausage Roll
 sc2.app: Starcraft II
 SC2.exe: Starcraft II
 SC2_x64.exe: Starcraft II
@@ -1017,6 +1021,8 @@ Steredenn.exe
 StreetFighterVBeta-Win64-Shipping.exe: Street Fighter V
 strife-ve.exe: Strife: Veteran Edition
 strife.exe: Strife
+StrikersEdge.exe: Striker's Edge
+StrikersEdge.exe[Strikers Edge Configuration]: <Ignore>
 StyxGame.exe: Styx: Master of Shadows
 SublevelZero.exe: Sublevel Zero
 Subnautica.exe
@@ -1029,6 +1035,7 @@ SuperMNCGameClient.exe: Super Monday Night Combat
 Supernova.exe
 survivor.exe: Shadowgrounds: Survivor
 swarm.exe: Alien Swarm
+SWARMRIDERS.exe
 sweaw.exe: Star Wars: Empire at War
 SwiftKit-RS.exe: RuneScape
 swkotor.exe: Star Wars: Knights of the Old Republic
@@ -1274,4 +1281,3 @@ ZenoClash.exe: Zeno Clash
 Ziggurat.exe
 ZOMBI.exe: Zombi
 zsnesw.exe: ZSNES
-蒼の彼方のフォーリズム.exe: Ao no Kanata no Four Rhythm
