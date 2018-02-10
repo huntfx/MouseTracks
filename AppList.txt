@@ -1281,3 +1281,4 @@ ZenoClash.exe: Zeno Clash
 Ziggurat.exe
 ZOMBI.exe: Zombi
 zsnesw.exe: ZSNES
+蒼の彼方のフォーリズム.exe: Ao no Kanata no Four Rhythm

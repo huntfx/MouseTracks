@@ -112,12 +112,13 @@ class AppList(object):
         
         #Remove any encoding at the start of the file
         #May not be needed with codecs import, needs testing
-        '''
-        for marker in _ENCODINGS:
-            if lines[0].startswith(marker):
-                lines[0] = lines[0][len(marker):]
-                break
-                '''
+        try:
+            for marker in _ENCODINGS:
+                if lines[0].startswith(marker):
+                    lines[0] = lines[0][len(marker):]
+                    break
+        except UnicodeDecodeError:
+            pass
 
         executable_files = {}
         for line in lines:
@@ -181,20 +182,20 @@ class AppList(object):
                     for window_name, app_name in iteritems(names):
                         if window_name is None:
                             if app_name == executable[:-self.extensions[ext]['len']]:
-                                result.append(executable)
+                                result.append(u'{}'.format(executable))
                             else:
-                                result.append('{}: {}'.format(executable, app_name))
+                                result.append(u'{}: {}'.format(executable, app_name))
                         else:
                             if window_name == app_name:
-                                result.append('{}[{}]'.format(executable, window_name))
+                                result.append(u'{}[{}]'.format(executable, window_name))
                             else:
-                                result.append('{}[{}]: {}'.format(executable, window_name, app_name))
+                                result.append(u'{}[{}]: {}'.format(executable, window_name, app_name))
                     break
-        result = '\n'.join(_DEFAULT_TEXT + [''] + sorted(result, key=str.lower))
+        result = '\r\n'.join(_DEFAULT_TEXT + [''] + sorted(result, key=unicode.lower))
         
         if path is None:
             path = self.path
-        with open(path, 'w') as f:
+        with codecs.open(path, 'wb', encoding='utf8') as f:
             f.write(result)
         return result
 
