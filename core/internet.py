@@ -11,6 +11,7 @@ try:
 except ImportError:
     import urllib.request as urllib2
 
+from core.compatibility import bytes
 from core.notify import *
 
     
@@ -28,7 +29,7 @@ def get_url_contents(url, timeout=None, _json=False):
     """Get data from a URL."""
     request = send_request(url, timeout=timeout)
     if request is not None:
-        return (str, json.loads)[_json](request.read())
+        return (bytes, json.loads)[_json](request.read())
 
 
 def get_url_json(url, timeout=None):

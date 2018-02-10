@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import codecs
 import time
 
-from core.compatibility import iteritems
+from core.compatibility import iteritems, unicode
 from core.config import CONFIG
 from core.constants import APP_LIST_URL, UPDATES_PER_SECOND
 from core.notify import *
@@ -90,7 +90,7 @@ class AppList(object):
                 
             #Read file from URL
             try:
-                lines = get_url_contents(url).split('\n')
+                lines = get_url_contents(url).decode('utf-8').split('\n')
             except AttributeError:
                 return {}
                 
@@ -182,7 +182,7 @@ class AppList(object):
                     for window_name, app_name in iteritems(names):
                         if window_name is None:
                             if app_name == executable[:-self.extensions[ext]['len']]:
-                                result.append(u'{}'.format(executable))
+                                result.append(unicode(executable))
                             else:
                                 result.append(u'{}: {}'.format(executable, app_name))
                         else:
