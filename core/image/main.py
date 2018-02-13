@@ -78,7 +78,8 @@ class ImageName(object):
         g_im = CONFIG['GenerateImages']
         g_hm = CONFIG['GenerateHeatmap']
         g_t = CONFIG['GenerateTracks']
-        g_s = CONFIG['GenerateSpeed']
+        g_sp = CONFIG['GenerateSpeed']
+        g_st = CONFIG['GenerateStrokes']
         g_kb = CONFIG['GenerateKeyboard']
     
         self.width = str(g_im['_OutputResolutionX'])
@@ -106,7 +107,9 @@ class ImageName(object):
 
         self.track_colour = str(g_t['ColourProfile'])
         
-        self.speed_colour = str(g_s['ColourProfile'])
+        self.speed_colour = str(g_sp['ColourProfile'])
+        
+        self.stroke_colour = str(g_st['ColourProfile'])
 
         self.keyboard_colour = str(g_kb['ColourProfile'])
         self.keyboard_set = g_kb['DataSet'][0].upper() + g_kb['DataSet'][1:].lower()
@@ -138,6 +141,7 @@ class ImageName(object):
         lookup = {'clicks': 'GenerateHeatmap',
                   'tracks': 'GenerateTracks',
                   'speed': 'GenerateSpeed',
+                  'strokes': 'GenerateStrokes',
                   'keyboard': 'GenerateKeyboard',
                   'csv-tracks': 'FileNameTracks',
                   'csv-clicks': 'FileNameClicks',
@@ -201,6 +205,9 @@ class ImageName(object):
             
         elif image_type == 'speed':
             name = name.replace('[Colours]', self.speed_colour)
+            
+        elif image_type == 'strokes':
+            name = name.replace('[Colours]', self.stroke_colour)
             
         elif image_type == 'keyboard':
             name = name.replace('[Exponential]', self.keyboard_exponential)
@@ -315,7 +322,7 @@ class RenderImage(object):
             Message('Saving image to "{}"...'.format(file_name))
             image_output.save(file_name)
             Message('Finished saving.')
-            
+    
     def speed(self, last_session=False, file_name=None):
         """Render speed track image."""
     
@@ -336,6 +343,33 @@ class RenderImage(object):
 
         if file_name is None:
             file_name = self.name.generate('Speed', reload=True)
+            
+        if self.save:
+            create_folder(file_name)
+            Message('Saving image to "{}"...'.format(file_name))
+            image_output.save(file_name)
+            Message('Finished saving.')
+    
+    def strokes(self, last_session=False, file_name=None):
+        """Render brush strokes image."""
+    
+        track_data = self.data.get_strokes()
+        if track_data is None:
+            Message('No tracking data found.')
+            return None
+            
+        top_resolution, (min_value, max_value), tracks = track_data
+        
+        output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
+        upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
+
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateStrokes')
+        
+        image_output = arrays_to_colour(colour_range, upscaled_arrays)
+        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+
+        if file_name is None:
+            file_name = self.name.generate('Strokes', reload=True)
             
         if self.save:
             create_folder(file_name)

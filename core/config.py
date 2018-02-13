@@ -191,6 +191,19 @@ DEFAULTS = {
             'allow_empty': True
         }
     },
+    'GenerateStrokes': {
+        '__priority__': 7,
+        'FileName': {
+            '__priority__': 1,
+            'value': '[[RunningTimeSeconds]]Strokes - [ColourProfile] [HighPrecision]',
+            'type': str
+        },
+        'ColourProfile': {
+            '__priority__': 2,
+            'type': str,
+            'allow_empty': True
+        }
+    },
     'GenerateHeatmap': {
         '__priority__': 8,
         'FileName': {

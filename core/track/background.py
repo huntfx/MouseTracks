@@ -309,8 +309,7 @@ def background_process(q_recv, q_send):
                 
                 #Add to history if set
                 if CONFIG['Main']['HistoryLength']:
-                    start, end = received_data['MouseMove']
-                    store['Data']['HistoryAnimation']['Tracks'][-1].append(end)
+                    store['Data']['HistoryAnimation']['Tracks'][-1].append(received_data['MouseMove'][1])
                 
                 #Compress tracks if the count gets too high
                 max_track_value = CONFIG['Advanced']['CompressTrackMax']
@@ -371,8 +370,9 @@ def check_resolution(data, resolution):
         raise ValueError('incorrect resolution: {}'.format(resolution))
         
     if resolution not in data['Resolution']:
-        data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True), 
+        data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True),
                                           'Speed': numpy.array(resolution, create=True),
+                                          'Strokes': numpy.array(resolution, create=True),
                                           'Clicks': {}}
         clicks = data['Resolution'][resolution]['Clicks']
         clicks['All'] = {'Single': {'Left': numpy.array(resolution, create=True),
@@ -603,11 +603,12 @@ def record_mouse_move(store, received_data):
     resolution = 0
     _resolution = -1
     
-    start, end = received_data
-    
-    #Store total distance travelled
+    start, end, clicked = received_data
     distance = find_distance(end, start)
+    
+    #Misc stats
     store['Data']['Distance']['Tracks'] += distance
+    continuous = store['LastTrackUpdate'] + 1 == store['Data']['Ticks']['Total']
     
     #Calculate the pixels in the line
     if start is None:
@@ -634,9 +635,6 @@ def record_mouse_move(store, received_data):
                 check_resolution(store['Data'], resolution)
             _resolutions = [resolution, _resolution]
     
-    #Find if part of continous mouse move
-    continous = store['LastTrackUpdate'] + 1 == store['Data']['Ticks']['Total']
-    
     #Write each pixel to the dictionary
     for (x, y) in mouse_coordinates:
     
@@ -646,9 +644,12 @@ def record_mouse_move(store, received_data):
             continue
             
         store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
-        if continous:
+        if continuous:
             old_value = store['Data']['Resolution'][resolution]['Speed'][y][x]
             store['Data']['Resolution'][resolution]['Speed'][y][x] = max(distance, old_value)
+            if clicked:
+                old_value = store['Data']['Resolution'][resolution]['Strokes'][y][x]
+                store['Data']['Resolution'][resolution]['Strokes'][y][x] = max(distance, old_value)
     
     store['LastTrackUpdate'] = store['Data']['Ticks']['Total']
     store['Data']['Ticks']['Tracks'] += 1

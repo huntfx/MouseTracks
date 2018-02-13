@@ -12,7 +12,7 @@ from core.compatibility import unicode, iteritems
 from core.constants import KEY_STATS
 
 
-FILE_VERSION = 29
+FILE_VERSION = 30
 
 VERSION = '1.0 beta'
 
@@ -362,6 +362,12 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             else:
                 first_key, last_key = key
                 del data['Keys']['All']['Mistakes'][first_key][last_key]
+    
+
+    #Add brush stroke maps (speed map only recorded while clicking)
+    if file_version < 30:
+        for resolution in data['Resolution']:
+            data['Resolution'][resolution]['Strokes'] = numpy.array(resolution, create=True)
         
     version_update = data.get('FileVersion', '0') != FILE_VERSION
     

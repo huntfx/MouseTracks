@@ -319,7 +319,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                     store['Mouse']['NotMoved'] = 0
                 if not store['Mouse']['NotMoved']:
                     if not store['Mouse']['OffScreen']:
-                        frame_data['MouseMove'] = (mouse_pos['Previous'], mouse_pos['Current'])
+                        frame_data['MouseMove'] = [mouse_pos['Previous'], mouse_pos['Current'], []]
                         NOTIFY(MOUSE_POSITION, mouse_pos['Current'])
                         store['LastActivity'] = ticks
 
@@ -334,8 +334,14 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                     if clicked:
                         store['LastActivity'] = ticks
                         
+                        #Add any click events to the mouse move data
+                        try:
+                            frame_data['MouseMove'][2].append(mouse_button)
+                        except KeyError:
+                            pass
+                        
                         #First click
-                        if not mb_clicked:           
+                        if not mb_clicked:
                             
                             #Double click     
                             double_click = False
@@ -389,7 +395,6 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         NOTIFY(MOUSE_UNCLICKED)
                         del store['Mouse']['Clicked'][mouse_button]
                         store['LastActivity'] = ticks
-     
      
                 #Key presses
                 keys_pressed = []

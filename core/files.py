@@ -251,6 +251,10 @@ class LoadData(dict):
     def get_speed(self, session=False):
         """Return top resolution, min/max values, and dictionary of speed tracks."""
         return self._get_track_map('Speed', session=session)
+        
+    def get_strokes(self, session=False):
+        """Return top resolution, min/max values, and dictionary of stroke tracks."""
+        return self._get_track_map('Strokes', session=session)
     
     def get_clicks(self, double_click=False, session=False):
         session = 'Session' if session else 'All'

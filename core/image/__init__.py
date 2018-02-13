@@ -231,9 +231,10 @@ def _user_generate():
     #Ask for type of render
     render_types = [
         ['tracks', True, STRINGS['string']['image']['name']['track']],
-        ['acceleration', False, STRINGS['string']['image']['name']['speed']],
         ['click heatmap', True, STRINGS['string']['image']['name']['click']],
-        ['keyboard heatmap', True, STRINGS['string']['image']['name']['keyboard']]
+        ['keyboard heatmap', True, STRINGS['string']['image']['name']['keyboard']],
+        ['acceleration', False, STRINGS['string']['image']['name']['speed']],
+        ['brush strokes', False, STRINGS['string']['image']['name']['stroke']]
     ]
 
     #Edit keyboard if not tracked
@@ -270,33 +271,10 @@ def _user_generate():
                     break
                 except ValueError:
                     Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
-
-    #Generate acceleration
-    if render_types[1][1]:
-        Message('Options for {}...'.format(render_types[1][0]))
-
-        #Select colour map
-        colour_map = CONFIG['GenerateSpeed']['ColourProfile']
-        try:
-            colour_map_gen = calculate_colour_map(colour_map)
-        except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
-
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateSpeed']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
     
     #Generate click heatmap
-    if render_types[2][1]:
-        Message('Options for {}...'.format(render_types[2][0]))
+    if render_types[1][1]:
+        Message('Options for {}...'.format(render_types[1][0]))
 
         #Select mouse button
         mb_options = [
@@ -332,8 +310,8 @@ def _user_generate():
                     Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
                     
     #Generate keyboard
-    if render_types[3][1]:
-        Message('Options for {}...'.format(render_types[3][0]))
+    if render_types[2][1]:
+        Message('Options for {}...'.format(render_types[2][0]))
 
         #Get colour map
         colour_map = CONFIG['GenerateKeyboard']['ColourProfile']
@@ -350,6 +328,52 @@ def _user_generate():
                 try:
                     colour_map_gen = calculate_colour_map(colour_map)
                     CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
+                    break
+                except ValueError:
+                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+
+    #Generate acceleration
+    if render_types[3][1]:
+        Message('Options for {}...'.format(render_types[3][0]))
+
+        #Select colour map
+        colour_map = CONFIG['GenerateSpeed']['ColourProfile']
+        try:
+            colour_map_gen = calculate_colour_map(colour_map)
+        except ValueError:
+            Message(STRINGS['string']['image']['option']['colour']['notset'])
+            map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
+
+            while True:
+                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
+                if colour_map is None:
+                    continue
+                try:
+                    colour_map_gen = calculate_colour_map(colour_map)
+                    CONFIG['GenerateSpeed']['ColourProfile'] = colour_map
+                    break
+                except ValueError:
+                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+
+    #Generate brush strokes
+    if render_types[4][1]:
+        Message('Options for {}...'.format(render_types[4][0]))
+
+        #Select colour map
+        colour_map = CONFIG['GenerateStrokes']['ColourProfile']
+        try:
+            colour_map_gen = calculate_colour_map(colour_map)
+        except ValueError:
+            Message(STRINGS['string']['image']['option']['colour']['notset'])
+            map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
+
+            while True:
+                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
+                if colour_map is None:
+                    continue
+                try:
+                    colour_map_gen = calculate_colour_map(colour_map)
+                    CONFIG['GenerateStrokes']['ColourProfile'] = colour_map
                     break
                 except ValueError:
                     Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
@@ -378,13 +402,16 @@ def _user_generate():
         render.tracks(session)
         Message()
     if render_types[1][1]:
-        render.speed(session)
-        Message()
-    if render_types[2][1]:
         render.clicks(session)
         Message()
-    if render_types[3][1]:
+    if render_types[2][1]:
         render.keyboard(session)
+        Message()
+    if render_types[3][1]:
+        render.speed(session)
+        Message()
+    if render_types[4][1]:
+        render.strokes(session)
         Message()
         
     #Open folder
