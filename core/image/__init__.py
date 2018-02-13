@@ -240,8 +240,8 @@ def _user_generate():
     #Edit keyboard if not tracked
     kph = round(render.keys_per_hour(), 2)
     if kph < 10:
-        render_types[3][1] = False
-        render_types[3][2] += ' ({})'.format(STRINGS['string']['image']['name']['empty']['keyboard']).format(C=kph)
+        render_types[2][1] = False
+        render_types[2][2] += ' ({})'.format(STRINGS['string']['image']['name']['empty']['keyboard']).format(C=kph)
 
     Message()
     Message(STRINGS['string']['image']['option']['generate'])
@@ -466,25 +466,23 @@ def select_options(options, allow_multiple=True, update=None, allow_fail=True):
     if any(result):
         Message('{} {} chosen.'.format(list_to_str(options[i][2] for i, value in enumerate(result) if value), 'was' if len(joined) == 1 else 'have been'))
     
-    #Choose at random if single choice and failing is not allowed
     elif not allow_fail and not allow_multiple and not choice:
         result = random.choice(options)[0]
         Message('{} was chosen at random.\n'.format(result))
         return result
-
+    
     if allow_multiple:
         Message()
         return result
 
-    elif len(joined) > 1:
-        Message('Error: Only one option can be chosen.\n')
-        return None
-
-    try:
-        Message('{} was chosen.\n'.format(joined[0]))
+    elif joined:
+        if len(joined) > 1:
+            Message('Error: Only one option can be chosen.\n')
+            return None
+        Message()
         return joined[0]
-
-    except IndexError:
+    
+    else:
         if allow_fail:
             Message('Error: Invalid choice.\n')
             return None
