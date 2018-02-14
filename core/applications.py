@@ -31,7 +31,7 @@ _DEFAULT_TEXT = [
     ' The executable file is case sensitive.',
     '// You may also limit it to a certain window name,'
     ' for example if the game uses a generic executable name.',
-    '// This would work like "Play.exe[MyGame]: Game Name".',
+    '// This would work like "Play.exe[MyGame]: Game Name". You may use "<*>" at the start or end of "MyGame" as a wildcard.',
     '// If the executable or window name is the same as the game name,'
     ' you only need to provide that.',
     '// To turn off tracking for a particular application, use <DoNotTrack> as its name.'
@@ -319,7 +319,11 @@ class RunningApplications(object):
                 try:
                     return names[self.focused_name], self.focused_exe
                 except KeyError:
+                    any_marker = '<*>'
                     try:
+                        for name in names:
+                            if name is not None and name[:3] == any_marker and self.focused_name.endswith(name[3:]) or name[-3:] == any_marker and self.focused_name.startswith(name[:-3]):
+                                return names[name], self.focused_exe
                         return names[None], self.focused_exe
                     except KeyError:
                         return None

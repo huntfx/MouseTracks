@@ -2,7 +2,7 @@
 // Two separate applications can have the same name, and will be tracked under the same file.
 // Put each app on a new line, in the format "MyGame.exe: Game Name". The executable file is case sensitive.
 // You may also limit it to a certain window name, for example if the game uses a generic executable name.
-// This would work like "Play.exe[MyGame]: Game Name".
+// This would work like "Play.exe[MyGame]: Game Name". You may use "<*>" at the start or end of "MyGame" as a wildcard.
 // If the executable or window name is the same as the game name, you only need to provide that.
 // To turn off tracking for a particular application, use <DoNotTrack> as its name.
 
@@ -161,6 +161,7 @@ CARMAG.EXE: Carmageddon
 Carmageddon_Max_Damage.exe: Carmageddon: Max Damage
 CARMAGV.EXE: Carmageddon
 CARMAV.EXE: Carmageddon
+CarriedAway.exe: Carried Away
 carrier.exe: Carrier Command: Gaea Mission
 castle.exe: Castle Crashers
 cataclysm-tiles.exe: Cataclysm: Dark Days Ahead
@@ -304,7 +305,9 @@ Doom.exe: Doom 3
 DOOMx64.exe: DOOM
 DOOMx64vk.exe: DOOM
 DoorKickers.exe: Door Kickers
+DOSBox.exe
 dosbox.exe: DOSBox
+DOSBox.exe[<*>, Program: HOSPITAL]: Theme Hospital
 dota.exe: DOTA
 dota2.exe: DOTA 2
 dota_osx.app: DOTA 2
