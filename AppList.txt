@@ -9,7 +9,7 @@
 100orange.exe: 100% Orange Juice
 20XX.exe
 3DfxCarm.exe: Carmageddon
-3DMark.exe: <Disable>
+3DMark.exe: <disable>
 6kinoko.exe: New Super Marisa Land
 7DaysToDie.exe: 7 Days to Die
 8bitboy.exe: 8BitBoy
@@ -25,8 +25,8 @@ aces.exe: War Thunder
 aclauncher.exe: Asheron's Call
 ACU.exe: Assassin's Creed Unity
 Adobe Premiere Pro.exe
-Adobe Premiere Pro.exe[]: <Ignore>
-Adobe Premiere Pro.exe[Start]: <Ignore>
+Adobe Premiere Pro.exe[]: <ignore>
+Adobe Premiere Pro.exe[Start]: <ignore>
 adventure-capitalist.exe: AdVenture Capitalist
 AdvHD.exe: If My Heart Had Wings
 Aeon Rivals.exe
@@ -54,7 +54,7 @@ anno5.exe: Anno 2070
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
-ApplicationFrameHost.exe: <Ignore>
+ApplicationFrameHost.exe: <ignore>
 ApplicationFrameHost.exe[Halo 5: Forge]
 ArcheAge.exe
 arena.exe: Total War: Arena
@@ -307,7 +307,7 @@ DOOMx64vk.exe: DOOM
 DoorKickers.exe: Door Kickers
 DOSBox.exe
 dosbox.exe: DOSBox
-DOSBox.exe[<*>, Program: HOSPITAL]: Theme Hospital
+DOSBox.exe[<*>Program: HOSPITAL]: Theme Hospital
 dota.exe: DOTA
 dota2.exe: DOTA 2
 dota_osx.app: DOTA 2
@@ -362,7 +362,7 @@ Entropia.exe: Entropia Universe
 EoCApp.exe: Divinity: Original Sin
 Epsxe.exe: Sony Playstation Emulator
 eqgame.exe: EverQuest
-es.scr: <Disable>
+es.scr: <disable>
 eso.exe: The Elder Scrolls Online
 eso64.exe: The Elder Scrolls Online
 ESSTEAM.exe: Elsword
@@ -503,7 +503,7 @@ HawkenGame-Win32-Shipping.exe: Hawken
 HCB.exe: Hyper Color Ball
 Hearthstone.app
 Hearthstone.exe
-Heaven.exe: <Disable>
+Heaven.exe: <disable>
 HeavyWeapon.exe: Heavy Weapon
 helldivers.exe: HELLDIVERS
 Hero_Siege.exe: Hero Siege
@@ -586,7 +586,7 @@ Kara no Shojo 2.exe
 KatawaShoujo.app: Katawa Shoujo
 KeystonePublic.x64.exe: Keystone
 KFGame.exe: Killing Floor 2
-KFGame.exe[SplashScreen]: <Ignore>
+KFGame.exe[SplashScreen]: <ignore>
 KillingFloor.exe: Killing Floor
 King's Quest 1 SCI.exe: King's Quest I
 King's Quest 2.exe: King's Quest II
@@ -648,7 +648,7 @@ mafia2.exe: Mafia 2
 MagicDuels.exe: Magic Duels
 magicite.exe: Magicite
 Magicka.exe
-Mandelbulb3D.exe: <Disable>
+Mandelbulb3D.exe: <disable>
 ManiaPlanet.exe
 maniaplanet.exe: Maniaplanet
 MapleRoyals.exe
@@ -663,8 +663,8 @@ MassEffect3Demo.exe: Mass Effect 3
 MasterReboot.exe: Master Reboot
 MaxPayne3.exe: Max Payne 3
 maya.exe: Autodesk Maya
-maya.exe[]: <Disable>
-maya.exe[Output Window]: <Disable>
+maya.exe[]: <disable>
+maya.exe[Output Window]: <disable>
 MBA.exe: Magical Battle Arena
 MBAA.exe: Melty Blood Actress Again: Current Code
 MBAN_F.exe: Magical Battle Arena NEXT
@@ -718,7 +718,7 @@ NEOScavenger.exe: NERO Scavenger
 NeptuniaReBirth1.exe: Hyperdimension Neptunia Re;Birth1
 NeptuniaReBirth2.exe: Hyperdimension Neptunia Re;Birth2
 NeptuniaReBirth3.exe: Hyperdimension Neptunia Re;Birth3
-NewSca.exe: <Disable>
+NewSca.exe: <disable>
 nexonplay.exe: Kart Rider
 Nexuiz.exe
 NFS16.exe: Need For Speed 2016
@@ -737,7 +737,7 @@ nuclearthrone.exe: Nuclear Throne
 nullDC_Win32_Release-NoTrace.exe: nullDC
 nw.exe: SORE
 Oblivion.exe: The Elder Scrolls 4: Oblivion
-Octerrain.exe: <Disable>
+Octerrain.exe: <disable>
 OctodadDadliestCatch.exe: Octodad: Deadliest Catch
 Offspring Fling.exe
 OfOrcsAndMen_Steam.exe: Of Orcs and Men
@@ -892,7 +892,7 @@ rks.exe: Rosenkreuzstilette Grollschwert
 rks_e.exe: Rosenkreuzstilette Grollschwert
 Roblox.exe
 RobloxPlayerBeta.exe: Roblox
-robloxplayerlauncher.exe: <Ignore>
+robloxplayerlauncher.exe: <ignore>
 RobloxStudioBeta.exe: Roblox Studio
 Robocraft.exe
 RobocraftClient.exe: Robocraft
@@ -1025,7 +1025,7 @@ StreetFighterVBeta-Win64-Shipping.exe: Street Fighter V
 strife-ve.exe: Strife: Veteran Edition
 strife.exe: Strife
 StrikersEdge.exe: Striker's Edge
-StrikersEdge.exe[Strikers Edge Configuration]: <Ignore>
+StrikersEdge.exe[Strikers Edge Configuration]: <ignore>
 StyxGame.exe: Styx: Master of Shadows
 SublevelZero.exe: Sublevel Zero
 Subnautica.exe
@@ -1182,11 +1182,11 @@ tsunmajo.exe: Tsundertaker's Mahou Removal
 TTREngine.exe: Toontown
 TurbineLauncher.exe: Dungeons & Dragons Online
 UDK.exe: Unreal Development Kit
-UDK.exe[Unreal Development Kit (32-bit, DX9)]: <Ignore>
-UDK.exe[Unreal Development Kit (64-bit, DX9)]: <Ignore>
-UDK.exe[Unreal Development Kit Editor Preview (32-bit, DX9)]: <Disable>
-UDK.exe[Unreal Development Kit Editor Preview (64-bit, DX9)]: <Disable>
-UDK.exe[UnrealEngine3]: <Disable>
+UDK.exe[Unreal Development Kit (32-bit, DX9)]: <ignore>
+UDK.exe[Unreal Development Kit (64-bit, DX9)]: <ignore>
+UDK.exe[Unreal Development Kit Editor Preview (32-bit, DX9)]: <disable>
+UDK.exe[Unreal Development Kit Editor Preview (64-bit, DX9)]: <disable>
+UDK.exe[UnrealEngine3]: <disable>
 UE4-Win64-Shipping.exe: Unreal Tournament 4
 UE4-Win64-Test.exe: Unreal Tournament 4
 UE4Editor.exe: Unreal Editor
@@ -1205,7 +1205,7 @@ UT2004.exe: Unreal Tournament 2004
 UT3.exe: Unreal Tournament 3
 v2game.exe: Victoria II
 Valkyria.exe: Valkyria Chronicles
-Valley.exe: <Disable>
+Valley.exe: <disable>
 Vampire.exe: Vampire: The Masquerade - Bloodlines
 Verdun.exe
 vermintide.exe: Warhammer: End Times - Vermintide

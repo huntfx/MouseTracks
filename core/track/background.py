@@ -13,7 +13,7 @@ import core.numpy as numpy
 from core.applications import RunningApplications
 from core.compatibility import range, iteritems
 from core.config import CONFIG
-from core.constants import MAX_INT, DISABLE_TRACKING, IGNORE_TRACKING, UPDATES_PER_SECOND, KEY_STATS
+from core.constants import MAX_INT, TRACKING_DISABLE, TRACKING_IGNORE, UPDATES_PER_SECOND, KEY_STATS
 from core.files import LoadData, save_data, prepare_file
 from core.maths import find_distance, calculate_line
 from core.notify import *
@@ -48,7 +48,7 @@ def running_processes(q_recv, q_send, background_send):
                 current_app = running_apps.check()
                 send = {}
                 
-                if current_app is not None and current_app[0] == IGNORE_TRACKING:
+                if current_app is not None and current_app[0] == TRACKING_IGNORE:
                     current_app = None
                 
                 #Send custom resolution
@@ -107,7 +107,7 @@ def running_processes(q_recv, q_send, background_send):
 def _save_wrapper(q_send, program_name, data, new_program=False):
     """Handle saving the data files from the thread."""
     
-    if program_name is not None and program_name[0] == DISABLE_TRACKING:
+    if program_name is not None and program_name[0] == TRACKING_DISABLE:
         return
     
     NOTIFY(SAVE_PREPARE)

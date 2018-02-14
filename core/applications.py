@@ -10,7 +10,7 @@ import time
 
 from core.compatibility import iteritems, unicode
 from core.config import CONFIG
-from core.constants import APP_LIST_URL, UPDATES_PER_SECOND
+from core.constants import APP_LIST_URL, UPDATES_PER_SECOND, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 from core.notify import *
 from core.files import format_file_path
 from core.os import get_running_processes, WindowFocus, get_modified_time
@@ -31,11 +31,14 @@ _DEFAULT_TEXT = [
     ' The executable file is case sensitive.',
     '// You may also limit it to a certain window name,'
     ' for example if the game uses a generic executable name.',
-    '// This would work like "Play.exe[MyGame]: Game Name". You may use "<*>" at the start or end of "MyGame" as a wildcard.',
+    '// This would work like "Play.exe[MyGame]: Game Name". You may use "{}" at the start or end of "MyGame" as a wildcard.'.format(TRACKING_WILDCARD),
     '// If the executable or window name is the same as the game name,'
     ' you only need to provide that.',
-    '// To turn off tracking for a particular application, use <DoNotTrack> as its name.'
+    '// To turn off tracking for a particular application, use "{}" as its name.'.format(TRACKING_DISABLE),
+    '// To ignore tracking when a window name is a match (such as a splash screen), use "{}" as its name.'.format(TRACKING_IGNORE)
 ]
+
+_WILDCARD_LEN = len(TRACKING_WILDCARD)
 
 
 class AppList(object):
@@ -313,20 +316,28 @@ class RunningApplications(object):
             return None
 
         #Get currently focused application
-        else:
-            if self.focused_exe in self.applist:
-                names = self.applist[self.focused_exe]
+        elif self.focused_exe in self.applist:
+            names = self.applist[self.focused_exe]
+
+            #Check if record exists for current window name
+            try:
+                return names[self.focused_name], self.focused_exe
+            except KeyError:
                 try:
-                    return names[self.focused_name], self.focused_exe
+                    #Check for wildcard at start and end of window name
+                    for name in names:
+                        if name is None:
+                            continue
+                        if (name[:_WILDCARD_LEN] == TRACKING_WILDCARD and self.focused_name.endswith(name[_WILDCARD_LEN:]) 
+                                or name[-_WILDCARD_LEN:] == TRACKING_WILDCARD and self.focused_name.startswith(name[:-_WILDCARD_LEN])):
+                            return names[name], self.focused_exe
+
+                    #Return default name
+                    return names[None], self.focused_exe
+
+                #Default name doesn't exist
                 except KeyError:
-                    any_marker = '<*>'
-                    try:
-                        for name in names:
-                            if name is not None and name[:3] == any_marker and self.focused_name.endswith(name[3:]) or name[-3:] == any_marker and self.focused_name.startswith(name[:-3]):
-                                return names[name], self.focused_exe
-                        return names[None], self.focused_exe
-                    except KeyError:
-                        return None
+                    return None
     
     def save_file(self):
         self.applist.save()

@@ -33,7 +33,7 @@ import os
 
 from core.applications import RunningApplications
 from core.base import format_file_path, format_name
-from core.constants import DISABLE_TRACKING, IGNORE_TRACKING
+from core.constants import TRACKING_DISABLE, TRACKING_IGNORE
 from core.os import list_directory, load_executable, mouse_press, mouse_move, key_press, get_running_processes
 
 
@@ -47,7 +47,7 @@ def running_applications_with_commands(profile_names=COMMANDS_FILES):
     result = set()
     all_applications = [format_name(i) for i in get_running_processes().keys()]
     for profile_name in RunningApplications().all_loaded_apps():
-        if profile_name in (DISABLE_TRACKING, IGNORE_TRACKING):
+        if profile_name in (TRACKING_DISABLE, TRACKING_IGNORE):
             continue
         result.add(profile_name)
     return result
