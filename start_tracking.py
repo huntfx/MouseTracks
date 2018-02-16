@@ -53,11 +53,13 @@ if __name__ == '__main__':
         from threading import Thread
         
         from core.api import local_address, shutdown_server
+        from core.base import format_file_path, get_script_path
         from core.compatibility import Message, input
         from core.constants import APP_LIST_FILE
         from core.internet import get_url_json, send_request
-        from core.files import Lock
+        from core.files import Lock, DATA_FOLDER
         from core.notify import *
+        from core.os import open_folder
         from core.sockets import get_free_port
             
         
@@ -178,6 +180,15 @@ if __name__ == '__main__':
         def start_message_client(cls, port, secret):
             new_window(None, 'MessageServer', str(port), str(secret))
         
+        def open_script_folder(cls):
+            open_folder(get_script_path())
+        
+        def open_data_folder(cls):
+            open_folder(DATA_FOLDER)
+        
+        def open_images_folder(cls):
+            open_folder(format_file_path(CONFIG['Paths']['Images'].replace('[Name]', '')))
+        
         is_hidden = console.has_been_elevated() and CONFIG['Main']['StartMinimised'] and console.is_elevated()
         
         with Lock() as locked:
@@ -194,8 +205,13 @@ if __name__ == '__main__':
                 'action': new_window, 'args': ['MessageServer', str(message_port), str(server_secret)]
                 '''
                 menu_options = (
+                    {'name': 'Quick Navigation', 'action': (
+                        {'name': 'Script Folder', 'action': open_script_folder},
+                        {'name': 'Data Folder', 'action': open_data_folder},
+                        {'name': 'Image Folder', 'action': open_images_folder}
+                    )},
                     {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': ['GenerateImages']},
-                    {'id': 'track', 'action': toggle_tracking, 'hidden': True},
+                    {'id': 'track', 'name': 'Toggle pause/start', 'action': toggle_tracking, 'hidden': True},
                     {'id': 'restart', 'name': 'Restart', 'action': _start_tracking, 'kwargs': {'web_port': web_port, 'message_port': message_port, 'server_secret': server_secret, '_thread': thread}},
                     {'id': 'hide', 'name': 'Minimise to Tray', 'action': hide_in_tray, 'hidden': is_hidden},
                     {'id': 'restore', 'name': 'Bring to Front', 'action': bring_to_front, 'hidden': not is_hidden},

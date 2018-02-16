@@ -50,7 +50,7 @@ def format_file_path(path):
     return final_path
     
     
-def _get_script_path():
+def get_script_path():
     return os.getcwd()
 
     #This has support for running from another folder, but may not always be correct
@@ -58,4 +58,4 @@ def _get_script_path():
     
 
 def get_script_file(file_name):
-    return os.path.join(_get_script_path(), file_name)
+    return os.path.join(get_script_path(), file_name)
