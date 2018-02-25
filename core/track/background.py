@@ -494,7 +494,7 @@ def compress_tracks(store, multiplier):
     
     
 def _record_gamepad(store, received_data, press_type):
-    for button_id in received_data['GamepadButtonPress']:
+    for button_id in received_data:
         try:
             store['Data']['Gamepad']['All']['Buttons'][press_type][button_id] += 1
         except KeyError:
