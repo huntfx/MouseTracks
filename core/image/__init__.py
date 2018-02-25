@@ -387,15 +387,17 @@ def _user_generate():
         last_session_time = None
 
     #Ask if session or all data should be used
-    session_options = [
-        [False, True, STRINGS['string']['image']['option']['session']['all'].format(T=all_time)],
-        [True, False, STRINGS['string']['image']['option']['session']['last'].format(T=last_session_time)]
-    ]
-    Message(STRINGS['string']['image']['option']['session']['select'])
-    while True:
-        session = select_options(session_options, allow_multiple=False, update=False)
-        if session is not None:
-            break
+    session = False
+    if last_session_time is not None:
+        session_options = [
+            [False, True, STRINGS['string']['image']['option']['session']['all'].format(T=all_time)],
+            [True, False, STRINGS['string']['image']['option']['session']['last'].format(T=last_session_time)]
+        ]
+        Message(STRINGS['string']['image']['option']['session']['select'])
+        while True:
+            session = select_options(session_options, allow_multiple=False, update=False)
+            if session is not None:
+                break
     
     #Render the images
     if render_types[0][1]:
