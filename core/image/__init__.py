@@ -427,6 +427,7 @@ def _user_generate():
 def user_generate():
     "Wrapper for _user_generate to allow for looping back to start."
     while True:
+        CONFIG.reload()
         auto_restart = _user_generate()
         Message()
         if not auto_restart and not yes_or_no('Finished image generation. Would you like to run it again?'):

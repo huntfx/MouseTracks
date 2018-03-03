@@ -727,6 +727,7 @@ class Config(dict):
     
     def __init__(self, defaults=DEFAULTS, show_hidden=False):
         self._data = {}
+        self._backup = {}
         self._load_from_dict(defaults)
         self.hidden = not show_hidden
         self.is_new = False
@@ -749,6 +750,7 @@ class Config(dict):
         """Read data from the default dictionary."""
         for heading, var_data in iteritems(config_dict):
             self._data[heading] = {}
+            self._backup[heading] = {}
             
             for var, info in iteritems(var_data):
                 if not isinstance(info, dict):
@@ -762,6 +764,7 @@ class Config(dict):
                 info['default'] = info['value']
 
                 self._data[heading][var] = info
+                self._backup[heading][var] = info['value']
 
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
@@ -830,6 +833,14 @@ class Config(dict):
         with open(file_name, 'w') as f:
             f.write(output)
         return self
+
+    def reload(self):
+        """Reload and forget any changes.
+        The dict is modified, so self._backup is needed to get the original string.
+        """
+        for header in self._backup:
+            for variable in self._backup[header]:
+                self[header][variable] = self._backup[header][variable]
 
 
 def config_to_dict(conf):
