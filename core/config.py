@@ -213,6 +213,7 @@ DEFAULTS = {
         },
         'ColourProfile': {
             '__priority__': 2,
+            'value': 'Jet',
             'type': str,
             'allow_empty': True
         },
