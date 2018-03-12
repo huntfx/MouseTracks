@@ -257,7 +257,6 @@ class LoadData(dict):
         return self._get_track_map('Strokes', session=session)
     
     def get_clicks(self, double_click=False, session=False):
-        session = 'Session' if session else 'All'
         click_type = 'Double' if double_click else 'Single'
         
         top_resolution = None
@@ -266,9 +265,9 @@ class LoadData(dict):
         max_value = -float('inf')
         result = {}
         for resolution, maps in iteritems(self['Resolution']):
-            click_maps = (maps['Clicks'][session][click_type]['Left'],
-                          maps['Clicks'][session][click_type]['Middle'],
-                          maps['Clicks'][session][click_type]['Right'])
+            click_maps = (maps['Clicks'][click_type]['Left'],
+                          maps['Clicks'][click_type]['Middle'],
+                          maps['Clicks'][click_type]['Right'])
             
             #Get information on array
             contains_data = False

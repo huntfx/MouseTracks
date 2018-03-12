@@ -369,24 +369,20 @@ def check_resolution(data, resolution):
     if not isinstance(resolution, tuple):
         raise ValueError('incorrect resolution: {}'.format(resolution))
         
+    #Add empty resolution maps
     if resolution not in data['Resolution']:
         data['Resolution'][resolution] = {'Tracks': numpy.array(resolution, create=True),
                                           'Speed': numpy.array(resolution, create=True),
                                           'Strokes': numpy.array(resolution, create=True),
-                                          'Clicks': {}}
-        clicks = data['Resolution'][resolution]['Clicks']
-        clicks['All'] = {'Single': {'Left': numpy.array(resolution, create=True),
-                                    'Middle': numpy.array(resolution, create=True),
-                                    'Right': numpy.array(resolution, create=True)},
-                         'Double': {'Left': numpy.array(resolution, create=True),
-                                    'Middle': numpy.array(resolution, create=True),
-                                    'Right': numpy.array(resolution, create=True)}}
-        clicks['Session'] = {'Single': {'Left': numpy.array(resolution, create=True),
-                                        'Middle': numpy.array(resolution, create=True),
-                                        'Right': numpy.array(resolution, create=True)},
-                             'Double': {'Left': numpy.array(resolution, create=True),
-                                        'Middle': numpy.array(resolution, create=True),
-                                        'Right': numpy.array(resolution, create=True)}}
+                                          'StrokesSeparate': {'Left': numpy.array(resolution, create=True),
+                                                              'Middle': numpy.array(resolution, create=True),
+                                                              'Right': numpy.array(resolution, create=True)},
+                                          'Clicks': {'Single': {'Left': numpy.array(resolution, create=True),
+                                                                'Middle': numpy.array(resolution, create=True),
+                                                                'Right': numpy.array(resolution, create=True)},
+                                                     'Double': {'Left': numpy.array(resolution, create=True),
+                                                                'Middle': numpy.array(resolution, create=True),
+                                                                'Right': numpy.array(resolution, create=True)}}}
 
                                         
 def monitor_offset(coordinate, monitor_limits):
@@ -470,8 +466,7 @@ def _record_click(store, received_data, click_type):
             continue
         
         mouse_button = ['Left', 'Middle', 'Right'][mouse_button_index]
-        store['Data']['Resolution'][resolution]['Clicks']['All'][click_type][mouse_button][y][x] += 1
-        store['Data']['Resolution'][resolution]['Clicks']['Session'][click_type][mouse_button][y][x] += 1
+        store['Data']['Resolution'][resolution]['Clicks'][click_type][mouse_button][y][x] += 1
 
 
 def record_click_single(store, received_data):
@@ -479,7 +474,7 @@ def record_click_single(store, received_data):
 
 
 def record_click_double(store, received_data):
-    return _record_click(store, received_data, 'Single')
+    return _record_click(store, received_data, 'Double')
     
 
 def compress_tracks(store, multiplier):

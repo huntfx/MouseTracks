@@ -12,7 +12,7 @@ from core.compatibility import unicode, iteritems
 from core.constants import KEY_STATS
 
 
-FILE_VERSION = 30
+FILE_VERSION = 31
 
 VERSION = '1.0 beta'
 
@@ -368,6 +368,14 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     if file_version < 30:
         for resolution in data['Resolution']:
             data['Resolution'][resolution]['Strokes'] = numpy.array(resolution, create=True)
+    
+    #Remove click sessions and add map for separate brush stroke tracking
+    if file_version < 31:
+        for resolution in data['Resolution']:
+            data['Resolution'][resolution]['Clicks'] = data['Resolution'][resolution]['Clicks']['All']
+            data['Resolution'][resolution]['StrokesSeparate'] = {'Left': numpy.array(resolution, create=True),
+                                                                 'Middle': numpy.array(resolution, create=True),
+                                                                 'Right': numpy.array(resolution, create=True)}
         
     version_update = data.get('FileVersion', '0') != FILE_VERSION
     
@@ -376,61 +384,25 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         start_version = max(original_version, 27)
         for i in range(start_version, FILE_VERSION+1):
             data['VersionHistory'][i] = current_time
-    
-    if update_metadata: 
         
-        if update_metadata:
-            data['Version'] = VERSION
-            data['FileVersion'] = FILE_VERSION 
-                
-        #Only count as new session if updated or last save was over an hour ago
-        new_session = reset_sessions and (not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified'])
-        if new_session or version_update and original_version < 27:
+    if update_metadata:
+        data['Version'] = VERSION
+
+        #TODO: Auto update file version
+        data['FileVersion'] = FILE_VERSION 
             
-            data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
-            data['Ticks']['Session']['Total'] = data['Ticks']['Total']
-            data['Keys']['Session']['Pressed'] = {}
-            data['Keys']['Session']['Held'] = {}
-            data['Keys']['Session']['Intervals'] = {'Total': {}, 'Individual': {}}
-            data['Keys']['Session']['Mistakes'] = {}
-            
-            #Empty session arrays
-            for resolution, values in iteritems(data['Resolution']):
-                if 'Session' not in values['Clicks']:
-                    values['Clicks']['Session'] = {'Single': {'Left': numpy.array(resolution, create=True),
-                                                              'Middle': numpy.array(resolution, create=True),
-                                                              'Right': numpy.array(resolution, create=True)},
-                                                   'Double': {'Left': numpy.array(resolution, create=True),
-                                                              'Middle': numpy.array(resolution, create=True),
-                                                              'Right': numpy.array(resolution, create=True)}}
-                else:
-                    try:
-                        values['Clicks']['Session']['Single']['Left'] = numpy.fill(values['Clicks']['Session']['Single']['Left'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Single']['Left'] = numpy.array(resolution, create=True)
-                    try:
-                        values['Clicks']['Session']['Single']['Middle'] = numpy.fill(values['Clicks']['Session']['Single']['Middle'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Single']['Middle'] = numpy.array(resolution, create=True)
-                    try:
-                        values['Clicks']['Session']['Single']['Right'] = numpy.fill(values['Clicks']['Session']['Single']['Right'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Single']['Right'] = numpy.array(resolution, create=True)
-                    try:
-                        values['Clicks']['Session']['Double']['Left'] = numpy.fill(values['Clicks']['Session']['Double']['Left'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Double']['Left'] = numpy.array(resolution, create=True)
-                    try:
-                        values['Clicks']['Session']['Double']['Middle'] = numpy.fill(values['Clicks']['Session']['Double']['Middle'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Double']['Middle'] = numpy.array(resolution, create=True)
-                    try:
-                        values['Clicks']['Session']['Double']['Right'] = numpy.fill(values['Clicks']['Session']['Double']['Right'], 0)
-                    except AttributeError:
-                        values['Clicks']['Session']['Double']['Right'] = numpy.array(resolution, create=True)
-            
-            data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
-            data['TimesLoaded'] += 1
-            data['SessionStarts'].append(current_time)
+    #Only count as new session if updated or last save was over an hour ago
+    new_session = reset_sessions and (not data['SessionStarts'] or current_time - 3600 > data['Time']['Modified'])
+    if new_session or version_update and original_version < 27:
+        
+        data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
+        data['Ticks']['Session']['Total'] = data['Ticks']['Total']
+        data['Keys']['Session']['Pressed'] = {}
+        data['Keys']['Session']['Held'] = {}
+        data['Keys']['Session']['Intervals'] = {'Total': {}, 'Individual': {}}
+        data['Keys']['Session']['Mistakes'] = {}
+        data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
+        data['TimesLoaded'] += 1
+        data['SessionStarts'].append(current_time)
         
     return data
