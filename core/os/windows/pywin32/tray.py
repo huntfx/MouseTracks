@@ -19,8 +19,22 @@ import winerror
 import win32ui
 from multiprocessing import freeze_support
 
-from core.compatibility import iteritems
-from core.os.windows.pywin32.main import *
+#These imports will not fail during MouseTracks running,
+#but checks are now in place so it can be run separately.
+try:
+    from core.compatibility import iteritems
+except ImportError:
+    try:
+        iteritems = dict.iteritems
+    except AttributeError:
+        iteritems = dict.items
+try:
+    from core.os.windows.pywin32.main import *
+except ImportError:
+    pass
+
+
+TRAY_EVENT = win32con.WM_USER + 20
 
 
 class Tray(object):
@@ -39,7 +53,10 @@ class Tray(object):
                           'OnWindowHide': [],
                           'OnWindowRestore': []}
         self.program_name = program_name
-        self.console_hwnd = WindowHandle(parent=False, console=True)
+        try:
+            self.console_hwnd = WindowHandle(parent=False, console=True)
+        except NameError:
+            self.console_hwnd = None
         self._refresh_menu(menu_options)
         if window_name is None:
             window_name = program_name
@@ -50,7 +67,7 @@ class Tray(object):
             msg_TaskbarRestart: self.OnRestart,
             win32con.WM_DESTROY: self.OnDestroy,
             win32con.WM_COMMAND: self.OnCommand,
-            win32con.WM_USER+20: self.OnTaskbarNotify,
+            TRAY_EVENT: self.OnTaskbarNotify,
         }
         #Register the Window class.
         wc = win32gui.WNDCLASS()
@@ -96,7 +113,7 @@ class Tray(object):
             
             always_bring_to_front = True
             
-            if always_bring_to_front or self.console_hwnd.minimised:
+            if always_bring_to_front or self.console_hwnd is not None and self.console_hwnd.minimised:
                 self.bring_to_front()
             else:
                 self.minimise_to_tray()
@@ -146,7 +163,12 @@ class Tray(object):
         self._commands[trigger] = valid_functions
             
     def minimise_to_tray(self):
-        """Remove the console window."""
+        """Remove the console window.
+        A minimised window can't be hidden to tray, so restore it first.
+        """
+        if self.console_hwnd is None:
+            return
+
         if self.console_hwnd.minimised:
             self.console_hwnd.restore()
             
@@ -160,6 +182,9 @@ class Tray(object):
             
     def bring_to_front(self):
         """Bring the console window to the front."""
+        if self.console_hwnd is None:
+            return
+
         if self.__dict__.get('minimise_override', None):
             del self.minimise_override
             self.minimise_to_tray()
@@ -170,24 +195,14 @@ class Tray(object):
             
     def _set_icon(self, icon_path=None):
         """Load the tray icon.
+
         Doesn't appear to be editable once it's been set.
+        TODO: Look at http://www.brunningonline.net/simon/blog/archives/SysTrayIcon.py.html on how to edit it.
         """
-        
-        #Try and find a custom icon
-        if icon_path is None:
-            icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], 'pyc.ico'))
-        
-            #Look in DLLs dir
-            if not os.path.isfile(icon_path):
-                icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], 'DLLs', 'pyc.ico'))
-            
-            #Look in the source tree
-            if not os.path.isfile(icon_path):
-                icon_path = os.path.abspath(os.path.join(os.path.split(sys.executable)[0], '..\\PC\\pyc.ico'))
-        
+
         #Load icon as an image
         try:
-            if not os.path.isfile(icon_path):
+            if icon_path is None or not os.path.isfile(icon_path):
                 raise TypeError
             icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
             hinst = win32api.GetModuleHandle(None)
@@ -198,7 +213,7 @@ class Tray(object):
             hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
         
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, hicon, self.program_name)
+        nid = (self.hwnd, 0, flags, TRAY_EVENT, hicon, self.program_name)
         try:
             win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
         except win32gui.error:
@@ -211,7 +226,7 @@ class Tray(object):
     def _set_icon_menu(self, icon):
         """Load icons into the tray items.
         
-        Got from https://stackoverflow.com/a/45890829
+        Got from https://stackoverflow.com/a/45890829.
         """
         ico_x = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
         ico_y = win32api.GetSystemMetrics(win32con.SM_CYSMICON)
