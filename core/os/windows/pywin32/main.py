@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 import os
 import sys
+import time
 import win32api
 import win32con
 import win32console
@@ -152,12 +153,16 @@ class WindowHandle(object):
         else:
             self.restore()
             
-        #Sometimes it seems to fail, so try once more
+        #Sometimes it seems to fail but then work a second time
         try:
             win32gui.SetForegroundWindow(self.hwnd)
         except pywintypes.error:
+            time.sleep(0.5)
             win32gui.ShowWindow(self.hwnd, True)
-            win32gui.SetForegroundWindow(self.hwnd)
+            try:
+                win32gui.SetForegroundWindow(self.hwnd)
+            except pywintypes.error:
+                pass
         
     def minimise(self):
         """Minimise a window."""
