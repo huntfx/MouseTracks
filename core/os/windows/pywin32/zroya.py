@@ -1,46 +1,12 @@
 import threading
 import logging
 import os
+import time
 
-# Read the docs does not work with pypiwin32. Import it only
-# for local build.
-if os.environ.get('READTHEDOCS') != 'True':
-    from win32api import GetModuleHandle
-    from win32con import CW_USEDEFAULT
-    from win32con import IMAGE_ICON
-    from win32con import LR_DEFAULTSIZE
-    from win32con import LR_LOADFROMFILE
-    from win32con import WM_DESTROY
-    from win32con import WM_USER
-    from win32con import WS_OVERLAPPED
-    from win32con import WS_SYSMENU
+from win32api import GetModuleHandle
+from win32con import *
+from win32gui import *
 
-    from win32gui import CreateWindow
-    from win32gui import DefWindowProc
-    from win32gui import DestroyWindow
-    from win32gui import LoadImage
-    from win32gui import NIF_ICON
-    from win32gui import NIF_INFO
-    from win32gui import NIF_MESSAGE
-    from win32gui import NIF_TIP
-    from win32gui import NIIF_INFO
-    from win32gui import NIIF_ERROR
-    from win32gui import NIIF_NOSOUND
-    from win32gui import NIIF_WARNING
-    from win32gui import NIM_ADD
-    from win32gui import NIM_DELETE
-    from win32gui import NIM_MODIFY
-    from win32gui import PostQuitMessage
-    from win32gui import PumpWaitingMessages
-    from win32gui import RegisterClass
-    from win32gui import Shell_NotifyIcon
-    from win32gui import UnregisterClass
-    from win32gui import UpdateWindow
-    from win32gui import WNDCLASS
-
-else:
-    # Import kind of mock for Read the Docs
-    from .read_the_docs import *
 
 class NotificationCenter(object):
     """
@@ -49,12 +15,9 @@ class NotificationCenter(object):
 
     NOTIFICATION_EVENT = WM_USER + 1  #: Event ID for all events associated with notifications.
     EVENT_BALLOON_SHOW = WM_USER + 2  #: Event ID fired when notification is created.
-    EVENT_BALLOON_HIDE = WM_USER + 3  #: Event ID used when notification is hiden by user.
-    EVENT_BALLOON_TIMEOUT = WM_USER + 4  #: Event ID for notification which timeout expired.
+    EVENT_BALLOON_HIDE = WM_USER + 3 + 4  #: Event ID used when notification is hidden from code.
+    EVENT_BALLOON_TIMEOUT = WM_USER + 4 + 2  #: Event ID for notification with expired timeout.
     EVENT_BALLOON_CLICK = WM_USER + 5  #: Event ID used when user clicks on notification.
-
-    EVENT_POPUP_OPEN = 0x406  #: Not used.
-    EVENT_POPUP_CLOSE = 0x407  #: Not used.
 
     ICON_INFO = NIIF_INFO  #: This could be passed as icon parameter of create method. In this case, info icon is used.
     ICON_WARNING = NIIF_WARNING  #: This could be passed as icon parameter of create method. It will use warning icon.
@@ -82,14 +45,14 @@ class NotificationCenter(object):
         self._class = RegisterClass(self._window_class)
         self._handle = GetModuleHandle(None)
 
-        self._window = CreateWindow(self._class, "Notification", WS_OVERLAPPED | WS_SYSMENU,
-                                    0, 0, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, self._handle, None
-                                    )
+        self._window = CreateWindow(self._class, "Notification", 0,
+            0, 0, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, self._handle, None
+        )
 
         # Draw window
         UpdateWindow(self._window)
 
-        self.logger.info("NotificationCenter created.")
+        self.logger.debug("NotificationCenter created.")
 
     def quit(self):
         """
@@ -100,7 +63,7 @@ class NotificationCenter(object):
         DestroyWindow(self._window)
         UnregisterClass(self._window_class.lpszClassName, None)
         PostQuitMessage(0)
-        self.logger.info("NotificationCenter is going to quit.")
+        self.logger.debug("NotificationCenter is going to quit.")
 
     def update(self):
         """
@@ -110,17 +73,20 @@ class NotificationCenter(object):
         """
         return PumpWaitingMessages() == 0
 
-    def create(self, title, message, icon=None, sound=True, on_click=None, on_show=None, on_hide=None, on_timeout=None):
+    def create(self, title, message, timeout = 0, icon=None, sound=True, on_click=None, on_show=None, on_hide=None,
+        on_timeout=None
+    ):
         """
         Shows notification. All callback functions take two parameters. First one is integer with notification ID,
         second is dict with parameters used for creation (title, message, icon).
         :param str          title:      Notification title.
         :param str          message:    Short notification text.
+        :param int/float    timeout:    Number of seconds after which notification will be removed. This triggers on_timeout event.
         :param str/int      icon:       Path to the icon file or one of NotificationCenter.ICON_*. Use None for info icon.
         :param bool         sound:      Should sound be played when notification appears?
         :param callable     on_click:   On click callback. Called when user clicks on notification.
         :param callable     on_show:    On show callback. Called when notification is shown.
-        :param callable     on_hide:    On hide callback. Called when notification is hidden.
+        :param callable     on_hide:    On hide callback. Called when notification is hidden from code.
         :param callable     on_timeout: On timeout callback. Called when notification timeout expires.
         :returns: Notification ID.
         """
@@ -132,7 +98,7 @@ class NotificationCenter(object):
         if self._current_id > 10 ** 6:
             # Count back from zero
             self._current_id = 0
-            self.logger.info("Maximum number of notification ID reached. Starting from zero again.")
+            self.logger.debug("Maximum number of notification ID reached. Starting from zero again.")
 
         self._current_id += 1
 
@@ -141,12 +107,14 @@ class NotificationCenter(object):
             "window": self._window,
             "title": title,
             "message": message,
+            "timeout": timeout,
             "notification_id": self._current_id,
             "icon_param": icon,
             "sound": sound,
-            "logger": self.logger
+            "logger": self.logger,
         }).start()
-        self.logger.info("Notification ID {} created.".format(self._current_id))
+
+        self.logger.debug("Notification ID {} created.".format(self._current_id))
 
         # Create notification info.
         self._notifications[self._current_id] = {
@@ -158,18 +126,51 @@ class NotificationCenter(object):
                 "title": title,
                 "message": message,
                 "icon": icon,
-                "sound": sound
-            }
+                "sound": sound,
+            },
+            "shown": False
         }
 
         return self._current_id
 
-    def _create(self, window, title, message, notification_id, logger, icon_param=None, sound=True):
+    def hide(self, notification_id, timeout = 0.0):
+        """
+        Remove notification with specific ID. If notification was not shown yet, return false. If **timeout** parameter
+        is provided, function blocks for **timeout** seconds waiting for selected notification to be shown.
+        :param int          notification_id:    ID of notification to hide.
+        :param int/float    timeout:            Max waiting time for notification to ne shown.
+        :return: True if notification was hidden, False otherwise.
+        """
+
+        # Ignore non-existing notifications
+        if notification_id not in self._notifications:
+            return False
+
+        # Can not hide notification before it is shown
+        if not self._notifications[notification_id]["shown"]:
+            if timeout != 0:
+                max_waiting_time = time.time() + timeout
+                while time.time() < max_waiting_time:
+                    if self._notifications[notification_id]["shown"]:
+                        break
+                    time.sleep(0.15)
+            else:
+                return False
+
+        # Remove notification from system
+        data = (self._window, notification_id)
+        Shell_NotifyIcon(NIM_DELETE, data)
+
+        # Trigger hide event
+        PostMessage(self._window, NotificationCenter.NOTIFICATION_EVENT, notification_id, NotificationCenter.EVENT_BALLOON_HIDE)
+
+    def _create(self, window, title, message, timeout, notification_id, logger, icon_param=None, sound=True):
         """
         Representation of notification thread.
         :param window: Window instance.
         :param title: Notification title.
         :param message: Notification text.
+        :param timeout: Notification timeout.
         :param notification_id: Notification ID.
         :param icon_param: Notification icon path or one of NotificationCenter.ICON_*. Only .ICO and .BMP formats are
         supported.
@@ -177,7 +178,7 @@ class NotificationCenter(object):
         """
 
         # Flags for notification
-        flags = NIF_MESSAGE | NIF_TIP
+        flags = NIF_MESSAGE
 
         # Flags used for default icons (Error, Info, Warning) and no sound parameter.
         additional_flags = 0
@@ -197,9 +198,7 @@ class NotificationCenter(object):
                         IMAGE_ICON, 0, 0,
                         LR_LOADFROMFILE | LR_DEFAULTSIZE
                     )
-                    logger.info("Icon loaded for notification ID {}.".format(notification_id))
-
-                    print("Icon loaded")
+                    logger.debug("Icon loaded for notification ID {}.".format(notification_id))
 
                 except Exception as e:
                     # Use info icon as default
@@ -209,33 +208,26 @@ class NotificationCenter(object):
                             .format(icon_param, notification_id, e)
                     )
 
-                    print("Info icon by error")
-
             # Set one of predefined icons
             elif type(icon_param) == int:
-                logger.info("Using default icon {} for notification ID {}.".format(icon_param, notification_id))
+                logger.debug("Using default icon {} for notification ID {}.".format(icon_param, notification_id))
                 additional_flags |= icon_param
 
-                print("Info icon by default")
-
         else:
-            logger.info("Using default icon {} for notification ID {}.".format(icon_param, notification_id))
+            logger.debug("Using default icon {} for notification ID {}.".format(icon_param, notification_id))
             additional_flags |= NotificationCenter.ICON_INFO
-
-            print("Info icon by default")
 
         # Disable sound effect
         if not sound:
 
-            print("Nosound mode")
-
-            logger.info("Sound effect disabled for notification ID {}.".format(notification_id))
+            logger.debug("Sound effect disabled for notification ID {}.".format(notification_id))
             additional_flags |= NIIF_NOSOUND
 
-        # Create notification
+        # Create tray icon notification
         nid = (window, notification_id, flags, NotificationCenter.NOTIFICATION_EVENT, icon, "Tooltip")
         Shell_NotifyIcon(NIM_ADD, nid)
 
+        # Create notification
         Shell_NotifyIcon(NIM_MODIFY, (
             window, notification_id, NIF_INFO,
             NotificationCenter.NOTIFICATION_EVENT,
@@ -247,7 +239,13 @@ class NotificationCenter(object):
             additional_flags
         ))
 
-        logger.info("Notification ID {} created.".format(notification_id))
+        logger.debug("Notification ID {} created.".format(notification_id))
+
+        if timeout > 0:
+            time.sleep(timeout)
+            Shell_NotifyIcon(NIM_DELETE, (window, notification_id))
+            PostMessage(window, NotificationCenter.NOTIFICATION_EVENT, notification_id, NotificationCenter.EVENT_BALLOON_TIMEOUT)
+
 
     def _onNotificationEvent(self, notification_id, event_id):
         """
@@ -257,23 +255,67 @@ class NotificationCenter(object):
         :return: Number one.
         """
 
-        # Is there notification with this ID?
-        if notification_id in self._notifications:
-            # Get its data
-            notification_data = self._notifications[notification_id]
+        # Handle non-existing notification
+        if notification_id not in self._notifications:
+            self.logger.debug("Event fired for non-existing notification ID {}!".format(notification_id))
+            return False
 
-            # Is there callback handler
-            if notification_data[event_id]:
-                # Call it
-                notification_data[event_id](notification_id, notification_data)
-                self.logger.info(
-                    "Callback for notification ID {} with event {} called.".format(notification_id, event_id))
-            else:
-                self.logger.info("No callback for notification ID {} with event {}".format(notification_id, event_id))
-        else:
-            self.logger.warning("Event fired for non-existing notification ID {}!".format(notification_id))
+        # Get its data
+        notification_data = self._notifications[notification_id]
 
-        return 1
+        if event_id == NotificationCenter.EVENT_BALLOON_HIDE:
+            self._onHideDefault(notification_id, notification_data)
+        elif event_id == NotificationCenter.EVENT_BALLOON_SHOW:
+            self._onShowDefault(notification_id, notification_data)
+        elif event_id == NotificationCenter.EVENT_BALLOON_CLICK:
+            self._onClickDefault(notification_id, notification_data)
+        elif event_id == NotificationCenter.EVENT_BALLOON_TIMEOUT:
+            self._onTimeoutDefault(notification_id, notification_data)
+
+        return True
+
+    def _onShowDefault(self, notification_id, notification_data):
+
+        # Mark as shown
+        self._notifications[notification_id]["shown"] = True
+
+        # Is there user defined callback?
+        callback = notification_data[NotificationCenter.EVENT_BALLOON_SHOW]
+        if callback:
+            # Call it
+            callback(notification_id, notification_data)
+
+    def _onHideDefault(self, notification_id, notification_data):
+
+        # Is there user defined callback?
+        callback = notification_data[NotificationCenter.EVENT_BALLOON_HIDE]
+        if callback:
+            # Call it
+            callback(notification_id, notification_data)
+
+        # Remove if from list
+        self._notifications.pop(notification_id)
+
+    def _onClickDefault(self, notification_id, notification_data):
+
+        # Is there user defined callback?
+        callback = notification_data[NotificationCenter.EVENT_BALLOON_HIDE]
+        if callback:
+            # Call it
+            callback(notification_id, notification_data)
+
+    def _onTimeoutDefault(self, notification_id, notification_data):
+
+        PostMessage(self._window, NotificationCenter.NOTIFICATION_EVENT, notification_id, NotificationCenter.EVENT_BALLOON_HIDE)
+
+        # Is there user defined callback?
+        callback = notification_data[NotificationCenter.EVENT_BALLOON_TIMEOUT]
+        if callback:
+            # Call it
+            callback(notification_id, notification_data)
+
+        # Remove if from list
+        self._notifications.pop(notification_id)
 
     def _eventLoop(self, window, event, w_param, l_param):
         """
