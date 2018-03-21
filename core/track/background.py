@@ -481,6 +481,9 @@ def compress_tracks(store, multiplier):
     
     for resolution, maps in iteritems(store['Data']['Resolution']):
         maps['Tracks'] = numpy.divide(maps['Tracks'], multiplier, as_int=True)
+        maps['StrokesSeparate']['Left'] = numpy.divide(maps['StrokesSeparate']['Left'], multiplier, as_int=True)
+        maps['StrokesSeparate']['Middle'] = numpy.divide(maps['StrokesSeparate']['Middle'], multiplier, as_int=True)
+        maps['StrokesSeparate']['Right'] = numpy.divide(maps['StrokesSeparate']['Right'], multiplier, as_int=True)
             
     store['Data']['Ticks']['Tracks'] //= multiplier
     store['Data']['Ticks']['Tracks'] = int(store['Data']['Ticks']['Tracks'])
@@ -645,6 +648,13 @@ def record_mouse_move(store, received_data):
             if clicked:
                 old_value = store['Data']['Resolution'][resolution]['Strokes'][y][x]
                 store['Data']['Resolution'][resolution]['Strokes'][y][x] = max(distance, old_value)
+            
+            #Testing separate maps for strokes
+            for mouse_button, click_type in enumerate(('Left', 'Middle', 'Right')):
+                if mouse_button in clicked:
+                    store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = store['Data']['Ticks']['Tracks']
+                else:
+                    store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = 0
     
     store['LastTrackUpdate'] = store['Data']['Ticks']['Total']
     store['Data']['Ticks']['Tracks'] += 1
