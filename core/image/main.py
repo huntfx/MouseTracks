@@ -286,17 +286,22 @@ class RenderImage(object):
         if CONFIG['GenerateCSV']['_GenerateKeyboard']:
             export.keyboard(self.name)
 
-    def _get_colour_range(self, min_value, max_value, config_heading):
+    def _get_colour_range(self, min_value, max_value, config_heading, custom_map=None):
         """Get the colour range for the chosen config heading,
         or revert back to the default one if it is invalid.
         """
         try:
             colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'])
         except ValueError:
-            colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'].default)
+            try:
+                colour_map = calculate_colour_map(CONFIG[config_heading]['ColourProfile'].default)
+            except ValueError:
+                if custom_map is None:
+                    raise
+                colour_map = calculate_colour_map(custom_map)
         return ColourRange(min_value, max_value, colour_map)
     
-    def tracks(self, last_session=False, file_name=None):
+    def tracks(self, last_session=False, file_name=None, colour_override=None):
         """Render track image."""
     
         track_data = self.data.get_tracks()
@@ -309,7 +314,7 @@ class RenderImage(object):
         output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
         upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
 
-        colour_range = self._get_colour_range(min_value, max_value, 'GenerateTracks')
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateTracks', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
@@ -323,7 +328,7 @@ class RenderImage(object):
             image_output.save(file_name)
             Message('Finished saving.')
     
-    def speed(self, last_session=False, file_name=None):
+    def speed(self, last_session=False, file_name=None, colour_override=None):
         """Render speed track image."""
     
         track_data = self.data.get_speed()
@@ -336,7 +341,7 @@ class RenderImage(object):
         output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
         upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
 
-        colour_range = self._get_colour_range(min_value, max_value, 'GenerateSpeed')
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateSpeed', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
@@ -350,7 +355,7 @@ class RenderImage(object):
             image_output.save(file_name)
             Message('Finished saving.')
     
-    def strokes(self, last_session=False, file_name=None):
+    def strokes(self, last_session=False, file_name=None, colour_override=None):
         """Render brush strokes image."""
     
         track_data = self.data.get_strokes()
@@ -363,7 +368,7 @@ class RenderImage(object):
         output_resolution, upscale_resolution = calculate_resolution(tracks.keys(), top_resolution)
         upscaled_arrays = upscale_arrays_to_resolution(tracks, upscale_resolution)
 
-        colour_range = self._get_colour_range(min_value, max_value, 'GenerateStrokes')
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateStrokes', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
@@ -377,11 +382,11 @@ class RenderImage(object):
             image_output.save(file_name)
             Message('Finished saving.')
 
-    def double_clicks(self, last_session=False, file_name=None):
+    def double_clicks(self, last_session=False, file_name=None, colour_override=None):
         """Render heatmap of double clicks."""
-        return self.clicks(last_session=last_session, file_name=file_name, _double_click=True)
+        return self.clicks(last_session=last_session, file_name=file_name, colour_override=colour_override, _double_click=True)
 
-    def clicks(self, last_session=False, file_name=None, _double_click=False):
+    def clicks(self, last_session=False, file_name=None, colour_override=None, _double_click=False):
         """Render heatmap of clicks."""
 
         top_resolution, (min_value, max_value), clicks = self.data.get_clicks(session=last_session, double_click=_double_click)
@@ -404,7 +409,7 @@ class RenderImage(object):
                                gaussian_size=gaussian_size(upscale_resolution[0], upscale_resolution[1]),
                                clip=1-CONFIG['Advanced']['HeatmapRangeClipping'])
 
-        colour_range = self._get_colour_range(min_value, max_value, 'GenerateHeatmap')
+        colour_range = self._get_colour_range(min_value, max_value, 'GenerateHeatmap', custom_map=colour_override)
         
         image_output = Image.fromarray(colour_range.convert_to_rgb(heatmap))
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
@@ -418,7 +423,7 @@ class RenderImage(object):
             image_output.save(file_name)
             Message('Finished saving.')
         
-    def keyboard(self, last_session=False, file_name=None):
+    def keyboard(self, last_session=False, file_name=None, colour_override=None):
         """Render keyboard image."""
         kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
         
