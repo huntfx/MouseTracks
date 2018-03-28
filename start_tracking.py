@@ -53,13 +53,15 @@ if __name__ == '__main__':
         from threading import Thread
         
         from core.api import local_address, shutdown_server
+        from core.applications import APP_LIST_PATH
         from core.base import format_file_path, get_script_path
         from core.compatibility import Message, input
-        from core.constants import APP_LIST_FILE
+        from core.config import CONFIG_PATH
+        from core.constants import APP_LIST_FILE, DEFAULT_PATH
         from core.internet import get_url_json, send_request
         from core.files import Lock, DATA_FOLDER
         from core.notify import *
-        from core.os import open_folder
+        from core.os import open_folder, open_file
         from core.sockets import get_free_port
             
         
@@ -180,6 +182,15 @@ if __name__ == '__main__':
         def start_message_client(cls, port, secret):
             new_window(None, 'MessageServer', str(port), str(secret))
         
+        def open_applist(cls):
+            open_file(APP_LIST_PATH)
+
+        def open_config(cls):
+            open_file(CONFIG_PATH)
+
+        def open_documents_folder(cls):
+            open_folder(format_file_path(DEFAULT_PATH))
+
         def open_script_folder(cls):
             open_folder(get_script_path())
         
@@ -201,14 +212,17 @@ if __name__ == '__main__':
                 TODO:
                 Force save
                 
-                message server link (need to figure how to close)
                 'action': new_window, 'args': ['MessageServer', str(message_port), str(server_secret)]
+                message server link (need to figure how to close)
                 '''
                 menu_options = (
-                    {'name': 'Quick Navigation', 'action': (
-                        {'name': 'Script Folder', 'action': open_script_folder},
+                    {'name': 'Navigation', 'action': (
+                        {'name': 'AppList.txt', 'action': open_applist},
+                        {'name': 'config.ini', 'action': open_config},
+                        {'name': 'Documents Folder', 'action': open_documents_folder},
+                        {'name': 'Image Folder', 'action': open_images_folder},
                         {'name': 'Data Folder', 'action': open_data_folder},
-                        {'name': 'Image Folder', 'action': open_images_folder}
+                        {'name': 'Program Folder', 'action': open_script_folder}
                     )},
                     {'id': 'generate', 'name': 'Generate Images', 'action': new_window, 'args': ['GenerateImages']},
                     {'id': 'track', 'name': 'Toggle pause/start', 'action': toggle_tracking, 'hidden': True},

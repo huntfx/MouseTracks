@@ -119,15 +119,32 @@ def join_path(path, create=False):
     if create:
         create_folder(joined)
     return joined
-    
-    
-def open_folder(path):
+
+
+def _open(path):
+    """Open a file or folder from a path."""
+    if not path:
+        return False
     try:
         os.startfile(path)
     except (OSError, FileNotFoundError, WindowsError):
         return False
     return True
     
+    
+def open_folder(path):
+    """Open a folder."""
+    folder_path, file_path = _get_folder_path(path)
+    return _open(folder_path)
+    
+    
+def open_file(path):
+    """Open a file."""
+    folder_path, file_path = _get_folder_path(path)
+    if file_path is None:
+        return False
+    return _open(path)
+
 
 #Functions to be used with commands
 def load_executable(path):
