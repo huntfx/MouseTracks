@@ -230,11 +230,11 @@ def _user_generate():
 
     #Ask for type of render
     render_types = [
-        ['tracks', True, STRINGS['string']['image']['name']['track']],
-        ['click heatmap', True, STRINGS['string']['image']['name']['click']],
-        ['keyboard heatmap', True, STRINGS['string']['image']['name']['keyboard']],
-        ['acceleration', False, STRINGS['string']['image']['name']['speed']],
-        ['brush strokes', False, STRINGS['string']['image']['name']['stroke']]
+        ['tracks', True, STRINGS['string']['image']['name']['track'], []],
+        ['click heatmap', True, STRINGS['string']['image']['name']['click'], []],
+        ['keyboard heatmap', True, STRINGS['string']['image']['name']['keyboard'], []],
+        ['acceleration', False, STRINGS['string']['image']['name']['speed'], []],
+        ['brush strokes', False, STRINGS['string']['image']['name']['stroke'], []]
     ]
 
     #Edit keyboard if not tracked
@@ -245,7 +245,7 @@ def _user_generate():
 
     Message()
     Message(STRINGS['string']['image']['option']['generate'])
-    if not any(select_options(render_types, allow_multiple=True)):
+    if not any(select_options(render_types, multiple_choice=True)):
         if yes_or_no('Error: Nothing was chosen, would you like to restart?'):
             return True
         return False
@@ -259,18 +259,23 @@ def _user_generate():
             colour_map_gen = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
         except ValueError:
             Message(STRINGS['string']['image']['option']['colour']['notset'])
+            Message(STRINGS['string']['image']['option']['colour']['selection'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
-
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateTracks']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+            
+            while not render_types[0][3]:
+                colour_maps = multi_select(map_options)
+                for colour_map in colour_maps:
+                    try:
+                        calculate_colour_map(colour_map)
+                    except ValueError as e:
+                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    else:
+                        render_types[0][3].append(colour_map)
+                if not render_types[0][3]:
+                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+        else:
+            render_types[0][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+                
     
     #Generate click heatmap
     if render_types[1][1]:
@@ -283,7 +288,7 @@ def _user_generate():
             ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['word']['mousebutton']['right']]
         ]
         Message('Which mouse buttons should be included in the heatmap?.')
-        if not any(select_options(mb_options, allow_multiple=True)):
+        if not any(select_options(mb_options, multiple_choice=True)):
             Message('Warning: No mouse buttons selected, disabling heatmap.')
             render_types[2][1] = False
         else:
@@ -291,92 +296,107 @@ def _user_generate():
                 CONFIG['GenerateHeatmap'][mb_id] = value
         
         #Select colour map
-        colour_map = CONFIG['GenerateHeatmap']['ColourProfile']
         try:
-            colour_map_gen = calculate_colour_map(colour_map)
+            colour_map_gen = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
         except ValueError:
             Message(STRINGS['string']['image']['option']['colour']['notset'])
+            Message(STRINGS['string']['image']['option']['colour']['selection'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(clicks=True))]
+            
+            while not render_types[1][3]:
+                colour_maps = multi_select(map_options)
+                for colour_map in colour_maps:
+                    try:
+                        calculate_colour_map(colour_map)
+                    except ValueError as e:
+                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    else:
+                        render_types[1][3].append(colour_map)
+                if not render_types[1][3]:
+                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+        else:
+            render_types[1][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateHeatmap']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
                     
     #Generate keyboard
     if render_types[2][1]:
         Message('Options for {}...'.format(render_types[2][0]))
 
         #Get colour map
-        colour_map = CONFIG['GenerateKeyboard']['ColourProfile']
         try:
-            colour_map_gen = calculate_colour_map(colour_map)
+            colour_map_gen = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
         except ValueError:
             Message(STRINGS['string']['image']['option']['colour']['notset'])
+            Message(STRINGS['string']['image']['option']['colour']['selection'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(keyboard=True, linear=CONFIG['GenerateKeyboard']['LinearMapping']))]
 
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+            while not render_types[2][3]:
+                colour_maps = multi_select(map_options)
+                for colour_map in colour_maps:
+                    try:
+                        calculate_colour_map(colour_map)
+                    except ValueError as e:
+                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    else:
+                        render_types[2][3].append(colour_map)
+                if not render_types[2][3]:
+                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+        else:
+            render_types[2][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
     #Generate acceleration
     if render_types[3][1]:
         Message('Options for {}...'.format(render_types[3][0]))
 
         #Select colour map
-        colour_map = CONFIG['GenerateSpeed']['ColourProfile']
         try:
-            colour_map_gen = calculate_colour_map(colour_map)
+            colour_map_gen = calculate_colour_map(CONFIG['GenerateSpeed']['ColourProfile'])
         except ValueError:
             Message(STRINGS['string']['image']['option']['colour']['notset'])
+            Message(STRINGS['string']['image']['option']['colour']['selection'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateSpeed']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+            while not render_types[3][3]:
+                colour_maps = multi_select(map_options)
+                for colour_map in colour_maps:
+                    try:
+                        calculate_colour_map(colour_map)
+                    except ValueError as e:
+                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    else:
+                        render_types[3][3].append(colour_map)
+                if not render_types[3][3]:
+                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+        else:
+            render_types[3][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+
 
     #Generate brush strokes
     if render_types[4][1]:
         Message('Options for {}...'.format(render_types[4][0]))
 
         #Select colour map
-        colour_map = CONFIG['GenerateStrokes']['ColourProfile']
         try:
-            colour_map_gen = calculate_colour_map(colour_map)
+            colour_map_gen = calculate_colour_map(CONFIG['GenerateStrokes']['ColourProfile'])
         except ValueError:
             Message(STRINGS['string']['image']['option']['colour']['notset'])
+            Message(STRINGS['string']['image']['option']['colour']['selection'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
-            while True:
-                colour_map = select_options(map_options, allow_multiple=False, allow_fail=False)
-                if colour_map is None:
-                    continue
-                try:
-                    colour_map_gen = calculate_colour_map(colour_map)
-                    CONFIG['GenerateStrokes']['ColourProfile'] = colour_map
-                    break
-                except ValueError:
-                    Message('Error: Failed to turn {} into a colour map. Please choose another:'.format(colour_map))
+            while not render_types[4][3]:
+                colour_maps = multi_select(map_options)
+                for colour_map in colour_maps:
+                    try:
+                        calculate_colour_map(colour_map)
+                    except ValueError as e:
+                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    else:
+                        render_types[4][3].append(colour_map)
+                if not render_types[4][3]:
+                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+        else:
+            render_types[4][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+
 
     #Calculate session length
     last_session_start = render.data['Ticks']['Session']['Total']
@@ -395,26 +415,36 @@ def _user_generate():
         ]
         Message(STRINGS['string']['image']['option']['session']['select'])
         while True:
-            session = select_options(session_options, allow_multiple=False, update=False)
+            session = select_options(session_options, multiple_choice=False, update=False)
             if session is not None:
                 break
     
     #Render the images
     if render_types[0][1]:
-        render.tracks(session)
-        Message()
+        for colour_map in render_types[0][3]:
+            CONFIG['GenerateTracks']['ColourProfile'] = colour_map
+            render.tracks(session)
+            Message()
     if render_types[1][1]:
-        render.clicks(session)
-        Message()
+        for colour_map in render_types[1][3]:
+            CONFIG['GenerateHeatmap']['ColourProfile'] = colour_map
+            render.clicks(session)
+            Message()
     if render_types[2][1]:
-        render.keyboard(session)
-        Message()
+        for colour_map in render_types[2][3]:
+            CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
+            render.keyboard(session)
+            Message()
     if render_types[3][1]:
-        render.speed(session)
-        Message()
+        for colour_map in render_types[2][3]:
+            CONFIG['GenerateSpeed']['ColourProfile'] = colour_map
+            render.speed(session)
+            Message()
     if render_types[4][1]:
-        render.strokes(session)
-        Message()
+        for colour_map in render_types[2][3]:
+            CONFIG['GenerateStrokes']['ColourProfile'] = colour_map
+            render.strokes(session)
+            Message()
         
     #Open folder
     if CONFIG['GenerateImages']['OpenOnFinish']:
@@ -434,32 +464,114 @@ def user_generate():
             break
 
 
-def select_options(options, allow_multiple=True, update=None, allow_fail=True):
-    """Ask for choices (either multiple or single).
-    The options must be in the format: [Return Value, True/False, Name]
+def select_options(options, multiple_choice=True, update=None, auto_choose_on_fail=False, _show_choice_only=None, _selection=None):
+    """Ask for either single or multiple choice input.
 
-    The options can be automatically updated but the default settings will be lost.
+    Parameters:
+        options (list/tuple): Information on the selection.
+            options[0] = return value (str)
+            options[1] = default (bool)
+            options[2] = name
+            options[3:] = anything
 
-    "show_fail" is used when you want the output, like if you were choosing a string.
+        multiple_choice (bool): If multiple answers can be chosen.
+            Default: True
+
+        update (bool/None): If the options list should be modified in place.
+            Disable if the default values need to be used again.
+            By default it is set to match the multiple_choice option.
+            Default: None
+
+        auto_choose_on_fail (bool): If a random choice should be used when nothing is selected.
+            If disabled without multiple_choice, None will be returned and an error will be printed.
+            Default: False
+        
+        _show_choice_only (bool/None): If the choice should be shown, or input disabled.
+            Only should be used if overriding the function.
+            If set to True, a list of options will be shown with no input.
+            If set to False, an input will be requested without options.
+            If set to "input_override", it acts as True but asks for the input and instantly returns it.
+
+        _selection (str/None): Pre-chosen selection to override the input.
+
+    Return Values:
+        If multiple_choice is True: 
+            Return list of booleans for each option value
+
+        If multiple_choice is False:
+            If one option chosen:
+                Return option[0] (the return value) of chosen option
+            If more than one option chosen:
+                Return None
+            If auto_choose_on_fail is False and no selection given: 
+                Return None
+
+        If _show_choice_only is True:
+            Return None
+
+        If _show_choice_only is "input_override":
+            Return user input
+
+    >>> options = [
+    ...     ['option_1', False, 'Option 1'],
+    ...     ['option_2', False, 'Option 2'],
+    ...     ['option_3', False, 'Option 3']
+    ... ]
+    >>> select_options(options, multiple_choice=False, auto_choose_on_fail=False) <press 1>
+    option_1
+    >>> select_options(options, multiple_choice=False, auto_choose_on_fail=False) <press 1 2>
+    None
+    >>> select_options(options, multiple_choice=False, auto_choose_on_fail=False) <no choice>
+    None
+    >>> select_options(options, multiple_choice=False, auto_choose_on_fail=True) <no choice>
+    option_2
+    >>> select_options(options, multiple_choice=True, auto_choose_on_fail=False) <press 1>
+    [True, False, False]
+    >>> select_options(options, multiple_choice=True, auto_choose_on_fail=False) <press 1 2>
+    [True, True, False]
+    >>> select_options(options, multiple_choice=True, auto_choose_on_fail=False) <no choice>
+    [False, False, False]
+    >>> select_options(options, multiple_choice=True, auto_choose_on_fail=True) <no choice>
+    [True, False, True]
     """
     if update is None:
-        update = allow_multiple
+        update = multiple_choice
 
     #List possible options
-    if allow_multiple:
-        Message(STRINGS['string']['image']['option']['select'].format(V=', '.join(i[2] for i in options if i[1]), 
-                                                                    ID=', '.join(str(i+1) for i, value in enumerate(options) if value[1])))
+    if multiple_choice and _show_choice_only is None:
+        select_message = STRINGS['string']['image']['option']['select']
+        default_message = select_message['default'].format(V=', '.join(i[2] for i in options if i[1]), 
+                                                           ID=', '.join(str(i+1) for i, value in enumerate(options) if value[1]))
+        Message(select_message['separate'].format(D=default_message))
+
     for i, values in enumerate(options):
-        if allow_multiple or not values[1]:
-            Message('{}: {}'.format(i+1, values[2]))
-        else:
-            Message('{}: {} [{}]'.format(i+1, values[2], STRINGS['word']['default']))
-    Message()
+
+        #Set name to return value if name doesn't exist
+        if len(values) == 2:
+            values.append(values[0])
+
+        if _show_choice_only is None or _show_choice_only: 
+            if multiple_choice or not values[1]:
+                Message('{}: {}'.format(i+1, values[2]))
+            else:
+                Message('{}: {} [{}]'.format(i+1, values[2], STRINGS['word']['default']))
     
-    choice = input('Type your choice here: ')
+    #Handle override to show/hide choice
+    if _show_choice_only and _show_choice_only != 'input_override':
+        return None
+    elif _show_choice_only is None or _show_choice_only:
+        Message()
+    
+    if _selection is None:
+        choice = input('Type your choice here: ')
+    else:
+        choice = _selection
+
+    if _show_choice_only == 'input_override':
+        return choice
 
     #Get choice results, and update options if needed
-    result = value_select(choice, [option[1] for option in options], start=1, revert_to_default=allow_fail)
+    result = value_select(choice, [option[1] for option in options], start=1, revert_to_default=not auto_choose_on_fail)
     if update:
         for i, value in enumerate(result):
             options[i][1] = value
@@ -469,15 +581,24 @@ def select_options(options, allow_multiple=True, update=None, allow_fail=True):
     if any(result):
         Message('{} {} chosen.'.format(list_to_str(options[i][2] for i, value in enumerate(result) if value), 'was' if len(joined) == 1 else 'have been'))
     
-    elif not allow_fail and not allow_multiple and not choice:
-        result = random.choice(options)[0]
-        Message('{} was chosen at random.\n'.format(result))
-        return result
+    #Automatically choose if no selection given
+    elif auto_choose_on_fail and not choice:
+        if multiple_choice:
+            num_results = len(result) - 1
+            while not any(result):
+                result = [not random.randint(0, num_results) for _ in result]
+            Message('{} {} chosen at random.'.format(list_to_str(options[i][2] for i, value in enumerate(result) if value), 'was' if sum(result) == 1 else 'have been'))
+        else:
+            result = random.choice(options)[0]
+            Message('{} was chosen at random.\n'.format(result))
+            return result
     
-    if allow_multiple:
+    #End if multiple choice
+    if multiple_choice:
         Message()
         return result
 
+    #Check too many options haven't been chosen
     elif joined:
         if len(joined) > 1:
             Message('Error: Only one option can be chosen.\n')
@@ -485,13 +606,44 @@ def select_options(options, allow_multiple=True, update=None, allow_fail=True):
         Message()
         return joined[0]
     
+    #End if random choice was chosen
     else:
-        if allow_fail:
+        if not auto_choose_on_fail:
             Message('Error: Invalid choice.\n')
             return None
         else:
             Message('{} was chosen.\n'.format(choice))
             return choice
+
+
+def multi_select(options, auto=False):
+    """Override of the select_options function to allow both text and integer input for multiple choice."""
+
+    if not auto:
+
+        #Display the options
+        choice = select_options(options, multiple_choice=True, _show_choice_only='input_override')
+
+        #Read the integer selections
+        int_choice = value_select(choice, [option[1] for option in options], start=1, revert_to_default=True)
+        for i, value in enumerate(int_choice):
+            if value:
+                choice = choice.replace(str(i+1), '')
+        multiple_choice = set(options[i][0] for i, value in enumerate(int_choice) if value)
+
+        #Parse the text input
+        multiple_choice.update(i.strip() for i in choice.replace(' ', ',').split(','))
+        try:
+            multiple_choice.remove('')
+        except KeyError:
+            pass
+
+    #Get random selection
+    if auto or not multiple_choice:
+        random_choice = select_options(options, multiple_choice=True, auto_choose_on_fail=True, _selection='', _show_choice_only=False)
+        multiple_choice = set(options[i][0] for i, value in enumerate(random_choice) if value)
+    
+    return multiple_choice
 
 
 if __name__ == '__main__':

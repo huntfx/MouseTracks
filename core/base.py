@@ -14,7 +14,12 @@ from core.os import get_documents_path, read_env_var
 
 def format_name(name, extra_chars=''):
     """Remove any invalid characters for file name."""
-    return sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', name).lower()
+    try:
+        return sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', name).lower()
+    except TypeError:
+        if not isinstance(name, str):
+            return format_name(str(name), extra_chars=extra_chars)
+        raise
     
 
 def format_file_path(path):
