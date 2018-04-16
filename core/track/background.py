@@ -189,7 +189,6 @@ def background_process(q_recv, q_send):
                 #TODO: Set idle time in config
                 if store['LastIdle'] > received_data['Ticks']['Idle'] and store['LastIdle'] > UPDATES_PER_SECOND * 10:
                     store['Data']['Sessions'][-1][2] += store['LastIdle']
-                    NOTIFY_DEBUG(store['Data']['Sessions'][-1])
                 store['LastIdle'] = received_data['Ticks']['Idle']
             
             #Save the data
