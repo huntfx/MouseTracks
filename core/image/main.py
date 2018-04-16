@@ -182,7 +182,7 @@ class ImageName(object):
             name = name.replace('[LatestSave]', str(round_int(self.data['Time']['Modified'])))
             name = name.replace('[FileVersion]', str(self.data['Version']))
             name = name.replace('[TimesLoaded]', str(self.data['TimesLoaded']))
-            name = name.replace('[Sessions]', str(len(self.data['SessionStarts'])))
+            name = name.replace('[Sessions]', str(len(self.data['Sessions'])))
             ticks = self.data['Ticks']['Total']
             name = name.replace('[Ticks]', str(int(ticks)))
             name = name.replace('[RunningTimeSeconds]', str(round_int(ticks / UPDATES_PER_SECOND)))

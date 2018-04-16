@@ -211,7 +211,8 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 try:
                     if frame_data or frame_data_rp:
                         last_sent = ticks - store['LastSent']
-                        frame_data['Ticks'] = last_sent
+                        frame_data['Ticks'] = {'Total': last_sent,
+                                               'Idle': ticks - store['LastActivity']}
                         if frame_data:
                             q_bg_send.put(frame_data)
                         if frame_data_rp:
@@ -240,7 +241,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 
                     received_message = q_bg_recv.get()
                     
-                    #Receive text messages
+                    #Receive text messages, quit if exception
                     try:
                         if received_message.startswith('Traceback (most recent call last)'):
                             q_bg_send.put({'Quit': True})
@@ -609,7 +610,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                             except TypeError:
                             
                                 if check_resolution:
-                                    raise TypeError
+                                    raise
                                     
                                 #Send to background process if the monitor list changes
                                 old_resolution = store['Resolution']['Boundaries']

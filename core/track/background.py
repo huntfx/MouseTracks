@@ -166,7 +166,8 @@ def background_process(q_recv, q_send):
                               'Time': None,
                               'Backspace': False},
                  'FirstLoad': True,
-                 'LastTrackUpdate': 0
+                 'LastTrackUpdate': 0,
+                 'LastIdle': 0,
                 }
         
         NOTIFY(DATA_LOADED)
@@ -181,7 +182,15 @@ def background_process(q_recv, q_send):
             
             #Increment the amount of time the script has been running for
             if 'Ticks' in received_data:
-                store['Data']['Ticks']['Total'] += received_data['Ticks']
+                store['Data']['Ticks']['Total'] += received_data['Ticks']['Total']
+                store['Data']['Sessions'][-1][1] += received_data['Ticks']['Total']
+                
+                #Increment idle time if it reaches a threshold (>10 seconds)
+                #TODO: Set idle time in config
+                if store['LastIdle'] > received_data['Ticks']['Idle'] and store['LastIdle'] > UPDATES_PER_SECOND * 10:
+                    store['Data']['Sessions'][-1][2] += store['LastIdle']
+                    NOTIFY_DEBUG(store['Data']['Sessions'][-1])
+                store['LastIdle'] = received_data['Ticks']['Idle']
             
             #Save the data
             if 'Save' in received_data:
