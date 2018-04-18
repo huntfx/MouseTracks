@@ -149,7 +149,7 @@ class AppList(object):
                         if remaining.strip().startswith(':'):
                             game_name = remaining.split(':', 1)[1]
                         else:
-                            game_name = window_name
+                            game_name = window_name.replace(TRACKING_WILDCARD, '').strip()
 
                     #In the format "MyGame.exe"
                     elif no_space.endswith(ext):
