@@ -328,8 +328,21 @@ class RunningApplications(object):
                     for name in names:
                         if name is None:
                             continue
-                        if (name[:_WILDCARD_LEN] == TRACKING_WILDCARD and self.focused_name.endswith(name[_WILDCARD_LEN:]) 
-                                or name[-_WILDCARD_LEN:] == TRACKING_WILDCARD and self.focused_name.startswith(name[:-_WILDCARD_LEN])):
+                        
+                        #Check for wildcards, only supports at the start and end of the name
+                        #TODO: Change to regex
+                        wildcard_start = name.startswith(TRACKING_WILDCARD)
+                        wildcard_end = name.endswith(TRACKING_WILDCARD)
+                        if wildcard_start and wildcard_end:
+                            match = name[_WILDCARD_LEN:-_WILDCARD_LEN] in self.focused_name
+                        elif wildcard_start:
+                            match = self.focused_name.endswith(name[_WILDCARD_LEN:])
+                        elif wildcard_end:
+                            match = self.focused_name.startswith(name[:-_WILDCARD_LEN])
+                        else:
+                            match = True
+                            
+                        if match:
                             return names[name], self.focused_exe
 
                     #Return default name
@@ -338,6 +351,6 @@ class RunningApplications(object):
                 #Default name doesn't exist
                 except KeyError:
                     return None
-    
+
     def save_file(self):
         self.applist.save()
