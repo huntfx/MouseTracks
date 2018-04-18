@@ -340,7 +340,7 @@ class RunningApplications(object):
                         elif wildcard_end:
                             match = self.focused_name.startswith(name[:-_WILDCARD_LEN])
                         else:
-                            match = True
+                            match = name == self.focused_name
                             
                         if match:
                             return names[name], self.focused_exe
