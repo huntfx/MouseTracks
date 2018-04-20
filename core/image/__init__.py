@@ -15,6 +15,7 @@ from core.compatibility import input, Message
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.config import CONFIG
 from core.image.colours import get_map_matches, calculate_colour_map
+from core.image.main import RenderImage
 from core.input import value_select, yes_or_no
 from core.files import get_data_files, get_metadata, format_name, LoadData
 from core.language import Language
@@ -216,10 +217,6 @@ def _user_generate():
     if not check_running_status(profile):
         Message(STRINGS['string']['exit'])
         return
-
-    #Load functions
-    Message(STRINGS['string']['import'])
-    from core.image.main import RenderImage
 
     Message(STRINGS['string']['profile']['load'].format(P=profile))
     try:
