@@ -7,6 +7,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+import logging
 import os
 import pywintypes
 import sys
@@ -46,7 +47,8 @@ class Tray(object):
     FIRST_ID = 1023
 
     def __init__(self, menu_options, program_name='Python Taskbar', window_name=None):
-    
+
+        self.logger = logging.getLogger("tray")
         self.cache = {}
         self._commands = {'OnMenuOpen': [],
                           'OnMenuClose': [],
@@ -60,7 +62,7 @@ class Tray(object):
         self._refresh_menu(menu_options)
         if window_name is None:
             window_name = program_name
-        
+
         #Set up callbacks
         msg_TaskbarRestart = win32gui.RegisterWindowMessage('TaskbarCreated')
         message_map = {
@@ -92,14 +94,17 @@ class Tray(object):
                 0, 0, hinst, None)
         win32gui.UpdateWindow(self.hwnd)
         self._set_icon()
+        self.logger.info('Window created.')
 
     def OnRestart(self, hwnd, msg, wparam, lparam):
+        self.logger.info('Window restarted.')
         self._set_icon()
 
     def OnDestroy(self, hwnd, msg, wparam, lparam):
         nid = (self.hwnd, 0)
         win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
         win32gui.PostQuitMessage(0)
+        self.logger.info('Window destroyed.')
 
     def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
         """Receive click events from the taskbar."""
@@ -114,13 +119,18 @@ class Tray(object):
             always_bring_to_front = True
             
             if always_bring_to_front or self.console_hwnd is not None and self.console_hwnd.minimised:
+                self.logger.info('Double click to bring window to foreground.')
                 self.bring_to_front()
             else:
+                self.logger.info('Double click to minimise window.')
                 self.minimise_to_tray()
         
         #Right click (load menu)
         elif lparam==win32con.WM_RBUTTONUP:
+            self.logger.info('Right click to open menu.')
+
             for func in self._commands['OnMenuOpen']:
+                self.logger.debug('Called "%s" after opening menu.', func.__name__)
                 func(self)
             
             #Occasionally the menu may fail to load for some reason, so skip
@@ -130,6 +140,7 @@ class Tray(object):
                 return 0
                 
             for func in self._commands['OnMenuClose']:
+                self.logger.debug('Called "%s" after closing menu.', func.__name__)
                 func(self)
         return 1
 
@@ -140,6 +151,7 @@ class Tray(object):
         #Handle case when action isn't set
         try:
             action, args, kwargs = self.menu_actions_by_id[id]
+            self.logger.info('Function "%s" was called.', action.__name__)
         except KeyError:
             pass
         else:
@@ -160,8 +172,15 @@ class Tray(object):
         for func in args:
             if callable(func):
                 valid_functions.append(func)
+                self.logger.info('Registered "%s" for trigger "%s".', func.__name__, trigger)
+            else:
+                try:
+                    self.logger.warning('Failed to register "%s" for trigger "%s".', func.__name__, trigger)
+                except AttributeError:
+                    self.logger.warning('Failed to register "%s" for trigger "%s".', str(func), trigger)
         self._commands[trigger] = valid_functions
-            
+
+        
     def minimise_to_tray(self):
         """Remove the console window.
         A minimised window can't be hidden to tray, so restore it first.
@@ -179,6 +198,8 @@ class Tray(object):
         if self.__dict__.get('minimise_override', None):
             del self.minimise_override
             self.bring_to_front()
+
+        self.logger.info('Window hidden.')
             
     def bring_to_front(self):
         """Bring the console window to the front."""
@@ -192,6 +213,8 @@ class Tray(object):
         
         for func in self._commands['OnWindowRestore']:
             func(self)
+
+        self.logger.info('Window restored.')
             
     def _set_icon(self, icon_path=None):
         """Load the tray icon.
@@ -222,6 +245,8 @@ class Tray(object):
             # but keep running anyway - when explorer starts, we get the
             # TaskbarCreated message.
             pass
+
+        self.logger.debug('Set tray icon.')
                 
     def _set_icon_menu(self, icon):
         """Load icons into the tray items.
@@ -246,6 +271,8 @@ class Tray(object):
         memDC.SelectObject(oldBmp)
         memDC.DeleteDC()
         win32gui.ReleaseDC(self.hwnd, hwndDC)
+
+        self.logger.debug('Set menu icon.')
 
         return iconBitmap.GetHandle()
         
@@ -306,6 +333,7 @@ class Tray(object):
                                 self.hwnd,
                                 None)
         win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
+        self.logger.debug('Menu displayed.')
 
     def _create_menu(self, menu, menu_options):
         """Generate the popup menu just before drawing.
@@ -350,7 +378,7 @@ class Tray(object):
             menu_options = self._menu_options
         else:
             menu_options = _menu_options
-            
+        
         for i, menu_option in enumerate(menu_options):
             #Get ID value, or skip if no ID
             id = menu_option.get('id', None)
@@ -361,6 +389,7 @@ class Tray(object):
             if id == menu_id:
                 for k, v in iteritems(kwargs):
                     menu_options[i][k] = v
+                self.logger.debug('Menu item "%s" updated (%s).', id, ', '.join('{}:"{}"'.format(k, v) for k, v in iteritems(kwargs)))
             
             #Look in submenu
             else:
@@ -370,7 +399,7 @@ class Tray(object):
         
         if _menu_options is None:
             self._refresh_menu(menu_options)
-        
+
     def get_menu_item(self, _menu_options=None, **kwargs):
         """Return list of all items where the kwargs match."""
         if _menu_options is None:
@@ -400,11 +429,12 @@ class Tray(object):
             action = menu_option.get('action', None)
             if isinstance(action, tuple):
                 matching_items += self.get_menu_item(_menu_options=action, **kwargs)
-        return matching_items
 
+        return matching_items
 
     def listen(self):
         """Run the tray program."""
+        self.logger.info('Started listening for callbacks...')
         win32gui.PumpMessages()
 
 
