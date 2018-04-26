@@ -4,7 +4,7 @@ from flask import Flask, jsonify, abort, request
 
 from core.api.constants import *
 from core.compatibility import iteritems
-from core.config import config_to_dict
+from core.ini import config_to_dict
 from core.notify import *
 
 import logging

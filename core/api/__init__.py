@@ -16,10 +16,10 @@ from core.notify import *
 from core.sockets import *
 try:
     from core.api.web import app
-except ImportError:
+except ImportError as e:
     CONFIG['API']['RunWeb'] = False
     CONFIG['API']['RunWeb'].lock = True
-    NOTIFY(IMPORT_FAILED, 'Flask')
+    NOTIFY(IMPORT_FAILED, 'Flask', e)
     app = None
 
 

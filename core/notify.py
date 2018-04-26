@@ -449,7 +449,10 @@ class Notify(object):
         elif message_id == IMPORT_FAILED:
             if args[0] not in self._failed_imports:
                 self._failed_imports.add(args[0])
-                q2('Import of "{}" failed.'.format(args[0]))
+                if len(args) > 1:
+                    q2('Import of "{}" failed. Reason: "{}".'.format(args[0], args[1]))
+                else:
+                    q2('Import of "{}" failed.'.format(args[0]))
             
         elif message_id == TRACKING_RESUME:
             q2(s['server']['status']['resume'])
