@@ -230,8 +230,9 @@ def background_process(q_recv, q_send):
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
                     
                     #Load new profile
+                    allow_new_session = current_program is not None or current_program is None and store['LastProgram'] is None
+                    store['Data'] = LoadData(current_program, _reset_sessions=allow_new_session)
                     store['LastProgram'] = current_program
-                    store['Data'] = LoadData(current_program)
                     store['ActivitySinceLastSave'] = False
                     
                     #Check new resolution
