@@ -6,6 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import division, absolute_import
 
+from collections import defaultdict
 import time
 import traceback
 
@@ -84,15 +85,18 @@ def running_processes(q_recv, q_send, background_send):
                         start = APPLICATION_FOCUSED
                         end = APPLICATION_UNFOCUSED
                 
+                    process_id = None
                     if current_app is None:
                         NOTIFY(end, previous_app)
                     else:
-                        if running_apps.focus is not None and previous_app is not None:
-                            NOTIFY(APPLICATION_UNFOCUSED, previous_app)
+                        if running_apps.focus is not None:
+                            process_id = running_apps.focus.pid
+                            if previous_app is not None:
+                                NOTIFY(APPLICATION_UNFOCUSED, previous_app)
                         NOTIFY(start, current_app)
                         
                     NOTIFY.send(q_send)
-                    send['Program'] = current_app
+                    send['Program'] = (process_id, current_app)
                     
                     previous_app = current_app
                 
@@ -168,6 +172,7 @@ def background_process(q_recv, q_send):
                  'FirstLoad': True,
                  'LastTrackUpdate': 0,
                  'LastIdle': 0,
+                 'ProcessIDs': defaultdict(set)
                 }
         
         NOTIFY(DATA_LOADED)
@@ -215,7 +220,7 @@ def background_process(q_recv, q_send):
             
             #Check for new program loaded
             if 'Program' in received_data:
-                current_program = received_data['Program']
+                process_id, current_program = received_data['Program']
                 
                 if current_program != store['LastProgram']:
                     update_resolution = True
@@ -231,6 +236,13 @@ def background_process(q_recv, q_send):
                     
                     #Load new profile
                     allow_new_session = current_program is not None or current_program is None and store['LastProgram'] is None
+                    try:
+                        if process_id is not None and process_id in store['ProcessIDs'][current_program]:
+                            allow_new_session = False
+                    except KeyError:
+                        pass
+                    if process_id is not None:
+                        store['ProcessIDs'][current_program].add(process_id)
                     store['Data'] = LoadData(current_program, _reset_sessions=allow_new_session)
                     store['LastProgram'] = current_program
                     store['ActivitySinceLastSave'] = False
