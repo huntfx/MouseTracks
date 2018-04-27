@@ -5,7 +5,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-from core.compatibility import iteritems
+from core.compatibility import iteritems, range
 from core.os import create_folder
 
 
@@ -65,7 +65,7 @@ class _ConfigItem(object):
         self._data['lock'] = value
     
     @property
-    def raw(self):
+    def value(self):
         """Return the actual value."""
         return self._data['value']
 
@@ -105,9 +105,12 @@ class _ConfigItemStr(str, _ConfigItem):
     
     def validate(self, value):
         """Return a validated string or None."""
-        value = str(value)
-        if not value and self._data.get('allow_empty', False):
-            return value
+        value = str(value)#.strip()
+        if not value:
+            if self._data.get('allow_empty', False):
+                return value
+            else:
+                return None
         case_sensitive = self._data.get('case_sensitive', False)
         valid_list = self._data.get('valid', None)
         if valid_list is not None:
@@ -116,6 +119,18 @@ class _ConfigItemStr(str, _ConfigItem):
                 value = value.lower()
             if value not in valid_list:
                 return None
+        return value
+
+    def format_custom(self, **kwargs):
+        """Custom format to work with square brackets.
+        Converts underscores to hyphens in the variable names.
+        Does not throw errors so is safe to use with user input.
+
+        eg. "Sentence with [CUSTOM-VAR]" can be formatted with ".format_custom(CUSTOM_VAR=var)"
+        """
+        value = self._data['value']
+        for search, replacement in iteritems(kwargs):
+            value = value.replace('[{}]'.format(search.replace('_', '-')), replacement)
         return value
     
     @property
@@ -126,6 +141,10 @@ class _ConfigItemStr(str, _ConfigItem):
     @property
     def type(self):
         return str
+
+    @property
+    def allow_empty(self):
+        return self._data.get('allow_empty', False)
 
         
 class _ConfigItemInt(int, _ConfigItemNumber):
@@ -236,10 +255,14 @@ class Config(dict):
 
     _DEFAULT_VALUES = {int: 0, float: 0.0, str: '', bool: False}
     
-    def __init__(self, defaults, show_hidden=False):
+    def __init__(self, defaults, show_hidden=False, default_settings=None):
+        """Initialise config with the default values.
+        Can also provide default settings to apply to everything, such as {'type': int, 'min': 0}.
+        """
         self._data = {}
         self._backup = {}
         self._default = defaults
+        self._default_settings = default_settings
         self._load_from_dict(defaults)
         self.hidden = not show_hidden
         self.is_new = False
@@ -265,9 +288,19 @@ class Config(dict):
             self._backup[heading] = {}
             
             for var, info in iteritems(var_data):
-                if not isinstance(info, dict):
+                if isinstance(info, (str, int, float, bool)):
+                    info = {'value': info}
+                elif not isinstance(info, dict):
                     continue
-                    
+                else:
+                    info = dict(info)
+                
+                #Fill from default settings
+                if self._default_settings is not None:
+                    for option_name, option_value in iteritems(self._default_settings):
+                        if option_name not in info:
+                            info[option_name] = option_value
+                            
                 #Fill in type or value if not set
                 if 'type' not in info:
                     info['type'] = type(info['value'])
@@ -317,7 +350,9 @@ class Config(dict):
 
             #Add each variable
             for variable in _get_priority_order(self._default[heading]):
-                output.append('{} = {}'.format(variable, self._default[heading][variable]['value']))
+                value_type = self._default[heading][variable]['type']
+                value = self._default[heading][variable].get('value', self._DEFAULT_VALUES[value_type])
+                output.append('{} = {}'.format(variable, value))
                 try:
                     output[-1] += '\t\t// {}'.format(self._default[heading][variable]['__info__'])
                 except KeyError:
