@@ -69,6 +69,13 @@ class _ConfigItem(object):
         """Return the actual value."""
         return self._data['value']
 
+    @property
+    def level(self):
+        """Return the value level.
+        Can be used for things like a text system with priority.
+        """
+        return self._data.get('level', -1)
+
 
 class _ConfigItemNumber(_ConfigItem):
     """Base class for floats and integerss.
@@ -100,8 +107,9 @@ class _ConfigItemNumber(_ConfigItem):
 class _ConfigItemStr(str, _ConfigItem):
     """Add controls to strings."""
     def __new__(cls, config_dict):
-        cls._data = config_dict
-        return str.__new__(cls, cls._data['value'])
+        obj = str.__new__(cls, config_dict['value'])
+        obj._data = config_dict
+        return obj
     
     def validate(self, value):
         """Return a validated string or None."""
@@ -130,7 +138,7 @@ class _ConfigItemStr(str, _ConfigItem):
         """
         value = self._data['value']
         for search, replacement in iteritems(kwargs):
-            value = value.replace('[{}]'.format(search.replace('_', '-')), replacement)
+            value = value.replace('[{}]'.format(search.replace('_', '-')), str(replacement))
         return value
     
     @property
@@ -150,8 +158,9 @@ class _ConfigItemStr(str, _ConfigItem):
 class _ConfigItemInt(int, _ConfigItemNumber):
     """Add controls to integers."""
     def __new__(cls, config_dict):
-        cls._data = config_dict
-        return int.__new__(cls, cls._data['value'])
+        obj = int.__new__(cls, config_dict['value'])
+        obj._data = config_dict
+        return obj
         
     @property
     def type(self):
@@ -161,8 +170,9 @@ class _ConfigItemInt(int, _ConfigItemNumber):
 class _ConfigItemFloat(float, _ConfigItemNumber):
     """Add controls to floats."""
     def __new__(cls, config_dict):
-        cls._data = config_dict
-        return float.__new__(cls, cls._data['value'])
+        obj = float.__new__(cls, config_dict['value'])
+        obj._data = config_dict
+        return obj
     
     @property
     def type(self):
@@ -176,9 +186,10 @@ class _ConfigItemBool(int, _ConfigItem):
     the values are actually stored as integers.
     """
     def __new__(cls, config_dict):
-        cls._data = config_dict
-        cls._data['default'] = int(cls._data['default'])
-        return int.__new__(cls, cls._data['value'])
+        obj = int.__new__(cls, config_dict['value'])
+        obj._data = config_dict
+        obj._data['default'] = int(config_dict['default'])
+        return obj
     
     def validate(self, value):
         if isinstance(value, str):
@@ -200,7 +211,10 @@ def create_config_item(config_dict, item_type=None):
 
     
 class _ConfigDict(dict):
-    """Handle the variables inside the config."""
+    """Handle the variables inside the config.
+    
+    #TODO: Catch KeyErrors on invalid keys
+    """
     def __init__(self, config_dict, show_hidden=False):
         self._data = config_dict
         super(_ConfigDict, self).__init__(self._data)
@@ -242,6 +256,7 @@ class Config(dict):
                     _ConfigItemNumber
                         _ConfigItemInt
                         _ConfigItemFloat
+                    _ConfigItemBool
     
         Example:
             >>> c = Config
