@@ -272,6 +272,9 @@ class LoadData(dict):
             #Get information on array
             contains_data = False
             for array in click_maps:
+                if not array.any():
+                    continue
+
                 num_records = numpy.count(array)
                 if num_records:
                     contains_data = True
