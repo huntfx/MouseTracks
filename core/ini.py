@@ -49,11 +49,15 @@ class _ConfigItem(object):
     """Base class for values in the config file.
     All types inhert off this, which means they can be locked if needed.
     """
+    def __init__(self, input_dict):
+        self._data = input_dict
+        self._data['default'] = self.type(self._data.get('default', self.value))
+
     @property
     def default(self):
         """Get the default value set by the config."""
         return self._data['default']
-    
+
     @property
     def lock(self):
         """Lock the variable from being modified."""
@@ -69,6 +73,13 @@ class _ConfigItem(object):
         """Return the actual value."""
         return self._data['value']
 
+    @value.setter
+    def value(self, value):
+        """Set and validate a new value."""
+        validated_value = self._validate(value)
+        if validated_value is not None:
+            self._data['value'] = validated_value
+        
     @property
     def level(self):
         """Return the value level.
@@ -81,8 +92,10 @@ class _ConfigItemNumber(_ConfigItem):
     """Base class for floats and integerss.
     Inherits from _ConfigItem.
     """
-    def validate(self, value):
+    def _validate(self, value):
         """Return a validated number or None."""
+        if self.lock:
+            return None
         try:
             value = self._data['type'](value)
         except ValueError:
@@ -107,13 +120,13 @@ class _ConfigItemNumber(_ConfigItem):
 class _ConfigItemStr(str, _ConfigItem):
     """Add controls to strings."""
     def __new__(cls, config_dict):
-        obj = str.__new__(cls, config_dict['value'])
-        obj._data = config_dict
-        return obj
+        return str.__new__(cls, config_dict['value'])
     
-    def validate(self, value):
+    def _validate(self, value):
         """Return a validated string or None."""
-        value = str(value)#.strip()
+        if self.lock:
+            return None
+        value = str(value).strip()
         if not value:
             if self._data.get('allow_empty', False):
                 return value
@@ -158,9 +171,7 @@ class _ConfigItemStr(str, _ConfigItem):
 class _ConfigItemInt(int, _ConfigItemNumber):
     """Add controls to integers."""
     def __new__(cls, config_dict):
-        obj = int.__new__(cls, config_dict['value'])
-        obj._data = config_dict
-        return obj
+        return int.__new__(cls, config_dict['value'])
         
     @property
     def type(self):
@@ -170,9 +181,7 @@ class _ConfigItemInt(int, _ConfigItemNumber):
 class _ConfigItemFloat(float, _ConfigItemNumber):
     """Add controls to floats."""
     def __new__(cls, config_dict):
-        obj = float.__new__(cls, config_dict['value'])
-        obj._data = config_dict
-        return obj
+        return float.__new__(cls, config_dict['value'])
     
     @property
     def type(self):
@@ -186,17 +195,19 @@ class _ConfigItemBool(int, _ConfigItem):
     the values are actually stored as integers.
     """
     def __new__(cls, config_dict):
-        obj = int.__new__(cls, config_dict['value'])
-        obj._data = config_dict
-        obj._data['default'] = int(config_dict['default'])
-        return obj
+        return int.__new__(cls, config_dict['value'])
     
-    def validate(self, value):
+    def _validate(self, value):
+        if self.lock:
+            return None
+
+        #Check for variations of none/false in text 
         if isinstance(value, str):
             if value.lower() in ('0', 'f', 'false', 'no', 'null', 'n'):
                 return False
             else:
                 return True
+
         return bool(value)
     
     @property
@@ -240,9 +251,9 @@ class _ConfigDict(dict):
         if info.get('lock', False):
             return
         
-        validated = create_config_item(self._data[item]).validate(value)
-        if validated is not None:
-            self._data[item]['value'] = validated
+        config_item = create_config_item(self._data[item])
+        config_item.value = value
+        self._data[item]['value'] = config_item.value
 
 
 class Config(dict):
