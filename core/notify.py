@@ -7,12 +7,8 @@ from __future__ import absolute_import
 
 from collections import defaultdict
 
-from core.base import format_file_path
-from core.compatibility import Message, iteritems
+from core.compatibility import iteritems
 from core.config import CONFIG
-from core.constants import DEFAULT_NAME, DEFAULT_PATH
-from core.language import Language, STRINGS
-from core.os import get_documents_path
 
 
 class Notify(object):

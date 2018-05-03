@@ -7,7 +7,7 @@ from __future__ import absolute_import
 
 import socket
 
-from core.api import constants as api
+from core.api.constants import *
 from core.compatibility import Message, input
 from core.cryptography import Crypt, DecryptionError
 from core.sockets import *
@@ -38,7 +38,7 @@ def server_connect(port=None, secret=None):
             received_message = recv_msg(sock)
             
             #End if server has shut down
-            if received_message == api.MESSAGE_QUIT:
+            if received_message == MESSAGE_QUIT:
                 break
                 
             elif received_message is None:

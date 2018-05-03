@@ -8,9 +8,9 @@ from __future__ import absolute_import
 import sys
 from multiprocessing import freeze_support
 
-from core.config import CONFIG
+from core.config import CONFIG, CONFIG_PATH
 from core.track import start_tracking
-from core.os import tray, console
+from core.os import tray, console, open_folder, open_file, KEYS, get_key_press
 
 
 if __name__ == '__main__':
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         from threading import Thread
         
         from core.api import local_address, shutdown_server
-        from core.applications import APP_LIST_PATH
+        from core.applications import APP_LIST_PATH, AppList
         from core.base import format_file_path, get_script_path
         from core.compatibility import Message, input
         from core.constants import APP_LIST_FILE, DEFAULT_PATH
@@ -61,7 +61,6 @@ if __name__ == '__main__':
         from core.internet import get_url_json, send_request
         from core.language import STRINGS
         from core.notify import NOTIFY
-        from core.os import open_folder, open_file
         from core.sockets import get_free_port
             
         
@@ -126,8 +125,6 @@ if __name__ == '__main__':
         
         def on_menu_open(cls):
             """Run this just before the menu opens."""
-            from core.os import KEYS, get_key_press
-            
             web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
             status = get_url_json(status_url, timeout=0.25)
@@ -171,7 +168,6 @@ if __name__ == '__main__':
             cls.set_menu_item('restore', hidden=True)
             
         def applist_update(cls):
-            from core.applications import AppList
             AppList().update()
             
         def quit_message_client(cls):

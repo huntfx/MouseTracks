@@ -10,7 +10,7 @@ import socket
 from multiprocessing import Queue
 from threading import Thread, currentThread
 
-from core.api import constants as api
+from core.api.constants import *
 from core.compatibility import queue, range
 from core.cryptography import Crypt
 from core.notify import NOTIFY
@@ -36,7 +36,7 @@ def client_thread(client_id, sock, q_recv, q_send):
     #Remove items from queue sent before connection
     try:
         while not q_recv.empty():
-            if q_recv.get() == api.MESSAGE_IGNORE:
+            if q_recv.get() == MESSAGE_IGNORE:
                 break
     except IOError:
         conn.close()
@@ -62,7 +62,7 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
     
     #This will cut off all messages from before the previous connection
     try:
-        q_list[-1].put(api.MESSAGE_IGNORE)
+        q_list[-1].put(MESSAGE_IGNORE)
     except (IOError, EOFError):
         return
     
@@ -76,9 +76,9 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
         except (IOError, EOFError):
             return
         else:
-            if message == api.MESSAGE_QUIT:
+            if message == MESSAGE_QUIT:
                 queues = q_list[:-1]
-            elif message == api.MESSAGE_IGNORE:
+            elif message == MESSAGE_IGNORE:
                 queues = q_list[-1]
             else:
                 message = crypt.encrypt(message)
@@ -155,7 +155,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
                 #Close all client connections
                 if getattr(t, 'force_close_clients', False):
                     try:
-                        q_main.put(api.MESSAGE_QUIT)
+                        q_main.put(MESSAGE_QUIT)
                     except (IOError, EOFError):
                         pass
                     t.force_close_clients = False
