@@ -9,7 +9,7 @@ from core.compatibility import iteritems, range
 from core.os import create_folder
 
 
-def _get_priority_order(values, key='__priority__', default=None):
+def _get_priority_order(values, key='__priority__', default=None, empty_goes_last=True):
     """Use the __priority__ key to build a sorted list of config values.
 
     The list starts from the lowest value, and by default,
@@ -21,7 +21,11 @@ def _get_priority_order(values, key='__priority__', default=None):
     priorities = {}
     for k, v in iteritems(values):
         if not k.startswith('_'):
-            priority = v.get(key, default)
+            #Get the priority if a dict, otherwise use default
+            try:
+                priority = v.get(key, default)
+            except AttributeError:
+                priority = default
             try:
                 priorities[priority].append(k)
             except KeyError:
@@ -33,16 +37,20 @@ def _get_priority_order(values, key='__priority__', default=None):
     except ValueError:
         current = 0
     order = []
+    end = []
     while priorities:
         try:
             order += sorted(priorities.pop(current))
         except KeyError:
             try:
-                order += sorted(priorities.pop(None))
+                if empty_goes_last:
+                    end = sorted(priorities.pop(None))
+                else:
+                    order += sorted(priorities.pop(None))
             except KeyError:
                 pass
         current += 1
-    return order
+    return order + end
 
 
 class _ConfigItem(object):
@@ -330,7 +338,11 @@ class Config(dict):
                     for option_name, option_value in iteritems(self._default_settings):
                         if option_name not in info:
                             info[option_name] = option_value
-                            
+                
+                #Convert to dict if not already one
+                if not isinstance(info, dict):
+                    info = {'value': info}
+
                 #Fill in type or value if not set
                 if 'type' not in info:
                     info['type'] = type(info['value'])
@@ -362,9 +374,10 @@ class Config(dict):
                 except KeyError:
                     pass
                 
-    def _build_for_file(self):
+    def _build_for_file(self, keys_only=False, comment_spacing=0, min_comment_spacing=8, ignore_comments=None):
         """Generate lines for a config file."""
         output = []
+        
         for heading in _get_priority_order(self._default):
             #Add heading
             output.append('[{}]'.format(heading))
@@ -380,13 +393,43 @@ class Config(dict):
 
             #Add each variable
             for variable in _get_priority_order(self._default[heading]):
-                value_type = self._default[heading][variable]['type']
-                value = self._default[heading][variable].get('value', self._DEFAULT_VALUES[value_type])
-                output.append('{} = {}'.format(variable, value))
+                
+                #Convert to dict if not one already
+                info = self._default[heading][variable]
+                if not isinstance(info, dict):
+                    info = {'value': info, 'type': type(info)}
+                elif 'type' not in info:
+                    info['type'] = type(info['value'])
+
+                value_type = info['type']
+                value = info.get('value', self._DEFAULT_VALUES[value_type])
+
+                if keys_only:
+                    output.append(variable + ' = ')
+                else:
+                    output.append('{} = {}'.format(variable, value).replace('\n', '\\n'))
+                
+                #Add the comment
                 try:
-                    output[-1] += '\t\t// {}'.format(self._default[heading][variable]['__info__'])
+                    comment = info['__info__']
                 except KeyError:
                     pass
+                else:
+                    current_len = len(output[-1])
+
+                    #Check if comment should be ignored
+                    if ignore_comments:
+                        if isinstance(ignore_comments, bool):
+                            comment = ''
+                        if isinstance(ignore_comments, str):
+                            if comment.startswith(ignore_comment):
+                                comment = ''
+                        elif isinstance(ignore_comments, (list, tuple, set)):
+                            if any(comment.startswith(i) for i in ignore_comment):
+                                comment = ''
+                    if comment:
+                        extra_spaces = comment_spacing - current_len
+                        output[-1] += ' ' * max(min_comment_spacing, extra_spaces) + '// {}'.format(comment)
             output.append('')
         return '\n'.join(output[:-1])
 
@@ -403,9 +446,9 @@ class Config(dict):
             self.is_new = True
         return self
 
-    def save(self, file_name):
+    def save(self, file_name, keys_only=False, comment_spacing=0, ignore_comments=None):
         """Save the config to a file."""
-        output = self._build_for_file()
+        output = self._build_for_file(keys_only=keys_only, comment_spacing=comment_spacing, ignore_comments=ignore_comments)
         create_folder(file_name)
         with open(file_name, 'w') as f:
             f.write(output)
