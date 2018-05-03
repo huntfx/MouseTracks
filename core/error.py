@@ -10,7 +10,7 @@ import sys
 from core.base import format_file_path
 from core.compatibility import input, Message, PYTHON_VERSION
 from core.constants import DEFAULT_PATH
-from core.language import Language
+from core.language import STRINGS
 from core.os import OPERATING_SYSTEM
 from core.versions import VERSION, FILE_VERSION
 
@@ -34,15 +34,15 @@ def handle_error(trace=None, log=True, console=True):
         
         #Output information to quit/restart
         try:
-            error_message = Language().get_strings()['string']['error']
+            error_message = STRINGS['Misc']['ProgramError']
         except KeyError:
             error_message = 'An error occurred.'
         try:
-            restart_message = Language().get_strings()['string']['restart']
+            restart_message = STRINGS['Misc']['ProgramRestart']
         except KeyError:
             restart_message = 'Please restart the program...'
         try:
-            exit_message = Language().get_strings()['string']['exit']
+            exit_message = STRINGS['Misc']['ProgramExit']
         except KeyError:
             exit_message = 'Press enter to exit..'
 

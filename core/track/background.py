@@ -14,10 +14,11 @@ import core.numpy as numpy
 from core.applications import RunningApplications
 from core.compatibility import range, iteritems
 from core.config import CONFIG
-from core.constants import MAX_INT, TRACKING_DISABLE, TRACKING_IGNORE, UPDATES_PER_SECOND, KEY_STATS
+from core.constants import MAX_INT, TRACKING_DISABLE, TRACKING_IGNORE, UPDATES_PER_SECOND, KEY_STATS, DEFAULT_NAME
 from core.files import LoadData, save_data, prepare_file
-from core.maths import find_distance, calculate_line
-from core.notify import *
+from core.language import STRINGS
+from core.maths import find_distance, calculate_line, round_int
+from core.notify import NOTIFY
 from core.os import MULTI_MONITOR, monitor_info, set_priority
     
 
@@ -30,8 +31,9 @@ def running_processes(q_recv, q_send, background_send):
         previous_app = None
         last_coordinates = None
         last_resolution = None
-        last_app_resolution = None
-            
+        
+        NOTIFY(STRINGS['Tracking']['ApplicationListen']).put(q_send)
+
         while True:
                 
             received_data = q_recv.get()
@@ -41,7 +43,8 @@ def running_processes(q_recv, q_send, background_send):
                     running_apps.reload_file()
                 except (NameError, UnboundLocalError):
                     running_apps = RunningApplications(queue=q_send)
-                NOTIFY(APPLICATION_RELOAD)
+                
+                NOTIFY(STRINGS['Tracking']['AppListReload'], FILE_NAME=running_apps.applist.name)
 
             if 'Update' in received_data:
                 running_apps.refresh()
@@ -56,46 +59,48 @@ def running_processes(q_recv, q_send, background_send):
                 if running_apps.focus is not None:
                     
                     if current_app is None:
-                        application_resolution = None
+                        app_resolution = None
                     
                     else:
-                        application_resolution = (running_apps.focus.rect, running_apps.focus.resolution)
+                        app_resolution = (running_apps.focus.rect, running_apps.focus.resolution)
                         
                         if current_app == previous_app:
-                            if application_resolution[1] != last_resolution:
-                                NOTIFY(APPLICATION_RESIZE, last_resolution, application_resolution[1])
-                            elif application_resolution[0] != last_coordinates:
-                                NOTIFY(APPLICATION_MOVE, last_coordinates, application_resolution[0])
+                            if app_resolution[1] != last_resolution:
+                                NOTIFY(STRINGS['Tracking']['ResolutionAppResize'],
+                                       XRES_OLD=last_resolution[0], YRES_OLD=last_resolution[1],
+                                       XRES=app_resolution[1][0], YRES=app_resolution[1][1])
+                            elif app_resolution[0] != last_coordinates:
+                                NOTIFY(STRINGS['Tracking']['ResolutionAppMove'],
+                                       XRES_OLD=last_coordinates[0], YRES_OLD=last_coordinates[1],
+                                       XRES=app_resolution[0][0], YRES=app_resolution[0][1])
                         else:
-                            NOTIFY(APPLICATION_RESOLUTION, application_resolution[1])
+                            NOTIFY(STRINGS['Tracking']['ResolutionAppLoad'], 
+                                   XRES=app_resolution[1][0], YRES=app_resolution[1][1])
                             
-                        last_coordinates, last_resolution = application_resolution
-                    
-                    if last_app_resolution != application_resolution:
-                        send['ApplicationResolution'] = last_app_resolution = application_resolution
+                        last_coordinates, last_resolution = app_resolution
                 
                 #Detect running program
                 if current_app != previous_app:
                     
                     if running_apps.focus is None:
-                        start = APPLICATION_STARTED
-                        end = APPLICATION_QUIT
                         send['ApplicationResolution'] = None
+                        app_start = STRINGS['Tracking']['ApplicationStart']
+                        app_end = STRINGS['Tracking']['ApplicationEnd']
                     else:
-                        start = APPLICATION_FOCUSED
-                        end = APPLICATION_UNFOCUSED
+                        app_start = STRINGS['Tracking']['ApplicationFocused']
+                        app_end = STRINGS['Tracking']['ApplicationUnfocused']
                 
                     process_id = None
                     if current_app is None:
-                        NOTIFY(end, previous_app)
+                        NOTIFY(app_end, APPLICATION_NAME=previous_app[0])
                     else:
                         if running_apps.focus is not None:
-                            process_id = running_apps.focus.pid
                             if previous_app is not None:
-                                NOTIFY(APPLICATION_UNFOCUSED, previous_app)
-                        NOTIFY(start, current_app)
+                                NOTIFY(app_end, APPLICATION_NAME=previous_app[0])
+                            process_id = running_apps.focus.pid
+                        NOTIFY(app_start, APPLICATION_NAME=current_app[0])
                         
-                    NOTIFY.send(q_send)
+                    NOTIFY.put(q_send)
                     send['Program'] = (process_id, current_app)
                     
                     previous_app = current_app
@@ -107,6 +112,10 @@ def running_processes(q_recv, q_send, background_send):
     #Catch error after KeyboardInterrupt
     except EOFError:
         return
+    
+    except Exception:
+        q_send.put(traceback.format_exc())
+
 
 def _save_wrapper(q_send, program_name, data, new_program=False):
     """Handle saving the data files from the thread."""
@@ -114,8 +123,7 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
     if program_name is not None and program_name[0] == TRACKING_DISABLE:
         return
     
-    NOTIFY(SAVE_PREPARE)
-    NOTIFY.send(q_send)
+    NOTIFY(STRINGS['Tracking']['SavePrepare']).put(q_send)
     saved = False
 
     #Get how many attempts to use
@@ -127,33 +135,44 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
     compressed_data = prepare_file(data)
     
     #Attempt to save
-    NOTIFY(SAVE_START)
-    NOTIFY.send(q_send)
+    NOTIFY(STRINGS['Tracking']['SaveStart']).put(q_send)
     for i in range(max_attempts):
         if save_data(program_name, compressed_data, _compress=False):
-            NOTIFY(SAVE_SUCCESS)
-            NOTIFY.send(q_send)
+            NOTIFY(STRINGS['Tracking']['SaveComplete']).put(q_send)
             saved = True
             break
         
         else:
             if max_attempts == 1:
-                NOTIFY(SAVE_FAIL)
+                NOTIFY(STRINGS['Tracking']['SaveIncompleteNoRetry'])
                 return
-            NOTIFY(SAVE_FAIL_RETRY, CONFIG['Save']['WaitAfterFail'], i, max_attempts)
-            NOTIFY.send(q_send)
+
+            seconds = round_int(CONFIG['Save']['WaitAfterFail'])
+            minutes = round_int(CONFIG['Save']['WaitAfterFail'] / 60)
+            NOTIFY(STRINGS['Tracking']['SaveIncompleteRetry'], ATTEMPT_CURRENT=i+1, ATTEMPT_MAX=max_attempts,
+                   SECONDS=seconds, SECONDS_PLURAL=STRINGS['Words'][('TimeSecondSingle', 'TimeSecondPlural')[seconds != 1]],
+                   MINUTES=minutes, MINUTES_PLURAL=STRINGS['Words'][('TimeMinuteSingle', 'TimeMinutePlural')[minutes != 1]])
+
             time.sleep(CONFIG['Save']['WaitAfterFail'])
             
     if not saved:
-        NOTIFY(SAVE_FAIL_END)
+        NOTIFY(STRINGS['Tracking']['SaveIncompleteRetryFail'])
+
+
+def _notify_queue_size(queue_main, queue_send=None):
+    """Add number of queued commands to Notify class."""
+    try:
+        remaining_commands = queue_main.qsize()
+    except NotImplementedError:
+        return
+    NOTIFY(STRINGS['Tracking']['ScriptQueueSize'], NUMBER=remaining_commands, 
+            COMMANDS_PLURAL=STRINGS['Words'][('CommandSingle', 'CommandPlural')[remaining_commands != 1]]).put(queue_send)
 
 
 def background_process(q_recv, q_send):
     """Function to handle all the data from the main thread."""
     try:
-        NOTIFY(START_THREAD)
-        NOTIFY.send(q_send)
-        
+        NOTIFY(STRINGS['Tracking']['ScriptThreadStart']).put(q_send)
         set_priority('low')
         
         store = {'Data': LoadData(),
@@ -175,12 +194,9 @@ def background_process(q_recv, q_send):
                  'ProcessIDs': defaultdict(set)
                 }
         
-        NOTIFY(DATA_LOADED)
-        try:
-            NOTIFY(QUEUE_SIZE, q_recv.qsize())
-        except NotImplementedError:
-            pass
-        NOTIFY.send(q_send)
+        NOTIFY(STRINGS['Tracking']['ProfileLoad'])
+        _notify_queue_size(q_recv)
+        NOTIFY.put(q_send)
         
         while True:
             received_data = q_recv.get()
@@ -202,18 +218,30 @@ def background_process(q_recv, q_send):
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
                     store['ActivitySinceLastSave'] = False
                     store['SavesSkipped'] = 0
-                    
-                    try:
-                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
-                    except NotImplementedError:
-                        pass
+                    _notify_queue_size(q_recv)
+
                 else:
                     store['SavesSkipped'] += 1
                     
+                    #Say why the save was skipped
                     try:
-                        NOTIFY(SAVE_SKIP, CONFIG['Save']['Frequency'] * store['SavesSkipped'], q_recv.qsize())
+                        queue_size = q_recv.qsize()
                     except NotImplementedError:
-                        pass
+                        queue_size = 0
+                    if queue_size > 2:
+                        NOTIFY(STRINGS['Tracking']['SaveSkipNoChange'])
+                    else:
+                        time_since_save = CONFIG['Save']['Frequency'] * store['SavesSkipped']
+                        seconds = int(time_since_save)
+                        minutes = int(round(time_since_save / 60))
+                        hours = int(round(time_since_save / 3600))
+                        seconds_plural = STRINGS['Words'][('TimeSecondSingle', 'TimeSecondPlural')[seconds != 1]]
+                        minutes_plural = STRINGS['Words'][('TimeMinuteSingle', 'TimeMinutePlural')[minutes != 1]]
+                        hours_plural = STRINGS['Words'][('TimeHourSingle', 'TimeHourPlural')[hours != 1]]
+                        NOTIFY(STRINGS['Tracking']['SaveSkipInactivity'], 
+                               SECONDS=seconds, SECONDS_PLURAL=seconds_plural,
+                               MINUTES=minutes, MINUTES_PLURAL=minutes_plural,
+                               HOURS=hours, HOURS_PLURAL=hours_plural)
                 q_send.put({'SaveFinished': None})
             
             update_resolution = False
@@ -225,12 +253,9 @@ def background_process(q_recv, q_send):
                 if current_program != store['LastProgram']:
                     update_resolution = True
                     
-                    if current_program is None:
-                        NOTIFY(APPLICATION_LOADING)
-                    else:
-                        NOTIFY(APPLICATION_LOADING, current_program)
-                    NOTIFY.send(q_send)
-                    
+                    _program_name = current_program[0] if current_program is not None else DEFAULT_NAME
+                    NOTIFY(STRINGS['Tracking']['ApplicationLoad'], APPLICATION_NAME=_program_name).put(q_send)
+
                     #Save old profile
                     _save_wrapper(q_send, store['LastProgram'], store['Data'], True)
                     
@@ -258,16 +283,12 @@ def background_process(q_recv, q_send):
                         check_resolution(store['Data'], store['ApplicationResolution'][1])
                         
                     if store['Data']['Ticks']['Total']:
-                        NOTIFY(DATA_LOADED)
+                        NOTIFY(STRINGS['Tracking']['ProfileLoad'])
                     else:
-                        NOTIFY(DATA_NOTFOUND)
-                    
-                    try:
-                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
-                    except NotImplementedError:
-                        pass
-                        
-                NOTIFY.send(q_send)
+                        NOTIFY(STRINGS['Tracking']['ProfileNew'])
+
+                    _notify_queue_size(q_recv)
+                NOTIFY.put(q_send)
             
             if 'ApplicationResolution' in received_data:
                 store['ApplicationResolution'] = received_data['ApplicationResolution']
@@ -338,16 +359,12 @@ def background_process(q_recv, q_send):
                     max_track_value = MAX_INT
                 
                 if store['Data']['Ticks']['Tracks'] > max_track_value:
-                    NOTIFY(TRACK_COMPRESS_START, 'track')
-                    NOTIFY.send(q_send)
+                    NOTIFY(STRINGS['Tracking']['CompressStart'], TRACK_TYPE='tracks').put(q_send)
                     
                     compress_tracks(store, CONFIG['Advanced']['CompressTrackAmount'])
                     
-                    NOTIFY(TRACK_COMPRESS_END, 'track')
-                    try:
-                        NOTIFY(QUEUE_SIZE, q_recv.qsize())
-                    except NotImplementedError:
-                        pass
+                    NOTIFY(STRINGS['Tracking']['CompressEnd'], TRACK_TYPE='tracks')
+                    _notify_queue_size(q_recv)
                 
             #Record mouse clicks
             if 'MouseClick' in received_data:
@@ -369,11 +386,10 @@ def background_process(q_recv, q_send):
             if 'Quit' in received_data or 'Exit' in received_data:
                 return
 
-            NOTIFY.send(q_send)
+            NOTIFY.put(q_send)
         
         #Exit process (this shouldn't happen for now)
-        NOTIFY(THREAD_EXIT)
-        NOTIFY.send(q_send)
+        NOTIFY(STRINGS['Tracking']['ScriptThreadEnd']).put(q_send)
         _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
             
     except Exception as e:

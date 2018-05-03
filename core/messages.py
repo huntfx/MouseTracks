@@ -5,8 +5,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
+from core.language import STRINGS
+
 from datetime import datetime
-    
+
 
 _LENGTH = (
     #name, seconds, highest amount, number of decimals
@@ -59,7 +61,7 @@ def date_format(t, include_time=True):
 def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, short=False):  
     """Simple function to convert ticks to a readable time for use in sentences.
     
-    TODO: Rounding with lower output lengths, allow decimals at any point
+    TODO: Rounding with lower output lengths, allow decimals at any point, use language file
     """
 
     output = []
@@ -88,20 +90,21 @@ def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, 
             output.append('{} {}s'.format(current, name))
     
     if len(output) > 1:
-        result = ' and '.join((', '.join(output[:-1]), output[-1]))
+        result = ' {} '.join((', '.join(output[:-1]), output[-1])).format(STRINGS['Words']['And'])
     else:
         result = output[-1]
 
     return result
 
 
-def list_to_str(l, separator=', ', final_separator=' and '):
+def list_to_str(x, separator=', ', final_separator=None):
     """Join a list with an optional final separator."""
-    #Convert list/tuple in case of it being a generator
-    l = tuple(l)
+    if final_separator is None:
+        final_separator = ' {} '.format(STRINGS['Words']['And'])
 
-    if not l:
+    if not x:
         return ''
-    if len(l) == 1:
-        return str(l[0])
-    return separator.join(map(str, l[:-1])) + final_separator + str(l[-1])
+    x = tuple(x)
+    if len(x) == 1:
+        return str(x[0])
+    return separator.join(map(str, x[:-1])) + final_separator + str(x[-1])

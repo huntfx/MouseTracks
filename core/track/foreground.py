@@ -12,16 +12,18 @@ from multiprocessing import Process, Queue
 from threading import Thread
 
 from core.api import *
+from core.base import format_file_path
 from core.compatibility import MessageWithQueue, iteritems
 from core.config import CONFIG
-from core.constants import UPDATES_PER_SECOND
+from core.constants import UPDATES_PER_SECOND, DEFAULT_PATH
 from core.error import handle_error
 from core.files import Lock
+from core.language import STRINGS
 from core.messages import time_format
-from core.notify import *
+from core.notify import NOTIFY
 from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
 from core.sockets import get_free_port
-from core.track.background import background_process, running_processes, monitor_offset
+from core.track.background import background_process, running_processes, monitor_offset, _notify_queue_size
 from core.track.xinput import Gamepad
 
 
@@ -67,7 +69,7 @@ def start_tracking(lock=True, web_port=None, message_port=None, console=True, se
             if locked:
                 error, web_port = _start_tracking(web_port=web_port, message_port=message_port, server_secret=server_secret)
             else:
-                handle_error(NOTIFY(PROCESS_NOT_UNIQUE).get_output(), log=False, console=console)
+                handle_error(STRINGS['Tracking']['ScriptDuplicate'], log=False, console=console)
     else:
         error, web_port = _start_tracking(web_port=web_port, message_port=message_port, server_secret=server_secret)
     
@@ -110,11 +112,10 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
             local_web_server(app=app, port=web_port, q_feedback=q_feedback)
         else:
             web_port = None
-        message(NOTIFY.get_output())
+        message(NOTIFY.output())
         
         #Start main script
-        NOTIFY(MT_PATH)
-        message(NOTIFY.get_output())
+        message(NOTIFY(STRINGS['Tracking']['ScriptPath'], DOCUMENTS_PATH=format_file_path(DEFAULT_PATH)).output())
         
         #Adjust timings to account for tick rate
         timer = {'UpdateScreen': CONFIG['Advanced']['CheckResolution'],
@@ -163,8 +164,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
         _running_programs.start()
         
         ticks = 0
-        NOTIFY(START_MAIN)
-        message(NOTIFY.get_output())
+        message(NOTIFY(STRINGS['Tracking']['ScriptMainStart']).output())
         script_status = STATUS_RUNNING
         while script_status != STATUS_TERMINATED:
             with RefreshRateLimiter(UPDATES_PER_SECOND) as limiter:
@@ -180,9 +180,9 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         #Change if running or paused, or exit script
                         if api_control in (STATUS_RUNNING, STATUS_PAUSED, STATUS_TERMINATED):
                             script_status = api_control
-                            options = {STATUS_RUNNING: TRACKING_RESUME,
-                                       STATUS_PAUSED: TRACKING_PAUSE,
-                                       STATUS_TERMINATED: TRACKING_TERMINATE}
+                            options = {STATUS_RUNNING: STRINGS['Tracking']['ScriptResume'],
+                                       STATUS_PAUSED: STRINGS['Tracking']['ScriptPause'],
+                                       STATUS_TERMINATED: STRINGS['Tracking']['ScriptStop']}
                             NOTIFY(options[script_status])
                         
                         #Set config values
@@ -223,16 +223,23 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 
                 #Get messages from running program thread
                 while not q_rp_recv.empty():
-                    received = q_rp_recv.get()
-                    
+                    received_message = q_rp_recv.get()
+
+                    #End if exception was raised
+                    try:
+                        if received_message.startswith('Traceback (most recent call last)'):
+                            q_bg_send.put({'Quit': True})
+                            return received_message, store['Flask']['Port']['Web']
+
                     #Do not continue tracking held down keys after profile switch
-                    if isinstance(received, dict):
-                        if 'Program' in received:
-                            store['Keyboard']['KeysInvalid'] |= set([k for k, v in iteritems(store['Keyboard']['KeysPressed']) if v])
-                    
+                    except AttributeError:
+                        if isinstance(received_message, dict):
+                            if 'Program' in received_message:
+                                store['Keyboard']['KeysInvalid'] |= set([k for k, v in iteritems(store['Keyboard']['KeysPressed']) if v])
+                        
                     #Print messages from thread
                     else:
-                        message(received, limiter.time)
+                        message(received_message, limiter.time)
                 
                 #Print any messages from previous loop
                 notify_extra = ''
@@ -260,10 +267,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         store['Save']['Finished'] = True
                         store['Save']['Next'] = ticks + timer['Save']
                 
-                output_list = [received_data]
-                    
-                #Add on output from Notify class
-                output_list.append(NOTIFY.get_output())
+                output_list = [received_data] + list(NOTIFY)
                 
                 #Add output from server
                 if CONFIG['API']['RunServer']:
@@ -292,7 +296,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 #Check if mouse is inactive (such as in a screensaver)
                 if mouse_pos['Current'] is None:
                     if not store['Mouse']['Inactive']:
-                        NOTIFY(MOUSE_UNDETECTED)
+                        NOTIFY(STRINGS['Tracking']['MouseUndetected'])
                         store['Mouse']['Inactive'] = True
                     time.sleep(no_detection_wait)
                     continue
@@ -302,16 +306,16 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                       and (not 0 <= mouse_pos['Current'][0] < store['Resolution']['Current'][0]
                            or not 0 <= mouse_pos['Current'][1] < store['Resolution']['Current'][1])):
                     if not store['Mouse']['OffScreen']:
-                        NOTIFY(MOUSE_OFFSCREEN)
+                        NOTIFY(STRINGS['Tracking']['MouseInvisible'])
                         store['Mouse']['OffScreen'] = True
                 elif store['Mouse']['OffScreen']:
-                    NOTIFY(MOUSE_ONSCREEN)
+                    NOTIFY(STRINGS['Tracking']['MouseVisible'])
                     store['Mouse']['OffScreen'] = False
 
                 #Notify once if mouse is no longer inactive
                 if store['Mouse']['Inactive']:
                     store['Mouse']['Inactive'] = False
-                    NOTIFY(MOUSE_DETECTED)
+                    NOTIFY(STRINGS['Tracking']['MouseDetected'])
 
                 #Check if mouse is in a duplicate position
                 if mouse_pos['Current'] is None or mouse_pos['Current'] == mouse_pos['Previous']:
@@ -321,7 +325,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 if not store['Mouse']['NotMoved']:
                     if not store['Mouse']['OffScreen']:
                         frame_data['MouseMove'] = [mouse_pos['Previous'], mouse_pos['Current'], []]
-                        NOTIFY(MOUSE_POSITION, mouse_pos['Current'])
+                        NOTIFY(STRINGS['Tracking']['MousePosition'], XPOS=mouse_pos['Current'][0], YPOS=mouse_pos['Current'][1])
                         store['LastActivity'] = ticks
 
                         
@@ -331,6 +335,9 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
 
                     mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
                     mb_data = (mouse_button, mouse_pos['Current'])
+
+                    _mb = STRINGS['Mouse'][['MouseButtonLeft', 'MouseButtonMiddle', 'MouseButtonRight'][mouse_button]]
+                    _click_type = STRINGS['Mouse']['MouseClickSingle']
                     
                     if clicked:
                         store['LastActivity'] = ticks
@@ -351,6 +358,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                                 store['Mouse']['LastClickTime'] = 0
                                 store['Mouse']['LastClick'] = None
                                 double_click = True
+                                _ck = STRINGS['Mouse']['MouseClickDouble']
                                 try:
                                     frame_data['DoubleClick'].append(mb_data)
                                 except KeyError:
@@ -362,38 +370,34 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                             store['Mouse']['Clicked'][mouse_button] = ticks
                             
                             if not store['Mouse']['OffScreen']:
-                                if double_click:
-                                    NOTIFY(MOUSE_CLICKED_DOUBLE, mouse_button, mouse_pos['Current'])
-                                else:
-                                    NOTIFY(MOUSE_CLICKED, mouse_button, mouse_pos['Current'])
+                                NOTIFY(STRINGS['Tracking']['MouseClickedVisible'],  MOUSEBUTTON=_mb, CLICKED=_click_type, 
+                                       XPOS=mouse_pos['Current'][0], YPOS=mouse_pos['Current'][1])
                                 try:
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
-                                frame_data['MouseHeld'] = False
+                                    frame_data['MouseHeld'] = False
                             else:
-                                if double_click:
-                                    NOTIFY(MOUSE_CLICKED_DOUBLE, mouse_button)
-                                else:
-                                    NOTIFY(MOUSE_CLICKED, mouse_button)
+                                NOTIFY(STRINGS['Tracking']['MouseClickedInvsible'], MOUSEBUTTON=_mb, CLICKED=_click_type)
                                 
                         #Held clicks
                         elif click_repeat and mb_clicked < ticks - click_repeat:
                             store['Mouse']['Clicked'][mouse_button] = ticks
                             if not store['Mouse']['OffScreen']:
-                                NOTIFY(MOUSE_CLICKED_HELD, mouse_button, mouse_pos['Current'])
+                                NOTIFY(STRINGS['Tracking']['MouseHeldVisible'], MOUSEBUTTON=_mb, CLICKED=_click_type, 
+                                       XPOS=mouse_pos['Current'][0], YPOS=mouse_pos['Current'][1])
                                 try:
                                     frame_data['MouseClick'].append(mb_data)
                                 except KeyError:
                                     frame_data['MouseClick'] = [mb_data]
                                 frame_data['MouseHeld'] = True
                             else:
-                                NOTIFY(MOUSE_CLICKED_HELD, mouse_button)
+                                NOTIFY(STRINGS['Tracking']['MouseHeldInvsible'], MOUSEBUTTON=_mb, CLICKED=_click_type)
                                 
                         store['Mouse']['LastClick'] = mb_data
                         
                     elif mb_clicked:
-                        NOTIFY(MOUSE_UNCLICKED)
+                        NOTIFY(STRINGS['Tracking']['MouseClickedRelease'])
                         del store['Mouse']['Clicked'][mouse_button]
                         store['LastActivity'] = ticks
      
@@ -446,15 +450,25 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 if keys_held:
                     frame_data['KeyHeld'] = keys_held
                     store['LastActivity'] = ticks
-                    
-                if _keys_pressed:
-                    NOTIFY(KEYBOARD_PRESSES, *_keys_pressed)
-                    
-                if _keys_held:
-                    NOTIFY(KEYBOARD_PRESSES_HELD, *_keys_held)
-                    
-                if _keys_released:
-                    NOTIFY(KEYBOARD_RELEASED, *_keys_released)
+                
+                if _keys_pressed or _keys_held or _keys_released:
+                    if _keys_pressed:
+                        plural = len(_keys_pressed) != 1
+                        NOTIFY(STRINGS['Tracking']['KeyboardPressed'], KEYS=', '.join(_keys_pressed),
+                                       KEY_PLURAL=STRINGS['Words'][('KeyboardKeySingle', 'KeyboardKeyPlural')[plural]],
+                                       PRESS_PLURAL=STRINGS['Words'][('PressSingle', 'PressPlural')[plural]])
+                        
+                    if _keys_held:
+                        plural = len(_keys_held) != 1
+                        NOTIFY(STRINGS['Tracking']['KeyboardHeld'], KEYS=', '.join(_keys_held),
+                               KEY_PLURAL=STRINGS['Words'][('KeyboardKeySingle', 'KeyboardKeyPlural')[plural]],
+                               PRESS_PLURAL=STRINGS['Words'][('PressSingle', 'PressPlural')[plural]])
+                        
+                    if _keys_released:
+                        plural = len(_keys_released) != 1
+                        NOTIFY(STRINGS['Tracking']['KeyboardReleased'], KEYS=', '.join(_keys_released),
+                               KEY_PLURAL=STRINGS['Words'][('KeyboardKeySingle', 'KeyboardKeyPlural')[plural]],
+                               RELEASE_PLURAL=STRINGS['Words'][('ReleaseSingle', 'ReleasePlural')[plural]])
                 
                 
                 if CONFIG['Main']['_TrackGamepads']:
@@ -467,7 +481,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         gamepads = {gamepad.device_number: gamepad for gamepad in Gamepad.list_gamepads()}
                         difference = set(gamepads) - old_gamepads
                         for i, id in enumerate(difference):
-                            NOTIFY(GAMEPAD_FOUND, id)
+                            NOTIFY(STRINGS['Tracking']['GamepadConnected'], ID=id)
                             store['Gamepad']['ButtonsPressed'][id] = {}
                     
                     #Gamepad tracking (multiple controllers not tested yet)
@@ -493,7 +507,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         
                             #Break the connection if controller can't be found
                             if not gamepad.connected:
-                                NOTIFY(GAMEPAD_LOST, id)
+                                NOTIFY(STRINGS['Tracking']['GamepadDisconnected'], ID=id)
                                 invalid_ids.append(id)
                                 continue
                             
@@ -509,7 +523,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                                 except KeyError:
                                     frame_data['GamepadAxis'] = [axis_updates]
                                 for axis, value in iteritems(printable):
-                                    NOTIFY(GAMEPAD_AXIS, id, axis, value)
+                                    NOTIFY(STRINGS['GamepadAxis'], ID=id, AXIS=axis, VALUE=value)
                                 
                             #Button events
                             button_presses = gamepad_input.get_button()
@@ -557,17 +571,20 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                             frame_data['GamepadButtonPress'] = buttons_held
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(buttons_held):
-                            NOTIFY(GAMEPAD_BUTTON_HELD, id, buttons)
+                            NOTIFY(STRINGS['Tracking']['GamepadButtonHeld'], ID=id, BUTTONS=', '.join(buttons),
+                                   BUTTONS_PLURAL=STRINGS['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
                         
                     if _buttons_pressed:
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(_buttons_pressed):
-                            NOTIFY(GAMEPAD_BUTTON_PRESS, id, buttons)
+                            NOTIFY(STRINGS['Tracking']['GamepadButtonPressed'], ID=id, BUTTONS=', '.join(buttons),
+                                   BUTTONS_PLURAL=STRINGS['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
                         
                     if _buttons_released:
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(_buttons_released):
-                            NOTIFY(GAMEPAD_BUTTON_RELEASED, id, buttons)
+                            NOTIFY(STRINGS['Tracking']['GamepadButtonReleased'], ID=id, BUTTONS=', '.join(buttons),
+                                   BUTTONS_PLURAL=STRINGS['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
                 
                 
                 #Resolution
@@ -587,7 +604,9 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         store['Resolution']['Current'] = monitor_info()
                         if store['Resolution']['Previous'] != store['Resolution']['Current']:
                             if store['Resolution']['Previous'] is not None:
-                                NOTIFY(RESOLUTION_CHANGED, store['Resolution']['Previous'], store['Resolution']['Current'])
+                                NOTIFY(STRINGS['Tracking']['ResolutionNew'], 
+                                       XRES_OLD=store['Resolution']['Previous'][0], YRES_OLD=store['Resolution']['Previous'][1],
+                                       XRES=store['Resolution']['Current'][0], YRES=store['Resolution']['Current'][0])
                             frame_data['Resolution'] = store['Resolution']['Current']
                             store['Resolution']['Previous'] = store['Resolution']['Current']
                 
@@ -608,7 +627,6 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                                 current_screen_resolution = monitor_offset(current_mouse_pos, store['Resolution']['Boundaries'])[0]
                             
                             except TypeError:
-                            
                                 if check_resolution:
                                     raise
                                     
@@ -625,7 +643,9 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         else:
                             if current_screen_resolution != store['Resolution']['Previous']:
                                 if store['Resolution']['Previous'] is not None:
-                                    NOTIFY(MONITOR_CHANGED, store['Resolution']['Previous'], current_screen_resolution)
+                                    NOTIFY(STRINGS['Tracking']['ResolutionChanged'], 
+                                           XRES_OLD=store['Resolution']['Previous'][0], YRES_OLD=store['Resolution']['Previous'][1],
+                                           XRES=store['Resolution']['Current'][0], YRES=store['Resolution']['Current'][0])
                                 store['Resolution']['Previous'] = current_screen_resolution
                 
                 
@@ -644,10 +664,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 #Update user about the queue size
                 if (timer['UpdateQueuedCommands'] and not ticks % timer['UpdateQueuedCommands'] 
                         and timer['Save'] and store['LastActivity'] > ticks - timer['Save']):
-                    try:
-                        NOTIFY(QUEUE_SIZE, q_bg_send.qsize())
-                    except NotImplementedError:
-                        pass
+                    _notify_queue_size(q_bg_send)
                 
                 #Send save request
                 if store['Save']['Finished'] and ticks and not ticks % store['Save']['Next']:
@@ -661,6 +678,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 ticks += 1
                 
     except Exception as e:
+        traceback_message = traceback.format_exc()
         if _background_process is not None:
             try:
                 q_bg_send.put({'Quit': True})
@@ -670,7 +688,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
             web_port = store['Flask']['Port']['Web']
         except UnboundLocalError:
             web_port = None
-        return traceback.format_exc(), web_port
+        return traceback_message, web_port
         
     except KeyboardInterrupt:
         if _background_process is not None:
@@ -678,10 +696,11 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 q_bg_send.put({'Quit': True})
             except IOError:
                 pass
-        NOTIFY(THREAD_EXIT)
-        NOTIFY(PROCESS_EXIT)
-        message(NOTIFY.get_output())
-        
+        NOTIFY(STRINGS['Tracking']['ScriptThreadEnd'])
+        NOTIFY(STRINGS['Tracking']['ScriptMainEnd'])
+        message(NOTIFY.output())
+    
+    #The web port is always returned so set it even if the script failed
     try:
         web_port = store['Flask']['Port']['Web']
     except UnboundLocalError:

@@ -18,13 +18,11 @@ from core.image.colours import get_map_matches, calculate_colour_map
 from core.image.main import RenderImage
 from core.input import value_select, yes_or_no
 from core.files import get_data_files, get_metadata, format_name, LoadData
-from core.language import Language
+from core.language import STRINGS
 from core.maths import round_up
 from core.messages import date_format, ticks_to_seconds, list_to_str
 from core.os import open_folder
 
-
-STRINGS = Language().get_strings()
 
 SORT_OPTIONS = {
     #Name: metadata name, default, type, (function, args, kwargs)
@@ -61,16 +59,27 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
     for program_name in AppList().names:
         program_names[format_name(program_name)] = program_name
 
-    sort_value = 'Last Modified'
+    sort_options = ['Track Length', 'Session Count', 'Creation Time', 'Last Modified', 'File Version']
+    sort_value = sort_options[3]
     reverse = False
     loop = 0
     while True:
         loop += 1
         offset = (page - 1) * limit
+        '''
         Message('Select a profile by typing its name or the matching ID.')
         Message('Files are being sorted by "{} - {}".'.format(sort_value.lower(), 'ascending' if reverse else 'descending'))
         Message('Type "sort <ID>" to change or reverse the sorting method. Possible options are Track Length (1), Session Count (2), Creation Time (3), Last Modified (4) and File Version (5).')
         Message()
+        '''
+        Message(STRINGS['GenerationInput']['SelectProfile'])
+        Message(STRINGS['GenerationInput']['PageSort'].format_custom(
+                SORT_TYPE=sort_value.lower(), ORDER='ascending' if reverse else 'descending'))
+        _sort_options = list_to_str(['{} ({})'.format(value, i+1) for i, value in enumerate(sort_options)])
+        Message(STRINGS['GenerationInput']['PageSortSelect'].format_custom(
+                SORT=STRINGS['Words']['Sort'], SORT_OPTIONS=_sort_options))
+        Message()
+                                  
         sorted_list = _sort_data_list(data_files, sort_value, not reverse)
         option_name, _, option_type, option_func = SORT_OPTIONS[sort_value]
         for i, profile_name in enumerate(sorted_list[offset:offset+limit]):
@@ -92,11 +101,13 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                     value = option_func[0](value, *option_func[1], **option_func[2])
                 output += ' ' * max(1, metadata_offset - len(output)) + '{}: {}'.format(sort_value, value)
             Message(output)
-        Message(STRINGS['string']['image']['page']['current'].format(C=page, T=total_pages, P=STRINGS['word']['page']))
+        Message(STRINGS['GenerationInput']['PageNumber'].format_custom(CURRENT_PAGE=page, 
+                                                                       TOTAL_PAGES=total_pages, 
+                                                                       PAGE=STRINGS['Words']['Page']))
         Message()
 
         #Ask the user for input, or automatically choose input for testing
-        user_input = input('Type your choice here: ')
+        user_input = input(STRINGS['Misc']['UserChoice'] + ' ')
 
         try:
             profile_id = int(user_input)
@@ -105,45 +116,51 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
         except ValueError:
 
             #Onput is requesting sorting
-            if user_input.startswith('sort'):
+            if user_input.lower().startswith('{} '.format(STRINGS['Words']['Sort'])):
                 option = None
-                options = ['Track Length', 'Session Count', 'Creation Time', 'Last Modified', 'File Version']
                 try:
-                    sort_id = int(user_input[5]) - 1
+                    sort_id = int(user_input[len(STRINGS['Words']['Sort']):]) - 1
+                    print sort_id
                     if not 0 <= sort_id <= 4:
                         raise ValueError
                 
                 #Attempt to read if the option was manually typed out
                 except ValueError:
-                    lc_option = user_input[5:].lower()
-                    for uc_option in options:
+                    lc_option = user_input[len(STRINGS['Words']['Sort'])+1:].lower()
+                    for uc_option in sort_options:
                         if uc_option.lower() == lc_option:
                             option = uc_option
                             break
                     else:
-                        Message('Error: Invalid sorting ID. Must be between 1-5.')
-
+                        #Message('Error: Invalid sorting ID. Must be between 1-5.')
+                        try:
+                            Message(STRINGS['GenerationInput']['PageSortInvalidID'].format_custom(
+                                    CURRENT_SORT=sort_value, NEW_SORT=sort_id+1, SORT_MIN=1, SORT_MAX=5))
+                        except UnboundLocalError:
+                            Message(STRINGS['GenerationInput']['PageSortInvalidType'].format_custom(
+                                    CURRENT_SORT=sort_value, NEW_SORT=lc_option, SORT_OPTIONS=_sort_options))
                 #If sort by itself was typed, just reverse
                 except IndexError:
                     reverse = not reverse
 
                 #Get the ID
                 else:
-                    option = options[sort_id]
+                    option = sort_options[sort_id]
 
                 #Either reverse or change the sorting option
                 if option is not None:
                     if option == sort_value:
                         reverse = not reverse
-                        Message('Reversed sorting.')
+                        Message(STRINGS['GenerationInput']['PageSortReverse'])
                     else:
                         sort_value = option
-                        Message('List sorting changed to {}.'.format(sort_value))
+                        Message(STRINGS['GenerationInput']['PageSortNew'].format_custom(SORT_TYPE=sort_value))
 
             #Switch pages
-            elif user_input.startswith('page '):
+            elif user_input.lower().startswith('{} '.format(STRINGS['Words']['Page'])):
+                _page = user_input[len(STRINGS['Words']['Page'])+1:]
                 try:
-                    page = int(user_input[5:])
+                    page = int(_page)
                     if page < 1:
                         page = 1
                         raise ValueError
@@ -152,14 +169,15 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                         raise ValueError
                 
                 except ValueError:
-                    Message('Error: Invalid page number.')
+                    Message(STRINGS['GenerationInput']['PageNumberInvalid'].format_custom(
+                            CURRENT_PAGE=page, PAGE=_page, PAGE_MIN=1, PAGE_MAX=total_pages))
 
             #Input is directly typing profile name
             else:
-                profile = user_input
-                if get_metadata(profile) is None:
-                    Message('Error: Profile doesn\'t exist.')
+                if get_metadata(user_input) is None:
+                    Message(STRINGS['GenerationInput']['ProfileEmpty'].format_custom(PROFILE=user_input))
                 else:
+                    profile = user_input
                     break
         
         #Get the profile matching the ID
@@ -172,7 +190,8 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                     profile = sorted_list[profile_index-1]
                 break
             else:
-                Message('Error: Invalid profile index.')
+                Message(STRINGS['GenerationInput']['ProfileIndexError'].format_custom(
+                        NEW_INDEX=profile_index, INDEX_MIN=1, INDEX_MAX=profile_index_max))
         Message()
 
     return profile
@@ -185,13 +204,13 @@ def check_running_status(profile):
     if profile not in RunningApplications().all_loaded_apps():
         return True
 
-    Message(STRINGS['string']['image']['profile']['running'])
+    Message(STRINGS['GenerationInput']['ProfileRunning'].format_custom(PROFILE=profile))
     
     #Not saved yet
     metadata = get_metadata(profile)
     if metadata is None:
-        Message(STRINGS['string']['image']['save']['wait'])
-        Message(STRINGS['string']['image']['save']['frequency'].format(T=ticks_to_seconds(CONFIG['Save']['Frequency'])))
+        Message(STRINGS['GenerationInput']['ProfileSaveNew'].format_custom(PROFILE=profile))
+        Message(STRINGS['GenerationInput']['SaveFrequency'].format_custom(TIME=ticks_to_seconds(CONFIG['Save']['Frequency'])))
         return False
     
     #Calculate when the next save should be
@@ -202,11 +221,13 @@ def check_running_status(profile):
         if last_save_time < CONFIG['Save']['Frequency']:
             next_save_time = CONFIG['Save']['Frequency'] - last_save_time
             next_save = ticks_to_seconds(next_save_time, allow_decimals=False, output_length=2)
-            Message(STRINGS['string']['image']['save']['next'].format(T1=last_save, T2=next_save))
+            Message(STRINGS['GenerationInput']['ProfileSaveNext'].format_custom(PROFILE=profile,
+                    PREVIOUS_SAVE=last_save, NEXT_SAVE=next_save))
         else:
             next_save_time = last_save_time - CONFIG['Save']['Frequency']
             next_save = ticks_to_seconds(next_save_time, allow_decimals=False, output_length=1)
-            Message(STRINGS['string']['image']['save']['overdue'].format(T1=last_save, T2=next_save))
+            Message(STRINGS['GenerationInput']['ProfileSaveDue'].format_custom(PROFILE=profile,
+                    PREVIOUS_SAVE=last_save, NEXT_SAVE=next_save))
         Message()
         return True
 
@@ -215,48 +236,43 @@ def _user_generate():
     profile = select_profile_from_list()
 
     if not check_running_status(profile):
-        Message(STRINGS['string']['exit'])
+        Message(STRINGS['Misc']['ProgramExit'])
         return
 
-    Message(STRINGS['string']['profile']['load'].format(P=profile))
-    try:
-        render = RenderImage(profile)
-    except ValueError:
-        Message('Error: Selected profile is empty or doesn\'t exist. (this message shouldn\'t appear')
-        return
+    Message(STRINGS['Misc']['ProfileLoad'].format_custom(PROFILE=profile))
+    render = RenderImage(profile)
 
     #Ask for type of render
     render_types = [
-        ['tracks', True, STRINGS['string']['image']['name']['track'], []],
-        ['click heatmap', True, STRINGS['string']['image']['name']['click'], []],
-        ['keyboard heatmap', True, STRINGS['string']['image']['name']['keyboard'], []],
-        ['acceleration', False, STRINGS['string']['image']['name']['speed'], []],
-        ['brush strokes', False, STRINGS['string']['image']['name']['stroke'], []]
+        ['tracks', True, STRINGS['RenderTypes']['Tracks'], []],
+        ['click heatmap', True, STRINGS['RenderTypes']['Clicks'], []],
+        ['keyboard heatmap', True, STRINGS['RenderTypes']['Keyboard'], []],
+        ['acceleration', False, STRINGS['RenderTypes']['Speed'], []],
+        ['brush strokes', False, STRINGS['RenderTypes']['Strokes'], []]
     ]
 
-    #Edit keyboard if not tracked
+    #Set keyboard default to False if not tracked
     kph = round(render.keys_per_hour(), 2)
     if kph < 10:
         render_types[2][1] = False
-        render_types[2][2] += ' ({})'.format(STRINGS['string']['image']['name']['empty']['keyboard']).format(C=kph)
+        render_types[2][2] += ' ' + STRINGS['GenerationInput']['KeyboardNoUse'].format_custom(KEYS_PER_HOUR=kph)
 
     Message()
-    Message(STRINGS['string']['image']['option']['generate'])
+    Message(STRINGS['GenerationInput']['GenerateChoice'])
     if not any(select_options(render_types, multiple_choice=True)):
-        if yes_or_no('Error: Nothing was chosen, would you like to restart?'):
+        if yes_or_no(STRINGS['GenerationInput']['NoSelection']):
             return True
         return False
 
     #Generate tracks
     if render_types[0][1]:
-        Message('Options for {}...'.format(render_types[0][0]))
+        Message(STRINGS['GenerationInput']['OptionsForRender'].format_custom(RENDER_TYPE=render_types[0][0]))
 
         #Select colour map
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            Message(STRINGS['string']['image']['option']['colour']['selection'])
+            Message(STRINGS['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
             
             while not render_types[0][3]:
@@ -280,9 +296,9 @@ def _user_generate():
 
         #Select mouse button
         mb_options = [
-            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], STRINGS['word']['mousebutton']['left']],
-            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], STRINGS['word']['mousebutton']['middle']],
-            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['word']['mousebutton']['right']]
+            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], STRINGS['Mouse']['MouseButtonLeft']],
+            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], STRINGS['Mouse']['MouseButtonMiddle']],
+            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['Mouse']['MouseButtonRight']]
         ]
         Message('Which mouse buttons should be included in the heatmap?.')
         if not any(select_options(mb_options, multiple_choice=True)):
@@ -296,8 +312,7 @@ def _user_generate():
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            Message(STRINGS['string']['image']['option']['colour']['selection'])
+            Message(STRINGS['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(clicks=True))]
             
             while not render_types[1][3]:
@@ -323,8 +338,7 @@ def _user_generate():
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            Message(STRINGS['string']['image']['option']['colour']['selection'])
+            Message(STRINGS['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(keyboard=True, linear=CONFIG['GenerateKeyboard']['LinearMapping']))]
 
             while not render_types[2][3]:
@@ -349,8 +363,7 @@ def _user_generate():
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateSpeed']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            Message(STRINGS['string']['image']['option']['colour']['selection'])
+            Message(STRINGS['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
             while not render_types[3][3]:
@@ -376,8 +389,7 @@ def _user_generate():
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateStrokes']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['string']['image']['option']['colour']['notset'])
-            Message(STRINGS['string']['image']['option']['colour']['selection'])
+            Message(STRINGS['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
             while not render_types[4][3]:
@@ -407,10 +419,10 @@ def _user_generate():
     session = False
     if last_session_time is not None:
         session_options = [
-            [False, True, STRINGS['string']['image']['option']['session']['all'].format(T=all_time)],
-            [True, False, STRINGS['string']['image']['option']['session']['last'].format(T=last_session_time)]
+            [False, True, STRINGS['GenerationInput']['SessionAll'].format_custom(TIME=all_time)],
+            [True, False,  STRINGS['GenerationInput']['SessionLatest'].format_custom(TIME=last_session_time)]
         ]
-        Message(STRINGS['string']['image']['option']['session']['select'])
+        Message(STRINGS['GenerationInput']['SessionSelect'])
         while True:
             session = select_options(session_options, multiple_choice=False, update=False)
             if session is not None:
@@ -445,7 +457,7 @@ def _user_generate():
         
     #Open folder
     if CONFIG['GenerateImages']['OpenOnFinish']:
-        Message(STRINGS['string']['image']['option']['open'])
+        Message(STRINGS['Misc']['OpenImageFolder'])
         open_folder(render.name.generate())
     
     return False
@@ -536,10 +548,8 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
 
     #List possible options
     if multiple_choice and _show_choice_only is None:
-        select_message = STRINGS['string']['image']['option']['select']
-        default_message = select_message['default'].format(V=', '.join(i[2] for i in options if i[1]), 
-                                                           ID=', '.join(str(i+1) for i, value in enumerate(options) if value[1]))
-        Message(select_message['separate'].format(D=default_message))
+        Message(STRINGS['GenerationInput']['SeparateOptions'].format_custom(VALUE=', '.join(i[2] for i in options if i[1]), 
+                ID=', '.join(str(i+1) for i, value in enumerate(options) if value[1])))
 
     for i, values in enumerate(options):
 
@@ -551,7 +561,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
             if multiple_choice or not values[1]:
                 Message('{}: {}'.format(i+1, values[2]))
             else:
-                Message('{}: {} [{}]'.format(i+1, values[2], STRINGS['word']['default']))
+                Message('{}: {} [{}]'.format(i+1, values[2], STRINGS['Words']['Default']))
     
     #Handle override to show/hide choice
     if _show_choice_only and _show_choice_only != 'input_override':
@@ -560,7 +570,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
         Message()
     
     if _selection is None:
-        choice = input('Type your choice here: ')
+        choice = input(STRINGS['Misc']['UserChoice'] + ' ')
     else:
         choice = _selection
 

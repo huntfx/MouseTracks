@@ -13,7 +13,7 @@ from threading import Thread, currentThread
 from core.api import constants as api
 from core.compatibility import queue, range
 from core.cryptography import Crypt
-from core.notify import *
+from core.notify import NOTIFY
 from core.sockets import *
 
 
@@ -99,30 +99,30 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
     """Run a server to send messages to all the connected clients."""
     
     #Create server socket
-    NOTIFY(SERVER_SOCKET_START)
+    NOTIFY(STRINGS['Server']['MessageStart'])
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except socket.error as e:
         if e.errno == 10048:
-            NOTIFY(SERVER_PORT_TAKEN, port)
+            NOTIFY(STRINGS['Server']['PortTaken'], PORT=port)
             if close_port:
-                NOTIFY(SERVER_PORT_CLOSE)
+                NOTIFY(STRINGS['Server']['PortClose'], PORT=port)
                 force_close_port(port)
             else:
-                NOTIFY(SERVER_PORT_NEW)
+                NOTIFY(STRINGS['Server']['PortRandom'])
                 port = 0
             sock.bind((host, port))
         else:
             raise socket.error('unable to start server')
     sock.listen(5)
     
-    NOTIFY(SERVER_SOCKET_PORT, sock.getsockname()[1])
+    NOTIFY(STRINGS['Server']['MessagePort'], sock.getsockname()[1])
     
     #Generate a code needed for connections
     if server_secret is None:
         server_secret = _generate_code(15)
-    NOTIFY(SERVER_SECRET_SET, server_secret)
+    NOTIFY(STRINGS['Server']['MessageSecretSet'], SECRET=server_secret)
     
     q_conn = Queue()
     threads = []
@@ -149,7 +149,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
             
             #Check for new connection (the latest thread is idle until then)
             #Loop is needed so that KeyboardInterrupt can be intercepted
-            NOTIFY(SERVER_SOCKET_WAIT)
+            NOTIFY(STRINGS['Server']['MessageListen'])
             while True:
             
                 #Close all client connections
@@ -169,7 +169,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
                     
                 #New client connected
                 else:
-                    NOTIFY(SERVER_SOCKET_CONNECT, addr[0], addr[1])
+                    NOTIFY(STRINGS['Server']['MessageConnection'], HOST=addr[0], PORT=addr[1])
                     client_id += 1
                     break
 

@@ -12,14 +12,15 @@ from core.api.constants import *
 from core.api.server import server, client
 from core.config import CONFIG
 from core.internet import send_request
-from core.notify import *
+from core.language import STRINGS
+from core.notify import NOTIFY
 from core.sockets import *
 try:
     from core.api.web import app
 except ImportError as e:
     CONFIG['API']['RunWeb'] = False
     CONFIG['API']['RunWeb'].lock = True
-    NOTIFY(IMPORT_FAILED, 'Flask', e)
+    NOTIFY(STRINGS['Misc']['ImportFailed'], MODULE='Flask', REASON=e)
     app = None
 
 
@@ -38,11 +39,11 @@ def local_message_connect(port=None, secret=None):
     
 def local_web_server(app, port=0, q_feedback=None):
     """Start a web server."""
-    NOTIFY(SERVER_WEB_START)
+    NOTIFY(STRINGS['Server']['FlaskStart'])
     web_thread = Thread(target=app.run, kwargs={'port': port})
     web_thread.daemon = True
     web_thread.start()
-    NOTIFY(SERVER_WEB_PORT, port)
+    NOTIFY(STRINGS['Server']['FlaskPort'], PORT=port)
     return web_thread
 
 

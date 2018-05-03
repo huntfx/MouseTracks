@@ -79,13 +79,15 @@ class _ConfigItem(object):
         validated_value = self._validate(value)
         if validated_value is not None:
             self._data['value'] = validated_value
-        
-    @property
-    def level(self):
-        """Return the value level.
-        Can be used for things like a text system with priority.
+    
+    def get(self, value, *args):
+        """Get stored value with optional default.
+        Uses *args to allow the default to be None, but only the first item is used.
         """
-        return self._data.get('level', -1)
+        try:
+            return self._data.get(value, args[0])
+        except IndexError:
+            return self._data.get(value)
 
 
 class _ConfigItemNumber(_ConfigItem):
@@ -120,6 +122,8 @@ class _ConfigItemNumber(_ConfigItem):
 class _ConfigItemStr(str, _ConfigItem):
     """Add controls to strings."""
     def __new__(cls, config_dict):
+        if config_dict.get('case_sensitive', False):
+            config_dict['value'] = config_dict['value'].lower()
         return str.__new__(cls, config_dict['value'])
     
     def _validate(self, value):

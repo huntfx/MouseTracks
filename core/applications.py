@@ -12,9 +12,10 @@ import time
 from core.compatibility import iteritems, unicode
 from core.config import CONFIG
 from core.constants import APP_LIST_URL, UPDATES_PER_SECOND, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
-from core.notify import *
+from core.notify import NOTIFY
 from core.files import format_file_path
-from core.os import get_running_processes, WindowFocus, get_modified_time
+from core.language import STRINGS
+from core.os import get_running_processes, WindowFocus, get_modified_time, split_folder_and_file
 from core.internet import get_url_contents
 
 
@@ -45,6 +46,7 @@ _WILDCARD_LEN = len(TRACKING_WILDCARD)
 class AppList(object):
     def __init__(self, path=APP_LIST_PATH):
         self.path = path
+        self.folder, self.name = split_folder_and_file(path, force_file=True)
 
         extensions = ['.'+i for i in RECOGNISED_EXTENSIONS]
         self.extensions = {i: {'len': len(i), ':': i+':', '[': i+'['}
@@ -246,20 +248,13 @@ class RunningApplications(object):
         next_update = time.time() - update_frequency
         if not self.applist or not last_updated or last_updated < next_update:
         
-            if self.q is not None:
-                NOTIFY(APPLIST_UPDATE_START)
-                NOTIFY.send(self.q)
-                
+            NOTIFY(STRINGS['Tracking']['ApplistDownload'], FILE_NAME=self.applist.name, URL=APP_LIST_URL).put(self.q)
             if self.applist.update(APP_LIST_URL):
                 self.applist.save()
-                
-                if self.q is not None:
-                    NOTIFY(APPLIST_UPDATE_SUCCESS)
+                NOTIFY(STRINGS['Tracking']['ApplistDownloadSuccess'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
             else:
-                if self.q is not None:
-                    NOTIFY(APPLIST_UPDATE_FAIL)
-                    
-            NOTIFY.send(self.q)
+                NOTIFY(STRINGS['Tracking']['ApplistDownloadFail'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
+            NOTIFY.put(self.q)
         
     def refresh(self):
         """Get list of currently running programs and focused window."""

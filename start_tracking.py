@@ -56,11 +56,11 @@ if __name__ == '__main__':
         from core.applications import APP_LIST_PATH
         from core.base import format_file_path, get_script_path
         from core.compatibility import Message, input
-        from core.config import CONFIG_PATH
         from core.constants import APP_LIST_FILE, DEFAULT_PATH
-        from core.internet import get_url_json, send_request
         from core.files import Lock, DATA_FOLDER
-        from core.notify import *
+        from core.internet import get_url_json, send_request
+        from core.language import STRINGS
+        from core.notify import NOTIFY
         from core.os import open_folder, open_file
         from core.sockets import get_free_port
             
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             #End old thread
             if _thread:
                 _end_thread(cls)
-                NOTIFY(TRACKING_RESTART)
+                NOTIFY(STRINGS['Tracking']['ScriptRestart'])
                 web_port = None
             
             #Start thread
@@ -248,7 +248,7 @@ if __name__ == '__main__':
                 t.listen()
                 
             else:
-                Message(NOTIFY(PROCESS_NOT_UNIQUE).get_output())
+                Message(STRINGS['Tracking']['ScriptDuplicate'])
                 
                 #If program is hidden, don't wait for input
                 if not is_hidden:

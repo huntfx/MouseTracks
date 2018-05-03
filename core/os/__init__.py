@@ -28,7 +28,7 @@ except NameError:
 
 
 #Define any functions
-def _get_folder_path(file_path, force_file=False, force_folder=False):
+def split_folder_and_file(file_path, force_file=False, force_folder=False):
     """Remove the last item from a path if it is a file.
     Returns a tuple of the folder path, and file name if set or None.
     
@@ -73,7 +73,7 @@ def create_folder(folder_path, is_file=None):
     
     force_file = False if is_file is None else is_file
     force_folder = False if is_file is None else not is_file
-    folder_path, file_path = _get_folder_path(folder_path, force_file=force_file, force_folder=force_folder)
+    folder_path, file_path = split_folder_and_file(folder_path, force_file=force_file, force_folder=force_folder)
     
     try:
         os.makedirs(folder_path)
@@ -134,13 +134,13 @@ def _open(path):
     
 def open_folder(path):
     """Open a folder."""
-    folder_path, file_path = _get_folder_path(path)
+    folder_path, file_path = split_folder_and_file(path)
     return _open(folder_path)
     
     
 def open_file(path):
     """Open a file."""
-    folder_path, file_path = _get_folder_path(path)
+    folder_path, file_path = split_folder_and_file(path)
     if file_path is None:
         return False
     return _open(path)
@@ -149,7 +149,7 @@ def open_file(path):
 #Functions to be used with commands
 def load_executable(path):
     
-    folder_path, file_path = _get_folder_path(path)
+    folder_path, file_path = split_folder_and_file(path)
     
     os.chdir(folder_path)
     os.system(path)

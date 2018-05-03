@@ -14,12 +14,13 @@ from core.compatibility import Message, pickle, iteritems
 from core.config import CONFIG
 from core.export import ExportCSV
 from core.files import LoadData, format_name
-from core.maths import round_int
-from core.os import create_folder, remove_file, join_path
-from core.versions import VERSION
-from core.image.keyboard import DrawKeyboard
+from core.image.base import save_image_to_folder
 from core.image.calculate import arrays_to_heatmap, arrays_to_colour, gaussian_size, calculate_resolution, upscale_arrays_to_resolution
 from core.image.colours import ColourRange, calculate_colour_map
+from core.image.keyboard import DrawKeyboard
+from core.maths import round_int
+from core.os import remove_file, join_path
+from core.versions import VERSION
 
 
 class ImageName(object):
@@ -301,7 +302,7 @@ class RenderImage(object):
                 colour_map = calculate_colour_map(custom_map)
         return ColourRange(min_value, max_value, colour_map)
     
-    def tracks(self, last_session=False, file_name=None, colour_override=None):
+    def tracks(self, last_session=False, file_path=None, colour_override=None):
         """Render track image."""
     
         track_data = self.data.get_tracks()
@@ -319,16 +320,13 @@ class RenderImage(object):
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
 
-        if file_name is None:
-            file_name = self.name.generate('Tracks', reload=True)
+        if file_path is None:
+            file_path = self.name.generate('Tracks', reload=True)
             
         if self.save:
-            create_folder(file_name)
-            Message('Saving image to "{}"...'.format(file_name))
-            image_output.save(file_name)
-            Message('Finished saving.')
+            save_image_to_folder(image_output, file_path)
     
-    def speed(self, last_session=False, file_name=None, colour_override=None):
+    def speed(self, last_session=False, file_path=None, colour_override=None):
         """Render speed track image."""
     
         track_data = self.data.get_speed()
@@ -346,16 +344,13 @@ class RenderImage(object):
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
 
-        if file_name is None:
-            file_name = self.name.generate('Speed', reload=True)
+        if file_path is None:
+            file_path = self.name.generate('Speed', reload=True)
             
         if self.save:
-            create_folder(file_name)
-            Message('Saving image to "{}"...'.format(file_name))
-            image_output.save(file_name)
-            Message('Finished saving.')
+            save_image_to_folder(image_output, file_path)
     
-    def strokes(self, last_session=False, file_name=None, colour_override=None):
+    def strokes(self, last_session=False, file_path=None, colour_override=None):
         """Render brush strokes image."""
     
         track_data = self.data.get_strokes()
@@ -373,20 +368,17 @@ class RenderImage(object):
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
 
-        if file_name is None:
-            file_name = self.name.generate('Strokes', reload=True)
+        if file_path is None:
+            file_path = self.name.generate('Strokes', reload=True)
             
         if self.save:
-            create_folder(file_name)
-            Message('Saving image to "{}"...'.format(file_name))
-            image_output.save(file_name)
-            Message('Finished saving.')
+            save_image_to_folder(image_output, file_path)
 
-    def double_clicks(self, last_session=False, file_name=None, colour_override=None):
+    def double_clicks(self, last_session=False, file_path=None, colour_override=None):
         """Render heatmap of double clicks."""
-        return self.clicks(last_session=last_session, file_name=file_name, colour_override=colour_override, _double_click=True)
+        return self.clicks(last_session=last_session, file_path=file_path, colour_override=colour_override, _double_click=True)
 
-    def clicks(self, last_session=False, file_name=None, colour_override=None, _double_click=False):
+    def clicks(self, last_session=False, file_path=None, colour_override=None, _double_click=False):
         """Render heatmap of clicks."""
 
         top_resolution, (min_value, max_value), clicks = self.data.get_clicks(session=last_session, double_click=_double_click)
@@ -414,26 +406,20 @@ class RenderImage(object):
         image_output = Image.fromarray(colour_range.convert_to_rgb(heatmap))
         image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
 
-        if file_name is None:
-            file_name = self.name.generate('Clicks', reload=True)
+        if file_path is None:
+            file_path = self.name.generate('Clicks', reload=True)
             
         if self.save:
-            create_folder(file_name)
-            Message('Saving image to "{}"...'.format(file_name))
-            image_output.save(file_name)
-            Message('Finished saving.')
+            save_image_to_folder(image_output, file_path)
         
-    def keyboard(self, last_session=False, file_name=None, colour_override=None):
+    def keyboard(self, last_session=False, file_path=None, colour_override=None):
         """Render keyboard image."""
         kb = DrawKeyboard(self.profile, self.data, last_session=last_session)
         
         image_output = kb.draw_image()
 
-        if file_name is None:
-            file_name = self.name.generate('Keyboard', reload=True)
+        if file_path is None:
+            file_path = self.name.generate('Keyboard', reload=True)
             
         if self.save:
-            create_folder(file_name)
-            Message('Saving image to "{}"...'.format(file_name))
-            image_output.save(file_name)
-            Message('Finished saving.')
+            save_image_to_folder(image_output, file_path)

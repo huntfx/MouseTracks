@@ -7,5 +7,5 @@ from __future__ import absolute_import
 
 import core.numpy as numpy
 from core.config import CONFIG
-from core.notify import *
+from core.notify import NOTIFY
 from core.files import LoadData

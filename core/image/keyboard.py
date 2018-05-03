@@ -8,9 +8,11 @@ from __future__ import absolute_import, division
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
+from core.image.main import save_image_to_folder
 from core.compatibility import range, Message
 from core.config import CONFIG
-from core.language import Language
+from core.language import Language, STRINGS
+from core.image.base import save_image_to_folder
 from core.files import load_data
 from core.maths import round_int, calculate_circle
 from core.messages import ticks_to_seconds
@@ -181,8 +183,8 @@ class KeyboardGrid(object):
         else:
             mapping = 'standard'
         
-        use_time = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time'
-        use_count = CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count'
+        use_time = CONFIG['GenerateKeyboard']['DataSet'] == 'time'
+        use_count = CONFIG['GenerateKeyboard']['DataSet'] == 'count'
         
         #Setup the colour range
         if use_time:
@@ -230,6 +232,8 @@ class KeyboardGrid(object):
                         key_count = count_time
                     elif use_count:
                         key_count = count_press
+                    
+                    #TODO: update to new language file
                     display_name = key_names.get(values['Name'], values['Name'])
 
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
@@ -360,15 +364,11 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
 class DrawKeyboard(object):
     def __init__(self, profile_name, data=None, last_session=False):
         
-        all_strings = Language().get_strings()
-        self._string = all_strings['string']
-        self.string = all_strings['string']['keyboard']
-        self.keys = all_strings['keyboard']['key']
-        #self.word = all_strings['word']
+        self.keys = Language().get_strings()['keyboard']['key']
         
         self.name = profile_name
         self.last_session = last_session
-        Message(self._string['profile']['load'])
+        Message(STRINGS['Misc']['ProfileLoad'])
         self.reload(data)
     
     def reload(self, data=None):
@@ -383,7 +383,7 @@ class DrawKeyboard(object):
         self.grid = self._create_grid()
     
     def _create_grid(self):
-        Message(self.string['layout'])
+        Message(STRINGS['Generation']['KeyboardGenerateLayout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
         layout = Language().get_keyboard_layout()
         for row in layout:
@@ -399,7 +399,7 @@ class DrawKeyboard(object):
         return grid
     
     def calculate(self):
-        Message(self.string['coordinates'])
+        Message(STRINGS['Generation']['KeyboardGenerateCoordinates'])
         (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
         return {'Width': width,
                 'Height': height,
@@ -417,39 +417,39 @@ class DrawKeyboard(object):
         #Add drop shadow
         shadow = (64, 64, 64)
         if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'][:3] == (255, 255, 255):
-            Message(self.string['draw']['shadow'])
+            Message(STRINGS['Generation']['KeyboardDrawShadow'])
             shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
                 for x, y in data['Coordinates']['Fill'][colour]:
                     pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
     
         #Fill colours
-        Message(self.string['draw']['keys'])
+        Message(STRINGS['Generation']['KeyboardDrawColour'])
         for colour in data['Coordinates']['Fill']:
             for x, y in data['Coordinates']['Fill'][colour]:
                 pixels[x, y] = colour
 
         #Draw border
-        Message(self.string['draw']['outline'])
+        Message(STRINGS['Generation']['KeyboardDrawOutline'])
         border = tuple(255 - i for i in data['Coordinates']['Background'])
         for x, y in data['Coordinates']['Outline']:
             pixels[x, y] = border
     
         #Draw text
-        Message(self.string['draw']['text'])
+        Message(STRINGS['Generation']['KeyboardDrawText'])
         draw = ImageDraw.Draw(image)
         font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
         font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
         
         #Generate stats
-        stats = [self.string['stats']['time'].format(T=ticks_to_seconds(self.ticks, 60))]
-        total_presses = format_amount(sum(self.key_counts['Pressed'].values()), 'press', 
-                                      max_length=25, decimal_units=False)
-        stats.append(self.string['stats']['count'].format(T=total_presses))
-        if CONFIG['GenerateKeyboard']['DataSet'].lower() == 'time':
-            stats.append(self.string['stats']['colour']['time'])
-        elif CONFIG['GenerateKeyboard']['DataSet'].lower() == 'count':
-            stats.append(self.string['stats']['colour']['count'])
+        time_to_str = ticks_to_seconds(self.ticks, 60)
+        presses_to_str = format_amount(sum(self.key_counts['Pressed'].values()), 'press', max_length=25, decimal_units=False)
+        stats = [STRINGS['Generation']['KeyboardStatsTime'].replace('[TIME]', time_to_str),
+                 STRINGS['Generation']['KeyboardStatsCount'].replace('[NUMBER]', presses_to_str)]
+        if CONFIG['GenerateKeyboard']['DataSet'] == 'time':
+            stats.append(STRINGS['Generation']['KeyboardStatsColourTime'])
+        elif CONFIG['GenerateKeyboard']['DataSet'] == 'count':
+            stats.append(STRINGS['Generation']['KeyboardStatsColourCount'])
         stats_text = ['{}:'.format(self.name), '\n'.join(stats)]
         
         #Write text to image
@@ -492,7 +492,6 @@ class DrawKeyboard(object):
             draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
 
         if file_path:
-            Message(self._string['image']['save']['start'])
-            image.save(file_path, CONFIG['GenerateImages']['FileType'])
-            Message(self._string['image']['save']['end'])
+            save_image_to_folder(image, file_path)
+
         return image
