@@ -18,6 +18,7 @@ from core.image.base import save_image_to_folder
 from core.image.calculate import arrays_to_heatmap, arrays_to_colour, gaussian_size, calculate_resolution, upscale_arrays_to_resolution
 from core.image.colours import ColourRange, calculate_colour_map
 from core.image.keyboard import DrawKeyboard
+from core.language import STRINGS
 from core.maths import round_int
 from core.os import remove_file, join_path
 from core.versions import VERSION
@@ -307,7 +308,7 @@ class RenderImage(object):
     
         track_data = self.data.get_tracks()
         if track_data is None:
-            Message('No tracking data found.')
+            Message(STRINGS['Generation']['NoData'])
             return None
             
         top_resolution, (min_value, max_value), tracks = track_data
@@ -331,7 +332,7 @@ class RenderImage(object):
     
         track_data = self.data.get_speed()
         if track_data is None:
-            Message('No tracking data found.')
+            Message(STRINGS['Generation']['NoData'])
             return None
             
         top_resolution, (min_value, max_value), tracks = track_data
@@ -355,7 +356,7 @@ class RenderImage(object):
     
         track_data = self.data.get_strokes()
         if track_data is None:
-            Message('No tracking data found.')
+            Message(STRINGS['Generation']['NoData'])
             return None
             
         top_resolution, (min_value, max_value), tracks = track_data

@@ -10,6 +10,7 @@ import socket
 from core.api.constants import *
 from core.compatibility import Message, input
 from core.cryptography import Crypt, DecryptionError
+from core.language import STRINGS
 from core.sockets import *
 
 
@@ -20,13 +21,13 @@ def server_connect(port=None, secret=None):
     if port is None:
         while True:
             try:
-                port = int(input('Type a port to connect to: '))
+                port = int(input(STRINGS['Input']['PortConnect'] + ' '))
             except (TypeError, ValueError):
                 pass
             else:
                 break
     if secret is None:
-        secret = input('Type the password to decode the messages: ')
+        secret = input(STRINGS['Input']['PortPassword'] + ' ')
            
     #Connect and set up decryption
     sock.connect(('localhost', port))
@@ -42,7 +43,7 @@ def server_connect(port=None, secret=None):
                 break
                 
             elif received_message is None:
-                Message('Server appears to have stopped.')
+                Message(STRINGS['Server']['MessageServerNotRunning'])
                 break
             
             #Decrypt message
@@ -50,10 +51,10 @@ def server_connect(port=None, secret=None):
                 try:
                     decoded_message = crypt.decrypt(received_message)
                 except DecryptionError:
-                    Message('Incorrect password provided.')
+                    Message(STRINGS['Server']['MessageServerIncorrectPassword'])
                     break
                 except TypeError:
-                    Message('Unable to decrypt message.')
+                    Message(STRINGS['Server']['MessageServerDecryptError'])
                 else:
                     print(decoded_message)
         sock.close()

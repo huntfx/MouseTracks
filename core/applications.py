@@ -248,7 +248,7 @@ class RunningApplications(object):
         next_update = time.time() - update_frequency
         if not self.applist or not last_updated or last_updated < next_update:
         
-            NOTIFY(STRINGS['Tracking']['ApplistDownload'], FILE_NAME=self.applist.name, URL=APP_LIST_URL).put(self.q)
+            NOTIFY(STRINGS['Tracking']['ApplistDownloadStart'], FILE_NAME=self.applist.name, URL=APP_LIST_URL).put(self.q)
             if self.applist.update(APP_LIST_URL):
                 self.applist.save()
                 NOTIFY(STRINGS['Tracking']['ApplistDownloadSuccess'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)

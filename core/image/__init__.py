@@ -2,6 +2,8 @@
 This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Ask the user questions on what to generate
+#These questions are temporary until a user inferface is done
 
 from __future__ import division
 
@@ -66,12 +68,6 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
     while True:
         loop += 1
         offset = (page - 1) * limit
-        '''
-        Message('Select a profile by typing its name or the matching ID.')
-        Message('Files are being sorted by "{} - {}".'.format(sort_value.lower(), 'ascending' if reverse else 'descending'))
-        Message('Type "sort <ID>" to change or reverse the sorting method. Possible options are Track Length (1), Session Count (2), Creation Time (3), Last Modified (4) and File Version (5).')
-        Message()
-        '''
         Message(STRINGS['GenerationInput']['SelectProfile'])
         Message(STRINGS['GenerationInput']['PageSort'].format_custom(
                 SORT_TYPE=sort_value.lower(), ORDER='ascending' if reverse else 'descending'))
@@ -107,7 +103,7 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
         Message()
 
         #Ask the user for input, or automatically choose input for testing
-        user_input = input(STRINGS['Misc']['UserChoice'] + ' ')
+        user_input = input(STRINGS['Input']['UserChoice'] + ' ')
 
         try:
             profile_id = int(user_input)
@@ -132,7 +128,6 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                             option = uc_option
                             break
                     else:
-                        #Message('Error: Invalid sorting ID. Must be between 1-5.')
                         try:
                             Message(STRINGS['GenerationInput']['PageSortInvalidID'].format_custom(
                                     CURRENT_SORT=sort_value, NEW_SORT=sort_id+1, SORT_MIN=1, SORT_MAX=5))
@@ -170,7 +165,7 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                 
                 except ValueError:
                     Message(STRINGS['GenerationInput']['PageNumberInvalid'].format_custom(
-                            CURRENT_PAGE=page, PAGE=_page, PAGE_MIN=1, PAGE_MAX=total_pages))
+                            CURRENT_PAGE=page, NEW_PAGE=_page, PAGE_MIN=1, PAGE_MAX=total_pages))
 
             #Input is directly typing profile name
             else:
@@ -280,29 +275,29 @@ def _user_generate():
                 for colour_map in colour_maps:
                     try:
                         calculate_colour_map(colour_map)
-                    except ValueError as e:
-                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    except ValueError:
+                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[0][3].append(colour_map)
                 if not render_types[0][3]:
-                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[0][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
                 
     
     #Generate click heatmap
     if render_types[1][1]:
-        Message('Options for {}...'.format(render_types[1][0]))
+        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[1][0]))
 
         #Select mouse button
         mb_options = [
-            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], STRINGS['Mouse']['MouseButtonLeft']],
-            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], STRINGS['Mouse']['MouseButtonMiddle']],
-            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['Mouse']['MouseButtonRight']]
+            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], STRINGS['Mouse']['ButtonLeft']],
+            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], STRINGS['Mouse']['ButtonMiddle']],
+            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['Mouse']['ButtonRight']]
         ]
-        Message('Which mouse buttons should be included in the heatmap?.')
+        Message(STRINGS['GenerationInput']['MouseButtonSelection'])
         if not any(select_options(mb_options, multiple_choice=True)):
-            Message('Warning: No mouse buttons selected, disabling heatmap.')
+            Message(STRINGS['GenerationInput']['MouseButtonNotSet'])
             render_types[2][1] = False
         else:
             for mb_id, value, _ in mb_options:
@@ -320,19 +315,19 @@ def _user_generate():
                 for colour_map in colour_maps:
                     try:
                         calculate_colour_map(colour_map)
-                    except ValueError as e:
-                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    except ValueError:
+                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[1][3].append(colour_map)
                 if not render_types[1][3]:
-                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[1][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
                     
     #Generate keyboard
     if render_types[2][1]:
-        Message('Options for {}...'.format(render_types[2][0]))
+        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[2][0]))
 
         #Get colour map
         try:
@@ -346,18 +341,18 @@ def _user_generate():
                 for colour_map in colour_maps:
                     try:
                         calculate_colour_map(colour_map)
-                    except ValueError as e:
-                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    except ValueError:
+                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[2][3].append(colour_map)
                 if not render_types[2][3]:
-                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[2][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
     #Generate acceleration
     if render_types[3][1]:
-        Message('Options for {}...'.format(render_types[3][0]))
+        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[3][0]))
 
         #Select colour map
         try:
@@ -371,19 +366,19 @@ def _user_generate():
                 for colour_map in colour_maps:
                     try:
                         calculate_colour_map(colour_map)
-                    except ValueError as e:
-                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    except ValueError:
+                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[3][3].append(colour_map)
                 if not render_types[3][3]:
-                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[3][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
 
     #Generate brush strokes
     if render_types[4][1]:
-        Message('Options for {}...'.format(render_types[4][0]))
+        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[4][0]))
 
         #Select colour map
         try:
@@ -397,12 +392,12 @@ def _user_generate():
                 for colour_map in colour_maps:
                     try:
                         calculate_colour_map(colour_map)
-                    except ValueError as e:
-                        Message('Warning: Failed to convert {} into a colour map. Reason: {}'.format(colour_map), e)
+                    except ValueError:
+                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[4][3].append(colour_map)
                 if not render_types[4][3]:
-                    Message('Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.')
+                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[4][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
@@ -559,9 +554,9 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
 
         if _show_choice_only is None or _show_choice_only: 
             if multiple_choice or not values[1]:
-                Message('{}: {}'.format(i+1, values[2]))
+                Message(STRINGS['GenerationInput']['ListItem'].format_custom(ID=i+1, OPTION=values[2]))
             else:
-                Message('{}: {} [{}]'.format(i+1, values[2], STRINGS['Words']['Default']))
+                Message(STRINGS['GenerationInput']['ListItemDefault'].format_custom(ID=i+1, OPTION=values[2]))
     
     #Handle override to show/hide choice
     if _show_choice_only and _show_choice_only != 'input_override':
@@ -570,7 +565,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
         Message()
     
     if _selection is None:
-        choice = input(STRINGS['Misc']['UserChoice'] + ' ')
+        choice = input(STRINGS['Input']['UserChoice'] + ' ')
     else:
         choice = _selection
 
@@ -586,7 +581,11 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
     #Return different output depending on if multiple choices were allowed
     joined = [options[i][0] for i, value in enumerate(result) if value]
     if any(result):
-        Message('{} {} chosen.'.format(list_to_str(options[i][2] for i, value in enumerate(result) if value), 'was' if len(joined) == 1 else 'have been'))
+        _options = list_to_str(options[i][2] for i, value in enumerate(result) if value)
+        if len(joined) == 1:
+            Message(STRINGS['GenerationInput']['OptionChosenSingle'].format_custom(OPTION=_options))
+        else:
+            Message(STRINGS['GenerationInput']['OptionChosenMultiple'].format_custom(OPTION=_options))
     
     #Automatically choose if no selection given
     elif auto_choose_on_fail and not choice:
@@ -594,10 +593,14 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
             num_results = len(result) - 1
             while not any(result):
                 result = [not random.randint(0, num_results) for _ in result]
-            Message('{} {} chosen at random.'.format(list_to_str(options[i][2] for i, value in enumerate(result) if value), 'was' if sum(result) == 1 else 'have been'))
+            _options = list_to_str(options[i][2] for i, value in enumerate(result) if value)
+            if sum(result) == 1:
+                Message(STRINGS['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=_options))
+            else:
+                Message(STRINGS['GenerationInput']['OptionRandomMultiple'].format_custom(OPTION=_options))
         else:
             result = random.choice(options)[0]
-            Message('{} was chosen at random.\n'.format(result))
+            Message(STRINGS['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=result))
             return result
     
     #End if multiple choice
@@ -607,8 +610,10 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
 
     #Check too many options haven't been chosen
     elif joined:
-        if len(joined) > 1:
-            Message('Error: Only one option can be chosen.\n')
+        _option_count = len(joined)
+        if _option_count > 1:
+            Message(STRINGS['GenerationInput']['OptionInvalidSingleChoice'].format_custom(OPTION_COUNT=_option_count))
+            Message()
             return None
         Message()
         return joined[0]
@@ -616,10 +621,12 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
     #End if random choice was chosen
     else:
         if not auto_choose_on_fail:
-            Message('Error: Invalid choice.\n')
+            Message(STRINGS['GenerationInput']['OptionInvalidInput'])
+            Message()
             return None
         else:
-            Message('{} was chosen.\n'.format(choice))
+            Message(STRINGS['GenerationInput']['OptionValid'].format_custom(OPTION=choice))
+            Message()
             return choice
 
 
@@ -654,5 +661,4 @@ def multi_select(options, auto=False):
 
 
 if __name__ == '__main__':
-    Message('Note: These questions are temporary until a user inferface is done.')
     user_generate()

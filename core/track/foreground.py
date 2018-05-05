@@ -337,7 +337,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                     mb_data = (mouse_button, mouse_pos['Current'])
 
                     _mb = STRINGS['Mouse'][['MouseButtonLeft', 'MouseButtonMiddle', 'MouseButtonRight'][mouse_button]]
-                    _click_type = STRINGS['Mouse']['MouseClickSingle']
+                    _click_type = STRINGS['Mouse']['ClickSingle']
                     
                     if clicked:
                         store['LastActivity'] = ticks
@@ -358,7 +358,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                                 store['Mouse']['LastClickTime'] = 0
                                 store['Mouse']['LastClick'] = None
                                 double_click = True
-                                _ck = STRINGS['Mouse']['MouseClickDouble']
+                                _ck = STRINGS['Mouse']['ClickDouble']
                                 try:
                                     frame_data['DoubleClick'].append(mb_data)
                                 except KeyError:

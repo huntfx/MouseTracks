@@ -186,10 +186,7 @@ from core.ini import Config
 
 LANGUAGE_DEFAULTS = {
     'Words': {
-        'Default': {
-            '__info__': 'Used for showing options, does not affect the name of the default profile.',
-            'value': 'Default'
-        },
+        '__priority__': 1,
         'Page': 'page',
         'Sort': 'sort',
         'And': 'and',
@@ -216,8 +213,14 @@ LANGUAGE_DEFAULTS = {
         'GamepadButtonSingle': 'button',
         'GamepadButtonPlural': 'buttons',
     },
-    'Misc': {
+    'Input': {
+        '__priority__': 2,
         'UserChoice': 'Type your choice here:',
+        'PortConnect': 'Type a port to connect to:',
+        'PortPassword': 'Type the password to decode the messages:'
+    },
+    'Misc': {
+        '__priority__': 2,
         'ImportFailed': {
             '__info__': 'Valid Replacements: [MODULE] [REASON]',
             'value': 'Import of [MODULE] failed. Reason: "[REASON]".'
@@ -232,6 +235,7 @@ LANGUAGE_DEFAULTS = {
         'OpenImageFolder': 'Opening image folder...',
     },
     'Internet': {
+        '__priority__': 4,
         'Request': {
             '__info__': 'Valid Replacements: [URL]',
             'value': 'Sent request to [URL].',
@@ -284,18 +288,23 @@ LANGUAGE_DEFAULTS = {
         'PortRandom': {
             'value': 'Selecting random port...',
             'level': 1
-        }
+        },
+        'MessageServerNotRunning': 'Server appears to have stopped.',
+        'MessageServerIncorrectPassword': 'Incorrect password provided',
+        'MessageServerDecryptError': 'Unable to decrypt message.'
     },
     'Mouse': {
-        'MouseButtonLeft': 'Left mouse button',
-        'MouseButtonMiddle': 'Middle mouse button',
-        'MouseButtonRight': 'Right mouse button',
-        'MousebuttonThumb1': 'Thumb button 1',
-        'MousebuttonThumb2': 'Thumb button 2',
-        'MouseClickSingle': 'clicked',
-        'MouseClickDouble': 'double clicked'
+        '__priority__': 4,
+        'ButtonLeft': 'Left mouse button',
+        'ButtonMiddle': 'Middle mouse button',
+        'ButtonRight': 'Right mouse button',
+        'ButtonThumb1': 'Thumb button 1',
+        'ButtonThumb2': 'Thumb button 2',
+        'ClickSingle': 'clicked',
+        'ClickDouble': 'double clicked'
     },
     'Tracking': {
+        '__priority__': 5,
         'ProfileNew': {
             'value': 'Started recording to new file.',
             'level': 1
@@ -383,7 +392,7 @@ LANGUAGE_DEFAULTS = {
             'value': 'Reloaded [FILE-NAME].',
             'level': 1
         },
-        'AppListDownload': {
+        'AppListDownloadStart': {
             '__info__': 'Valid Replacements: [FILE-NAME] [URL]',
             'value': 'Updating [FILE-NAME] from [URL]...',
             'level': 1
@@ -558,6 +567,7 @@ LANGUAGE_DEFAULTS = {
         }
     },
     'RenderTypes': {
+        '__priority__': 2,
         'Tracks': 'Tracks',
         'Speed': 'Acceleration',
         'Strokes': 'Brush Strokes',
@@ -644,11 +654,67 @@ LANGUAGE_DEFAULTS = {
             'value': 'Page [CURRENT-PAGE] of [TOTAL-PAGES]. Type "[PAGE] <number>" to switch.'
         },
         'PageNumberInvalid': {
-            '__info__': 'Valid Replacements: [PAGE] [TOTAL-PAGES] [PAGE](required)',
-            'value': 'Error: Invalid page number: [PAGE] (must be between [PAGE-MIN]-[PAGE-MAX])'
+            '__info__': 'Valid Replacements: [CURRENT-PAGE] [NEW-PAGE] [TOTAL-PAGES] [PAGE]',
+            'value': 'Error: Invalid page number: [NEW-PAGE] (must be between [PAGE-MIN]-[PAGE-MAX])'
+        },
+        'RenderOptions': {
+            '__info__': 'Valid Replacements: [RENDER-TYPE]',
+            'value': 'Options for [RENDER-TYPE]...'
+        },
+        'ColourMapInvalid': {
+            '__info__': 'If the user sets an invalid colour map. Valid Replacements: [COLOUR-MAP]',
+            'value': '"[COLOUR-MAP]" is not a valid colour map.'
+        },
+        'ColourMapNotSet': {
+            '__info__': 'This is displayed if no colour maps were valid, user either makes another choice or leaves empty for a random choice.',
+            'value': 'Error: No valid colour maps in selection. Please make another choice or leave empty for a random choice.'
+        },
+        'MouseButtonSelection': 'Which mouse buttons should be included in the heatmap?',
+        'MouseButtonNotSet': 'No mouse buttons were selected, disabling heatmap.',
+        'OptionChosenSingle': {
+            '__info__': 'Valid Replacements: [OPTION]',
+            'value': '[OPTION] was chosen.'
+        },
+        'OptionChosenMultiple': {
+            '__info__': 'Valid Replacements: [OPTION]',
+            'value': '[OPTION] have been chosen.'
+        },
+        'OptionRandomSingle': {
+            '__info__': 'Valid Replacements: [OPTION]',
+            'value': '[OPTION] was chosen at random.'
+        },
+        'OptionRandomMultiple': {
+            '__info__': 'Valid Replacements: [OPTION]',
+            'value': '[OPTION] have been chosen at random.'
+        },
+        'OptionInvalidSingleChoice': {
+            '__info__': 'Valid Replacements: [OPTION-COUNT]',
+            'value': 'Error: Only one option can be chosen.'
+        },
+        'OptionInvalidInput': {
+            '__info__': 'Generic error if none of the chosen options match anything.',
+            'value': 'Error: Invalid choice.'
+        },
+        'OptionValid': {
+            '__info__': 'Valid Replacements: [OPTION]',
+            'value': '[OPTION] was chosen.'
+        },
+        'ListItem': {
+            '__info__': 'General list item. Valid Replacements: [ID] [OPTION]',
+            'value': '[ID]: [OPTION]'
+        },
+        'ListItemDefault': {
+            '__info__': 'General list item, acts as default if no other choice is made. Valid Replacements: [ID] [OPTION]',
+            'value': '[ID]: [OPTION] [Default]'
+        },
+        'GenerateCSV': {
+            '__info__': 'Valid Replacements: [RENDER-TYPE]',
+            'value': 'Generating CSV from [RENDER-TYPE]...'
         }
     },
     'Generation': {
+        '__priority__': 7,
+        'NoData': 'No tracking data found.',
         'ImageSaveStart': {
             '__info__': 'Valid Replacements: [IMAGE-PATH] [IMAGE-NAME]',
             'value': 'Saving image to "[IMAGE-PATH]".'
@@ -677,7 +743,28 @@ LANGUAGE_DEFAULTS = {
         'KeyboardStatsTime': {
             '__info__': 'Valid Replacements: [TIME]',
             'value': 'Time elapsed: [TIME]'
-        }
+        },
+        'UpscaleArrayStart': {
+            '__info__': 'Valid Replacements: [XRES] [YRES]',
+            'value': 'Upscaling arrays to [XRES]x[YRES]...'
+        },
+        'UpscaleArrayProgress': {
+            '__info__': 'Valid Replacements: [XRES] [YRES] [CURRENT] [TOTAL]',
+            'value': 'Processing array for [XRES]x[YRES] ([CURRENT]/[TOTAL])'
+        },
+        'ArrayMerge': {
+            '__info__': 'The stored arrays need to be merged together.',
+            'values': 'Merging arrays...'
+        },
+        'ArrayRemap': {
+            '__info__': 'For heatmaps the values are mapped to a linear range (it always becomes "0, 1, 2...").',
+            'values': 'Remapping values...'
+        },
+        'ArrayBlur': 'Applying gaussian blur...',
+        'ArrayRange': {
+            '__info__': 'The range just means the minimum and maximum values contained within the array.',
+            'values': 'Finding range limits...'
+        },
     }
 }
 
