@@ -238,11 +238,11 @@ class _ConfigDict(dict):
     
     #TODO: Catch KeyErrors on invalid keys
     """
-    def __init__(self, config_dict, show_hidden=False, allow_create=True, default_settings={}):
+    def __init__(self, config_dict, show_hidden=False, editable_dict=True, default_settings={}):
         self._data = config_dict
         super(_ConfigDict, self).__init__(self._data)
         self.hidden = not show_hidden
-        self.allow_create = allow_create
+        self._editable_dict = editable_dict
         self._default_settings = default_settings
 
     def __repr__(self):
@@ -264,13 +264,14 @@ class _ConfigDict(dict):
             info = self._data[item]
 
         except KeyError:
-            if not self.allow_create:
+            if not self._editable_dict:
                 raise
 
             #Create new data item
             self._data[item] = {}
-            for k, v in iteritems(self._default_settings):
-                self._data[item][k] = v
+            if self._default_settings is not None:
+                for k, v in iteritems(self._default_settings):
+                    self._data[item][k] = v
             self._data[item]['value'] = value
             if 'type' not in self._data[item]:
                 self._data[item]['type'] = type(value)
@@ -283,6 +284,9 @@ class _ConfigDict(dict):
         config_item = create_config_item(self._data[item])
         config_item.value = value
         self._data[item]['value'] = config_item.value
+
+    def __delitem__(self, item):
+        del self._data[item]
 
 
 class Config(dict):
@@ -310,7 +314,7 @@ class Config(dict):
 
     _DEFAULT_VALUES = {int: 0, float: 0.0, str: '', bool: False}
     
-    def __init__(self, defaults, show_hidden=False, default_settings=None, allow_create=True):
+    def __init__(self, defaults, show_hidden=False, default_settings=None, editable_dict=True):
         """Initialise config with the default values.
         Can also provide default settings to apply to everything, such as {'type': int, 'min': 0}.
         """
@@ -321,7 +325,7 @@ class Config(dict):
         self._load_from_dict(defaults)
         self.hidden = not show_hidden
         self.is_new = False
-        self.allow_create = allow_create
+        self._editable_dict = editable_dict
         super(Config, self).__init__(self._data)
 
     def __repr__(self):
@@ -336,12 +340,15 @@ class Config(dict):
     def __getitem__(self, item):
         """Return all values under a heading."""
         try:
-            return _ConfigDict(self._data[item], show_hidden=not self.hidden, allow_create=self.allow_create, default_settings=self._default_settings)
+            return _ConfigDict(self._data[item], show_hidden=not self.hidden, editable_dict=self._editable_dict, default_settings=self._default_settings)
         except KeyError:
-            if not self.allow_create:
+            if not self._editable_dict:
                 raise
             self._data[item] = {}
             return self[item]
+
+    def __delitem__(self, item):
+        del self._data[item]
 
     def _load_from_dict(self, config_dict):
         """Read data from the default dictionary."""
@@ -403,6 +410,12 @@ class Config(dict):
         output = []
         
         for heading in _get_priority_order(self._default):
+
+            #Ignore if heading has been deleted
+            print heading, self._data.keys()
+            if self._editable_dict and heading not in self._data:
+                continue
+
             #Add heading
             output.append('[{}]'.format(heading))
 
@@ -418,6 +431,10 @@ class Config(dict):
             #Add each variable
             for variable in _get_priority_order(self._default[heading]):
                 
+                #Ignore if variable has been deleted
+                if self._editable_dict and variable not in self._data[heading]:
+                    continue
+
                 #Convert to dict if not one already
                 info = self._default[heading][variable]
                 if not isinstance(info, dict):
