@@ -336,7 +336,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                     mb_clicked = store['Mouse']['Clicked'].get(mouse_button, False)
                     mb_data = (mouse_button, mouse_pos['Current'])
 
-                    _mb = STRINGS['Mouse'][['MouseButtonLeft', 'MouseButtonMiddle', 'MouseButtonRight'][mouse_button]]
+                    _mb = STRINGS['Mouse'][['ButtonLeft', 'ButtonMiddle', 'ButtonRight'][mouse_button]]
                     _click_type = STRINGS['Mouse']['ClickSingle']
                     
                     if clicked:

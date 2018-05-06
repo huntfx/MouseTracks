@@ -363,7 +363,9 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
 class DrawKeyboard(object):
     def __init__(self, profile_name, data=None, last_session=False):
         
-        self.keys = Language().get_strings()['keyboard']['key']
+        #TODO: Update to new language
+        #self.keys = Language().get_strings()['keyboard']['key']
+        self.keys = {}
         
         self.name = profile_name
         self.last_session = last_session
@@ -384,7 +386,7 @@ class DrawKeyboard(object):
     def _create_grid(self):
         Message(STRINGS['Generation']['KeyboardGenerateLayout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
-        layout = Language().get_keyboard_layout()
+        layout = Language().keyboard_old()
         for row in layout:
             grid.new_row()
             for name, width, height in row:

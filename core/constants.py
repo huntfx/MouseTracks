@@ -13,7 +13,7 @@ APP_LIST_FILE = 'AppList.txt'
 
 APP_LIST_URL = 'https://raw.githubusercontent.com/Peter92/MouseTrack/master/AppList.txt'
 
-DEFAULT_LANGUAGE = 'en_US'
+DEFAULT_LANGUAGE = 'en_GB'
 
 MAX_INT = pow(2, 63) - 1
 

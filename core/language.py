@@ -7,183 +7,25 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import
 
 import codecs
+import os
 
 import core.utf8
 from core.base import get_script_file
+from core.compatibility import iteritems
 from core.config import CONFIG
 from core.constants import DEFAULT_LANGUAGE
+from core.ini import Config
 
-
-ALLOWED_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
 LANGUAGE_FOLDER = 'language'
 
-KEYBOARD_LAYOUT_FOLDER = 'keyboard_layout'
-
-CONSOLE_STRINGS_FOLDER = 'console' #Being phased out
+KEYBOARD_LAYOUT_FOLDER = 'keyboard_layout' #Being phased out
 
 STRINGS_FOLDER = 'strings'
 
+KEYBOARD_FOLDER = 'keyboard'
+
 LANGUAGE_BASE_PATH = get_script_file(LANGUAGE_FOLDER)
-
-
-def follow_file_links(file_name, extension, path, visited=None):
-    """Follow paths recursively if they contain a link to another file."""
-    
-    #Check for recursion
-    if visited is None:
-        visited = set()
-    if file_name in visited:
-        raise IOError('recursion in file links')
-    visited.add(file_name)
-    
-    #Read the file
-    try:
-        with codecs.open('{}/{}.{}'.format(path, file_name, extension), 'r', 'utf-8') as f:
-            read_data = f.read()
-            if ord(read_data[0]) == 65279: #Remove dumb utf-8 marker that won't disappear
-                read_data = read_data[1:]
-            data = read_data.strip().splitlines()
-    except IOError:
-        data = []
-    else:
-        if data and data[0][0].lstrip() == '<' and data[0][-1].rstrip() == '>':
-            return follow_file_links(data[0][1:-1], extension, path, visited)
-    return data
-
-
-class Language(object):
-
-    def __init__(self, language=CONFIG['Main']['Language'], fallback_language=DEFAULT_LANGUAGE):
-        self.strings = None
-        self.keyboard = None
-    
-        #Read from chosen file, then backup file if needed
-        language_order = (language, fallback_language)
-        for language in language_order:
-        
-            #Get the string and keyboard languages to use
-            links = follow_file_links(language, 'txt', LANGUAGE_BASE_PATH)
-            for link in links:
-                var, value = [i.strip() for i in link.split('=')]
-                link_parts = var.split('.')
-                if link_parts[0] == 'locale':
-                    if link_parts[1] == 'strings':
-                        self.strings = value.strip()
-                    elif link_parts[1] == 'keyboard':
-                        if link_parts[2] == 'layout':
-                            self.keyboard = value.strip()
-            if self.strings is not None and self.keyboard is not None:
-                break
-        
-        if self.strings is None or self.keyboard is None:
-            raise IOError('no language file found in the folder "{}\\"'.format(LANGUAGE_BASE_PATH))
-                
-        
-    def get_keyboard_layout(self, extended=True):
-        keyboard_layout = []
-        
-        keyboard_layout_folder = '{}/{}'.format(LANGUAGE_BASE_PATH, KEYBOARD_LAYOUT_FOLDER)
-        try:
-            data = follow_file_links(self.keyboard, 'txt', keyboard_layout_folder)
-        except AttributeError:
-            return []
-            
-        try:
-            gap = float(data[0])
-        except ValueError:
-            gap = 1
-        else:
-            del data[0]
-        
-        for row in data:
-            keyboard_layout.append([])
-            
-            #Handle half rows
-            row = row.strip()
-            if not row:
-                continue
-            
-            #Remove second half of keyboard if required
-            if extended:
-                row = row.replace(':', '')
-            else:
-                row = row.split(':', 1)[0]
-            
-            for key in row.split('+'):
-            
-                key_data = key.split('|')
-                default_height = 1
-                default_width = 1
-                
-                #Get key name if set, otherwise change the width
-                try:
-                    name = str(key_data[0])
-                    if not name:
-                        name = None
-                        raise IndexError
-                except IndexError:
-                    default_width = gap
-                
-                #Set width and height
-                try:
-                    width = float(key_data[1])
-                except (IndexError, ValueError):
-                    width = default_width
-                else:
-                    width = max(0, width)
-                try:
-                    height = float(key_data[2])
-                except (IndexError, ValueError):
-                    height = default_height
-                else:
-                    height = max(0, height)
-                
-                keyboard_layout[-1].append([name, width, height])
-                
-        return keyboard_layout
-    
-    def get_strings(self):
-        try:
-            data = follow_file_links(self.strings, 'txt', '{}/{}'.format(LANGUAGE_BASE_PATH, CONSOLE_STRINGS_FOLDER))
-        except AttributeError:
-            return {}
-        strings = {}
-        
-        for line in data:
-            try:
-                var, value = [i.strip() for i in line.split('=', 1)]
-            except ValueError:
-                pass
-            else:
-                var_parts = var.split('.')
-                var_len = len(var_parts)
-                if var_len == 1:
-                    continue
-                
-                #Recursively look down dictionary
-                _strings = strings
-                for i, part in enumerate(var_parts[:-1]):
-                    last_loop = i == var_len - 2
-                    try:
-                        if not last_loop:
-                            _strings = _strings[part]
-                    except KeyError:
-                        _strings[part] = {}
-                        if not last_loop:
-                            _strings = _strings[part]
-                        
-                try:
-                    _strings[part][var_parts[-1]] = value.replace('\\n', '\n')
-                except KeyError:
-                    _strings[part] = {var_parts[-1]: value.replace('\\n', '\n')}
-        
-        return strings
-
-
-
-from core.compatibility import iteritems
-from core.ini import Config
 
 LANGUAGE_DEFAULTS = {
     'Words': {
@@ -755,16 +597,16 @@ LANGUAGE_DEFAULTS = {
         },
         'ArrayMerge': {
             '__info__': 'The stored arrays need to be merged together.',
-            'values': 'Merging arrays...'
+            'value': 'Merging arrays...'
         },
         'ArrayRemap': {
             '__info__': 'For heatmaps the values are mapped to a linear range (it always becomes "0, 1, 2...").',
-            'values': 'Remapping values...'
+            'value': 'Remapping values...'
         },
         'ArrayBlur': 'Applying gaussian blur...',
         'ArrayRange': {
             '__info__': 'The range just means the minimum and maximum values contained within the array.',
-            'values': 'Finding range limits...'
+            'value': 'Finding range limits...'
         },
     },
     'Keys': {
@@ -1274,5 +1116,133 @@ LANGUAGE_DEFAULTS = {
     }
 }
 
+PATH_DEFAULT = {
+    'Links': {
+        '__priority__': 1,
+        'Strings': {
+            '__info__': 'Which base language to use.',
+            'value': 'en_GB',
+            'type': str
+        },
+        'Keyboard': {
+            '__info__': 'Which language to use for the keyboard layout.',
+            'value': 'en_US',
+            'type': str
+        }
+    },
+    'Inherit': {
+        '__priority__': 2,
+        'Strings': {
+            '__info__': 'Which language to inherit from. Optional, but lets you reuse strings defined in other files if your language is similar.',
+            'allow_empty': True,
+            'type': str
+        }
+    }
+}
+
 
 STRINGS = Config(LANGUAGE_DEFAULTS, default_settings={'type': str, 'allow_empty': True})#.load(LANGUAGE_PATH, LANGUAGE_PATH_DEFAULT)
+
+
+def get_language_paths(*languages):
+    """Get the paths given for strings and keyboard from current language."""
+    path_default = {'Links': {'Strings': 'en_GB', 'Keyboard': 'en_US'},
+                    'Inherit': {'Strings': {'allow_empty': True}}}
+
+    language_paths = [os.path.join(LANGUAGE_BASE_PATH, language + '.ini') for language in languages][::-1]
+    paths = Config(PATH_DEFAULT, editable_dict=True).load(*language_paths)
+
+    #Edit the links to use the language folder
+    paths['NewLinks'] = {}
+    paths['NewLinks']['Strings'] = os.path.join(LANGUAGE_BASE_PATH, STRINGS_FOLDER, paths['Links']['Strings'] + '.ini')
+    if paths['Inherit']['Strings']:
+        paths['NewLinks']['StringsBackup'] = os.path.join(LANGUAGE_BASE_PATH, STRINGS_FOLDER, paths['Inherit']['Strings'] + '.ini')
+    paths['NewLinks']['StringsBase'] = os.path.join(LANGUAGE_BASE_PATH, STRINGS_FOLDER, DEFAULT_LANGUAGE + '.ini')
+    #TODO: Use new keyboard folder
+    paths['NewLinks']['Keyboard'] = os.path.join(LANGUAGE_BASE_PATH, KEYBOARD_LAYOUT_FOLDER, paths['Links']['Keyboard'] + '.txt')
+    
+    return paths
+
+
+class Language(object):
+    def __init__(self, local_language=None):
+        self.local_language = local_language or CONFIG['Main']['Language']
+        self.reload()
+    
+    def reload(self, local_language=None):
+        self.paths = get_language_paths(local_language or CONFIG['Main']['Language'], DEFAULT_LANGUAGE)
+        self.strings = self._strings()
+
+    def _strings(self):
+        strings = Config(LANGUAGE_DEFAULTS, default_settings={'type': str, 'allow_empty': True})
+        strings.load(self.paths['NewLinks']['Strings'], self.paths['NewLinks'].get('StringsBackup', None), self.paths['NewLinks']['StringsBase'])
+        return strings
+
+    def keyboard_old(self, extended=True):
+        keyboard_layout = []
+
+        #Read lines from file
+        try:
+            with codecs.open(self.paths['NewLinks']['Keyboard'], 'r', 'utf-8') as f:
+                read_data = f.read()
+                if ord(read_data[0]) == 65279: #Remove dumb utf-8 marker that won't disappear
+                    read_data = read_data[1:]
+                data = read_data.strip().splitlines()
+        except IOError:
+            data = []
+            
+        try:
+            gap = float(data[0])
+        except ValueError:
+            gap = 1
+        else:
+            del data[0]
+        
+        for row in data:
+            keyboard_layout.append([])
+            
+            #Handle half rows
+            row = row.strip()
+            if not row:
+                continue
+            
+            #Remove second half of keyboard if required
+            if extended:
+                row = row.replace(':', '')
+            else:
+                row = row.split(':', 1)[0]
+            
+            for key in row.split('+'):
+            
+                key_data = key.split('|')
+                default_height = 1
+                default_width = 1
+                
+                #Get key name if set, otherwise change the width
+                try:
+                    name = str(key_data[0])
+                    if not name:
+                        name = None
+                        raise IndexError
+                except IndexError:
+                    default_width = gap
+                
+                #Set width and height
+                try:
+                    width = float(key_data[1])
+                except (IndexError, ValueError):
+                    width = default_width
+                else:
+                    width = max(0, width)
+                try:
+                    height = float(key_data[2])
+                except (IndexError, ValueError):
+                    height = default_height
+                else:
+                    height = max(0, height)
+                
+                keyboard_layout[-1].append((name, width, height))
+                
+        return keyboard_layout
+
+LANGUAGE = Language()
