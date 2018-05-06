@@ -399,7 +399,15 @@ class Config(dict):
                 if not isinstance(info, dict):
                     info = {'value': info, 'type': type(info)}
                 elif 'type' not in info:
-                    info['type'] = type(info['value'])
+                    try:
+                        info['type'] = type(info['value'])
+                    except KeyError:
+                        if self._default_settings is None:
+                            raise
+                        if 'type' in self._default_settings:
+                            info['type'] = self._default_settings['type']
+                        else:
+                            raise
 
                 value_type = info['type']
                 value = info.get('value', self._DEFAULT_VALUES[value_type])
