@@ -238,10 +238,12 @@ class _ConfigDict(dict):
     
     #TODO: Catch KeyErrors on invalid keys
     """
-    def __init__(self, config_dict, show_hidden=False):
+    def __init__(self, config_dict, show_hidden=False, allow_create=True, default_settings={}):
         self._data = config_dict
         super(_ConfigDict, self).__init__(self._data)
         self.hidden = not show_hidden
+        self.allow_create = allow_create
+        self._default_settings = default_settings
 
     def __repr__(self):
         return dict(self.__iter__()).__repr__()
@@ -258,7 +260,22 @@ class _ConfigDict(dict):
 
     def __setitem__(self, item, value):
         """Set a new value and make sure it follows any set limits."""
-        info = self._data[item]
+        try:
+            info = self._data[item]
+
+        except KeyError:
+            if not self.allow_create:
+                raise
+
+            #Create new data item
+            self._data[item] = {}
+            for k, v in iteritems(self._default_settings):
+                self._data[item][k] = v
+            self._data[item]['value'] = value
+            if 'type' not in self._data[item]:
+                self._data[item]['type'] = type(value)
+
+            info = self._data[item]
 
         if info.get('lock', False):
             return
@@ -293,7 +310,7 @@ class Config(dict):
 
     _DEFAULT_VALUES = {int: 0, float: 0.0, str: '', bool: False}
     
-    def __init__(self, defaults, show_hidden=False, default_settings=None):
+    def __init__(self, defaults, show_hidden=False, default_settings=None, allow_create=True):
         """Initialise config with the default values.
         Can also provide default settings to apply to everything, such as {'type': int, 'min': 0}.
         """
@@ -304,6 +321,7 @@ class Config(dict):
         self._load_from_dict(defaults)
         self.hidden = not show_hidden
         self.is_new = False
+        self.allow_create = allow_create
         super(Config, self).__init__(self._data)
 
     def __repr__(self):
@@ -317,7 +335,13 @@ class Config(dict):
                 
     def __getitem__(self, item):
         """Return all values under a heading."""
-        return _ConfigDict(self._data[item], show_hidden=not self.hidden)
+        try:
+            return _ConfigDict(self._data[item], show_hidden=not self.hidden, allow_create=self.allow_create, default_settings=self._default_settings)
+        except KeyError:
+            if not self.allow_create:
+                raise
+            self._data[item] = {}
+            return self[item]
 
     def _load_from_dict(self, config_dict):
         """Read data from the default dictionary."""
@@ -366,7 +390,7 @@ class Config(dict):
             if line[0] == '[' and line[-1] == ']':
                 header = line[1:-1]
             else:
-                variable, value = (i.strip() for i in line.split('='))
+                variable, value = (i.strip() for i in line.split('=', 1))
 
                 #Make sure it's a valid config item
                 try:
@@ -441,13 +465,16 @@ class Config(dict):
             output.append('')
         return '\n'.join(output[:-1])
 
-    def load(self, config_file, default_file=None):
-        """Load first from the default file, then from the main file."""
-        if default_file is not None:
-            try:
-                self._update_from_file(default_file)
-            except IOError:
-                pass
+    def load(self, config_file, *default_files):
+        """Load first from the default files, then from the main file.
+        This ensures multiple files can be used as backup without overwriting the main one.
+        """
+        for default_file in default_files[::-1]:
+            if default_file and default_file != config_file:
+                try:
+                    self._update_from_file(default_file)
+                except IOError:
+                    pass
         try:
             self._update_from_file(config_file)
         except IOError:
