@@ -254,9 +254,16 @@ class _ConfigDict(dict):
                 continue
             yield k, v['value']
 
-    def __getitem__(self, item):
+    def __getitem__(self, item, *default):
         """Return a config item instance."""
-        return create_config_item(self._data[item])
+        try:
+            return create_config_item(self._data[item])
+        except KeyError:
+            if default:
+                return default[0]
+            raise
+
+    get = __getitem__
 
     def __setitem__(self, item, value):
         """Set a new value and make sure it follows any set limits."""
@@ -317,6 +324,10 @@ class Config(dict):
     def __init__(self, defaults, show_hidden=False, default_settings=None, editable_dict=True):
         """Initialise config with the default values.
         Can also provide default settings to apply to everything, such as {'type': int, 'min': 0}.
+
+        Enabling editable_dict will allow keys to be created and deleted.
+        Disable if config contains important values.
+        #TODO: Disallow deleting locked values
         """
         self._data = {}
         self._backup = {}
@@ -337,18 +348,38 @@ class Config(dict):
         for k, v in iteritems(self):
             yield k, _ConfigDict(v)
                 
-    def __getitem__(self, item):
+    def __getitem__(self, item, *default):
         """Return all values under a heading."""
         try:
             return _ConfigDict(self._data[item], show_hidden=not self.hidden, editable_dict=self._editable_dict, default_settings=self._default_settings)
         except KeyError:
-            if not self._editable_dict:
-                raise
-            self._data[item] = {}
-            return self[item]
+            if default:
+                return default[0]
+            raise
+
+    get = __getitem__
 
     def __delitem__(self, item):
         del self._data[item]
+    
+    def __setitem__(self, item, value):
+        """Create a new heading if the dict is editable.
+        Will raise a KeyError if it is not editable, or TypeError if not a dict.
+        """
+        if not self._editable_dict:
+            raise KeyError('dict isn\'t editable')
+
+        if item not in self._data:
+            self._data[item] = {}
+
+        #Figure out the different types of values
+        if isinstance(value, dict):
+            for k, v in iteritems(value):
+                self._data[item][k] = v
+        elif value is None:
+            del self._data[item]
+        else:
+            raise TypeError('invalid type "{}", must be dict')
 
     def _load_from_dict(self, config_dict):
         """Read data from the default dictionary."""
@@ -386,9 +417,10 @@ class Config(dict):
 
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
-            
+        
         with open(file_name, 'r') as f:
             config_lines = [i.strip() for i in f.readlines()]
+
         for line in config_lines:
             line = line.split('//')[0].strip()
             if not line:
@@ -405,14 +437,13 @@ class Config(dict):
                 except KeyError:
                     pass
                 
-    def _build_for_file(self, keys_only=False, comment_spacing=0, min_comment_spacing=8, ignore_comments=None):
+    def _build_for_file(self, changes=True, keys_only=False, comment_spacing=0, min_comment_spacing=8, ignore_comments=None):
         """Generate lines for a config file."""
         output = []
         
         for heading in _get_priority_order(self._default):
 
             #Ignore if heading has been deleted
-            print heading, self._data.keys()
             if self._editable_dict and heading not in self._data:
                 continue
 
@@ -435,8 +466,12 @@ class Config(dict):
                 if self._editable_dict and variable not in self._data[heading]:
                     continue
 
+                if changes:
+                    info = self._data[heading][variable]
+                else:
+                    info = self._default[heading][variable]
+
                 #Convert to dict if not one already
-                info = self._default[heading][variable]
                 if not isinstance(info, dict):
                     info = {'value': info, 'type': type(info)}
                 elif 'type' not in info:
@@ -452,7 +487,7 @@ class Config(dict):
 
                 value_type = info['type']
                 value = info.get('value', self._DEFAULT_VALUES[value_type])
-
+                
                 if keys_only:
                     output.append(variable + ' = ')
                 else:
@@ -471,11 +506,15 @@ class Config(dict):
                         if isinstance(ignore_comments, bool):
                             comment = ''
                         if isinstance(ignore_comments, str):
-                            if comment.startswith(ignore_comment):
-                                comment = ''
+                            for ignore_comment in ignore_comments:
+                                if comment.startswith(ignore_comment):
+                                    comment = ''
+                                    break
                         elif isinstance(ignore_comments, (list, tuple, set)):
-                            if any(comment.startswith(i) for i in ignore_comment):
-                                comment = ''
+                            for ignore_comment in ignore_comments:
+                                if any(comment.startswith(i) for i in ignore_comment):
+                                    comment = ''
+                                    break
                     if comment:
                         extra_spaces = comment_spacing - current_len
                         output[-1] += ' ' * max(min_comment_spacing, extra_spaces) + '// {}'.format(comment)
@@ -498,9 +537,9 @@ class Config(dict):
             self.is_new = True
         return self
 
-    def save(self, file_name, keys_only=False, comment_spacing=0, ignore_comments=None):
+    def save(self, file_name, changes=True, keys_only=False, comment_spacing=0, ignore_comments=None):
         """Save the config to a file."""
-        output = self._build_for_file(keys_only=keys_only, comment_spacing=comment_spacing, ignore_comments=ignore_comments)
+        output = self._build_for_file(changes=changes, keys_only=keys_only, comment_spacing=comment_spacing, ignore_comments=ignore_comments)
         create_folder(file_name)
         with open(file_name, 'w') as f:
             f.write(output)
