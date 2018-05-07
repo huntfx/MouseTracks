@@ -610,507 +610,414 @@ LANGUAGE_DEFAULTS = {
         },
     },
     'Keys': {
-        '8': {
+        8: {
             '__info__': 'Keyboard key for Backspace.',
-            '__priority__': 8,
             'value': 'Back'
         },
-        '9': {
+        9: {
             '__info__': 'Keyboard key for Tab.',
-            '__priority__': 9,
             'value': 'Tab'
         },
-        '13': {
+        13: {
             '__info__': 'Keyboard key for Enter/Return.',
-            '__priority__': 13,
             'value': 'Return'
         },
-        '20': {
+        20: {
             '__info__': 'Keyboard key for Caps Lock.',
-            '__priority__': 20,
             'value': 'Caps Lock'
         },
-        '27': {
+        27: {
             '__info__': 'Keyboard key for Escape.',
-            '__priority__': 27,
             'value': 'Esc'
         },
-        '33': {
+        32: {
+            '__info__': 'Keyboard key for Space.',
+            'value': 'Space'
+        },
+        33: {
             '__info__': 'Keyboard key for Page Up.',
-            '__priority__': 33,
             'value': 'Page\nUp'
         },
-        '34': {
+        34: {
             '__info__': 'Keyboard key for Page Down.',
-            '__priority__': 34,
             'value': 'Page\nDown'
         },
-        '35': {
+        35: {
             '__info__': 'Keyboard key for End.',
-            '__priority__': 35,
             'value': 'End'
         },
-        '36': {
+        36: {
             '__info__': 'Keyboard key for Home.',
-            '__priority__': 36,
             'value': 'Home'
         },
-        '37': {
+        37: {
             '__info__': 'Keyboard key for Left Arrow.',
-            '__priority__': 37,
             'value': '←'
         },
-        '38': {
+        38: {
             '__info__': 'Keyboard key for Up Arrow.',
-            '__priority__': 38,
             'value': '↑'
         },
-        '39': {
+        39: {
             '__info__': 'Keyboard key for Right Arrow.',
-            '__priority__': 39,
             'value': '→'
         },
-        '40': {
+        40: {
             '__info__': 'Keyboard key for Down Arrow.',
-            '__priority__': 40,
             'value': '↓'
         },
-        '44': {
+        44: {
             '__info__': 'Keyboard key for Print Screen.',
-            '__priority__': 44,
             'value': 'Print\nScreen'
         },
-        '45': {
+        45: {
             '__info__': 'Keyboard key for Insert.',
-            '__priority__': 45,
             'value': 'Insert'
         },
-        '46': {
+        46: {
             '__info__': 'Keyboard key for Delete.',
-            '__priority__': 46,
             'value': 'Delete'
         },
-        '48': {
+        48: {
             '__info__': 'Keyboard key for 0.',
-            '__priority__': 48,
             'value': '0'
         },
-        '49': {
+        49: {
             '__info__': 'Keyboard key for 1.',
-            '__priority__': 49,
             'value': '1'
         },
-        '50': {
+        50: {
             '__info__': 'Keyboard key for 2.',
-            '__priority__': 50,
             'value': '2'
         },
-        '51': {
+        51: {
             '__info__': 'Keyboard key for 3.',
-            '__priority__': 51,
             'value': '3'
         },
-        '52': {
+        52: {
             '__info__': 'Keyboard key for 4.',
-            '__priority__': 52,
             'value': '4'
         },
-        '53': {
+        53: {
             '__info__': 'Keyboard key for 5.',
-            '__priority__': 53,
             'value': '5'
         },
-        '54': {
+        54: {
             '__info__': 'Keyboard key for 6.',
-            '__priority__': 54,
             'value': '6'
         },
-        '55': {
+        55: {
             '__info__': 'Keyboard key for 7.',
-            '__priority__': 55,
             'value': '7'
         },
-        '56': {
+        56: {
             '__info__': 'Keyboard key for 8.',
-            '__priority__': 56,
             'value': '8'
         },
-        '57': {
+        57: {
             '__info__': 'Keyboard key for 9.',
-            '__priority__': 57,
             'value': '9'
         },
-        '65': {
+        65: {
             '__info__': 'Keyboard key for A.',
-            '__priority__': 65,
             'value': 'A'
         },
-        '66': {
+        66: {
             '__info__': 'Keyboard key for B.',
-            '__priority__': 66,
             'value': 'B'
         },
-        '67': {
+        67: {
             '__info__': 'Keyboard key for C.',
-            '__priority__': 67,
             'value': 'C'
         },
-        '68': {
+        68: {
             '__info__': 'Keyboard key for D.',
-            '__priority__': 68,
             'value': 'D'
         },
-        '69': {
+        69: {
             '__info__': 'Keyboard key for E.',
-            '__priority__': 69,
             'value': 'E'
         },
-        '70': {
+        70: {
             '__info__': 'Keyboard key for F.',
-            '__priority__': 70,
             'value': 'F'
         },
-        '71': {
+        71: {
             '__info__': 'Keyboard key for G.',
-            '__priority__': 71,
             'value': 'G'
         },
-        '72': {
+        72: {
             '__info__': 'Keyboard key for H.',
-            '__priority__': 72,
             'value': 'H'
         },
-        '73': {
+        73: {
             '__info__': 'Keyboard key for I.',
-            '__priority__': 73,
             'value': 'I'
         },
-        '74': {
+        74: {
             '__info__': 'Keyboard key for J.',
-            '__priority__': 74,
             'value': 'J'
         },
-        '75': {
+        75: {
             '__info__': 'Keyboard key for K.',
-            '__priority__': 75,
             'value': 'K'
         },
-        '76': {
+        76: {
             '__info__': 'Keyboard key for L.',
-            '__priority__': 76,
             'value': 'L'
         },
-        '77': {
+        77: {
             '__info__': 'Keyboard key for M.',
-            '__priority__': 77,
             'value': 'M'
         },
-        '78': {
+        78: {
             '__info__': 'Keyboard key for N.',
-            '__priority__': 78,
             'value': 'N'
         },
-        '79': {
+        79: {
             '__info__': 'Keyboard key for O.',
-            '__priority__': 79,
             'value': 'O'
         },
-        '80': {
+        80: {
             '__info__': 'Keyboard key for P.',
-            '__priority__': 80,
             'value': 'P'
         },
-        '81': {
+        81: {
             '__info__': 'Keyboard key for Q.',
-            '__priority__': 81,
             'value': 'Q'
         },
-        '82': {
+        82: {
             '__info__': 'Keyboard key for R.',
-            '__priority__': 82,
             'value': 'R'
         },
-        '83': {
+        83: {
             '__info__': 'Keyboard key for S.',
-            '__priority__': 83,
             'value': 'S'
         },
-        '84': {
+        84: {
             '__info__': 'Keyboard key for T.',
-            '__priority__': 84,
             'value': 'T'
         },
-        '85': {
+        85: {
             '__info__': 'Keyboard key for U.',
-            '__priority__': 85,
             'value': 'U'
         },
-        '86': {
+        86: {
             '__info__': 'Keyboard key for V.',
-            '__priority__': 86,
             'value': 'V'
         },
-        '87': {
+        87: {
             '__info__': 'Keyboard key for W.',
-            '__priority__': 87,
             'value': 'W'
         },
-        '88': {
+        88: {
             '__info__': 'Keyboard key for X.',
-            '__priority__': 88,
             'value': 'X'
         },
-        '89': {
+        89: {
             '__info__': 'Keyboard key for Y.',
-            '__priority__': 89,
             'value': 'Y'
         },
-        '90': {
+        90: {
             '__info__': 'Keyboard key for Z.',
-            '__priority__': 90,
             'value': 'Z'
         },
-        '91': {
+        91: {
             '__info__': 'Keyboard key for Left Windows/Super.',
-            '__priority__': 91
         },
-        '92': {
+        92: {
             '__info__': 'Keyboard key for Right Windows/Super.',
-            '__priority__': 92
         },
-        '96': {
+        93: {
+            '__info__': 'Keyboard key for Menu.',
+            'value': 'Menu'
+        },
+        96: {
             '__info__': 'Keyboard key for Numpad 0.',
-            '__priority__': 96,
             'value': '0\nIns'
         },
-        '97': {
+        97: {
             '__info__': 'Keyboard key for Numpad 1.',
-            '__priority__': 97,
             'value': '1\nEnd'
         },
-        '98': {
+        98: {
             '__info__': 'Keyboard key for Numpad 2.',
-            '__priority__': 98,
             'value': '2\n↓'
         },
-        '99': {
+        99: {
             '__info__': 'Keyboard key for Numpad 3.',
-            '__priority__': 99,
             'value': '3\nPg Dn'
         },
-        '100': {
+        100: {
             '__info__': 'Keyboard key for Numpad 4.',
-            '__priority__': 100,
             'value': '4\n←'
         },
-        '101': {
+        101: {
             '__info__': 'Keyboard key for Numpad 5.',
-            '__priority__': 101,
             'value': '5'
         },
-        '102': {
+        102: {
             '__info__': 'Keyboard key for Numpad 6.',
-            '__priority__': 102,
             'value': '6\n→'
         },
-        '103': {
+        103: {
             '__info__': 'Keyboard key for Numpad 7.',
-            '__priority__': 103,
             'value': '7\nHome'
         },
-        '104': {
+        104: {
             '__info__': 'Keyboard key for Numpad 8.',
-            '__priority__': 104,
             'value': '8\n↑'
         },
-        '105': {
+        105: {
             '__info__': 'Keyboard key for Numpad 9.',
-            '__priority__': 105,
             'value': '9\nPg Up'
         },
-        '106': {
+        106: {
             '__info__': 'Keyboard key for Multiply.',
-            '__priority__': 106,
             'value': '*'
         },
-        '107': {
+        107: {
             '__info__': 'Keyboard key for Add.',
-            '__priority__': 107,
             'value': '+'
         },
-        '109': {
+        109: {
             '__info__': 'Keyboard key for Subtract.',
-            '__priority__': 109,
             'value': '-'
         },
-        '110': {
+        110: {
             '__info__': 'Keyboard key for Decimal.',
-            '__priority__': 110,
             'value': '-'
         },
-        '111': {
+        111: {
             '__info__': 'Keyboard key for Divide.',
-            '__priority__': 111,
             'value': '/'
         },
-        '112': {
+        112: {
             '__info__': 'Keyboard key for F1.',
-            '__priority__': 112,
             'value': 'F1'
         },
-        '113': {
+        113: {
             '__info__': 'Keyboard key for F2.',
-            '__priority__': 113,
             'value': 'F2'
         },
-        '114': {
+        114: {
             '__info__': 'Keyboard key for F3.',
-            '__priority__': 114,
             'value': 'F3'
         },
-        '115': {
+        115: {
             '__info__': 'Keyboard key for F4.',
-            '__priority__': 115,
             'value': 'F4'
         },
-        '116': {
+        116: {
             '__info__': 'Keyboard key for F5.',
-            '__priority__': 116,
             'value': 'F5'
         },
-        '117': {
+        117: {
             '__info__': 'Keyboard key for F6.',
-            '__priority__': 117,
             'value': 'F6'
         },
-        '118': {
+        118: {
             '__info__': 'Keyboard key for F7.',
-            '__priority__': 118,
             'value': 'F7'
         },
-        '119': {
+        119: {
             '__info__': 'Keyboard key for F8.',
-            '__priority__': 119,
             'value': 'F8'
         },
-        '120': {
+        120: {
             '__info__': 'Keyboard key for F9.',
-            '__priority__': 120,
             'value': 'F9'
         },
-        '121': {
+        121: {
             '__info__': 'Keyboard key for F10.',
-            '__priority__': 121,
             'value': 'F10'
         },
-        '122': {
+        122: {
             '__info__': 'Keyboard key for F11.',
-            '__priority__': 122,
             'value': 'F11'
         },
-        '123': {
+        123: {
             '__info__': 'Keyboard key for F12.',
-            '__priority__': 123,
             'value': 'F12'
         },
-        '144': {
+        144: {
             '__info__': 'Keyboard key for Number Lock.',
-            '__priority__': 144,
             'value': 'Num\nLock'
         },
-        '145': {
+        145: {
             '__info__': 'Keyboard key for Scroll Lock.',
-            '__priority__': 145,
             'value': 'Scroll\nLock'
         },
-        '160': {
+        160: {
             '__info__': 'Keyboard key for Left Shift.',
-            '__priority__': 160,
             'value': 'Shift'
         },
-        '161': {
+        161: {
             '__info__': 'Keyboard key for Right Shift.',
-            '__priority__': 161,
             'value': 'Shift'
         },
-        '162': {
+        162: {
             '__info__': 'Keyboard key for Left Control.',
-            '__priority__': 162,
             'value': 'Ctrl'
         },
-        '163': {
+        163: {
             '__info__': 'Keyboard key for Right Control.',
-            '__priority__': 163,
             'value': 'Ctrl'
         },
-        '164': {
+        164: {
             '__info__': 'Keyboard key for Left Alt.',
-            '__priority__': 164,
             'value': 'Alt'
         },
-        '165': {
+        165: {
             '__info__': 'Keyboard key for Right Alt.',
-            '__priority__': 165,
             'value': 'Alt Gr'
         },
-        '186': {
+        186: {
             '__info__': 'Keyboard key for Colon.',
-            '__priority__': 186,
             'value': ':\n;'
         },
-        '187': {
+        187: {
             '__info__': 'Keyboard key for Equals.',
-            '__priority__': 187,
             'value': '+\n='
         },
-        '188': {
+        188: {
             '__info__': 'Keyboard key for Comma.',
-            '__priority__': 188,
             'value': '<\n,'
         },
-        '189': {
+        189: {
             '__info__': 'Keyboard key for Hyphen/Dash.',
-            '__priority__': 189,
             'value': '_\n-'
         },
-        '190': {
+        190: {
             '__info__': 'Keyboard key for Period.',
-            '__priority__': 190,
             'value': '>\n.'
         },
-        '191': {
+        191: {
             '__info__': 'Keyboard key for Forward Slash.',
-            '__priority__': 191,
             'value': '?\n/'
         },
-        '192': {
+        192: {
             '__info__': 'Keyboard key for Apostophie.',
-            '__priority__': 192,
             'value': '@\n\''
         },
-        '219': {
+        219: {
             '__info__': 'Keyboard key for Left Square Bracket.',
-            '__priority__': 219,
             'value': '{\n['
         },
-        '221': {
+        221: {
             '__info__': 'Keyboard key for Right Square Bracket.',
-            '__priority__': 221,
             'value': '}\n]'
         },
-        '189': {
+        189: {
             '__info__': 'Keyboard key for Hashtag/Number Sign.',
-            '__priority__': 189,
             'value': '~\n#'
         },
-        '220': {
+        220: {
             '__info__': 'Keyboard key for Back Slash.',
-            '__priority__': 220,
             'value': '|\n\\'
         },
-        '223': {
+        223: {
             '__info__': 'Keyboard key for Tilde.',
-            '__priority__': 223,
             'value': '¦\n`'
         },
     }
