@@ -20,12 +20,21 @@ def _get_priority_order(values, key='__priority__', default=None, empty_goes_las
     #Build dict of values grouped by priority
     priorities = {}
     for k, v in iteritems(values):
-        if not k.startswith('_'):
+        is_str = isinstance(k, str)
+        if not isinstance(k, str) or not k.startswith('_'):
+
+            #Use key as default if key is a number
+            if isinstance(k, (int, float)):
+                _default = k
+            else:
+                _default = default
+
             #Get the priority if a dict, otherwise use default
             try:
-                priority = v.get(key, default)
+                priority = v.get(key, _default)
             except AttributeError:
-                priority = default
+                priority = _default
+                
             try:
                 priorities[priority].append(k)
             except KeyError:
@@ -250,8 +259,11 @@ class _ConfigDict(dict):
         
     def __iter__(self):
         for k, v in iteritems(self):
-            if self.hidden and k.startswith('_'):
-                continue
+            try:
+                if self.hidden and k.startswith('_'):
+                    continue
+            except AttributeError:
+                pass
             yield k, v['value']
 
     def __getitem__(self, item, *default):
@@ -489,7 +501,7 @@ class Config(dict):
                 value = info.get('value', self._DEFAULT_VALUES[value_type])
                 
                 if keys_only:
-                    output.append(variable + ' = ')
+                    output.append('{} = '.format(variable))
                 else:
                     output.append('{} = {}'.format(variable, value).replace('\n', '\\n'))
                 
