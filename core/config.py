@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Define all the editable settings
 
 from __future__ import absolute_import
 
@@ -499,4 +499,4 @@ CONFIG_DEFAULTS = {
 }
 
 
-CONFIG = Config(CONFIG_DEFAULTS).load(CONFIG_PATH, default_file=CONFIG_PATH_DEFAULT).save(CONFIG_PATH)
+CONFIG = Config(CONFIG_DEFAULTS).load(CONFIG_PATH, CONFIG_PATH_DEFAULT).save(CONFIG_PATH, changes=False, comment_spacing=40)

@@ -1,15 +1,15 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Colour handling for all images
 
 from __future__ import absolute_import, division
 
+import core.numpy as numpy
 from core.base import get_script_file
 from core.compatibility import Message, range, iteritems
 from core.files import format_name
 from core.os import join_path
-import core.numpy as numpy
 
 
 COLOUR_FILE = get_script_file('colours.txt')

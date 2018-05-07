@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Generate keyboard images
 
 from __future__ import absolute_import, division
 
@@ -10,7 +10,7 @@ from PIL import Image, ImageFont, ImageDraw
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
 from core.compatibility import range, Message
 from core.config import CONFIG
-from core.language import Language, STRINGS
+from core.language import LANGUAGE
 from core.image.base import save_image_to_folder
 from core.files import load_data
 from core.maths import round_int, calculate_circle
@@ -369,7 +369,7 @@ class DrawKeyboard(object):
         
         self.name = profile_name
         self.last_session = last_session
-        Message(STRINGS['Misc']['ProfileLoad'])
+        Message(LANGUAGE.strings['Misc']['ProfileLoad'])
         self.reload(data)
     
     def reload(self, data=None):
@@ -384,9 +384,9 @@ class DrawKeyboard(object):
         self.grid = self._create_grid()
     
     def _create_grid(self):
-        Message(STRINGS['Generation']['KeyboardGenerateLayout'])
+        Message(LANGUAGE.strings['Generation']['KeyboardGenerateLayout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
-        layout = Language().keyboard_old()
+        layout = LANGUAGE.keyboard_old()
         for row in layout:
             grid.new_row()
             for name, width, height in row:
@@ -400,7 +400,7 @@ class DrawKeyboard(object):
         return grid
     
     def calculate(self):
-        Message(STRINGS['Generation']['KeyboardGenerateCoordinates'])
+        Message(LANGUAGE.strings['Generation']['KeyboardGenerateCoordinates'])
         (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
         return {'Width': width,
                 'Height': height,
@@ -418,26 +418,26 @@ class DrawKeyboard(object):
         #Add drop shadow
         shadow = (64, 64, 64)
         if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'][:3] == (255, 255, 255):
-            Message(STRINGS['Generation']['KeyboardDrawShadow'])
+            Message(LANGUAGE.strings['Generation']['KeyboardDrawShadow'])
             shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
                 for x, y in data['Coordinates']['Fill'][colour]:
                     pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
     
         #Fill colours
-        Message(STRINGS['Generation']['KeyboardDrawColour'])
+        Message(LANGUAGE.strings['Generation']['KeyboardDrawColour'])
         for colour in data['Coordinates']['Fill']:
             for x, y in data['Coordinates']['Fill'][colour]:
                 pixels[x, y] = colour
 
         #Draw border
-        Message(STRINGS['Generation']['KeyboardDrawOutline'])
+        Message(LANGUAGE.strings['Generation']['KeyboardDrawOutline'])
         border = tuple(255 - i for i in data['Coordinates']['Background'])
         for x, y in data['Coordinates']['Outline']:
             pixels[x, y] = border
     
         #Draw text
-        Message(STRINGS['Generation']['KeyboardDrawText'])
+        Message(LANGUAGE.strings['Generation']['KeyboardDrawText'])
         draw = ImageDraw.Draw(image)
         font_key = ImageFont.truetype(font, size=FONT_SIZE_MAIN)
         font_amount = ImageFont.truetype(font, size=FONT_SIZE_STATS)
@@ -445,12 +445,12 @@ class DrawKeyboard(object):
         #Generate stats
         time_to_str = ticks_to_seconds(self.ticks, 60)
         presses_to_str = format_amount(sum(self.key_counts['Pressed'].values()), 'press', max_length=25, decimal_units=False)
-        stats = [STRINGS['Generation']['KeyboardStatsTime'].replace('[TIME]', time_to_str),
-                 STRINGS['Generation']['KeyboardStatsCount'].replace('[NUMBER]', presses_to_str)]
+        stats = [LANGUAGE.strings['Generation']['KeyboardStatsTime'].replace('[TIME]', time_to_str),
+                 LANGUAGE.strings['Generation']['KeyboardStatsCount'].replace('[NUMBER]', presses_to_str)]
         if CONFIG['GenerateKeyboard']['DataSet'] == 'time':
-            stats.append(STRINGS['Generation']['KeyboardStatsColourTime'])
+            stats.append(LANGUAGE.strings['Generation']['KeyboardStatsColourTime'])
         elif CONFIG['GenerateKeyboard']['DataSet'] == 'count':
-            stats.append(STRINGS['Generation']['KeyboardStatsColourCount'])
+            stats.append(LANGUAGE.strings['Generation']['KeyboardStatsColourCount'])
         stats_text = ['{}:'.format(self.name), '\n'.join(stats)]
         
         #Write text to image

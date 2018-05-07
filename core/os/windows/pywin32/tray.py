@@ -1,8 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
-#Create a basic tray icon to perform simple API commands
+#Create a basic tray icon to perform API commands
 #Modified from a mix of win32gui_taskbar and http://www.brunningonline.net/simon/blog/archives/SysTrayIcon.py.html
 
 from __future__ import absolute_import

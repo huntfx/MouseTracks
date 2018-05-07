@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Backup functions for all the OS specific ones
+#These will be loaded if an OS doesn't contain its own version, as to not crash the program
 
 from __future__ import absolute_import
 

@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Simple calculation based functions
 
 from __future__ import division
 

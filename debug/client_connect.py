@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Basic function to show how a client connection can be done
 
 from __future__ import absolute_import
 

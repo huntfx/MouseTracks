@@ -1,5 +1,4 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
@@ -59,7 +58,7 @@ if __name__ == '__main__':
         from core.constants import APP_LIST_FILE, DEFAULT_PATH
         from core.files import Lock, DATA_FOLDER
         from core.internet import get_url_json, send_request
-        from core.language import STRINGS
+        from core.language import LANGUAGE
         from core.notify import NOTIFY
         from core.sockets import get_free_port
             
@@ -76,7 +75,7 @@ if __name__ == '__main__':
             #End old thread
             if _thread:
                 _end_thread(cls)
-                NOTIFY(STRINGS['Tracking']['ScriptRestart'])
+                NOTIFY(LANGUAGE.strings['Tracking']['ScriptRestart'])
                 web_port = None
             
             #Start thread
@@ -244,7 +243,7 @@ if __name__ == '__main__':
                 t.listen()
                 
             else:
-                Message(STRINGS['Tracking']['ScriptDuplicate'])
+                Message(LANGUAGE.strings['Tracking']['ScriptDuplicate'])
                 
                 #If program is hidden, don't wait for input
                 if not is_hidden:

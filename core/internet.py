@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Any functions that use requests (required for the API), or require access to the internet
 
 from __future__ import absolute_import
 
@@ -12,14 +12,14 @@ except ImportError:
     import urllib.request as urllib2
 
 from core.compatibility import bytes
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.notify import NOTIFY
 
     
 def send_request(url, timeout=None, output=False):
     """Send URL request."""
     if output:
-        NOTIFY(STRINGS['Internet']['Request'], URL=url)
+        NOTIFY(LANGUAGE.strings['Internet']['Request'], URL=url)
     try:
         return urllib2.urlopen(url, timeout=timeout)
     except (urllib2.URLError, urllib2.HTTPError):

@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Mac functions that require AppKit
+#Thanks to /u/zlft for helping, still needs a lot of work
 
 from __future__ import absolute_import
 

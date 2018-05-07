@@ -1,9 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
-#Use track history to make an image sequence animation
-#Code works but is currently a little rough in places
+#Use track history to make an image sequence
 
 from __future__ import division
 

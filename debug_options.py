@@ -1,12 +1,12 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
 from __future__ import absolute_import
 
 from core.compatibility import Message, input
-
+
+
 def debug_options():
     options = [
         ('get_focused_application_name', 'Get name, executable and resolution of currently focused application'),

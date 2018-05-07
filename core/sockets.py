@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Easy to use wrappers for sockets
 
 from __future__ import absolute_import
 
@@ -80,7 +80,7 @@ def force_close_port(port, process_name=None):
             if conn.laddr[1] == port:
                 #Don't close if it belongs to SYSTEM
                 #On windows using .username() results in AccessDenied
-                #Needs testing on other operating systems
+                #TODO: Needs testing on other operating systems
                 try:
                     proc.username()
                 except psutil.AccessDenied:

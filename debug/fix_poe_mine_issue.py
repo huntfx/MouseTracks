@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Fix tracking data if a certain keyboard 'hack' is done in Path of Exile
+#May also apply to other games, but will be a rare occurance
 
 from __future__ import division
 

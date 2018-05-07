@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Import each of the API classes and turn them into easy to use functions
 
 from __future__ import absolute_import
 
@@ -12,7 +12,7 @@ from core.api.constants import *
 from core.api.server import server, client
 from core.config import CONFIG
 from core.internet import send_request
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.notify import NOTIFY
 from core.sockets import *
 try:
@@ -20,7 +20,7 @@ try:
 except ImportError as e:
     CONFIG['API']['RunWeb'] = False
     CONFIG['API']['RunWeb'].lock = True
-    NOTIFY(STRINGS['Misc']['ImportFailed'], MODULE='Flask', REASON=e)
+    NOTIFY(LANGUAGE.strings['Misc']['ImportFailed'], MODULE='Flask', REASON=e)
     app = None
 
 
@@ -39,11 +39,11 @@ def local_message_connect(port=None, secret=None):
     
 def local_web_server(app, port=0, q_feedback=None):
     """Start a web server."""
-    NOTIFY(STRINGS['Server']['FlaskStart'])
+    NOTIFY(LANGUAGE.strings['Server']['FlaskStart'])
     web_thread = Thread(target=app.run, kwargs={'port': port})
     web_thread.daemon = True
     web_thread.start()
-    NOTIFY(STRINGS['Server']['FlaskPort'], PORT=port)
+    NOTIFY(LANGUAGE.strings['Server']['FlaskPort'], PORT=port)
     return web_thread
 
 

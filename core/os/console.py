@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Control over the Python console
+#Used for launching a new elevated process
 
 from __future__ import absolute_import
 

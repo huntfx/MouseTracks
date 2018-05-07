@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Print text with different levels of importance
+#A minimum level can be set to ignore less important text
 
 from __future__ import absolute_import
 

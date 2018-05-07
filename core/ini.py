@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Create an editable ini file and dict with validation
 
 from __future__ import absolute_import
 
@@ -9,13 +9,13 @@ from core.compatibility import iteritems, range
 from core.os import create_folder
 
 
-def _get_priority_order(values, key='__priority__', default=None, empty_goes_last=True):
+def _get_priority_order(values, default=None, empty_goes_last=True):
     """Use the __priority__ key to build a sorted list of config values.
 
-    The list starts from the lowest value, and by default,
-    the first gap will be filled with anything without a value.
-    Changing default will instead assign all those values
-    to a particular priority
+    Parameters:
+        default (None/int) (None): Default priority to use.
+        empty_goes_last (bool) (True): If no priority should be put at the end.
+            If set to False, then no priority will take the first gap available instead.
     """
     #Build dict of values grouped by priority
     priorities = {}
@@ -31,7 +31,7 @@ def _get_priority_order(values, key='__priority__', default=None, empty_goes_las
 
             #Get the priority if a dict, otherwise use default
             try:
-                priority = v.get(key, _default)
+                priority = v.get('__priority__', _default)
             except AttributeError:
                 priority = _default
                 
@@ -243,10 +243,7 @@ def create_config_item(config_dict, item_type=None):
 
     
 class _ConfigDict(dict):
-    """Handle the variables inside the config.
-    
-    #TODO: Catch KeyErrors on invalid keys
-    """
+    """Handle the variables inside the config."""
     def __init__(self, config_dict, show_hidden=False, editable_dict=True, default_settings={}):
         self._data = config_dict
         super(_ConfigDict, self).__init__(self._data)
@@ -423,6 +420,10 @@ class Config(dict):
                 elif 'value' not in info:
                     info['value'] = self._DEFAULT_VALUES[info['type']]
                 info['default'] = info['value']
+
+                #Convert all keys to strings so it's consistent when reading files
+                if not isinstance(var, str):
+                    var = str(var)
 
                 self._data[heading][var] = info
                 self._backup[heading][var] = info['value']

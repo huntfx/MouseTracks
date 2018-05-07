@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Handle any errors that occur during execution
+#At a future date it will send the error online
 
 from __future__ import absolute_import
 
@@ -10,7 +11,7 @@ import sys
 from core.base import format_file_path
 from core.compatibility import input, Message, PYTHON_VERSION
 from core.constants import DEFAULT_PATH
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.os import OPERATING_SYSTEM
 from core.versions import VERSION, FILE_VERSION
 
@@ -33,16 +34,17 @@ def handle_error(trace=None, log=True, console=True):
         Message(trace.strip())
         
         #Output information to quit/restart
+        #The try/except is in case the language code has failed
         try:
-            error_message = STRINGS['Misc']['ProgramError']
+            error_message = LANGUAGE.strings['Misc']['ProgramError']
         except KeyError:
             error_message = 'An error occurred.'
         try:
-            restart_message = STRINGS['Misc']['ProgramRestart']
+            restart_message = LANGUAGE.strings['Misc']['ProgramRestart']
         except KeyError:
             restart_message = 'Please restart the program...'
         try:
-            exit_message = STRINGS['Misc']['ProgramExit']
+            exit_message = LANGUAGE.strings['Misc']['ProgramExit']
         except KeyError:
             exit_message = 'Press enter to exit..'
 

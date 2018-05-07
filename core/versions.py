@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Version control for the tracking data
+#Handles upgrading older files, as well as separating/joining the data for saving
 
 from __future__ import absolute_import
 

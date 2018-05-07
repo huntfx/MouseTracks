@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Easy to use wrappers for numpy
 
 from __future__ import division, absolute_import
 
@@ -34,6 +34,9 @@ _NUMPY_DTYPES = {
 
 
 def _get_dtype(dtype):
+    """Convert a string to dtype.
+    Inbuilt dtypes can't be used without importing numpy.
+    """
     try:
         return _NUMPY_DTYPES[dtype]
     except KeyError:
@@ -118,7 +121,10 @@ def vectorize(func, otype=None):
     
         
 def merge(arrays, merge_type, dtype=None):
-    
+    """Merge multiple arrays for the same size together.
+    The type of merge must also be set.
+    """
+
     merge_type = merge_type.lower()
     array_len = len(arrays)
     
@@ -152,7 +158,11 @@ def convert_to_dict(array, dictionary, dtype=None):
 
 
 def remap_to_range(array, dtype=None):
-    """Remap an array to a 0-n range."""
+    """Remap an array to a constant 0-n range.
+
+    For example, the values (0, 1, 1.1, 1.5, 50, 50.002, 1054)
+    will be remapped to (0, 1, 2, 3, 4, 5, 6).
+    """
     values = {v: i for i, v in enumerate(sorted(set(array.ravel())))}
     return convert_to_dict(array, values, dtype)
 

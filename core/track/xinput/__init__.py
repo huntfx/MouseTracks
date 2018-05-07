@@ -1,5 +1,4 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 #Wrapper for the xinput library, to allow it to be used without events

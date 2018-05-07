@@ -1,5 +1,4 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 #Ask the user questions on what to generate
@@ -20,7 +19,7 @@ from core.image.colours import get_map_matches, calculate_colour_map
 from core.image.main import RenderImage
 from core.input import value_select, yes_or_no
 from core.files import get_data_files, get_metadata, format_name, LoadData
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.maths import round_up
 from core.messages import date_format, ticks_to_seconds, list_to_str
 from core.os import open_folder
@@ -68,12 +67,12 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
     while True:
         loop += 1
         offset = (page - 1) * limit
-        Message(STRINGS['GenerationInput']['SelectProfile'])
-        Message(STRINGS['GenerationInput']['PageSort'].format_custom(
+        Message(LANGUAGE.strings['GenerationInput']['SelectProfile'])
+        Message(LANGUAGE.strings['GenerationInput']['PageSort'].format_custom(
                 SORT_TYPE=sort_value.lower(), ORDER='ascending' if reverse else 'descending'))
         _sort_options = list_to_str(['{} ({})'.format(value, i+1) for i, value in enumerate(sort_options)])
-        Message(STRINGS['GenerationInput']['PageSortSelect'].format_custom(
-                SORT=STRINGS['Words']['Sort'], SORT_OPTIONS=_sort_options))
+        Message(LANGUAGE.strings['GenerationInput']['PageSortSelect'].format_custom(
+                SORT=LANGUAGE.strings['Words']['Sort'], SORT_OPTIONS=_sort_options))
         Message()
                                   
         sorted_list = _sort_data_list(data_files, sort_value, not reverse)
@@ -97,13 +96,13 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                     value = option_func[0](value, *option_func[1], **option_func[2])
                 output += ' ' * max(1, metadata_offset - len(output)) + '{}: {}'.format(sort_value, value)
             Message(output)
-        Message(STRINGS['GenerationInput']['PageNumber'].format_custom(CURRENT_PAGE=page, 
+        Message(LANGUAGE.strings['GenerationInput']['PageNumber'].format_custom(CURRENT_PAGE=page, 
                                                                        TOTAL_PAGES=total_pages, 
-                                                                       PAGE=STRINGS['Words']['Page']))
+                                                                       PAGE=LANGUAGE.strings['Words']['Page']))
         Message()
 
         #Ask the user for input, or automatically choose input for testing
-        user_input = input(STRINGS['Input']['UserChoice'] + ' ')
+        user_input = input(LANGUAGE.strings['Input']['UserChoice'] + ' ')
 
         try:
             profile_id = int(user_input)
@@ -112,27 +111,27 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
         except ValueError:
 
             #Onput is requesting sorting
-            if user_input.lower().startswith('{} '.format(STRINGS['Words']['Sort'])):
+            if user_input.lower().startswith('{} '.format(LANGUAGE.strings['Words']['Sort'])):
                 option = None
                 try:
-                    sort_id = int(user_input[len(STRINGS['Words']['Sort']):]) - 1
+                    sort_id = int(user_input[len(LANGUAGE.strings['Words']['Sort']):]) - 1
                     print sort_id
                     if not 0 <= sort_id <= 4:
                         raise ValueError
                 
                 #Attempt to read if the option was manually typed out
                 except ValueError:
-                    lc_option = user_input[len(STRINGS['Words']['Sort'])+1:].lower()
+                    lc_option = user_input[len(LANGUAGE.strings['Words']['Sort'])+1:].lower()
                     for uc_option in sort_options:
                         if uc_option.lower() == lc_option:
                             option = uc_option
                             break
                     else:
                         try:
-                            Message(STRINGS['GenerationInput']['PageSortInvalidID'].format_custom(
+                            Message(LANGUAGE.strings['GenerationInput']['PageSortInvalidID'].format_custom(
                                     CURRENT_SORT=sort_value, NEW_SORT=sort_id+1, SORT_MIN=1, SORT_MAX=5))
                         except UnboundLocalError:
-                            Message(STRINGS['GenerationInput']['PageSortInvalidType'].format_custom(
+                            Message(LANGUAGE.strings['GenerationInput']['PageSortInvalidType'].format_custom(
                                     CURRENT_SORT=sort_value, NEW_SORT=lc_option, SORT_OPTIONS=_sort_options))
                 #If sort by itself was typed, just reverse
                 except IndexError:
@@ -146,14 +145,14 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                 if option is not None:
                     if option == sort_value:
                         reverse = not reverse
-                        Message(STRINGS['GenerationInput']['PageSortReverse'])
+                        Message(LANGUAGE.strings['GenerationInput']['PageSortReverse'])
                     else:
                         sort_value = option
-                        Message(STRINGS['GenerationInput']['PageSortNew'].format_custom(SORT_TYPE=sort_value))
+                        Message(LANGUAGE.strings['GenerationInput']['PageSortNew'].format_custom(SORT_TYPE=sort_value))
 
             #Switch pages
-            elif user_input.lower().startswith('{} '.format(STRINGS['Words']['Page'])):
-                _page = user_input[len(STRINGS['Words']['Page'])+1:]
+            elif user_input.lower().startswith('{} '.format(LANGUAGE.strings['Words']['Page'])):
+                _page = user_input[len(LANGUAGE.strings['Words']['Page'])+1:]
                 try:
                     page = int(_page)
                     if page < 1:
@@ -164,13 +163,13 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                         raise ValueError
                 
                 except ValueError:
-                    Message(STRINGS['GenerationInput']['PageNumberInvalid'].format_custom(
+                    Message(LANGUAGE.strings['GenerationInput']['PageNumberInvalid'].format_custom(
                             CURRENT_PAGE=page, NEW_PAGE=_page, PAGE_MIN=1, PAGE_MAX=total_pages))
 
             #Input is directly typing profile name
             else:
                 if get_metadata(user_input) is None:
-                    Message(STRINGS['GenerationInput']['ProfileEmpty'].format_custom(PROFILE=user_input))
+                    Message(LANGUAGE.strings['GenerationInput']['ProfileEmpty'].format_custom(PROFILE=user_input))
                 else:
                     profile = user_input
                     break
@@ -185,7 +184,7 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                     profile = sorted_list[profile_index-1]
                 break
             else:
-                Message(STRINGS['GenerationInput']['ProfileIndexError'].format_custom(
+                Message(LANGUAGE.strings['GenerationInput']['ProfileIndexError'].format_custom(
                         NEW_INDEX=profile_index, INDEX_MIN=1, INDEX_MAX=profile_index_max))
         Message()
 
@@ -199,13 +198,13 @@ def check_running_status(profile):
     if profile not in RunningApplications().all_loaded_apps():
         return True
 
-    Message(STRINGS['GenerationInput']['ProfileRunning'].format_custom(PROFILE=profile))
+    Message(LANGUAGE.strings['GenerationInput']['ProfileRunning'].format_custom(PROFILE=profile))
     
     #Not saved yet
     metadata = get_metadata(profile)
     if metadata is None:
-        Message(STRINGS['GenerationInput']['ProfileSaveNew'].format_custom(PROFILE=profile))
-        Message(STRINGS['GenerationInput']['SaveFrequency'].format_custom(TIME=ticks_to_seconds(CONFIG['Save']['Frequency'])))
+        Message(LANGUAGE.strings['GenerationInput']['ProfileSaveNew'].format_custom(PROFILE=profile))
+        Message(LANGUAGE.strings['GenerationInput']['SaveFrequency'].format_custom(TIME=ticks_to_seconds(CONFIG['Save']['Frequency'])))
         return False
     
     #Calculate when the next save should be
@@ -216,12 +215,12 @@ def check_running_status(profile):
         if last_save_time < CONFIG['Save']['Frequency']:
             next_save_time = CONFIG['Save']['Frequency'] - last_save_time
             next_save = ticks_to_seconds(next_save_time, allow_decimals=False, output_length=2)
-            Message(STRINGS['GenerationInput']['ProfileSaveNext'].format_custom(PROFILE=profile,
+            Message(LANGUAGE.strings['GenerationInput']['ProfileSaveNext'].format_custom(PROFILE=profile,
                     PREVIOUS_SAVE=last_save, NEXT_SAVE=next_save))
         else:
             next_save_time = last_save_time - CONFIG['Save']['Frequency']
             next_save = ticks_to_seconds(next_save_time, allow_decimals=False, output_length=1)
-            Message(STRINGS['GenerationInput']['ProfileSaveDue'].format_custom(PROFILE=profile,
+            Message(LANGUAGE.strings['GenerationInput']['ProfileSaveDue'].format_custom(PROFILE=profile,
                     PREVIOUS_SAVE=last_save, NEXT_SAVE=next_save))
         Message()
         return True
@@ -231,43 +230,43 @@ def _user_generate():
     profile = select_profile_from_list()
 
     if not check_running_status(profile):
-        Message(STRINGS['Misc']['ProgramExit'])
+        Message(LANGUAGE.strings['Misc']['ProgramExit'])
         return
 
-    Message(STRINGS['Misc']['ProfileLoad'].format_custom(PROFILE=profile))
+    Message(LANGUAGE.strings['Misc']['ProfileLoad'].format_custom(PROFILE=profile))
     render = RenderImage(profile)
 
     #Ask for type of render
     render_types = [
-        ['tracks', True, STRINGS['RenderTypes']['Tracks'], []],
-        ['click heatmap', True, STRINGS['RenderTypes']['Clicks'], []],
-        ['keyboard heatmap', True, STRINGS['RenderTypes']['Keyboard'], []],
-        ['acceleration', False, STRINGS['RenderTypes']['Speed'], []],
-        ['brush strokes', False, STRINGS['RenderTypes']['Strokes'], []]
+        ['tracks', True, LANGUAGE.strings['RenderTypes']['Tracks'], []],
+        ['click heatmap', True, LANGUAGE.strings['RenderTypes']['Clicks'], []],
+        ['keyboard heatmap', True, LANGUAGE.strings['RenderTypes']['Keyboard'], []],
+        ['acceleration', False, LANGUAGE.strings['RenderTypes']['Speed'], []],
+        ['brush strokes', False, LANGUAGE.strings['RenderTypes']['Strokes'], []]
     ]
 
     #Set keyboard default to False if not tracked
     kph = round(render.keys_per_hour(), 2)
     if kph < 10:
         render_types[2][1] = False
-        render_types[2][2] += ' ' + STRINGS['GenerationInput']['KeyboardNoUse'].format_custom(KEYS_PER_HOUR=kph)
+        render_types[2][2] += ' ' + LANGUAGE.strings['GenerationInput']['KeyboardNoUse'].format_custom(KEYS_PER_HOUR=kph)
 
     Message()
-    Message(STRINGS['GenerationInput']['GenerateChoice'])
+    Message(LANGUAGE.strings['GenerationInput']['GenerateChoice'])
     if not any(select_options(render_types, multiple_choice=True)):
-        if yes_or_no(STRINGS['GenerationInput']['NoSelection']):
+        if yes_or_no(LANGUAGE.strings['GenerationInput']['NoSelection']):
             return True
         return False
 
     #Generate tracks
     if render_types[0][1]:
-        Message(STRINGS['GenerationInput']['OptionsForRender'].format_custom(RENDER_TYPE=render_types[0][0]))
+        Message(LANGUAGE.strings['GenerationInput']['OptionsForRender'].format_custom(RENDER_TYPE=render_types[0][0]))
 
         #Select colour map
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateTracks']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['GenerationInput']['ColourNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
             
             while not render_types[0][3]:
@@ -276,28 +275,28 @@ def _user_generate():
                     try:
                         calculate_colour_map(colour_map)
                     except ValueError:
-                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
+                        Message(LANGUAGE.strings['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[0][3].append(colour_map)
                 if not render_types[0][3]:
-                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
+                    Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[0][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
                 
     
     #Generate click heatmap
     if render_types[1][1]:
-        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[1][0]))
+        Message(LANGUAGE.strings['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[1][0]))
 
         #Select mouse button
         mb_options = [
-            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], STRINGS['Mouse']['ButtonLeft']],
-            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], STRINGS['Mouse']['ButtonMiddle']],
-            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], STRINGS['Mouse']['ButtonRight']]
+            ['_MouseButtonLeft', CONFIG['GenerateHeatmap']['_MouseButtonLeft'], LANGUAGE.strings['Mouse']['ButtonLeft']],
+            ['_MouseButtonMiddle', CONFIG['GenerateHeatmap']['_MouseButtonMiddle'], LANGUAGE.strings['Mouse']['ButtonMiddle']],
+            ['_MouseButtonRight', CONFIG['GenerateHeatmap']['_MouseButtonRight'], LANGUAGE.strings['Mouse']['ButtonRight']]
         ]
-        Message(STRINGS['GenerationInput']['MouseButtonSelection'])
+        Message(LANGUAGE.strings['GenerationInput']['MouseButtonSelection'])
         if not any(select_options(mb_options, multiple_choice=True)):
-            Message(STRINGS['GenerationInput']['MouseButtonNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['MouseButtonNotSet'])
             render_types[2][1] = False
         else:
             for mb_id, value, _ in mb_options:
@@ -307,7 +306,7 @@ def _user_generate():
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateHeatmap']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['GenerationInput']['ColourNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(clicks=True))]
             
             while not render_types[1][3]:
@@ -316,24 +315,24 @@ def _user_generate():
                     try:
                         calculate_colour_map(colour_map)
                     except ValueError:
-                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
+                        Message(LANGUAGE.strings['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[1][3].append(colour_map)
                 if not render_types[1][3]:
-                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
+                    Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[1][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
                     
     #Generate keyboard
     if render_types[2][1]:
-        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[2][0]))
+        Message(LANGUAGE.strings['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[2][0]))
 
         #Get colour map
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateKeyboard']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['GenerationInput']['ColourNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(keyboard=True, linear=CONFIG['GenerateKeyboard']['LinearMapping']))]
 
             while not render_types[2][3]:
@@ -342,23 +341,23 @@ def _user_generate():
                     try:
                         calculate_colour_map(colour_map)
                     except ValueError:
-                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
+                        Message(LANGUAGE.strings['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[2][3].append(colour_map)
                 if not render_types[2][3]:
-                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
+                    Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[2][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
     #Generate acceleration
     if render_types[3][1]:
-        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[3][0]))
+        Message(LANGUAGE.strings['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[3][0]))
 
         #Select colour map
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateSpeed']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['GenerationInput']['ColourNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
             while not render_types[3][3]:
@@ -367,24 +366,24 @@ def _user_generate():
                     try:
                         calculate_colour_map(colour_map)
                     except ValueError:
-                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
+                        Message(LANGUAGE.strings['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[3][3].append(colour_map)
                 if not render_types[3][3]:
-                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
+                    Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[3][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
 
     #Generate brush strokes
     if render_types[4][1]:
-        Message(STRINGS['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[4][0]))
+        Message(LANGUAGE.strings['GenerationInput']['RenderOptions'].format_custom(RENDER_TYPE=render_types[4][0]))
 
         #Select colour map
         try:
             colour_map_gen = calculate_colour_map(CONFIG['GenerateStrokes']['ColourProfile'])
         except ValueError:
-            Message(STRINGS['GenerationInput']['ColourNotSet'])
+            Message(LANGUAGE.strings['GenerationInput']['ColourNotSet'])
             map_options = [[colours, False, colours] for colours in sorted(get_map_matches(tracks=True))]
 
             while not render_types[4][3]:
@@ -393,11 +392,11 @@ def _user_generate():
                     try:
                         calculate_colour_map(colour_map)
                     except ValueError:
-                        Message(STRINGS['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
+                        Message(LANGUAGE.strings['GenerationInput']['ColourMapInvalid'].format_custom(COLOUR_MAP=colour_map))
                     else:
                         render_types[4][3].append(colour_map)
                 if not render_types[4][3]:
-                    Message(STRINGS['GenerationInput']['ColourMapNotSet'])
+                    Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
             render_types[4][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
 
@@ -414,10 +413,10 @@ def _user_generate():
     session = False
     if last_session_time is not None:
         session_options = [
-            [False, True, STRINGS['GenerationInput']['SessionAll'].format_custom(TIME=all_time)],
-            [True, False,  STRINGS['GenerationInput']['SessionLatest'].format_custom(TIME=last_session_time)]
+            [False, True, LANGUAGE.strings['GenerationInput']['SessionAll'].format_custom(TIME=all_time)],
+            [True, False,  LANGUAGE.strings['GenerationInput']['SessionLatest'].format_custom(TIME=last_session_time)]
         ]
-        Message(STRINGS['GenerationInput']['SessionSelect'])
+        Message(LANGUAGE.strings['GenerationInput']['SessionSelect'])
         while True:
             session = select_options(session_options, multiple_choice=False, update=False)
             if session is not None:
@@ -452,7 +451,7 @@ def _user_generate():
         
     #Open folder
     if CONFIG['GenerateImages']['OpenOnFinish']:
-        Message(STRINGS['Misc']['OpenImageFolder'])
+        Message(LANGUAGE.strings['Misc']['OpenImageFolder'])
         open_folder(render.name.generate())
     
     return False
@@ -543,7 +542,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
 
     #List possible options
     if multiple_choice and _show_choice_only is None:
-        Message(STRINGS['GenerationInput']['SeparateOptions'].format_custom(VALUE=', '.join(i[2] for i in options if i[1]), 
+        Message(LANGUAGE.strings['GenerationInput']['SeparateOptions'].format_custom(VALUE=', '.join(i[2] for i in options if i[1]), 
                 ID=', '.join(str(i+1) for i, value in enumerate(options) if value[1])))
 
     for i, values in enumerate(options):
@@ -554,9 +553,9 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
 
         if _show_choice_only is None or _show_choice_only: 
             if multiple_choice or not values[1]:
-                Message(STRINGS['GenerationInput']['ListItem'].format_custom(ID=i+1, OPTION=values[2]))
+                Message(LANGUAGE.strings['GenerationInput']['ListItem'].format_custom(ID=i+1, OPTION=values[2]))
             else:
-                Message(STRINGS['GenerationInput']['ListItemDefault'].format_custom(ID=i+1, OPTION=values[2]))
+                Message(LANGUAGE.strings['GenerationInput']['ListItemDefault'].format_custom(ID=i+1, OPTION=values[2]))
     
     #Handle override to show/hide choice
     if _show_choice_only and _show_choice_only != 'input_override':
@@ -565,7 +564,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
         Message()
     
     if _selection is None:
-        choice = input(STRINGS['Input']['UserChoice'] + ' ')
+        choice = input(LANGUAGE.strings['Input']['UserChoice'] + ' ')
     else:
         choice = _selection
 
@@ -583,9 +582,9 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
     if any(result):
         _options = list_to_str(options[i][2] for i, value in enumerate(result) if value)
         if len(joined) == 1:
-            Message(STRINGS['GenerationInput']['OptionChosenSingle'].format_custom(OPTION=_options))
+            Message(LANGUAGE.strings['GenerationInput']['OptionChosenSingle'].format_custom(OPTION=_options))
         else:
-            Message(STRINGS['GenerationInput']['OptionChosenMultiple'].format_custom(OPTION=_options))
+            Message(LANGUAGE.strings['GenerationInput']['OptionChosenMultiple'].format_custom(OPTION=_options))
     
     #Automatically choose if no selection given
     elif auto_choose_on_fail and not choice:
@@ -595,12 +594,12 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
                 result = [not random.randint(0, num_results) for _ in result]
             _options = list_to_str(options[i][2] for i, value in enumerate(result) if value)
             if sum(result) == 1:
-                Message(STRINGS['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=_options))
+                Message(LANGUAGE.strings['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=_options))
             else:
-                Message(STRINGS['GenerationInput']['OptionRandomMultiple'].format_custom(OPTION=_options))
+                Message(LANGUAGE.strings['GenerationInput']['OptionRandomMultiple'].format_custom(OPTION=_options))
         else:
             result = random.choice(options)[0]
-            Message(STRINGS['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=result))
+            Message(LANGUAGE.strings['GenerationInput']['OptionRandomSingle'].format_custom(OPTION=result))
             return result
     
     #End if multiple choice
@@ -612,7 +611,7 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
     elif joined:
         _option_count = len(joined)
         if _option_count > 1:
-            Message(STRINGS['GenerationInput']['OptionInvalidSingleChoice'].format_custom(OPTION_COUNT=_option_count))
+            Message(LANGUAGE.strings['GenerationInput']['OptionInvalidSingleChoice'].format_custom(OPTION_COUNT=_option_count))
             Message()
             return None
         Message()
@@ -621,11 +620,11 @@ def select_options(options, multiple_choice=True, update=None, auto_choose_on_fa
     #End if random choice was chosen
     else:
         if not auto_choose_on_fail:
-            Message(STRINGS['GenerationInput']['OptionInvalidInput'])
+            Message(LANGUAGE.strings['GenerationInput']['OptionInvalidInput'])
             Message()
             return None
         else:
-            Message(STRINGS['GenerationInput']['OptionValid'].format_custom(OPTION=choice))
+            Message(LANGUAGE.strings['GenerationInput']['OptionValid'].format_custom(OPTION=choice))
             Message()
             return choice
 

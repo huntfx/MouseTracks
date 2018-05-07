@@ -1,9 +1,9 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
-"""
-Requirements:
+#Define "commands" to run after certain triggers
+#Still in the early stages so doesn't work
+"""Requirements:
 Launching programs:
     Launch program
     Check if that program is already loaded

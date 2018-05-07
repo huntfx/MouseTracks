@@ -1,13 +1,13 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#General text based functions
 
 from __future__ import absolute_import, division
 
-from core.language import STRINGS
-
 from datetime import datetime
+
+from core.language import LANGUAGE
 
 
 _LENGTH = (
@@ -90,7 +90,7 @@ def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, 
             output.append('{} {}s'.format(current, name))
     
     if len(output) > 1:
-        result = ' {} '.join((', '.join(output[:-1]), output[-1])).format(STRINGS['Words']['And'])
+        result = ' {} '.join((', '.join(output[:-1]), output[-1])).format(LANGUAGE.strings['Words']['And'])
     else:
         result = output[-1]
 
@@ -100,7 +100,7 @@ def ticks_to_seconds(amount, tick_rate=1, output_length=2, allow_decimals=True, 
 def list_to_str(x, separator=', ', final_separator=None):
     """Join a list with an optional final separator."""
     if final_separator is None:
-        final_separator = ' {} '.format(STRINGS['Words']['And'])
+        final_separator = ' {} '.format(LANGUAGE.strings['Words']['And'])
 
     if not x:
         return ''

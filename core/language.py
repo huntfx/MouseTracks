@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Define and load the strings used around the program
 
 from __future__ import absolute_import
 
@@ -1004,17 +1004,17 @@ LANGUAGE_DEFAULTS = {
             '__info__': 'Keyboard key for Left Square Bracket.',
             'value': '{\n['
         },
+        220: {
+            '__info__': 'Keyboard key for Back Slash.',
+            'value': '|\n\\'
+        },
         221: {
             '__info__': 'Keyboard key for Right Square Bracket.',
             'value': '}\n]'
         },
-        189: {
+        222: {
             '__info__': 'Keyboard key for Hashtag/Number Sign.',
             'value': '~\n#'
-        },
-        220: {
-            '__info__': 'Keyboard key for Back Slash.',
-            'value': '|\n\\'
         },
         223: {
             '__info__': 'Keyboard key for Tilde.',
@@ -1046,9 +1046,6 @@ PATH_DEFAULT = {
         }
     }
 }
-
-
-STRINGS = Config(LANGUAGE_DEFAULTS, default_settings={'type': str, 'allow_empty': True})#.load(LANGUAGE_PATH, LANGUAGE_PATH_DEFAULT)
 
 
 def get_language_paths(*languages):

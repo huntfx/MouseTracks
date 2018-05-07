@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Handle inbuilt functions that differ between different python versions
+#Overwrite any of the below functions in other files with ones from this file
 
 from __future__ import absolute_import, print_function
 

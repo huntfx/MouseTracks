@@ -1,5 +1,4 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 #Handle UTF-8 characters in the Python console, mainly for use with other languages

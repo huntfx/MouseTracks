@@ -1,5 +1,4 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 #Generate CSV files from data
@@ -11,7 +10,7 @@ import core.numpy as numpy
 from core.compatibility import range, iteritems, Message
 from core.config import CONFIG
 from core.files import load_data
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.os import create_folder
 
 
@@ -31,7 +30,7 @@ class ExportCSV(object):
    
     def tracks(self, image_name):
         
-        Message(STRINGS['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='tracks'))
+        Message(LANGUAGE.strings['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='tracks'))
         for resolution in self.data['Maps']['Tracks']:
             CONFIG['GenerateImages']['_TempResolutionX'], CONFIG['GenerateImages']['_TempResolutionY'] = resolution
             
@@ -44,7 +43,7 @@ class ExportCSV(object):
    
     def clicks(self, image_name):
         
-        Message(STRINGS['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='clicks'))
+        Message(LANGUAGE.strings['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='clicks'))
         for i, mouse_button in enumerate(self.data['Maps']['Click']['Single']):
             CONFIG['GenerateHeatmap']['_MouseButtonLeft'] = i == 0
             CONFIG['GenerateHeatmap']['_MouseButtonMiddle'] = i == 1
@@ -64,7 +63,7 @@ class ExportCSV(object):
     
     def keyboard(self, image_name):
         
-        Message(STRINGS['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='keyboard'))
+        Message(LANGUAGE.strings['GenerationInput']['GenerateCSV'].format_custom(RENDER_TYPE='keyboard'))
         result = ['Key,Count,Time']
         for key in self.data['Keys']['All']['Pressed']:
             result.append('{},{},{}'.format(key, 

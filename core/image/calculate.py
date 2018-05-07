@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Image functions that require complicated or heavy processing
 
 from __future__ import absolute_import, division
 
@@ -12,7 +12,7 @@ import core.numpy as numpy
 from core.image.scipy import blur, upscale
 from core.compatibility import range, iteritems, Message
 from core.config import CONFIG
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.maths import round_int
 
 
@@ -74,7 +74,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
             num_arrays += 1
 
     #Upscale each array
-    STRINGS['Generation']['UpscaleArrayStart'].format_custom(XRES=target_resolution[0], YRES=target_resolution[1])
+    LANGUAGE.strings['Generation']['UpscaleArrayStart'].format_custom(XRES=target_resolution[0], YRES=target_resolution[1])
     processed = 0
     output = []
     for resolution, array_list in iteritems(arrays):
@@ -86,7 +86,7 @@ def upscale_arrays_to_resolution(arrays, target_resolution, skip=[]):
             if i in skip:
                 continue
             processed += 1
-            Message(STRINGS['Generation']['UpscaleArrayProgress'].format_custom(XRES=resolution[0], YRES=resolution[1],
+            Message(LANGUAGE.strings['Generation']['UpscaleArrayProgress'].format_custom(XRES=resolution[0], YRES=resolution[1],
                                                                                 CURRENT=processed, TOTAL=num_arrays))
             zoom_factor = (target_resolution[1] / resolution[1],
                            target_resolution[0] / resolution[0])
@@ -102,21 +102,21 @@ def arrays_to_heatmap(numpy_arrays, gaussian_size, clip):
     """
     
     #Add all arrays together
-    Message(STRINGS['Generation']['ArrayMerge'])
+    Message(LANGUAGE.strings['Generation']['ArrayMerge'])
     merged_arrays = numpy.merge(numpy_arrays, 'add', 'float64')
     
     #Set to constant values
-    Message(STRINGS['Generation']['ArrayRemap'])
+    Message(LANGUAGE.strings['Generation']['ArrayRemap'])
     flattened = numpy.remap_to_range(merged_arrays)
     
     #Blur the array
     if gaussian_size:
-        Message(STRINGS['Generation']['ArrayBlur'])
+        Message(LANGUAGE.strings['Generation']['ArrayBlur'])
         heatmap = blur(flattened, gaussian_size)
     else:
         heatmap = flattened
     
-    Message(STRINGS['Generation']['ArrayRange'])
+    Message(LANGUAGE.strings['Generation']['ArrayRange'])
     min_value = numpy.min(heatmap)
     
     #Lower the maximum value a little

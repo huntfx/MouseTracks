@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Linux functions that don't require any special imports
+#Thanks to /u/Astrrum for helping, still needs a lot of work
 
 from __future__ import absolute_import
 

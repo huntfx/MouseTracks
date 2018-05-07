@@ -1,7 +1,8 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Load in the operating system specific functions
+#If any do not exit, a placeholder will be used instead
 
 from __future__ import absolute_import
 

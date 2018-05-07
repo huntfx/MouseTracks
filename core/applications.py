@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Check for running applications using AppList.txt
 
 from __future__ import absolute_import
 
@@ -14,7 +14,7 @@ from core.config import CONFIG
 from core.constants import APP_LIST_URL, UPDATES_PER_SECOND, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 from core.notify import NOTIFY
 from core.files import format_file_path
-from core.language import STRINGS
+from core.language import LANGUAGE
 from core.os import get_running_processes, WindowFocus, get_modified_time, split_folder_and_file
 from core.internet import get_url_contents
 
@@ -248,12 +248,12 @@ class RunningApplications(object):
         next_update = time.time() - update_frequency
         if not self.applist or not last_updated or last_updated < next_update:
         
-            NOTIFY(STRINGS['Tracking']['ApplistDownloadStart'], FILE_NAME=self.applist.name, URL=APP_LIST_URL).put(self.q)
+            NOTIFY(LANGUAGE.strings['Tracking']['ApplistDownloadStart'], FILE_NAME=self.applist.name, URL=APP_LIST_URL).put(self.q)
             if self.applist.update(APP_LIST_URL):
                 self.applist.save()
-                NOTIFY(STRINGS['Tracking']['ApplistDownloadSuccess'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
+                NOTIFY(LANGUAGE.strings['Tracking']['ApplistDownloadSuccess'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
             else:
-                NOTIFY(STRINGS['Tracking']['ApplistDownloadFail'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
+                NOTIFY(LANGUAGE.strings['Tracking']['ApplistDownloadFail'], FILE_NAME=self.applist.name, URL=APP_LIST_URL)
             NOTIFY.put(self.q)
         
     def refresh(self):

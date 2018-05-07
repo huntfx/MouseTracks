@@ -1,7 +1,7 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Functions not specific to particular operating systems
 
 from __future__ import absolute_import, division
 
@@ -121,7 +121,7 @@ def join_path(path, create=False):
     return joined
 
 
-def _open(path):
+def open(path):
     """Open a file or folder from a path."""
     if not path:
         return False
@@ -135,7 +135,7 @@ def _open(path):
 def open_folder(path):
     """Open a folder."""
     folder_path, file_path = split_folder_and_file(path)
-    return _open(folder_path)
+    return open(folder_path)
     
     
 def open_file(path):
@@ -143,7 +143,7 @@ def open_file(path):
     folder_path, file_path = split_folder_and_file(path)
     if file_path is None:
         return False
-    return _open(path)
+    return open(path)
 
 
 #Functions to be used with commands

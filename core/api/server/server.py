@@ -1,7 +1,9 @@
-"""
-This is part of the Mouse Tracks Python application.
+"""This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
+#Create a socket server to accept multiple client connections
+#Uses a triple threaded approach to receive data and send it to each client,
+#while accepting any new connections
 
 from __future__ import absolute_import
 
@@ -99,30 +101,30 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
     """Run a server to send messages to all the connected clients."""
     
     #Create server socket
-    NOTIFY(STRINGS['Server']['MessageStart'])
+    NOTIFY(LANGUAGE.strings['Server']['MessageStart'])
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except socket.error as e:
         if e.errno == 10048:
-            NOTIFY(STRINGS['Server']['PortTaken'], PORT=port)
+            NOTIFY(LANGUAGE.strings['Server']['PortTaken'], PORT=port)
             if close_port:
-                NOTIFY(STRINGS['Server']['PortClose'], PORT=port)
+                NOTIFY(LANGUAGE.strings['Server']['PortClose'], PORT=port)
                 force_close_port(port)
             else:
-                NOTIFY(STRINGS['Server']['PortRandom'])
+                NOTIFY(LANGUAGE.strings['Server']['PortRandom'])
                 port = 0
             sock.bind((host, port))
         else:
             raise socket.error('unable to start server')
     sock.listen(5)
     
-    NOTIFY(STRINGS['Server']['MessagePort'], sock.getsockname()[1])
+    NOTIFY(LANGUAGE.strings['Server']['MessagePort'], sock.getsockname()[1])
     
     #Generate a code needed for connections
     if server_secret is None:
         server_secret = _generate_code(15)
-    NOTIFY(STRINGS['Server']['MessageSecretSet'], SECRET=server_secret)
+    NOTIFY(LANGUAGE.strings['Server']['MessageSecretSet'], SECRET=server_secret)
     
     q_conn = Queue()
     threads = []
@@ -149,7 +151,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
             
             #Check for new connection (the latest thread is idle until then)
             #Loop is needed so that KeyboardInterrupt can be intercepted
-            NOTIFY(STRINGS['Server']['MessageListen'])
+            NOTIFY(LANGUAGE.strings['Server']['MessageListen'])
             while True:
             
                 #Close all client connections
@@ -169,7 +171,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
                     
                 #New client connected
                 else:
-                    NOTIFY(STRINGS['Server']['MessageConnection'], HOST=addr[0], PORT=addr[1])
+                    NOTIFY(LANGUAGE.strings['Server']['MessageConnection'], HOST=addr[0], PORT=addr[1])
                     client_id += 1
                     break
 
