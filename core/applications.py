@@ -326,30 +326,19 @@ class RunningApplications(object):
                         if name is None:
                             continue
                         
-                        #Use regex
-                        if True:
+                        #Use regex if wildcard in name
+                        if TRACKING_WILDCARD in name:
                             try:
                                 regex = self._regex_cache[name]
                             except KeyError:
-                                pattern = name.replace('<*>', '(.*)')
+                                pattern = name.replace(TRACKING_WILDCARD, '(.*)')
                                 regex = re.compile(pattern)
                                 self._regex_cache[name] = regex
 
                             match = regex.search(self.focused_name) is not None
                         
-                        #Old way without regex
                         else:
-                            #Check for wildcards, only supports at the start and end of the name
-                            wildcard_start = name.startswith(TRACKING_WILDCARD)
-                            wildcard_end = name.endswith(TRACKING_WILDCARD)
-                            if wildcard_start and wildcard_end:
-                                match = name[_WILDCARD_LEN:-_WILDCARD_LEN] in self.focused_name
-                            elif wildcard_start:
-                                match = self.focused_name.endswith(name[_WILDCARD_LEN:])
-                            elif wildcard_end:
-                                match = self.focused_name.startswith(name[:-_WILDCARD_LEN])
-                            else:
-                                match = name == self.focused_name
+                           match = name == self.focused_name
                             
                         if match:
                             return names[name], self.focused_exe
