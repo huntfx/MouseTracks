@@ -227,13 +227,21 @@ def background_process(q_recv, q_send):
                         queue_size = q_recv.qsize()
                     except NotImplementedError:
                         queue_size = 0
+                    
+                    #Two different save commands probably next to each other
                     if queue_size > 2:
                         NOTIFY(LANGUAGE.strings['Tracking']['SaveSkipNoChange'])
+                    
+                    #No activity since previous save
                     else:
                         time_since_save = CONFIG['Save']['Frequency'] * store['SavesSkipped']
                         seconds = int(time_since_save)
-                        minutes = int(round(time_since_save / 60))
-                        hours = int(round(time_since_save / 3600))
+                        minutes = round(time_since_save / 60, 2)
+                        if not minutes % 1:
+                            minutes = int(minutes)
+                        hours = round(time_since_save / 3600, 2)
+                        if not hours % 1:
+                            hours = int(hours)
                         seconds_plural = LANGUAGE.strings['Words'][('TimeSecondSingle', 'TimeSecondPlural')[seconds != 1]]
                         minutes_plural = LANGUAGE.strings['Words'][('TimeMinuteSingle', 'TimeMinutePlural')[minutes != 1]]
                         hours_plural = LANGUAGE.strings['Words'][('TimeHourSingle', 'TimeHourPlural')[hours != 1]]

@@ -286,7 +286,8 @@ LANGUAGE_DEFAULTS = {
             'level': 2
         },
         'SaveSkipInactivity': {
-            'value': 'Skipping save due to inactivity, (last save was [SECONDS] [SECONDS-PLURAL] ago).',
+            '__info__': 'Valid Replacements: [SECONDS] [SECONDS-PLURAL] [MINUTES] [MINUTES-PLURAL] [HOURS] [HOURS-PLURAL]',
+            'value': 'Skipping save due to inactivity, (last save was [MINUTES] [MINUTES-PLURAL] ago).',
             'level': 2
         },
         'SaveSkipNoChange': {
