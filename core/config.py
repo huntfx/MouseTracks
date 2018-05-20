@@ -494,6 +494,11 @@ CONFIG_DEFAULTS = {
             '__info__': 'Maximum number of ticks between recorded keypresses. Set to a negative number for infinite.',
             'value': 600,
             'type': int
+        },
+        'IdleTime': {
+            '__info__': 'How many ticks of inactivity allowed before recording as idle.',
+            'value': 6000,
+            'type': int
         }
     }
 }

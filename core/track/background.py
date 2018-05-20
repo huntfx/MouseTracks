@@ -144,19 +144,19 @@ def _save_wrapper(q_send, program_name, data, new_program=False):
         
         else:
             if max_attempts == 1:
-                NOTIFY(LANGUAGE.strings['Tracking']['SaveIncompleteNoRetry'])
+                NOTIFY(LANGUAGE.strings['Tracking']['SaveIncompleteNoRetry']).put(q_send)
                 return
 
             seconds = round_int(CONFIG['Save']['WaitAfterFail'])
             minutes = round_int(CONFIG['Save']['WaitAfterFail'] / 60)
             NOTIFY(LANGUAGE.strings['Tracking']['SaveIncompleteRetry'], ATTEMPT_CURRENT=i+1, ATTEMPT_MAX=max_attempts,
                    SECONDS=seconds, SECONDS_PLURAL=LANGUAGE.strings['Words'][('TimeSecondSingle', 'TimeSecondPlural')[seconds != 1]],
-                   MINUTES=minutes, MINUTES_PLURAL=LANGUAGE.strings['Words'][('TimeMinuteSingle', 'TimeMinutePlural')[minutes != 1]])
+                   MINUTES=minutes, MINUTES_PLURAL=LANGUAGE.strings['Words'][('TimeMinuteSingle', 'TimeMinutePlural')[minutes != 1]]).put(q_send)
 
             time.sleep(CONFIG['Save']['WaitAfterFail'])
             
     if not saved:
-        NOTIFY(LANGUAGE.strings['Tracking']['SaveIncompleteRetryFail'])
+        NOTIFY(LANGUAGE.strings['Tracking']['SaveIncompleteRetryFail']).put(q_send)
 
 
 def _notify_queue_size(queue_main, queue_send=None):
@@ -207,9 +207,8 @@ def background_process(q_recv, q_send):
                 store['Data']['Sessions'][-1][1] += received_data['Ticks']['Total']
                 
                 #Increment idle time if it reaches a threshold (>10 seconds)
-                #TODO: Set idle time in config
-                if store['LastIdle'] > received_data['Ticks']['Idle'] and store['LastIdle'] > UPDATES_PER_SECOND * 10:
-                    store['Data']['Sessions'][-1][2] += store['LastIdle']
+                if store['LastIdle'] > received_data['Ticks']['Idle'] and store['LastIdle'] > CONFIG['Advanced']['IdleTime']:
+                    store['Data']['Sessions'][-1][2] += store['LastIdle'] + CONFIG['Advanced']['IdleTime']
                 store['LastIdle'] = received_data['Ticks']['Idle']
             
             #Save the data
@@ -392,7 +391,7 @@ def background_process(q_recv, q_send):
         NOTIFY(LANGUAGE.strings['Tracking']['ScriptThreadEnd']).put(q_send)
         _save_wrapper(q_send, store['LastProgram'], store['Data'], False)
             
-    except Exception as e:
+    except Exception:
         q_send.put(traceback.format_exc())
         
     except KeyboardInterrupt:
