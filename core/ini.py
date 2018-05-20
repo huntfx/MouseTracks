@@ -16,6 +16,9 @@ def _get_priority_order(values, default=None, empty_goes_last=True):
         default (None/int) (None): Default priority to use.
         empty_goes_last (bool) (True): If no priority should be put at the end.
             If set to False, then no priority will take the first gap available instead.
+    
+    Returns:
+        List of str config values.
     """
     #Build dict of values grouped by priority
     priorities = {}
@@ -59,7 +62,7 @@ def _get_priority_order(values, default=None, empty_goes_last=True):
             except KeyError:
                 pass
         current += 1
-    return order + end
+    return map(str, order + end)
 
 
 class _ConfigItem(object):
