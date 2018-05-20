@@ -412,7 +412,8 @@ class Config(dict):
 
         #Figure out the different types of values
         if isinstance(value, dict):
-            self.__delitem__(item)
+            if item in self._data:
+                self.__delitem__(item)
             self._data[item] = {}
             for k, v in iteritems(value):
                 self._data[item][k] = _process_input(v)
