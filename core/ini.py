@@ -244,6 +244,18 @@ def create_config_item(config_dict, item_type=None):
     config_items = {str: _ConfigItemStr, int: _ConfigItemInt, float: _ConfigItemFloat, bool: _ConfigItemBool}
     return config_items[item_type or config_dict['type']](config_dict)   
 
+
+def _process_input(value, defaults=None):
+    """Get a value and turn it into a dict suitable for the config."""
+    item_data = {}
+    if defaults is not None:
+        for k, v in iteritems(defaults):
+            item_data[k] = v
+    item_data['value'] = value
+    if 'type' not in item_data:
+        item_data['type'] = type(value)
+    return item_data
+
     
 class _ConfigDict(dict):
     """Handle the variables inside the config."""
@@ -286,16 +298,7 @@ class _ConfigDict(dict):
             if not self._editable_dict:
                 raise
 
-            #Create new data item
-            self._data[item] = {}
-            if self._default_settings is not None:
-                for k, v in iteritems(self._default_settings):
-                    self._data[item][k] = v
-            self._data[item]['value'] = value
-            if 'type' not in self._data[item]:
-                self._data[item]['type'] = type(value)
-
-            info = self._data[item]
+            self._data[item] = info = _process_input(value, self._default_settings)
 
         if info.get('lock', False):
             return
@@ -305,7 +308,20 @@ class _ConfigDict(dict):
         self._data[item]['value'] = config_item.value
 
     def __delitem__(self, item):
+        if self._data[item].get('lock', False):
+            raise TypeError('value "{}" is locked'.format(item))
         del self._data[item]
+
+    def update(self, value=None, **kwargs):
+        if isinstance(value, dict):
+            for k, v in iteritems(value):
+                self._data[k] = _process_input(v)
+        elif value is None and kwargs:
+            for k, v in iteritems(kwargs):
+                self._data[k] = _process_input(v)
+        else:
+            raise TypeError('invalid type "{}", must be dict')
+
 
 
 class Config(dict):
@@ -338,8 +354,7 @@ class Config(dict):
         Can also provide default settings to apply to everything, such as {'type': int, 'min': 0}.
 
         Enabling editable_dict will allow keys to be created and deleted.
-        Disable if config contains important values.
-        #TODO: Disallow deleting locked values
+        Disable if config contains important values that are not locked.
         """
         self._data = {}
         self._backup = {}
@@ -372,24 +387,35 @@ class Config(dict):
     get = __getitem__
 
     def __delitem__(self, item):
-        del self._data[item]
-    
-    def __setitem__(self, item, value):
-        """Create a new heading if the dict is editable.
-        Will raise a KeyError if it is not editable, or TypeError if not a dict.
+        """Delete a heading.
+
+        Will raise a TypeError if not editable or contains a locked value.
         """
         if not self._editable_dict:
-            raise KeyError('dict isn\'t editable')
+            raise TypeError('dict isn\'t editable')
 
-        if item not in self._data:
-            self._data[item] = {}
+        for k, v in iteritems(self._data[item]):
+            if v.get('lock', False):
+                raise TypeError('value "{}.{}" is locked'.format(item, k))
+                break
+        else:
+            del self._data[item]
+    
+    def __setitem__(self, item, value):
+        """Create a heading.
+        Deletes the old one before creating. To update without deleting, use .update().
+
+        Will raise a TypeError if it is not editable, or if the input is not a dict.
+        """
+        if not self._editable_dict:
+            raise TypeError('dict isn\'t editable')
 
         #Figure out the different types of values
         if isinstance(value, dict):
+            self.__delitem__(item)
+            self._data[item] = {}
             for k, v in iteritems(value):
-                self._data[item][k] = v
-        elif value is None:
-            del self._data[item]
+                self._data[item][k] = _process_input(v)
         else:
             raise TypeError('invalid type "{}", must be dict')
 
@@ -401,7 +427,7 @@ class Config(dict):
             
             for var, info in iteritems(var_data):
                 if isinstance(info, (str, int, float, bool)):
-                    info = {'value': info}
+                    info = _process_input(info, self._default_settings)
                 elif not isinstance(info, dict):
                     continue
                 else:
