@@ -20,19 +20,19 @@ from core.image.main import RenderImage
 from core.input import value_select, yes_or_no
 from core.files import get_data_files, get_metadata, format_name, LoadData
 from core.language import LANGUAGE
-from core.maths import round_up
+from core.maths import round_up, round_int
 from core.messages import date_format, ticks_to_seconds, list_to_str
 from core.os import open_folder
 
 
 SORT_OPTIONS = {
-    #Name: metadata name, default, type, (function, args, kwargs)
-    #TODO: filesize
+    #Name: metadata name (defined in load_data), default, type, (function, args, kwargs)
     'Track Length': ('time', 0, int, None),
     'Session Count': ('sessions', 0, int, None),
     'Creation Time': ('created', 0, float, (date_format, (), {'include_time': False})),
     'Last Modified': ('modified', 0, float, (date_format, (), {'include_time': False})),
-    'File Version': ('file', 0, int, None)
+    'File Version': ('file', 0, int, None),
+    'File Size': ('filesize', 0, int, lambda n: str(round_int(n/1024))+'KB' if n < 10485760 else str(round(n/1048576, 1))+'MB')
 }
 
 
@@ -46,7 +46,16 @@ def _sort_data_list(data_files, option, descending=True):
 
 
 def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=40):
-    """Ask the user to choose a profile."""
+    """Ask the user to choose a profile.
+    
+    Parameters:
+        page (int): Page to start on.
+        limit (int): How many results to show on each page.
+        metadata_offset (int): Minimum number of spaces before showing the metadata related to sorting.
+
+    Returns:
+        Selected profile as text.
+    """
 
     #Read list of files in data folder
     if data_files is None:
@@ -60,7 +69,8 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
     for program_name in AppList().names:
         program_names[format_name(program_name)] = program_name
 
-    sort_options = ['Track Length', 'Session Count', 'Creation Time', 'Last Modified', 'File Version']
+    sort_options = ['Track Length', 'Session Count', 'Creation Time', 'Last Modified', 'File Version', 'File Size']
+    sort_options = sorted(SORT_OPTIONS.keys())
     sort_value = sort_options[3]
     reverse = False
     loop = 0
@@ -93,8 +103,12 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                 pass
             else:
                 if option_func is not None:
-                    value = option_func[0](value, *option_func[1], **option_func[2])
-                output += ' ' * max(1, metadata_offset - len(output)) + '{}: {}'.format(sort_value, value)
+                    if callable(option_func):
+                        value = option_func(value)
+                    else:
+                        value = option_func[0](value, *option_func[1], **option_func[2])
+                output_len = len(output)
+                output += ' ' * max(1 if output_len < metadata_offset else 3, metadata_offset - output_len) + '{}: {}'.format(sort_value, value)
             Message(output)
         Message(LANGUAGE.strings['GenerationInput']['PageNumber'].format_custom(CURRENT_PAGE=page, 
                                                                        TOTAL_PAGES=total_pages, 
@@ -115,24 +129,24 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                 option = None
                 try:
                     sort_id = int(user_input[len(LANGUAGE.strings['Words']['Sort']):]) - 1
-                    print sort_id
-                    if not 0 <= sort_id <= 4:
+                    if not 0 <= sort_id < len(sort_options):
                         raise ValueError
                 
                 #Attempt to read if the option was manually typed out
                 except ValueError:
                     lc_option = user_input[len(LANGUAGE.strings['Words']['Sort'])+1:].lower()
                     for uc_option in sort_options:
-                        if uc_option.lower() == lc_option:
+                        if lc_option in (uc_option.lower(), uc_option.lower().replace(' ', '')):
                             option = uc_option
                             break
                     else:
                         try:
                             Message(LANGUAGE.strings['GenerationInput']['PageSortInvalidID'].format_custom(
-                                    CURRENT_SORT=sort_value, NEW_SORT=sort_id+1, SORT_MIN=1, SORT_MAX=5))
+                                    CURRENT_SORT=sort_value, NEW_SORT=sort_id+1, SORT_MIN=1, SORT_MAX=len(sort_options)))
                         except UnboundLocalError:
                             Message(LANGUAGE.strings['GenerationInput']['PageSortInvalidType'].format_custom(
                                     CURRENT_SORT=sort_value, NEW_SORT=lc_option, SORT_OPTIONS=_sort_options))
+
                 #If sort by itself was typed, just reverse
                 except IndexError:
                     reverse = not reverse
@@ -145,7 +159,7 @@ def select_profile_from_list(data_files=None, page=1, limit=20, metadata_offset=
                 if option is not None:
                     if option == sort_value:
                         reverse = not reverse
-                        Message(LANGUAGE.strings['GenerationInput']['PageSortReverse'])
+                        Message(LANGUAGE.strings['GenerationInput']['PageSortReverse'].format_custom(SORT_TYPE=sort_value))
                     else:
                         sort_value = option
                         Message(LANGUAGE.strings['GenerationInput']['PageSortNew'].format_custom(SORT_TYPE=sort_value))

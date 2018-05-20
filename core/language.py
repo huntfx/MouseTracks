@@ -488,10 +488,13 @@ LANGUAGE_DEFAULTS = {
             '__info__': 'Valid Replacements: [CURRENT-SORT] [NEW-SORT] [SORT-OPTIONS]',
             'value': 'Error: Invalid sorting type: [NEW-SORT]'
         },
-        'PageSortReverse': 'Reversed sorting.',
+        'PageSortReverse': {
+            '__info__': 'Valid Replacements: [SORT-TYPE]',
+            'value': 'Reversed sorting for [SORT-TYPE].'
+        },
         'PageSortNew': {
             '__info__': 'Valid Replacements: [SORT-TYPE]',
-            'value': 'List sorting changed to [SORT-TYPE]'
+            'value': 'List sorting changed to [SORT-TYPE].'
         },
         'PageNumber': {
             '__info__': 'Valid Replacements: [CURRENT-PAGE] [TOTAL-PAGES] [PAGE](required)',

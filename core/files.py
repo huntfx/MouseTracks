@@ -17,7 +17,7 @@ from core.base import format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, BytesIO, unicode, pickle, iteritems
 from core.constants import DEFAULT_NAME, MAX_INT
-from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists
+from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists, get_file_size
 from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps
 
 
@@ -156,6 +156,9 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
             #Use inbuilt OS way to get modified time if no metadata
             if 'modified' not in metadata:
                 metadata['modified'] = get_modified_time(paths['Main'])
+            
+            #Get misc information
+            metadata['filesize'] = get_file_size(paths['Main'])
 
             return metadata
 

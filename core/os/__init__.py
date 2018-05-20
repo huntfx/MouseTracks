@@ -111,6 +111,10 @@ def list_directory(folder, remove_extensions=False, force_extension=None):
         
 def file_exists(path):
     return os.path.exists(path)
+
+
+def get_file_size(path):
+    return os.path.getsize(path)
     
 
 def join_path(path, create=False):
