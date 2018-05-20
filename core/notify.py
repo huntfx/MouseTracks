@@ -74,9 +74,11 @@ class Notify(object):
         
         if level >= self.level:
             try:
-                self._message_queue[level].append(string.format_custom(**kwargs))
+                formatted = string.format_custom(**kwargs)
             except AttributeError:
-                self._message_queue[level].append(str(string).format(**kwargs))
+                formatted = str(string).format(**kwargs)
+            formatted = formatted[0].upper() + formatted[1:]
+            self._message_queue[level].append(formatted)
         return self
 
     def __add__(self, string, level_override=None, **kwargs):
