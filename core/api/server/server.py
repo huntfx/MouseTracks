@@ -15,6 +15,7 @@ from threading import Thread, currentThread
 from core.api.constants import *
 from core.compatibility import queue, range
 from core.cryptography import Crypt
+from core.language import LANGUAGE
 from core.notify import NOTIFY
 from core.sockets import *
 

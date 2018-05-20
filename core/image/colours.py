@@ -6,7 +6,7 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import absolute_import, division
 
 import core.numpy as numpy
-from core.base import get_script_file
+from core.base import TextFile, get_script_file
 from core.compatibility import Message, range, iteritems
 from core.files import format_name
 from core.os import join_path
@@ -349,7 +349,7 @@ def parse_colour_file(path=COLOUR_FILE):
                                      'clicks': bool,
                                      'keyboard': bool}}}
     """
-    with open(path, 'r') as f:
+    with TextFile(path, 'r') as f:
         data = f.read()
     
     colours = {}

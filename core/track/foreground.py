@@ -13,7 +13,7 @@ from threading import Thread
 
 from core.api import *
 from core.base import format_file_path
-from core.compatibility import MessageWithQueue, iteritems
+from core.compatibility import Message, MessageWithQueue, iteritems
 from core.config import CONFIG
 from core.constants import UPDATES_PER_SECOND, DEFAULT_PATH
 from core.error import handle_error
@@ -56,7 +56,7 @@ class PrintFormat(object):
             return
         if current_time is None:
             current_time = time.time()
-        self.message(u'{} {}'.format(time_format(current_time), text))
+        self.message('{} {}'.format(time_format(current_time), text))
             
         
 def start_tracking(lock=True, web_port=None, message_port=None, console=True, server_secret=None):
@@ -95,7 +95,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 message_port = get_free_port()
             message_thread = local_message_server(port=message_port, q_main=q_msg, q_feedback=q_feedback, server_secret=server_secret)
         else:
-            message = PrintFormat(MessageWithQueue().send)
+            message = PrintFormat(Message)
             message_port = None
             message_thread = None
             
@@ -277,8 +277,8 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                     output_list.append(received_data)
                 
                 #Join all valid outputs together
-                output = u' | '.join(u' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group
-                                     for msg_group in output_list if msg_group)
+                output = ' | '.join(' | '.join(msg_group) if isinstance(msg_group, (list, tuple)) else msg_group
+                                    for msg_group in output_list if msg_group)
                 if output:
                     message(output, limiter.time)
                 
@@ -397,7 +397,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         store['Mouse']['LastClick'] = mb_data
                         
                     elif mb_clicked:
-                        NOTIFY(LANGUAGE.strings['Tracking']['MouseClickedRelease'])
+                        NOTIFY(LANGUAGE.strings['Tracking']['MouseClickedRelease'], MOUSEBUTTON=_mb)
                         del store['Mouse']['Clicked'][mouse_button]
                         store['LastActivity'] = ticks
      

@@ -5,10 +5,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-import codecs
 import re
 import time
 
+from core.base import TextFile
 from core.compatibility import iteritems, unicode
 from core.config import CONFIG
 from core.constants import APP_LIST_URL, UPDATES_PER_SECOND, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
@@ -22,8 +22,6 @@ from core.internet import get_url_contents
 RECOGNISED_EXTENSIONS = ['exe', 'bin', 'app', 'scr', 'com']
 
 APP_LIST_PATH = format_file_path(CONFIG['Paths']['AppList'])
-
-_ENCODINGS = [''.join(chr(i) for i in (239, 187, 191))]
 
 _DEFAULT_TEXT = [
     '// Add any applications you want to be tracked here.',
@@ -103,28 +101,18 @@ class AppList(object):
         else:
             #Read from script directory
             try:
-                with codecs.open(path.replace('\\', '/').split('/')[-1], 'r', encoding='utf8') as f:
+                with TextFile(path.replace('\\', '/').split('/')[-1], 'r') as f:
                     lines = [i.strip() for i in f.readlines()]
             except IOError:
                 lines = []
                 
             #Read from documents
             try:
-                with codecs.open(path, 'r', encoding='utf8') as f:
+                with TextFile(path, 'r') as f:
                     lines += [i.strip() for i in f.readlines()]
             except IOError:
                 if not lines:
                     return {}
-        
-        #Remove any encoding at the start of the file
-        #May not be needed with codecs import, needs testing
-        try:
-            for marker in _ENCODINGS:
-                if lines[0].startswith(marker):
-                    lines[0] = lines[0][len(marker):]
-                    break
-        except UnicodeDecodeError:
-            pass
 
         executable_files = {}
         for line in lines:
@@ -201,7 +189,7 @@ class AppList(object):
         
         if path is None:
             path = self.path
-        with codecs.open(path, 'wb', encoding='utf8') as f:
+        with TextFile(path, 'wb') as f:
             f.write(result)
         return result
 

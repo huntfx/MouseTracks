@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 import sys
 
-from core.base import format_file_path
+from core.base import TextFile, format_file_path
 from core.compatibility import input, Message, PYTHON_VERSION
 from core.constants import DEFAULT_PATH
 from core.language import LANGUAGE
@@ -29,7 +29,7 @@ def handle_error(trace=None, log=True, console=True):
         #Write to file
         if log:
             file_name = format_file_path('{}\\error.txt'.format(DEFAULT_PATH))
-            with open(file_name, 'w') as f:
+            with TextFile(file_name, 'w') as f:
                 f.write(output)
         Message(trace.strip())
         

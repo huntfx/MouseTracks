@@ -6,11 +6,10 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-import codecs
 import os
 
 import core.utf8
-from core.base import get_script_file
+from core.base import TextFile, get_script_file
 from core.compatibility import iteritems
 from core.config import CONFIG
 from core.constants import DEFAULT_LANGUAGE
@@ -361,7 +360,8 @@ LANGUAGE_DEFAULTS = {
             'level': 1
         },
         'MouseClickedRelease': {
-            'value': 'Mouse button released.',
+            '__info__': 'Valid Replacements: [MOUSEBUTTON]',
+            'value': '[MOUSEBUTTON] released.',
             'level': 0
         },
         'KeyboardPressed': {
@@ -1054,10 +1054,7 @@ PATH_DEFAULT = {
 
 def get_language_paths(*languages):
     """Get the paths given for strings and keyboard from current language."""
-    path_default = {'Links': {'Strings': 'en_GB', 'Keyboard': 'en_US'},
-                    'Inherit': {'Strings': {'allow_empty': True}}}
-
-    language_paths = [os.path.join(LANGUAGE_BASE_PATH, language + '.ini') for language in languages][::-1]
+    language_paths = [os.path.join(LANGUAGE_BASE_PATH, language + '.ini') for language in languages]
     paths = Config(PATH_DEFAULT, editable_dict=True).load(*language_paths)
 
     #Edit the links to use the language folder
@@ -1091,11 +1088,8 @@ class Language(object):
 
         #Read lines from file
         try:
-            with codecs.open(self.paths['NewLinks']['Keyboard'], 'r', 'utf-8') as f:
-                read_data = f.read()
-                if ord(read_data[0]) == 65279: #Remove dumb utf-8 marker that won't disappear
-                    read_data = read_data[1:]
-                data = read_data.strip().splitlines()
+            with TextFile(self.paths['NewLinks']['Keyboard'], 'r') as f:
+                data = f.readlines()
         except IOError:
             data = []
             

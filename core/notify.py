@@ -72,13 +72,20 @@ class Notify(object):
         else:
             level = level_override
         
+        #Only process string if past the required message level
         if level >= self.level:
             try:
                 formatted = string.format_custom(**kwargs)
             except AttributeError:
                 formatted = str(string).format(**kwargs)
-            formatted = formatted[0].upper() + formatted[1:]
-            self._message_queue[level].append(formatted)
+            
+            #Capitalise string if it contains anything
+            try:
+                formatted = formatted[0].upper() + formatted[1:]
+            except IndexError:
+                pass
+            else:
+                self._message_queue[level].append(formatted)
         return self
 
     def __add__(self, string, level_override=None, **kwargs):

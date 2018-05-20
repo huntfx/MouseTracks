@@ -5,6 +5,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+from core.base import TextFile
 from core.compatibility import iteritems, range
 from core.os import create_folder
 
@@ -461,8 +462,8 @@ class Config(dict):
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
         
-        with open(file_name, 'r') as f:
-            config_lines = [i.strip() for i in f.readlines()]
+        with TextFile(file_name, 'r') as f:
+            config_lines = f.readlines(False)
 
         for line in config_lines:
             line = line.split('//')[0].strip()
@@ -472,7 +473,10 @@ class Config(dict):
             if line[0] == '[' and line[-1] == ']':
                 header = line[1:-1]
             else:
-                variable, value = (i.strip() for i in line.split('=', 1))
+                try:
+                    variable, value = (i.strip() for i in line.split('=', 1))
+                except ValueError:
+                    continue
 
                 #Make sure it's a valid config item
                 try:
