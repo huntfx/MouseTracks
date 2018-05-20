@@ -1079,7 +1079,7 @@ class Language(object):
         self.strings = self._strings()
 
     def _strings(self):
-        strings = Config(LANGUAGE_DEFAULTS, default_settings={'type': str, 'allow_empty': True})
+        strings = Config(LANGUAGE_DEFAULTS, default_settings={'type': str})
         strings.load(self.paths['NewLinks']['Strings'], self.paths['NewLinks'].get('StringsBackup', None), self.paths['NewLinks']['StringsBase'])
         return strings
 
