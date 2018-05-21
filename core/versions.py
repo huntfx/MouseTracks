@@ -10,7 +10,8 @@ import time
 
 import core.numpy as numpy
 from core.compatibility import unicode, iteritems
-from core.constants import KEY_STATS, UPDATES_PER_SECOND
+from core.config import CONFIG
+from core.constants import KEY_STATS
 
 
 FILE_VERSION = 32
@@ -400,10 +401,12 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     #Only count as new session if updated or last save was recent (<60 minutes)
     new_session = reset_sessions and (not data['Sessions'] or current_time - 3600 > data['Time']['Modified'])
     if new_session or version_update and original_version < 27:
-
-        #Remove old session if too short (<5 minutes)
-        if data['Sessions'] and 0 < data['Sessions'][-1][1] < UPDATES_PER_SECOND * 60 * 5:
-            del data['Sessions'][-1]
+        
+        #Remove old session if too short, since it's recreated we can technically just change the time to keep the stats
+        if data['Sessions'] and 0 < data['Sessions'][-1][1] < CONFIG['Advanced']['MinSessionTime']:
+            data['Sessions'][-1][0] = current_time
+        else:
+            data['Sessions'].append([current_time, 0, 0])
         
         data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
         data['Ticks']['Session']['Total'] = data['Ticks']['Total']
@@ -413,6 +416,5 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         data['Keys']['Session']['Mistakes'] = {}
         data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
         data['TimesLoaded'] += 1
-        data['Sessions'].append([current_time, 0, 0])
         
     return data

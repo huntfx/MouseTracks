@@ -499,6 +499,11 @@ CONFIG_DEFAULTS = {
             '__info__': 'How many ticks of inactivity allowed before recording as idle.',
             'value': 6000,
             'type': int
+        },
+        'MinSessionTime': {
+            '__info__': 'Sessions with fewer ticks than this will be merged.',
+            'value': 1800,
+            'type': int
         }
     }
 }
