@@ -71,8 +71,8 @@ def running_processes(q_recv, q_send, background_send):
                                        XRES=app_resolution[1][0], YRES=app_resolution[1][1])
                             elif app_resolution[0] != last_coordinates:
                                 NOTIFY(LANGUAGE.strings['Tracking']['ResolutionAppMove'],
-                                       XRES_OLD=last_coordinates[0], YRES_OLD=last_coordinates[1],
-                                       XRES=app_resolution[0][0], YRES=app_resolution[0][1])
+                                       XPOS_OLD=last_coordinates[0], YPOS_OLD=last_coordinates[1],
+                                       XPOS=app_resolution[0][0], YPOS=app_resolution[0][1])
                         else:
                             NOTIFY(LANGUAGE.strings['Tracking']['ResolutionAppLoad'], 
                                    XRES=app_resolution[1][0], YRES=app_resolution[1][1])
