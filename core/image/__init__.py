@@ -295,7 +295,7 @@ def _user_generate():
                 if not render_types[0][3]:
                     Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
-            render_types[0][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+            render_types[0][3].append(CONFIG['GenerateTracks']['ColourProfile'])
                 
     
     #Generate click heatmap
@@ -335,7 +335,7 @@ def _user_generate():
                 if not render_types[1][3]:
                     Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
-            render_types[1][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+            render_types[1][3].append(CONFIG['GenerateHeatmap']['ColourProfile'])
 
                     
     #Generate keyboard
@@ -361,7 +361,7 @@ def _user_generate():
                 if not render_types[2][3]:
                     Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
-            render_types[2][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+            render_types[2][3].append(CONFIG['GenerateKeyboard']['ColourProfile'])
 
     #Generate acceleration
     if render_types[3][1]:
@@ -386,7 +386,7 @@ def _user_generate():
                 if not render_types[3][3]:
                     Message(LANGUAGE.strings['GenerationInput']['ColourMapNotSet'])
         else:
-            render_types[3][3].append(CONFIG['GenerateStrokes']['ColourProfile'])
+            render_types[3][3].append(CONFIG['GenerateSpeed']['ColourProfile'])
 
 
     #Generate brush strokes
@@ -453,12 +453,12 @@ def _user_generate():
             render.keyboard(session)
             Message()
     if render_types[3][1]:
-        for colour_map in render_types[2][3]:
+        for colour_map in render_types[3][3]:
             CONFIG['GenerateSpeed']['ColourProfile'] = colour_map
             render.speed(session)
             Message()
     if render_types[4][1]:
-        for colour_map in render_types[2][3]:
+        for colour_map in render_types[4][3]:
             CONFIG['GenerateStrokes']['ColourProfile'] = colour_map
             render.strokes(session)
             Message()

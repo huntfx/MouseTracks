@@ -369,7 +369,7 @@ class DrawKeyboard(object):
         
         self.name = profile_name
         self.last_session = last_session
-        Message(LANGUAGE.strings['Misc']['ProfileLoad'])
+        Message(LANGUAGE.strings['Misc']['ProfileLoad'].format_custom(PROFILE=self.name))
         self.reload(data)
     
     def reload(self, data=None):
