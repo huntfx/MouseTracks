@@ -18,8 +18,8 @@ from core.sockets import *
 try:
     from core.api.web import app
 except ImportError as e:
-    CONFIG['API']['RunWeb'] = False
-    CONFIG['API']['RunWeb'].lock = True
+    CONFIG['API']['WebServer'] = False
+    CONFIG['API']['WebServer'].lock = True
     NOTIFY(LANGUAGE.strings['Misc']['ImportFailed'], MODULE='Flask', REASON=e)
     app = None
 

@@ -19,12 +19,15 @@ if __name__ == '__main__':
     #TODO: Ask questions like check if keys should be tracked
     if CONFIG.is_new:
         pass
+
+    no_gui = tray is None or not CONFIG['API']['WebServer']
     
+    #Elevate and quit the process
     if CONFIG['Advanced']['RunAsAdministrator']:
-        console.elevate(visible=not CONFIG['Main']['StartMinimised'] or tray is None or not CONFIG['API']['RunWeb'])
+        console.elevate(visible=not CONFIG['Main']['StartMinimised'] or no_gui)
     
     #Run normally
-    if tray is None or not CONFIG['API']['RunWeb']:
+    if no_gui:
         start_tracking()
     
     #Generate images
@@ -227,8 +230,8 @@ if __name__ == '__main__':
                     {'id': 'debug', 'name': 'Advanced', 'hidden': True, 'action': (
                         {'name': 'Debug Commands', 'action': new_window, 'args': ['DebugOptions']},
                         {'name': 'Force Update "{}" (requires internet)'.format(APP_LIST_FILE), 'action': applist_update, 'hidden': not CONFIG['Internet']['Enable']},
-                        {'name': 'Start message client', 'hidden': not CONFIG['API']['RunServer'], 'action': start_message_client, 'kwargs': {'port': message_port, 'secret': server_secret}},
-                        {'name': 'Close all message clients', 'hidden': not CONFIG['API']['RunServer'], 'action': quit_message_client},
+                        {'name': 'Start message client', 'hidden': not CONFIG['API']['SocketServer'], 'action': start_message_client, 'kwargs': {'port': message_port, 'secret': server_secret}},
+                        {'name': 'Close all message clients', 'hidden': not CONFIG['API']['SocketServer'], 'action': quit_message_client},
                     )},
                     {'id': 'exit', 'name': 'Quit', 'action': quit},
                 )

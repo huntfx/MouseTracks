@@ -88,7 +88,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
         q_feedback = Queue()
         
         #Setup message server
-        if CONFIG['API']['RunServer']:
+        if CONFIG['API']['SocketServer']:
             q_msg = Queue()
             message = PrintFormat(MessageWithQueue(q_msg).send)
             if message_port is None:
@@ -100,7 +100,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
             message_thread = None
             
         #Setup web server
-        if CONFIG['API']['RunWeb']:
+        if CONFIG['API']['WebServer']:
             app.config.update(create_pipe('REQUEST', duplex=False))
             app.config.update(create_pipe('CONTROL', duplex=False))
             app.config.update(create_pipe('STATUS', duplex=False))
@@ -270,7 +270,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 output_list = [received_data] + list(NOTIFY)
                 
                 #Add output from server
-                if CONFIG['API']['RunServer']:
+                if CONFIG['API']['SocketServer']:
                     received_data = []
                     while not q_feedback.empty():
                         received_data.append(q_feedback.get())

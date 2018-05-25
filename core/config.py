@@ -325,14 +325,14 @@ CONFIG_DEFAULTS = {
     },
     'API': {
         '__priority__': 4,
-        'RunServer': {
-            '__info__': 'Run a server so that a client can connect and receive messages. Will be overriden by a GUI or tray icon.',
+        'SocketServer': {
+            '__info__': 'Run an encrypted socket server so that a client can connect and receive messages.',
             '__priority__': 1,
             'value': False,
             'type': bool
         },
-        'RunWeb': {
-            '__info__': 'Run a web service to communicate with the main script. Will be overriden by a GUI or tray icon.',
+        'WebServer': {
+            '__info__': 'Run a web service to communicate with the main script. Required for more advanced features.',
             '__priority__': 1,
             'value': True,
             'type': bool
