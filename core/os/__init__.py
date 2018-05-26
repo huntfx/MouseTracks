@@ -307,7 +307,9 @@ if FOCUS_DETECTION:
                 pass
         
         def __str__(self):
-            return 'Process {} ({}): "{}" ({})'.format(self.pid, self.exe, self.name, '{}x{}'.format(*self.resolution))
+            return 'Process {} ({}): "{}" ({} at {})'.format(self.pid, self.exe, self.name, 
+                                                             '{}x{}'.format(*self.resolution), 
+                                                             '({}, {})'.format(*self.rect[:2]))
     
         @property
         def rect(self):
