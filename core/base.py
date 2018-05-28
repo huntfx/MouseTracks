@@ -111,14 +111,14 @@ class TextFile(object):
         self.file_object.close()
         return
 
-    def readlines(self, unicode=True):
-        return [self._process_output(line, index=i, unicode=unicode) 
+    def readlines(self, as_unicode=True):
+        return [self._process_output(line, index=i, as_unicode=as_unicode) 
                 for i, line in enumerate(self.file_object.readlines())]
 
     def read(self, limit=-1):
         return self._process_output(self.file_object.read(limit), index=self.file_object.tell())
 
-    def _process_output(self, output, index=None, unicode=True):
+    def _process_output(self, output, index=None, as_unicode=True):
         """Handle different encodings to safely read the data.
         Currently UTF-8, UTF-16 and ANSI are supported.
 
@@ -131,10 +131,10 @@ class TextFile(object):
             if self.encoding == 'utf8' and ord(output[0]) == 65279:
                 output = output[1:]
         
-        if self.encoding is not None and not unicode:
+        if self.encoding is not None and not as_unicode:
             output = output.encode('utf-8')
         
-        return output.strip()
+        return str(output.strip())
 
     def write(self, text, encoding=None):
         return self.file_object.write(text)
