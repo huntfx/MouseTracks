@@ -447,7 +447,14 @@ class Config(dict):
 
                 #Fill in type or value if not set
                 if 'type' not in info:
-                    info['type'] = type(info['value'])
+                    try:
+                        info['type'] = type(info['value'])
+                    except KeyError:
+                        #If this exception is being raised, then there is an empty value
+                        #As there is no type, we don't know what the default value should be
+                        #Option 1: Set a type or value in the base dictionary
+                        #Option 2: Set default_settings to apply to all values in __init__
+                        raise ValueError('{}.{} has no value and is an unknown type'.format(heading, var))
                 elif 'value' not in info:
                     info['value'] = self._DEFAULT_VALUES[info['type']]
                 info['default'] = info['value']
@@ -461,7 +468,6 @@ class Config(dict):
 
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
-        
         with TextFile(file_name, 'r') as f:
             config_lines = f.readlines(False)
 
