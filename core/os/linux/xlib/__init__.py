@@ -23,7 +23,7 @@ def get_cursor_pos():
     
 class _MouseClick(HookManager):
     def __init__(self):
-        super(_MouseClick, self).__init__()
+        super(self.__class__, self).__init__()
         self.reset()
         new_hook = HookManager()
         new_hook.MouseAllButtonsDown = self.click

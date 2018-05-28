@@ -30,7 +30,7 @@ else:
                 device_number = args[0].device_number
             except (IndexError, AttributeError):
                 raise ValueError('use Gamepad.list_gamepads() to initialize the class objects')
-            super(Gamepad, self).__init__(device_number, *args[1:], **kwargs)
+            super(self.__class__, self).__init__(device_number, *args[1:], **kwargs)
 
         @classmethod
         def list_gamepads(self):

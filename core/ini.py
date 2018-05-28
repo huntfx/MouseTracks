@@ -262,7 +262,7 @@ class _ConfigDict(dict):
     """Handle the variables inside the config."""
     def __init__(self, config_dict, show_hidden=False, editable_dict=True, default_settings={}):
         self._data = config_dict
-        super(_ConfigDict, self).__init__(self._data)
+        super(self.__class__, self).__init__(self._data)
         self.hidden = not show_hidden
         self._editable_dict = editable_dict
         self._default_settings = default_settings
@@ -365,7 +365,7 @@ class Config(dict):
         self.hidden = not show_hidden
         self.is_new = False
         self._editable_dict = editable_dict
-        super(Config, self).__init__(self._data)
+        super(self.__class__, self).__init__(self._data)
 
     def __repr__(self):
         """Convert to dict and use __repr__ from that."""

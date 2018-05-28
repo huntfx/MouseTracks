@@ -119,7 +119,7 @@ class XInputJoystick(event.EventDispatcher):
         del values['self']
         self.__dict__.update(values)
 
-        super(XInputJoystick, self).__init__()
+        super(self.__class__, self).__init__()
 
         self._last_state = self.get_state()
         self.received_packets = 0

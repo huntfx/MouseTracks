@@ -43,7 +43,7 @@ class Notify(object):
         >>> lst.append(str(notify))
     """
     def __init__(self, message_level=None):
-        super(Notify, self).__init__()
+        super(self.__class__, self).__init__()
         self._level = message_level
         self._message_queue = defaultdict(list)
 

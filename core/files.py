@@ -210,7 +210,7 @@ class LoadData(dict):
         else:
             data = load_data(profile_name=profile_name, _reset_sessions=_reset_sessions, _update_metadata=_update_metadata, _create_new=True)
                          
-        super(LoadData, self).__init__(data)
+        super(self.__class__, self).__init__(data)
         
         self.version = self['Version']
         self.name = profile_name
