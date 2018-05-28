@@ -82,7 +82,7 @@ class Tray(object):
         #Don't blow up if class already registered to make testing easier
         try:
             classAtom = win32gui.RegisterClass(wc)
-        except win32gui.error, err_info:
+        except (win32gui.error, err_info):
             if err_info.winerror!=winerror.ERROR_CLASS_ALREADY_EXISTS:
                 raise
 
