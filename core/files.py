@@ -94,10 +94,14 @@ def prepare_file(data, legacy=False):
         f.write(str(data['TimesLoaded']), 'metadata/sessions.txt')
         f.write(str(data['Ticks']['Total']), 'metadata/time.txt')
         
+        #Pickle the numpy map, or load it raw if not edited
         for i, m in enumerate(numpy_maps):
-            if isinstance(m, LazyLoader):
+            if isinstance(m, LazyLoader) and m.is_loaded:
                 m = m.pop()
-            f.write(numpy.save(m), 'maps/{}.npy'.format(i))
+            if isinstance(m, LazyLoader):
+                f.write(m.pop(raw=True), 'maps/{}.npy'.format(i))
+            else:
+                f.write(numpy.save(m), 'maps/{}.npy'.format(i))
     
     #Undo the modify
     IterateMaps(data['Resolution']).join(numpy_maps)

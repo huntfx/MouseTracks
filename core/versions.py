@@ -24,17 +24,32 @@ class LazyLoader(object):
     Reduces memory usage by up to 90%, and significantly speeds up loading.
     """
     def __init__(self, path, index):
+        
         self.path = path
         self.index = index
+
         self._array = None
+        self._raw = None
     
+    def _load(self, as_numpy=True):
+        """Load from zip file."""
+        with CustomOpen(self.path, 'rb') as f:
+            array = f.read('maps/{}.npy'.format(self.index))
+        if as_numpy:
+            return numpy.load(array)
+        else:
+            return array
+
+    @property
+    def is_loaded(self):
+        """Return True or False if the array is currently loaded."""
+        return self._array is not None
+
     @property
     def array(self):
         """Load array if it doesn't exist or just return it."""
-        if self._array is None:
-            with CustomOpen(self.path, 'rb') as f:
-                array = f.read('maps/{}.npy'.format(self.index))
-            self._array = numpy.load(array)
+        if not self.is_loaded:
+            self._array = self._load()
         return self._array
 
     def __getitem__(self, item):
@@ -47,12 +62,25 @@ class LazyLoader(object):
         """Clear the array from memory."""
         self._array = None
 
-    def pop(self):
+    def pop(self, raw=False):
         """Return the array and free up memory."""
         try:
-            return self.array
+            if raw:
+                return self._load(as_numpy=False)
+            else:
+                return self.array
         finally:
             self.clear()
+    
+    #Numpy specific functions since inhertiance doesn't really work
+    def __truediv__(self, n):
+        return self.array.__truediv__(n)
+
+    def __floordiv__(self, n):
+        return self.array.__floordiv__(n)
+
+    def __div__(self, n):
+        return self.array.__div__(n)
 
 
 class IterateMaps(object):
