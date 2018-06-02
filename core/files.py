@@ -8,17 +8,16 @@ from __future__ import absolute_import
 import time
 import zlib
 import os
-import zipfile
 from operator import itemgetter
 from tempfile import gettempdir
 
 import core.numpy as numpy
-from core.base import format_file_path, format_name
+from core.base import CustomOpen, format_file_path, format_name
 from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, BytesIO, unicode, pickle, iteritems
 from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists, get_file_size
-from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps
+from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps, LazyLoader
 
 
 TEMPORARY_PATH = gettempdir()
@@ -96,6 +95,8 @@ def prepare_file(data, legacy=False):
         f.write(str(data['Ticks']['Total']), 'metadata/time.txt')
         
         for i, m in enumerate(numpy_maps):
+            if isinstance(m, LazyLoader):
+                m = m.pop()
             f.write(numpy.save(m), 'maps/{}.npy'.format(i))
     
     #Undo the modify
@@ -104,7 +105,7 @@ def prepare_file(data, legacy=False):
     return io.getvalue()
     
 
-def decode_file(f, legacy=False):
+def decode_file(f, legacy=False, lazy_load_path=None):
     """Read compressed data."""
     #Old file format
     if legacy:
@@ -115,12 +116,13 @@ def decode_file(f, legacy=False):
         data = pickle.loads(f.read('data.pkl'))
         numpy_maps = []
         i = 0
-        while True:
-            try:
-                numpy_maps.append(numpy.load(f.read('maps/{}.npy'.format(i))))
-            except KeyError:
-                break
-            i += 1
+        if lazy_load_path is None:
+            while True:
+                try:
+                    numpy_maps.append(numpy.load(f.read('maps/{}.npy'.format(i))))
+                except KeyError:
+                    break
+                i += 1
             
     #Original zip format
     except KeyError:
@@ -131,7 +133,7 @@ def decode_file(f, legacy=False):
     try:
         IterateMaps(data['Maps']).join(numpy_maps, _legacy=True)
     except KeyError:
-        IterateMaps(data['Resolution']).join(numpy_maps, _legacy=False)
+        IterateMaps(data['Resolution']).join(numpy_maps, _legacy=False, _lazy_load_path=lazy_load_path)
         
     return data
     
@@ -165,13 +167,13 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
     #Load the main file
     try:
         with CustomOpen(paths['Main'], 'rb') as f:
-            loaded_data = decode_file(f, legacy=f.zip is None)
+            loaded_data = decode_file(f, legacy=f.zip is None, lazy_load_path=paths['Main'])
             
     #Load backup if file is corrupted
     except (zlib.error, ValueError):
         try:
             with CustomOpen(paths['Backup'], 'rb') as f:
-                loaded_data = decode_file(f, legacy=f.zip is None)
+                loaded_data = decode_file(f, legacy=f.zip is None, lazy_load_path=paths['Main'])
                 
         except (IOError, zlib.error, ValueError):
             new_file = True
@@ -347,81 +349,7 @@ def get_data_files():
         output[f.replace(DATA_EXTENSION, '')] = metadata
     return output
 
-    
-class CustomOpen(object):
-    """Wrapper containing the default "open" function alongside the "zipfile" one.
-    This allows for a lot cleaner method of reading a file that may or may not be a zip.
-    """
-    
-    def __init__(self, filename=None, mode='r', as_zip=True):
-
-        self.file = filename        
-        if self.file is None:
-            self.mode = 'w'
-        else:
-            self.mode = mode
-
-        #Attempt to open as zip, or fallback to normal if invalid
-        if as_zip:
-            if self.mode.startswith('r'):
-                try:
-                    self._file_object = None
-                    self.zip = zipfile.ZipFile(self.file, 'r')
-                except zipfile.BadZipfile:
-                    as_zip = False
-            else:
-                if self.file is None:
-                    self._file_object = BytesIO()
-                    self.zip = zipfile.ZipFile(self._file_object, 'w', zipfile.ZIP_DEFLATED)
-                else:
-                    self._file_object = None
-                    self.zip = zipfile.ZipFile(self.file, 'w', zipfile.ZIP_DEFLATED)
-
-        #Open as normal file
-        if not as_zip:
-            self.zip = None
-            if self.mode.startswith('r'):
-                self._file_object = open(self.file, mode=self.mode)
-            else:
-                self._file_object = BytesIO()
-        
-    def __enter__(self):
-        return self
-    
-    def __exit__(self, *args):
-        """Close the file objects and save file if a name was given."""
-        if self.zip is not None:
-            self.zip.close()
-        if self.mode == 'w' and self.file is not None and self._file_object is not None:
-            with open(self.file, 'wb') as f:
-                f.write(self._file_object.getvalue())
-        if self._file_object is not None:
-            self._file_object.close()
-        
-    def read(self, filename=None, seek=0):
-        """Read the file."""
-        self.seek(seek)
-        if self.zip is None:
-            return self._file_object.read()
-        return self.zip.read(str(filename))
-
-    def write(self, data, filename=None):
-        """Write to the file."""
-        if self.zip is None:
-            if isinstance(data, (str, unicode)):
-                return self._file_object.write(data.encode('utf-8'))
-            return self._file_object.write(data)
-        if filename is None:
-            raise TypeError('filename required when writing to zip')
-        return self.zip.writestr(str(filename), data)
- 
-    def seek(self, amount):
-        """Seek to a certain point of the file."""
-        if amount is None or self._file_object is None:
-            return
-        return self._file_object.seek(amount)
-        
-        
+       
 class Lock(object):
     """Stop two versions of the script from being loaded at the same time.
     

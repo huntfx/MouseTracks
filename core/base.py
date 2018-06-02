@@ -8,9 +8,10 @@ from __future__ import absolute_import, division
 import codecs
 import os
 import sys
+import zipfile
 from re import sub
 
-from core.compatibility import PYTHON_VERSION
+from core.compatibility import PYTHON_VERSION, BytesIO
 from core.os import get_documents_path, read_env_var
 
 
@@ -145,3 +146,77 @@ class TextFile(object):
 
     def write(self, text, encoding=None):
         return self.file_object.write(text)
+
+
+class CustomOpen(object):
+    """Wrapper containing the default "open" function alongside the "zipfile" one.
+    This allows for a lot cleaner method of reading a file that may or may not be a zip.
+    """
+    
+    def __init__(self, filename=None, mode='r', as_zip=True):
+
+        self.file = filename        
+        if self.file is None:
+            self.mode = 'w'
+        else:
+            self.mode = mode
+
+        #Attempt to open as zip, or fallback to normal if invalid
+        if as_zip:
+            if self.mode.startswith('r'):
+                try:
+                    self._file_object = None
+                    self.zip = zipfile.ZipFile(self.file, 'r')
+                except zipfile.BadZipfile:
+                    as_zip = False
+            else:
+                if self.file is None:
+                    self._file_object = BytesIO()
+                    self.zip = zipfile.ZipFile(self._file_object, 'w', zipfile.ZIP_DEFLATED)
+                else:
+                    self._file_object = None
+                    self.zip = zipfile.ZipFile(self.file, 'w', zipfile.ZIP_DEFLATED)
+
+        #Open as normal file
+        if not as_zip:
+            self.zip = None
+            if self.mode.startswith('r'):
+                self._file_object = open(self.file, mode=self.mode)
+            else:
+                self._file_object = BytesIO()
+        
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args):
+        """Close the file objects and save file if a name was given."""
+        if self.zip is not None:
+            self.zip.close()
+        if self.mode == 'w' and self.file is not None and self._file_object is not None:
+            with open(self.file, 'wb') as f:
+                f.write(self._file_object.getvalue())
+        if self._file_object is not None:
+            self._file_object.close()
+        
+    def read(self, filename=None, seek=0):
+        """Read the file."""
+        self.seek(seek)
+        if self.zip is None:
+            return self._file_object.read()
+        return self.zip.read(str(filename))
+
+    def write(self, data, filename=None):
+        """Write to the file."""
+        if self.zip is None:
+            if isinstance(data, (str, unicode)):
+                return self._file_object.write(data.encode('utf-8'))
+            return self._file_object.write(data)
+        if filename is None:
+            raise TypeError('filename required when writing to zip')
+        return self.zip.writestr(str(filename), data)
+ 
+    def seek(self, amount):
+        """Seek to a certain point of the file."""
+        if amount is None or self._file_object is None:
+            return
+        return self._file_object.seek(amount)
