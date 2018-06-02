@@ -5,6 +5,8 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import, division
 
+from operator import itemgetter
+from collections import defaultdict
 from multiprocessing import Process, Queue, cpu_count
 from PIL import Image
 
@@ -29,11 +31,35 @@ def gaussian_size(width, height):
 
 
 def calculate_resolution(resolutions, output_resolution=None):
+    """Calculate the correct resolution."""
 
-    if output_resolution is None or not CONFIG['GenerateImages']['AutomaticResolution']:
-        output_resolution = (CONFIG['GenerateImages']['OutputResolutionX'],
-                             CONFIG['GenerateImages']['OutputResolutionY'])
+    #Find output resultion
+    _res_x = CONFIG['GenerateImages']['OutputResolutionX']
+    _res_y = CONFIG['GenerateImages']['OutputResolutionY']
+    use_custom_res = (output_resolution is None or not CONFIG['GenerateImages']['AutomaticResolution']) and (_res_x or _res_y)
+    
+    if use_custom_res:
 
+        #Find aspect ratio if any resolution is unset
+        if not _res_x or not _res_y:
+            aspects = defaultdict(int)
+            for x, y in resolutions:
+                aspects[round(x/y, 2)] += 1
+            
+            #Get most common aspect ratio, and find average if multiple
+            max_value = sorted(iteritems(aspects), key=itemgetter(1))[-1][-1]
+            max_aspects = [k for k, v in iteritems(aspects) if v == max_value]
+            aspect = sum(max_aspects) / len(max_aspects)
+
+            #Calculate the unset resolution
+            if not _res_x:
+                _res_x = round_int(_res_y * aspect)
+            else:
+                _res_y = round_int(_res_x / aspect)
+
+        output_resolution = (_res_x, _res_y)
+
+    #Calculate upscaling resolution
     max_x = max(x for x, y in resolutions)
     max_y = max(y for x, y in resolutions)
     if CONFIG['GenerateImages']['HighPrecision']:
@@ -46,6 +72,10 @@ def calculate_resolution(resolutions, output_resolution=None):
     else:
         _max_width_y = int(round(max_y / output_resolution[1] * output_resolution[0]))
         max_resolution = (_max_width_y, max_y)
+    
+    #Force the upscale resolution to be lower if a lower resolution is requested
+    if use_custom_res and (_res_x * 2 < max_resolution[0] or _res_y * 2 < max_resolution[1]):
+        max_resolution = (_res_x * 2, _res_y * 2)
 
     CONFIG['GenerateImages']['_OutputResolutionX'], CONFIG['GenerateImages']['_OutputResolutionY'] = output_resolution
     CONFIG['GenerateImages']['_UpscaleResolutionX'], CONFIG['GenerateImages']['_UpscaleResolutionY'] = max_resolution
