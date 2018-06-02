@@ -469,7 +469,7 @@ class Config(dict):
     def _update_from_file(self, file_name):
         """Replace all the default values with one from a file."""
         with TextFile(file_name, 'r') as f:
-            config_lines = f.readlines(PYTHON_VERSION > 2)
+            config_lines = f.readlines(as_unicode=PYTHON_VERSION > 2)
 
         for line in config_lines:
             line = line.split('//')[0].strip()
@@ -477,7 +477,7 @@ class Config(dict):
                 continue
                 
             if line[0] == '[' and line[-1] == ']':
-                header = line[1:-1]
+                heading = line[1:-1]
             else:
                 try:
                     variable, value = (i.strip() for i in line.split('=', 1))
@@ -486,11 +486,13 @@ class Config(dict):
 
                 #Make sure it's a valid config item
                 try:
-                    self[header][variable] = value
+                    self[heading][variable] = value
                 except UnboundLocalError:
                     raise RuntimeError('error parsing ini file, current line = {}'.format(line))
                 except KeyError:
                     pass
+                else:
+                    self._backup[heading][variable] = value
                 
     def _build_for_file(self, changes=True, keys_only=False, comment_spacing=0, min_comment_spacing=8, ignore_comments=None):
         """Generate lines for a config file."""

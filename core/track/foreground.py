@@ -619,7 +619,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         current_mouse_pos = mouse_pos['Current']
                     else:
                         recalculate_mouse = True
-                        
+                    
                     if recalculate_mouse:
                         try:
                             #Calculate which monitor the mouse is on
@@ -645,7 +645,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                                 if store['Resolution']['Previous'] is not None:
                                     NOTIFY(LANGUAGE.strings['Tracking']['ResolutionChanged'], 
                                            XRES_OLD=store['Resolution']['Previous'][0], YRES_OLD=store['Resolution']['Previous'][1],
-                                           XRES=store['Resolution']['Current'][0], YRES=store['Resolution']['Current'][0])
+                                           XRES=current_screen_resolution[0], YRES=current_screen_resolution[1])
                                 store['Resolution']['Previous'] = current_screen_resolution
                 
                 

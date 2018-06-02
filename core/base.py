@@ -10,6 +10,7 @@ import os
 import sys
 from re import sub
 
+from core.compatibility import PYTHON_VERSION
 from core.os import get_documents_path, read_env_var
 
 
@@ -122,7 +123,8 @@ class TextFile(object):
         """Handle different encodings to safely read the data.
         Currently UTF-8, UTF-16 and ANSI are supported.
 
-        Setting unicode to False will force encode any unicode characters into 8 bytes.
+        Setting as_unicode to False will force encode any unicode characters into 8 bytes.
+        Seems important for Python 2, but not so much for Python 3.
         """
         output = output.strip()
         
@@ -134,7 +136,12 @@ class TextFile(object):
         if self.encoding is not None and not as_unicode:
             output = output.encode('utf-8')
         
-        return str(output.strip())
+        output = output.strip()
+
+        #Convert bytes to string if Python 3 (causes crash on Python 2)
+        if PYTHON_VERSION == 2:
+            return output
+        return str(output)
 
     def write(self, text, encoding=None):
         return self.file_object.write(text)
