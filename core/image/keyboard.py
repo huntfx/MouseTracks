@@ -160,7 +160,6 @@ class KeyboardGrid(object):
                 width = 1
         if height is None:
             height = 1
-        pos_x = IMAGE_PADDING
         _width = int(round(KEY_SIZE * width + KEY_PADDING * max(0, width - 1)))
         _height = int(round(KEY_SIZE * height + KEY_PADDING * max(0, height - 1)))
         _values = {'Dimensions': (_width, _height),
@@ -170,7 +169,7 @@ class KeyboardGrid(object):
                    'HideBorder': hide_border}
         self.row.append(_values)
 
-    def generate_coordinates(self, key_names={}):
+    def generate_coordinates(self):
         image = {'Fill': {}, 'Outline': [], 'Text': []}
         max_offset = {'X': 0, 'Y': 0}
         
@@ -190,7 +189,7 @@ class KeyboardGrid(object):
             values = self.count_time.values()
         elif use_count:
             values = self.count_press.values()
-            
+        
         if mapping == 'standard':
             pools = sorted(set(values))
             max_range = len(pools) + 1
@@ -216,7 +215,7 @@ class KeyboardGrid(object):
         
         y_offset = IMAGE_PADDING
         y_current = 0
-        for i, row in enumerate(self.grid):
+        for row in self.grid:
             x_offset = IMAGE_PADDING
             
             for values in row:
@@ -224,16 +223,28 @@ class KeyboardGrid(object):
                 x, y = values['Dimensions']
                 hide_background = False
                 
+                #Convert the key number to a name and get stats
                 if values['Name'] is not None:
-                    count_time = self.count_time.get(values['Name'], 0)
-                    count_press = self.count_press.get(values['Name'], 0)
+                    try:
+                        key_name = int(values['Name'])
+                    except ValueError:
+                        key_name = values['Name']
+                    
+                    #Get press/time count
+                    count_time = self.count_time.get(key_name, 0)
+                    count_press = self.count_press.get(key_name, 0)
                     if use_time:
                         key_count = count_time
                     elif use_count:
                         key_count = count_press
-                    
-                    #TODO: update to new language file
-                    display_name = key_names.get(values['Name'], values['Name'])
+                    else:
+                        key_count = 0
+
+                    #Get key name
+                    try:
+                        display_name = LANGUAGE.keys[values['Name']]
+                    except KeyError:
+                        display_name = values['Name']
 
                     button_coordinates = KeyboardButton(x_offset, y_offset, x, y)
                     
@@ -275,7 +286,7 @@ class KeyboardGrid(object):
                             image['Fill'][fill_colour] = button_coordinates.fill()
                 
                 x_offset += KEY_PADDING + x
-                y_current = max(y_current, y)
+                y_current = max(y_current, KEY_SIZE, y - KEY_PADDING)
 
             #Decrease size of empty row
             if row:
@@ -287,8 +298,9 @@ class KeyboardGrid(object):
             max_offset['Y'] = max(max_offset['Y'], y_offset)
             y_current -= KEY_SIZE
         
+        #Calculate total size of image
         width = max_offset['X'] + IMAGE_PADDING - KEY_PADDING + 1
-        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING * 2 + 1 + DROP_SHADOW_Y
+        height = max_offset['Y'] + IMAGE_PADDING + y_current - KEY_PADDING + DROP_SHADOW_Y + 1
         return ((width, height), image)
 
 
@@ -362,11 +374,6 @@ def shorten_number(n, limit=5, sig_figures=None, decimal_units=True):
         
 class DrawKeyboard(object):
     def __init__(self, profile_name, data=None, last_session=False):
-        
-        #TODO: Update to new language
-        #self.keys = Language().get_strings()['keyboard']['key']
-        self.keys = {}
-        
         self.name = profile_name
         self.last_session = last_session
         Message(LANGUAGE.strings['Misc']['ProfileLoad'].format_custom(PROFILE=self.name))
@@ -386,8 +393,7 @@ class DrawKeyboard(object):
     def _create_grid(self):
         Message(LANGUAGE.strings['Generation']['KeyboardGenerateLayout'])
         grid = KeyboardGrid(self.key_counts, _new_row=False)
-        layout = LANGUAGE.keyboard_old()
-        for row in layout:
+        for row in LANGUAGE.keyboard_layout:
             grid.new_row()
             for name, width, height in row:
                 if name == '__STATS__':
@@ -401,7 +407,7 @@ class DrawKeyboard(object):
     
     def calculate(self):
         Message(LANGUAGE.strings['Generation']['KeyboardGenerateCoordinates'])
-        (width, height), coordinate_dict = self.grid.generate_coordinates(self.keys)
+        (width, height), coordinate_dict = self.grid.generate_coordinates()
         return {'Width': width,
                 'Height': height,
                 'Coordinates': coordinate_dict}
@@ -411,7 +417,6 @@ class DrawKeyboard(object):
         
         #Create image object
         image = Image.new('RGB', (data['Width'], data['Height']))
-        background = tuple(list(data['Coordinates']['Background'][:3]) + [0])
         image.paste(data['Coordinates']['Background'], (0, 0, data['Width'], data['Height']))
         pixels = image.load()
 
@@ -419,7 +424,7 @@ class DrawKeyboard(object):
         shadow = (64, 64, 64)
         if (DROP_SHADOW_X or DROP_SHADOW_Y) and data['Coordinates']['Background'][:3] == (255, 255, 255):
             Message(LANGUAGE.strings['Generation']['KeyboardDrawShadow'])
-            shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
+            #shadow_colour = tuple(int(pow(i + 30, 0.9625)) for i in data['Coordinates']['Shadow'])
             for colour in data['Coordinates']['Fill']:
                 for x, y in data['Coordinates']['Fill'][colour]:
                     pixels[DROP_SHADOW_X+x, DROP_SHADOW_Y+y] = shadow
@@ -473,9 +478,10 @@ class DrawKeyboard(object):
             y += (KEY_SIZE - FONT_SIZE_MAIN + FONT_OFFSET_Y) * height_multiplier
             
             #Ensure each key is at least at a constant height
+            text = text.replace('\\n', '\n').decode('utf-8')
             if '\n' not in text:
                 text += '\n'
-                
+            
             draw.text((x, y), text, font=font_key, fill=text_colour)
         
             #Correctly place count at bottom of key

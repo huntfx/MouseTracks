@@ -21,7 +21,7 @@ from core.files import Lock
 from core.language import LANGUAGE
 from core.messages import time_format
 from core.notify import NOTIFY
-from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, KEYS, MULTI_MONITOR, get_double_click_time
+from core.os import monitor_info, get_cursor_pos, get_mouse_click, get_key_press, MULTI_MONITOR, get_double_click_time
 from core.sockets import get_free_port
 from core.track.background import background_process, running_processes, monitor_offset, _notify_queue_size
 from core.track.xinput import Gamepad
@@ -138,7 +138,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                            'LastClickTime': 0,
                            'OffScreen': False,
                            'DoubleClickTime': get_double_click_time() / 1000 * UPDATES_PER_SECOND},
-                 'Keyboard': {'KeysPressed': {k: False for k in KEYS.keys()},
+                 'Keyboard': {'KeysPressed': {int(k): False for k in LANGUAGE.strings['Keys'].keys()},
                               'KeysInvalid': set()},
                  'LastActivity': 0,
                  'LastSent': 0,
@@ -410,36 +410,38 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 _keys_held = []
                 _keys_pressed = []
                 _keys_released = []
-                for k in KEYS:
-                    if get_key_press(KEYS[k]):
+
+                for key_int, key_name in iteritems(LANGUAGE.strings['Keys']):
+                    key_int = int(key_int)
+                    if get_key_press(key_int):
                         
                         #Ignore if held down from last profile
-                        if k in key_invalid:
+                        if key_int in key_invalid:
                             continue
                         
-                        keys_held.append(k)
+                        keys_held.append(key_int)
                         
                         #If key is currently being held down
-                        if key_status[k]:
-                            if key_press_repeat and key_status[k] < ticks - key_press_repeat:
-                                keys_pressed.append(k)
-                                _keys_held.append(k)
-                                key_status[k] = ticks
+                        if key_status[key_int]:
+                            if key_press_repeat and key_status[key_int] < ticks - key_press_repeat:
+                                keys_pressed.append(key_int)
+                                _keys_held.append(key_name)
+                                key_status[key_int] = ticks
 
                         #If key has been pressed
                         else:
-                            keys_pressed.append(k)
-                            _keys_pressed.append(k)
-                            key_status[k] = ticks
+                            keys_pressed.append(key_int)
+                            _keys_pressed.append(key_name)
+                            key_status[key_int] = ticks
 
                     #If key has been released
-                    elif key_status[k]:
-                        key_status[k] = False
-                        _keys_released.append(k)
+                    elif key_status[key_int]:
+                        key_status[key_int] = False
+                        _keys_released.append(key_name)
                         
                         #Mark key as valid again
                         try:
-                            key_invalid.remove(k)
+                            key_invalid.remove(key_int)
                         except KeyError:
                             pass
                         
@@ -469,7 +471,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                         NOTIFY(LANGUAGE.strings['Tracking']['KeyboardReleased'], KEYS=', '.join(_keys_released),
                                KEY_PLURAL=LANGUAGE.strings['Words'][('KeyboardKeySingle', 'KeyboardKeyPlural')[plural]],
                                RELEASE_PLURAL=LANGUAGE.strings['Words'][('ReleaseSingle', 'ReleasePlural')[plural]])
-                
+
                 
                 if CONFIG['Main']['_TrackGamepads']:
                     #Reload list of gamepads (in case one was plugged in)

@@ -263,7 +263,7 @@ def _user_generate():
     kph = round(render.keys_per_hour(), 2)
     if kph < 10:
         render_types[2][1] = False
-        render_types[2][2] += ' ' + LANGUAGE.strings['GenerationInput']['KeyboardNoUse'].format_custom(KEYS_PER_HOUR=kph)
+        render_types[2][2] += ' (' + LANGUAGE.strings['GenerationInput']['KeyboardNoUse'].format_custom(KEYS_PER_HOUR=kph) + ')'
 
     Message()
     Message(LANGUAGE.strings['GenerationInput']['GenerateChoice'])

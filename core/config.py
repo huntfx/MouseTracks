@@ -155,7 +155,7 @@ CONFIG_DEFAULTS = {
             'value': 'png',
             'type': str,
             'case_sensitive': False,
-            'valid': ('jpg', 'jpeg', 'png')
+            'valid': ('jpg', 'jpeg', 'png', 'bmp')
         },
         'OpenOnFinish': {
             '__priority__': 6,

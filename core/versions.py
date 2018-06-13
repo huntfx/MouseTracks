@@ -12,75 +12,11 @@ import core.numpy as numpy
 from core.base import CustomOpen
 from core.compatibility import unicode, iteritems
 from core.config import CONFIG
-from core.constants import KEY_STATS
 
 
-FILE_VERSION = 32
+FILE_VERSION = 33
 
 VERSION = '1.0 beta'
-
-class LazyLoader(object):
-    """Store the file path and array index, and only load when required.
-    Reduces memory usage by up to 90%, and significantly speeds up loading.
-    """
-    def __init__(self, path, index):
-        
-        self.path = path
-        self.index = index
-
-        self._array = None
-        self._raw = None
-    
-    def _load(self, as_numpy=True):
-        """Load from zip file."""
-        with CustomOpen(self.path, 'rb') as f:
-            array = f.read('maps/{}.npy'.format(self.index))
-        if as_numpy:
-            return numpy.load(array)
-        else:
-            return array
-
-    @property
-    def is_loaded(self):
-        """Return True or False if the array is currently loaded."""
-        return self._array is not None
-
-    @property
-    def array(self):
-        """Load array if it doesn't exist or just return it."""
-        if not self.is_loaded:
-            self._array = self._load()
-        return self._array
-
-    def __getitem__(self, item):
-        return self.array[item]
-
-    def __setitem__(self, item, value):
-        self.array[item] = value
-    
-    def clear(self):
-        """Clear the array from memory."""
-        self._array = None
-
-    def pop(self, raw=False):
-        """Return the array and free up memory."""
-        try:
-            if raw:
-                return self._load(as_numpy=False)
-            else:
-                return self.array
-        finally:
-            self.clear()
-    
-    #Numpy specific functions since inhertiance doesn't really work
-    def __truediv__(self, n):
-        return self.array.__truediv__(n)
-
-    def __floordiv__(self, n):
-        return self.array.__floordiv__(n)
-
-    def __div__(self, n):
-        return self.array.__div__(n)
 
 
 class IterateMaps(object):
@@ -110,7 +46,7 @@ class IterateMaps(object):
                 if _lazy_load_path is None:
                     maps[key] = extra[value]
                 else:
-                    maps[key] = LazyLoader(_lazy_load_path, value)
+                    maps[key] = numpy.LazyLoader(_lazy_load_path, value)
             
             #Convert dicts to numpy arrays (only used on old files)
             elif command == 'convert' and _legacy:
@@ -413,16 +349,19 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     if file_version < 29:
         data['Keys']['All']['Intervals'] = {'Total': {}, 'Individual': {}}
         
+        allowed_keys = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890')
+        allowed_keys.update(['SPACE', 'COMMA', 'PERIOD', 'BACK'])
+
         #Build list of invalid keys
         invalid = []
         for first_key, values in iteritems(data['Keys']['All']['Mistakes']):
         
-            if first_key not in KEY_STATS:
+            if first_key not in allowed_keys:
                 invalid.append(first_key)
                 continue
                 
             for last_key in values:
-                if last_key not in KEY_STATS:
+                if last_key not in allowed_keys:
                     invalid.append((first_key, last_key))
         
         #Remove invalid keys
@@ -451,6 +390,142 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     if file_version < 32:
         data['Sessions'] = [[i, 0, 0] for i in data.pop('SessionStarts')]
 
+    #Convert keys to their actual numbers
+    if file_version < 33:
+        all_keys = {
+            'THUMB1': 5,
+            'THUMB2': 6,
+            'BACK': 8,
+            'TAB': 9,
+            'CLEAR': 12,
+            'RETURN': 13,
+            'PAUSE': 19,
+            'CAPSLOCK': 20,
+            'ESC': 27,
+            'SPACE': 32,
+            'PGUP': 33,
+            'PGDOWN': 34,
+            'END': 35,
+            'HOME': 36,
+            'LEFT': 37,
+            'UP': 38,
+            'RIGHT': 39,
+            'DOWN': 40,
+            'INSERT': 45,
+            'DELETE': 46,
+            'LWIN': 91,
+            'RWIN': 92,
+            'MENU': 93,
+            'NUM0': 96,
+            'NUM1': 97,
+            'NUM2': 98,
+            'NUM3': 99,
+            'NUM4': 100,
+            'NUM5': 101,
+            'NUM6': 102,
+            'NUM7': 103,
+            'NUM8': 104,
+            'NUM9': 105,
+            'ASTERISK': 106,
+            'MULTIPLY': 106,
+            'ADD': 107,
+            'SUBTRACT': 109,
+            'DECIMAL': 110,
+            'DIVIDE': 111,
+            'F1': 112,
+            'F2': 113,
+            'F3': 114,
+            'F4': 115,
+            'F5': 116,
+            'F6': 117,
+            'F7': 118,
+            'F8': 119,
+            'F9': 120,
+            'F10': 121,
+            'F11': 122,
+            'F12': 123,
+            'F13': 124,
+            'F14': 125,
+            'F15': 126,
+            'F16': 127,
+            'F17': 128,
+            'F18': 129,
+            'F19': 130,
+            'F20': 131,
+            'F21': 132,
+            'F22': 133,
+            'F23': 134,
+            'F24': 135,
+            'NUMLOCK': 144,
+            'SCROLLLOCK': 145,
+            'LSHIFT': 160,
+            'RSHIFT': 161,
+            'LCTRL': 162,
+            'RCTRL': 163,
+            'LALT': 164,
+            'RALT': 165,
+            'COLON': 186,
+            'EQUALS': 187,
+            'COMMA': 188,
+            'HYPHEN': 189,
+            'UNDERSCORE': 189,
+            'PERIOD': 190,
+            'FORWARDSLASH': 191,
+            'AT': 192,
+            'APOSTROPHE': 192,
+            'LBRACKET': 219,
+            'BACKSLASH': 220,
+            'RBRACKET': 221,
+            'HASH': 222,
+            'NUMBER': 222,
+            'TILDE': 223
+        }
+        for c in list('ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'):
+            all_keys[c] = ord(c)
+
+        #Update held/pressed keys
+        for dict_key in ('Held', 'Pressed'):
+            for session in ('All', 'Session'):
+                separated = data['Keys'][session][dict_key]
+                data['Keys'][session][dict_key] = {}
+
+                for key_name, key_int in iteritems(all_keys):
+                    try:
+                        count = separated[key_name]
+                    except KeyError:
+                        pass
+                    else:
+                        data['Keys'][session][dict_key][key_int] = count + data['Keys'][session][dict_key].get(key_int, 0)
+        
+        #Update key intervals
+        for session in ('All', 'Session'):
+            separated = data['Keys'][session]['Intervals']['Individual']
+            data['Keys'][session]['Intervals']['Individual'] = {}
+
+            for key_name, interval_group in iteritems(separated):
+                if all_keys[key_name] not in data['Keys'][session]['Intervals']['Individual']:
+                    data['Keys'][session]['Intervals']['Individual'][all_keys[key_name]] = {}
+
+                for key_name_2, intervals in iteritems(interval_group):
+                    try:
+                        existing_dict = data['Keys'][session]['Intervals']['Individual'][all_keys[key_name]][all_keys[key_name_2]]
+                    except KeyError:
+                        data['Keys'][session]['Intervals']['Individual'][all_keys[key_name]][all_keys[key_name_2]] = intervals
+                    else:
+                        intervals_new = {interval: intervals.get(interval, 0) + existing_dict.get(interval, 0) for interval in set(intervals) | set(existing_dict)}
+                        data['Keys'][session]['Intervals']['Individual'][all_keys[key_name]][all_keys[key_name_2]] = intervals_new
+
+        #Update mistakes
+        for session in ['All']:
+            separated = data['Keys'][session]['Mistakes']
+            data['Keys'][session]['Mistakes'] = {}
+
+            for key_name, mistake_group in iteritems(separated):
+                if all_keys[key_name] not in data['Keys'][session]['Mistakes']:
+                    data['Keys'][session]['Mistakes'][all_keys[key_name]] = {}
+
+                for key_name_2, mistake_count in iteritems(mistake_group):
+                    data['Keys'][session]['Mistakes'][all_keys[key_name]][all_keys[key_name_2]] = mistake_count + data['Keys'][session]['Mistakes'][all_keys[key_name]].get(all_keys[key_name_2], 0)
 
     version_update = data.get('FileVersion', '0') != FILE_VERSION
     

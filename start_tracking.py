@@ -9,7 +9,7 @@ from multiprocessing import freeze_support
 
 from core.config import CONFIG, CONFIG_PATH
 from core.track import start_tracking
-from core.os import tray, console, open_folder, open_file, KEYS, get_key_press
+from core.os import tray, console, open_folder, open_file, get_key_press
 
 
 if __name__ == '__main__':
@@ -136,8 +136,8 @@ if __name__ == '__main__':
             elif status == 'stopped':
                 cls.set_menu_item('track', name='Resume Tracking', hidden=False)
                 
-            shift_held = get_key_press(KEYS['LSHIFT']) or get_key_press(KEYS['RSHIFT'])
-            if shift_held:
+            #Enable debug menu if shift is held
+            if get_key_press(16):
                 cls.set_menu_item('debug', hidden=False)
                 
             cls._refresh_menu()

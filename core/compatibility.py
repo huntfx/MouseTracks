@@ -89,7 +89,6 @@ if PYTHON_VERSION < 3:
     input = raw_input
     range = xrange
     unicode = unicode
-    iteritems = dict.iteritems
     bytes = str
 else:
     from io import StringIO, BytesIO
@@ -98,8 +97,20 @@ else:
     input = input
     range = range
     unicode = str
-    iteritems = dict.items
     bytes = bytes
+
+
+def iteritems(d, use_custom=True):
+    """Override the iteritems to work with multiple Python versions and the ini class."""
+    if use_custom:
+        try:
+            return d._iteritems_override()
+        except AttributeError:
+            pass
+    if PYTHON_VERSION < 3:
+        return d.items()
+    else:
+        return d.iteritems()
 
         
 class MessageWithQueue(object):

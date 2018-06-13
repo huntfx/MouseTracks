@@ -268,10 +268,10 @@ class _ConfigDict(dict):
         self._default_settings = default_settings
 
     def __repr__(self):
-        return dict(self.__iter__()).__repr__()
-        
-    def __iter__(self):
-        for k, v in iteritems(self):
+        return dict(iteritems(self)).__repr__()
+
+    def _iteritems_override(self):
+        for k, v in iteritems(self, False):
             try:
                 if self.hidden and k.startswith('_'):
                     continue
@@ -369,11 +369,11 @@ class Config(dict):
 
     def __repr__(self):
         """Convert to dict and use __repr__ from that."""
-        return dict(self.__iter__()).__repr__()
+        return dict(iteritems(self)).__repr__()
 
-    def __iter__(self):
+    def _iteritems_override(self):
         """Show only values when converting to dict."""
-        for k, v in iteritems(self):
+        for k, v in iteritems(self, False):
             yield k, _ConfigDict(v)
                 
     def __getitem__(self, item, *default):

@@ -120,7 +120,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
             raise socket.error('unable to start server')
     sock.listen(5)
     
-    NOTIFY(LANGUAGE.strings['Server']['MessagePort'], sock.getsockname()[1])
+    NOTIFY(LANGUAGE.strings['Server']['MessagePort'], PORT=sock.getsockname()[1])
     
     #Generate a code needed for connections
     if server_secret is None:

@@ -17,7 +17,7 @@ from core.config import CONFIG
 from core.compatibility import PYTHON_VERSION, BytesIO, unicode, pickle, iteritems
 from core.constants import DEFAULT_NAME, MAX_INT
 from core.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists, get_file_size
-from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps, LazyLoader
+from core.versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps
 
 
 TEMPORARY_PATH = gettempdir()
@@ -96,9 +96,9 @@ def prepare_file(data, legacy=False):
         
         #Pickle the numpy map, or load it raw if not edited
         for i, m in enumerate(numpy_maps):
-            if isinstance(m, LazyLoader) and m.is_loaded:
+            if isinstance(m, numpy.LazyLoader) and m.is_loaded:
                 m = m.pop()
-            if isinstance(m, LazyLoader):
+            if isinstance(m, numpy.LazyLoader):
                 f.write(m.pop(raw=True), 'maps/{}.npy'.format(i))
             else:
                 f.write(numpy.save(m), 'maps/{}.npy'.format(i))

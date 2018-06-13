@@ -5,6 +5,7 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
+from core.numpy import process_numpy_array
 try:
     from core.image.scipy.gaussian import gaussian_filter
     from core.image.scipy.zoom import zoom
@@ -13,10 +14,12 @@ except ImportError:
     from scipy.ndimage.interpolation import zoom
     
 
+@process_numpy_array
 def blur(array, size):
     return gaussian_filter(array, sigma=size)
 
-    
+
+@process_numpy_array
 def upscale(array, factor):
     if factor[0] == 1 and factor[1] == 1:
         return array

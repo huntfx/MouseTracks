@@ -523,7 +523,7 @@ def record_click_double(store, received_data):
 
 def compress_tracks(store, multiplier):
     
-    for resolution, maps in iteritems(store['Data']['Resolution']):
+    for maps in store['Data']['Resolution'].values():
         maps['Tracks'] = numpy.divide(maps['Tracks'], multiplier, as_int=True)
         maps['StrokesSeparate']['Left'] = numpy.divide(maps['StrokesSeparate']['Left'], multiplier, as_int=True)
         maps['StrokesSeparate']['Middle'] = numpy.divide(maps['StrokesSeparate']['Middle'], multiplier, as_int=True)
@@ -577,15 +577,15 @@ def record_gamepad_axis(store, received_data):
 def _record_keypress(key_dict, *args):
     """Quick way of recording keypresses that doesn't involve a million try/excepts."""
 
-    all = key_dict['All']
+    everything = key_dict['All']
     session = key_dict['Session']
     
     for i in args[:-1]:
         try:
-            all[i]
+            everything[i]
         except KeyError:
-            all[i] = {}
-        all = all[i]
+            everything[i] = {}
+        everything = everything[i]
         try:
             session[i]
         except KeyError:
@@ -593,9 +593,9 @@ def _record_keypress(key_dict, *args):
         session = session[i]
     
     try:
-        all[args[-1]] += 1
+        everything[args[-1]] += 1
     except KeyError:
-        all[args[-1]] = 1
+        everything[args[-1]] = 1
     try:
         session[args[-1]] += 1
     except KeyError:
@@ -613,9 +613,9 @@ def record_key_press(store, received_data):
         else:
             #Record mistakes
             #Only records the key if a single backspace is used
-            if key == 'BACK':
+            if key == 8:
                 last = store['KeyTrack']['LastKey']
-                if last is not None and last != 'BACK':
+                if last is not None and last != 8:
                     store['KeyTrack']['Backspace'] = last
                 else:
                     store['KeyTrack']['Backspace'] = False
@@ -624,7 +624,6 @@ def record_key_press(store, received_data):
                 store['KeyTrack']['Backspace'] = False
             
             #Record interval between key presses
-            CONFIG['Advanced']['KeypressIntervalMax'] = 60
             if store['KeyTrack']['Time'] is not None and store['KeyTrack']['LastKey'] is not None:
                 time_difference = store['Data']['Ticks']['Total'] - store['KeyTrack']['Time']
                 if CONFIG['Advanced']['KeypressIntervalMax'] < 0 or time_difference <= CONFIG['Advanced']['KeypressIntervalMax']:

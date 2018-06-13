@@ -271,8 +271,7 @@ class RenderImage(object):
         if not ticks:
             return 0
         
-        include = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '
-        total_presses = sum(v for k, v in iteritems(all_clicks) if k in include)
+        total_presses = sum(v for k, v in iteritems(all_clicks) if k in (ord(i) for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '))
         return 3600 * total_presses / ticks
         
     def csv(self):
@@ -305,7 +304,6 @@ class RenderImage(object):
     
     def tracks(self, last_session=False, file_path=None, colour_override=None):
         """Render track image."""
-    
         track_data = self.data.get_tracks()
         if track_data is None:
             Message(LANGUAGE.strings['Generation']['NoData'])
