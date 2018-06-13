@@ -14,13 +14,12 @@ from threading import Thread, currentThread
 
 from core.api.constants import *
 from core.compatibility import queue, range
+from core.config import CONFIG
+from core.constants import UPDATES_PER_SECOND
 from core.cryptography import Crypt
 from core.language import LANGUAGE
 from core.notify import NOTIFY
 from core.sockets import *
-
-
-POLLING_RATE = 1
 
 
 def _generate_code(length):
@@ -28,12 +27,16 @@ def _generate_code(length):
     import uuid
     return str(uuid.uuid4())
 
+
+def calculate_api_timeout():
+    """Calculate the correct timeout so it doesn't crash if using a higher polling rate."""
+    return CONFIG['Advanced']['APIPollingRate'] / UPDATES_PER_SECOND + 1
     
+
 def client_thread(client_id, sock, q_recv, q_send):
     """Send data to the connected clients."""
     #Connect to client and send feedback
     conn, addr = sock.accept()
-    
     q_send.put(addr)
     
     #Remove items from queue sent before connection
@@ -73,7 +76,7 @@ def middleman_thread(encrypt_code, q_main, q_list, exit_on_disconnect=True):
     t = currentThread()
     while getattr(t, 'running', True):
         try:
-            message = q_main.get(timeout=POLLING_RATE)
+            message = q_main.get(timeout=calculate_api_timeout())
         except queue.Empty:
             pass
         except (IOError, EOFError):
@@ -164,7 +167,7 @@ def server_thread(q_main, host='localhost', port=0, server_secret=None, close_po
                     t.force_close_clients = False
             
                 try:
-                    addr = q_conn.get(timeout=POLLING_RATE)
+                    addr = q_conn.get(timeout=calculate_api_timeout())
                     
                 #No connection yet
                 except queue.Empty:

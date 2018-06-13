@@ -9,7 +9,7 @@ from multiprocessing import Pipe
 from threading import Thread
 
 from core.api.constants import *
-from core.api.server import server, client
+from core.api.server import server, client, calculate_api_timeout
 from core.config import CONFIG
 from core.internet import send_request
 from core.language import LANGUAGE

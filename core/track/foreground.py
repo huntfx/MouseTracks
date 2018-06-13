@@ -124,7 +124,8 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                  'ReloadProgramList': CONFIG['Advanced']['ReloadApplicationList'],
                  'UpdateQueuedCommands': CONFIG['Advanced']['ShowQueuedCommands'],
                  'RefreshGamepads': CONFIG['Advanced']['RefreshGamepads'],
-                 'HistoryCheck': CONFIG['Advanced']['HistoryCheck']}
+                 'HistoryCheck': CONFIG['Advanced']['HistoryCheck'],
+                 'API': CONFIG['Advanced']['APIPollingRate']}
                  
         store = {'Resolution': {'Current': monitor_info(),
                                 'Previous': None,
@@ -171,7 +172,7 @@ def _start_tracking(web_port=None, message_port=None, server_secret=None):
                 
                 #Handle web server API requests
                 #TODO: Limiter to only run every few ticks
-                if store['Flask']['App'] is not None:
+                if store['Flask']['App'] is not None and not ticks % timer['API']:
                     
                     #Control state of script
                     if store['Flask']['App'].config['PIPE_CONTROL_RECV'].poll():

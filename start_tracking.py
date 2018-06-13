@@ -54,7 +54,7 @@ if __name__ == '__main__':
         import uuid
         from threading import Thread
         
-        from core.api import local_address, shutdown_server
+        from core.api import local_address, shutdown_server, calculate_api_timeout
         from core.applications import APP_LIST_PATH, AppList
         from core.base import format_file_path, get_script_path
         from core.compatibility import Message, input
@@ -104,12 +104,12 @@ if __name__ == '__main__':
             """
             web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
-            status = get_url_json(status_url, timeout=1)
+            status = get_url_json(status_url, timeout=calculate_api_timeout())
             
             if status == 'running':
-                send_request('{}/stop'.format(status_url), timeout=1, output=True)
+                send_request('{}/stop'.format(status_url), timeout=calculate_api_timeout(), output=True)
             elif status == 'stopped':
-                send_request('{}/start'.format(status_url), timeout=1, output=True)
+                send_request('{}/start'.format(status_url), timeout=calculate_api_timeout(), output=True)
             
         def quit(cls):
             """End the script and close the window."""
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             """Run this just before the menu opens."""
             web_port = cls.cache['WebPort']
             status_url = '{}/status'.format(local_address(web_port))
-            status = get_url_json(status_url, timeout=0.25)
+            status = get_url_json(status_url, timeout=calculate_api_timeout())
             
             if status == 'running':
                 cls.set_menu_item('track', name='Pause Tracking', hidden=False)
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         def quit_message_client(cls):
             web_port = cls.cache['WebPort']
             close_mesage_url = '{}/ports/message/close'.format(local_address(web_port))
-            status = send_request(close_mesage_url, timeout=1, output=True)
+            status = send_request(close_mesage_url, timeout=calculate_api_timeout(), output=True)
         
         def start_message_client(cls, port, secret):
             new_window(None, 'MessageServer', str(port), str(secret))

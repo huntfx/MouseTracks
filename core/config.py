@@ -504,6 +504,12 @@ CONFIG_DEFAULTS = {
             '__info__': 'Sessions with fewer ticks than this will be merged.',
             'value': 1800,
             'type': int
+        },
+        'APIPollingRate': {
+            '__info__': 'How many ticks between each API check.',
+            'value': 10,
+            'type': int,
+            'min': 1
         }
     }
 }
