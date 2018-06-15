@@ -190,10 +190,10 @@ class AppList(object):
         if path is None:
             path = self.path
         with TextFile(path, 'wb') as f:
-            f.write(result)
+            f.write(result.encode('utf-8'))
         return result
 
-    def update(self, url=APP_LIST_URL):
+    def update(self, url=APP_LIST_URL, save=True):
         """Update application list from URL.
         Does not overwrite any values.
         """
@@ -207,6 +207,8 @@ class AppList(object):
                 for name in names:
                     if name not in self.data[executable]:
                         self.data[executable][name] = names[name]
+        if save:
+            self.save(self.path)
         return True
 
     @property
