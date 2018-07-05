@@ -108,9 +108,9 @@ def iteritems(d, use_custom=True):
         except AttributeError:
             pass
     if PYTHON_VERSION < 3:
-        return d.items()
-    else:
         return d.iteritems()
+    else:
+        return d.items()
 
         
 class MessageWithQueue(object):
