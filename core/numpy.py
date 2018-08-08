@@ -253,7 +253,10 @@ class LazyLoader(object):
     def _load(self, as_numpy=True):
         """Load from zip file."""
         with CustomOpen(self.path, 'rb') as f:
-            array = f.read('maps/{}.npy'.format(self.index))
+            try:
+                array = f.read('maps/{}.npy'.format(self.index))
+            except KeyError:
+                array = f.read(self.index)
         if as_numpy:
             return load(array)
         else:
