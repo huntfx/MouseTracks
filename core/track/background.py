@@ -683,21 +683,27 @@ def record_mouse_move(store, received_data):
             (x, y), resolution = get_monitor_coordinate(x, y, store)
         except TypeError:
             continue
-            
-        store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
-        if continuous:
-            old_value = store['Data']['Resolution'][resolution]['Speed'][y][x]
-            store['Data']['Resolution'][resolution]['Speed'][y][x] = max(distance, old_value)
-            if clicked:
-                old_value = store['Data']['Resolution'][resolution]['Strokes'][y][x]
-                store['Data']['Resolution'][resolution]['Strokes'][y][x] = max(distance, old_value)
-            
-            #Testing separate maps for strokes
-            for mouse_button, click_type in enumerate(('Left', 'Middle', 'Right')):
-                if mouse_button in clicked:
-                    store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = store['Data']['Ticks']['Tracks']
-                else:
-                    store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = 0
+        
+        try:
+            store['Data']['Resolution'][resolution]['Tracks'][y][x] = store['Data']['Ticks']['Tracks']
+            if continuous:
+                old_value = store['Data']['Resolution'][resolution]['Speed'][y][x]
+                store['Data']['Resolution'][resolution]['Speed'][y][x] = max(distance, old_value)
+                if clicked:
+                    old_value = store['Data']['Resolution'][resolution]['Strokes'][y][x]
+                    store['Data']['Resolution'][resolution]['Strokes'][y][x] = max(distance, old_value)
+                
+                #Testing separate maps for strokes
+                for mouse_button, click_type in enumerate(('Left', 'Middle', 'Right')):
+                    if mouse_button in clicked:
+                        store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = store['Data']['Ticks']['Tracks']
+                    else:
+                        store['Data']['Resolution'][resolution]['StrokesSeparate'][click_type][y][x] = 0
+        
+        #The IndexError here is super rare and I can't replicate it,
+        #so may as well just ignore
+        except TypeError:
+            pass
     
     store['LastTrackUpdate'] = store['Data']['Ticks']['Total']
     store['Data']['Ticks']['Tracks'] += 1

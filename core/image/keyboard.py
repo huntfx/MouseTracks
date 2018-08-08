@@ -8,7 +8,7 @@ from __future__ import absolute_import, division
 from PIL import Image, ImageFont, ImageDraw
 
 from core.image.colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
-from core.compatibility import range, Message
+from core.compatibility import PYTHON_VERSION, Message, range, bytes
 from core.config import CONFIG
 from core.language import LANGUAGE
 from core.image.base import save_image_to_folder
@@ -478,7 +478,11 @@ class DrawKeyboard(object):
             y += (KEY_SIZE - FONT_SIZE_MAIN + FONT_OFFSET_Y) * height_multiplier
             
             #Ensure each key is at least at a constant height
-            text = text.replace('\\n', '\n').decode('utf-8')
+            #text = bytes(text.replace('\\n', '\n'), encoding='utf-8').decode('utf-8')
+            if PYTHON_VERSION < 3:
+                text = text.replace('\\n', '\n').decode('utf-8')
+            else:
+                text = text.replace('\\n', '\n')
             if '\n' not in text:
                 text += '\n'
             

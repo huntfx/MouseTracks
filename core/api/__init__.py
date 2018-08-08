@@ -20,7 +20,7 @@ try:
 except ImportError as e:
     CONFIG['API']['WebServer'] = False
     CONFIG['API']['WebServer'].lock = True
-    NOTIFY(LANGUAGE.strings['Misc']['ImportFailed'], MODULE='Flask', REASON=e)
+    NOTIFY(LANGUAGE.strings['Misc']['ImportFailed'], MODULE='web server', REASON=e)
     app = None
 
 

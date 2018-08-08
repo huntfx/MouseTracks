@@ -65,7 +65,8 @@ LANGUAGE_DEFAULTS = {
         '__priority__': 2,
         'ImportFailed': {
             '__info__': 'Valid Replacements: [MODULE] [REASON]',
-            'value': 'Import of [MODULE] failed. Reason: "[REASON]".'
+            'value': 'Import of [MODULE] failed. Reason: "[REASON]".',
+            'level': 2
         },
         'ProfileLoad': {
             '__info__': 'Valid Replacements: [PROFILE]',

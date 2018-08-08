@@ -9,13 +9,13 @@ from __future__ import absolute_import
 import hashlib
 import struct
 
-from core.compatibility import pickle
+from core.compatibility import Message, pickle
 from core.config import CONFIG
 
 #Attempt to import AES or create empty encryption class for the code to pass through
 try:
     from Crypto.Cipher import AES
-except ImportError:
+except ImportError as e:
     CONFIG['API']['_ServerEncryption'].lock = False
     CONFIG['API']['_ServerEncryption'] = False
     CONFIG['API']['_ServerEncryption'].lock = True
@@ -25,6 +25,12 @@ except ImportError:
             def __init__(self, *args): pass
             def encrypt(self, s): return s
             decrypt = encrypt
+    
+    #Disable the server if encryption is not working
+    from core.language import LANGUAGE
+    from core.notify import NOTIFY
+    CONFIG['API']['SocketServer'] = False
+    NOTIFY(LANGUAGE.strings['Misc']['ImportFailed'], MODULE='socket server', REASON=e)
     
     
 class DecryptionError(Exception):
