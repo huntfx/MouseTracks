@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 import platform
 
+from core.compatibility import callable
 from core.os import placeholders
 
 #Load in modules from operating system

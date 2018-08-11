@@ -82,22 +82,28 @@ class PythonVersion(object):
 PYTHON_VERSION = PythonVersion()
 
 if PYTHON_VERSION < 3:
-    from cStringIO import StringIO
     import cPickle as pickle
     import Queue as queue
+    from cStringIO import StringIO
     BytesIO = StringIO
     input = raw_input
     range = xrange
     unicode = unicode
     bytes = str
+    callable = callable
 else:
-    from io import StringIO, BytesIO
     import pickle
     import queue
+    from io import StringIO, BytesIO
     input = input
     range = range
     unicode = str
     bytes = bytes
+
+    if PYTHON_VERSION <= 3.2:
+        callable = lambda var: isinstance(var, _callable_type)
+    else:
+        callable = callable
 
 
 def iteritems(d, use_custom=True):

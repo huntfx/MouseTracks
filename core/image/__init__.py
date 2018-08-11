@@ -12,7 +12,7 @@ import sys
 import time
 
 from core.applications import RunningApplications, AppList
-from core.compatibility import input, Message
+from core.compatibility import Message, input, callable
 from core.constants import DEFAULT_NAME, UPDATES_PER_SECOND
 from core.config import CONFIG
 from core.image.colours import get_map_matches, calculate_colour_map

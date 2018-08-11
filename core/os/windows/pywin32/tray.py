@@ -19,19 +19,7 @@ import winerror
 import win32ui
 from multiprocessing import freeze_support
 
-#These imports will not fail during MouseTracks running,
-#but checks are now in place so it can be run separately.
-try:
-    from core.compatibility import iteritems
-except ImportError:
-    try:
-        iteritems = dict.iteritems
-    except AttributeError:
-        iteritems = dict.items
-try:
-    from core.os.windows.pywin32.main import *
-except ImportError:
-    pass
+from core.compatibility import callable, iteritems
 
 
 TRAY_EVENT = win32con.WM_USER + 20
