@@ -1,4 +1,6 @@
-# MouseTrack
+# Mouse Tracks
+
+<i>Current Status: I've now got a full time job, so development on this has slowed. I still definitely plan to finish it, just have the GUI and [website](https://github.com/Peter92/FlaskWeb) to fully complete along with a few tweaks.</i>
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
