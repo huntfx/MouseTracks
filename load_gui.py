@@ -3,17 +3,15 @@ import sys
 #from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
 
 from ext.Qt import QtWidgets
-from gui.layout import MainWindowLayout
+from gui.layout import setup_layout
 import sys
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
-
-        self.layout = MainWindowLayout()
-        self.layout.setup(self)
+        QtWidgets.QMainWindow.__init__(self, parent)
+        setup_layout(self)
 
 
 if __name__ == "__main__":
