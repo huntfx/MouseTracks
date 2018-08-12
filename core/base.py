@@ -96,13 +96,13 @@ class TextFile(object):
                 with codecs.open(self.file_name, self.mode, encoding='ansi') as f:
                     header = f.read(3)
             if header.startswith(self.UTF8_MARKER):
-                self.encoding = 'utf-8'
+                self.encoding = 'utf8'
             elif header.startswith(self.UTF16_MARKER):
-                self.encoding = 'utf-16'
+                self.encoding = 'utf16'
 
         #Check valid encodings if writing
         if 'w' in self.mode:
-            if self.encoding is not None and self.encoding not in ('utf-8', 'utf-16'):
+            if self.encoding is not None and self.encoding not in ('utf8', 'utf16'):
                 raise TypeError('unable to save with encoding "{}"'.format(self.encoding))
 
         #Load the file with a particular encoding
@@ -138,11 +138,11 @@ class TextFile(object):
         
         #Remove any known markers from the start of file
         if index is not None and not index:
-            if self.encoding == 'utf-8' and ord(output[0]) == 65279:
+            if self.encoding == 'utf8' and ord(output[0]) == 65279:
                 output = output[1:]
         
         if self.encoding is not None and not as_unicode:
-            output = output.encode('utf-8')
+            output = output.encode('utf8')
         
         output = output.strip()
 
@@ -152,6 +152,10 @@ class TextFile(object):
         return str(output)
 
     def write(self, text, encoding=None):
+        if encoding is None:
+            encoding = self.encoding
+        if encoding:
+            return self.file_object.write(text.decode(encoding))
         return self.file_object.write(text)
 
 

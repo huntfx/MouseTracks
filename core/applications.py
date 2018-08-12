@@ -189,7 +189,7 @@ class AppList(object):
         
         if path is None:
             path = self.path
-        with TextFile(path, 'wb') as f:
+        with TextFile(path, 'wb', 'utf-8') as f:
             f.write(result.encode('utf-8'))
         return result
 

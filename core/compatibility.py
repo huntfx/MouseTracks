@@ -44,6 +44,7 @@ class PythonVersion(object):
     
     def _compare(self, value):
         """Match the input with the version in preparation for comparing."""
+        value = str(value)
         try:
             v_num = int(value)
         except ValueError:
@@ -101,6 +102,7 @@ else:
     bytes = bytes
 
     if PYTHON_VERSION <= 3.2:
+        from collections import _callable_type
         callable = lambda var: isinstance(var, _callable_type)
     else:
         callable = callable

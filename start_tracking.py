@@ -170,7 +170,7 @@ if __name__ == '__main__':
             cls.set_menu_item('restore', hidden=True)
             
         def applist_update(cls):
-            AppList().update()
+            AppList().update(save=True)
             
         def quit_message_client(cls):
             web_port = cls.cache['WebPort']
