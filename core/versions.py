@@ -84,7 +84,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                                                                        '6c', 7, 8, 9, '9b', '9c', '9d', '9e', 
                                                                        10, '10b', '10c', '10d', 11, 12, 13)]
         try:
-            file_version = legacy_history.index(data['Version'])
+            file_version = legacy_history.index(str(data['Version']))
         except KeyError:
             file_version = 0
     original_version = file_version
