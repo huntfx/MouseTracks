@@ -242,13 +242,14 @@ class LazyLoader(object):
     """Store the file path and array index, and only load when required.
     Reduces memory usage by up to 90%, and significantly speeds up loading.
     """
-    def __init__(self, path, index):
+    def __init__(self, path, index, resolution=None):
         
         self.path = path
         self.index = index
 
         self._array = None
         self._raw = None
+        self._resolution = tuple(resolution) if resolution is not None else None
     
     def _load(self, as_numpy=True):
         """Load from zip file."""
@@ -272,6 +273,12 @@ class LazyLoader(object):
         """Load array if it doesn't exist or just return it."""
         if not self.is_loaded:
             self._array = self._load()
+        
+        #If the resolution was somehow created wrongly, then set a new one
+        loaded_resolution = tuple(map(int, self._array.shape[::-1]))
+        if self._resolution is not None and loaded_resolution != self._resolution:
+            self._array = array(self._resolution, create=True, dtype=self._array.dtype)
+
         return self._array
 
     def __getitem__(self, item):

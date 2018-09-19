@@ -24,16 +24,19 @@ class IterateMaps(object):
     def __init__(self, maps):
         self.maps = maps
         
-    def _iterate(self, maps, command, extra=None, _legacy=False, _lazy_load_path=None):            
+    def _iterate(self, maps, command, extra=None, _legacy=False, _lazy_load_path=None, _resolution=None):            
         for key, value in iteritems(maps):
             
+            if isinstance(key, tuple):
+                _resolution = key
+
             #Old format where resolution was separate for each map
             if _legacy and isinstance(key, (str, unicode)):
                 self._iterate(value, command, extra, _legacy=_legacy)
             
             #New format when each resolution contains all the maps
             elif not _legacy and isinstance(value, dict):
-                self._iterate(value, command, extra, _legacy=_legacy, _lazy_load_path=_lazy_load_path)
+                self._iterate(value, command, extra, _legacy=_legacy, _lazy_load_path=_lazy_load_path, _resolution=_resolution)
 
             #Separate the numpy arrays from the data
             elif command == 'separate':
@@ -46,7 +49,7 @@ class IterateMaps(object):
                 if _lazy_load_path is None:
                     maps[key] = extra[value]
                 else:
-                    maps[key] = numpy.LazyLoader(_lazy_load_path, value)
+                    maps[key] = numpy.LazyLoader(_lazy_load_path, value, resolution=_resolution)
             
             #Convert dicts to numpy arrays (only used on old files)
             elif command == 'convert' and _legacy:
