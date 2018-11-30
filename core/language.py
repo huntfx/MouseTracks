@@ -230,22 +230,22 @@ LANGUAGE_DEFAULTS = {
             'value': 'Started checking for running applications.',
             'level': 1
         },
-        'AppListReload': {
+        'ApplistReload': {
             '__info__': 'Valid Replacements: [FILE-NAME]',
             'value': 'Reloaded [FILE-NAME].',
             'level': 1
         },
-        'AppListDownloadStart': {
+        'ApplistDownloadStart': {
             '__info__': 'Valid Replacements: [FILE-NAME] [URL]',
             'value': 'Updating [FILE-NAME] from [URL]...',
             'level': 1
         },
-        'AppListDownloadSuccess': {
+        'ApplistDownloadSuccess': {
             '__info__': 'Valid Replacements: [FILE-NAME] [URL]',
             'value': 'Completed update.',
             'level': 1
         },
-        'AppListDownloadFail': {
+        'ApplistDownloadFail': {
             '__info__': 'Valid Replacements: [FILE-NAME] [URL]',
             'value': 'Failed to establish a connection.',
             'level': 1

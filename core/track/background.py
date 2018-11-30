@@ -44,7 +44,7 @@ def running_processes(q_recv, q_send, background_send):
                 except (NameError, UnboundLocalError):
                     running_apps = RunningApplications(queue=q_send)
                 
-                NOTIFY(LANGUAGE.strings['Tracking']['AppListReload'], FILE_NAME=running_apps.applist.name)
+                NOTIFY(LANGUAGE.strings['Tracking']['ApplistReload'], FILE_NAME=running_apps.applist.name)
 
             if 'Update' in received_data:
                 running_apps.refresh()
