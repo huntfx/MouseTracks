@@ -23,7 +23,7 @@ if __name__ == '__main__':
     no_gui = tray is None or not CONFIG['API']['WebServer']
     
     #Elevate and quit the process
-    if CONFIG['Advanced']['RunAsAdministrator']:
+    if CONFIG['Main']['RunAsAdministrator']:
         console.elevate(visible=not CONFIG['Main']['StartMinimised'] or no_gui)
     
     #Run normally

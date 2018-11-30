@@ -242,7 +242,7 @@ class _ConfigItemBool(int, _ConfigItem):
 
 def create_config_item(config_dict, item_type=None):
     """Convert a normal variable into a config item."""
-    config_items = {str: _ConfigItemStr, int: _ConfigItemInt, float: _ConfigItemFloat, bool: _ConfigItemBool}
+    config_items = {str: _ConfigItemStr, unicode: _ConfigItemStr, int: _ConfigItemInt, float: _ConfigItemFloat, bool: _ConfigItemBool}
     return config_items[item_type or config_dict['type']](config_dict)   
 
 

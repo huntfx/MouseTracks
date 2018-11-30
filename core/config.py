@@ -45,6 +45,11 @@ CONFIG_DEFAULTS = {
             'type': int,
             'min': 0
         },
+        'RunAsAdministrator': {
+            '__info__': 'This fixes tracking not working on elevated programs.',
+            'value': False,
+            'type': bool
+        },
         '_TrackGamepads': {
             'value': True,
             'type': bool
@@ -478,11 +483,6 @@ CONFIG_DEFAULTS = {
             'value': 1200,
             'type': int,
             'min': 0
-        },
-        'RunAsAdministrator': {
-            '__info__': 'This fixes tracking not working on elevated programs.',
-            'value': True,
-            'type': bool
         },
         'RefreshGamepads': {
             '__info__': 'How many ticks to wait before refreshing the list of connected gamepads.',
