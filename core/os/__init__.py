@@ -214,7 +214,7 @@ if FOCUS_DETECTION:
             self.pid = self.window_data.pid
             try:
                 self.psutil = psutil.Process(self.pid)
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, ValueError):
                 pass
         
         def __str__(self):

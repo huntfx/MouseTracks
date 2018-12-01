@@ -70,6 +70,7 @@ class QtBase(QtCore.QObject):
         self._children_data = {}
 
     def __enter__(self, inherit_funcs=[]):
+        """Create the widget and inherit functions."""
         #Create the widget
         if self._qt_data['created']:
             self.QObject = self._qt_data['object']
@@ -98,8 +99,7 @@ class QtBase(QtCore.QObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        #Set the current parent one generation upwards
-        #We don't need to update since nothing has changed
+        """Set the current parent one generation upwards."""
         parent = self.parent()
         Parent.set(parent)
         return parent
@@ -108,10 +108,14 @@ class QtBase(QtCore.QObject):
         return Parent.get(self)
 
     def setParent(self, parent):
-        old_parent = self.parent()
+        """Set a new parent.
+        I've forgotten why the commented out bit is needed,
+        but leaving it here just in case
+        """
+        #old_parent = self.parent()
         Parent.update(self, parent)
-        if parent.parent() == old_parent:
-            Parent.set(parent)
+        #if parent.parent() == old_parent:
+        #    Parent.set(parent)
 
     def setContentsMargins(self, *args, **kwargs):
         """Set the contents margins.
@@ -140,17 +144,9 @@ class QtBase(QtCore.QObject):
             margins = [i if i is not None else j for i, j in zip(margins, self.getContentsMargins())]
         self.QObject.setContentsMargins(*margins)
 
-    @property
-    def spacing(self):
-        return self.QObject.spacing()
-
-    @spacing.setter
-    def spacing(self, spacing):
-        self.QObject.setSpacing(spacing)
-
 
 class QtLayout(QtBase):
-    """Wrapper for generic layouts."""
+    """Wrapper for layout widgets."""
     def __init__(self, widget, *args, **kwargs):
         QtBase.__init__(self, widget, *args, **kwargs)
         self._converted = False
@@ -165,7 +161,10 @@ class QtLayout(QtBase):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Add layout to parent layout."""
+        """Add layout to parent layout.
+        Some layouts can only take widgets,
+        so we have to convert the class for some of them.
+        """
         parent = QtBase.__exit__(self, exc_type, exc_val, exc_tb)
         
         #Convert QMainWindow to widget so layouts can be added
@@ -209,7 +208,7 @@ class QtLayout(QtBase):
 
 
 class QtWidget(QtBase):
-    """Wrapper for generic widgets."""
+    """Wrapper for widgets."""
     def __init__(self, widget, *args, **kwargs):
         QtBase.__init__(self, widget, *args, **kwargs)
 
@@ -242,70 +241,73 @@ class QtWidget(QtBase):
 
 
 class LayoutResizable(QtWidget):
-    """Wrapper for QSplitter."""
+    """Context manager for QSplitter."""
     def __init__(self, orientation, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QSplitter, orientation, *args, **kwargs)
 
 
 class LayoutResizableH(LayoutResizable):
-    """Wrapper for QSplitter set to horizontal."""
+    """Context manager for QSplitter set to horizontal."""
     def __init__(self, *args, **kwargs):
         LayoutResizable.__init__(self, QtCore.Qt.Horizontal, *args, **kwargs)
 
 
 class LayoutResizableV(LayoutResizable):
-    """Wrapper for QSplitter set to vertical."""
+    """Context manager for QSplitter set to vertical."""
     def __init__(self, *args, **kwargs):
         LayoutResizable.__init__(self, QtCore.Qt.Vertical, *args, **kwargs)
 
 
 class LayoutBoxH(QtLayout):
-    """Wrapper for QHBoxLayout."""
+    """Context manager for QHBoxLayout."""
     def __init__(self, *args, **kwargs):
         QtLayout.__init__(self, QtWidgets.QHBoxLayout, *args, **kwargs)
 
 
 class LayoutBoxV(QtLayout):
-    """Wrapper for QVBoxLayout."""
+    """Context manager for QVBoxLayout."""
     def __init__(self, *args, **kwargs):
         QtLayout.__init__(self, QtWidgets.QVBoxLayout, *args, **kwargs)
 
 
 class WidgetLabel(QtWidget):
-    """Wrapper for QPushButton."""
+    """Context manager for QLabel."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QLabel, *args, **kwargs)
 
 
 def QLabel(*args, **kwargs):
+    """Wrapper for QLabel."""
     with WidgetLabel(*args, **kwargs) as widget:
         return widget
 
 
 class WidgetPushButton(QtWidget):
-    """Wrapper for QPushButton."""
+    """Context manager for QPushButton."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QPushButton, *args, **kwargs)
 
 
 def QPushButton(*args, **kwargs):
+    """Wrapper for QPushButton."""
     with WidgetPushButton(*args, **kwargs) as widget:
         return widget
 
 
 class WidgetLineEdit(QtWidget):
-    """Wrapper for QLineEdit."""
+    """Context manager for QLineEdit."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QLineEdit, *args, **kwargs)
 
 
 def QLineEdit(*args, **kwargs):
+    """Wrapper for QLineEdit."""
     with WidgetLineEdit(*args, **kwargs) as widget:
         return widget
 
 
 class WidgetCheckBox(QtWidget):
-    """Wrapper for QtWidgets.QCheckBox."""
+    """Context manager for QtWidgets.QCheckBox."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QCheckBox, *args, **kwargs)
     
@@ -314,12 +316,13 @@ class WidgetCheckBox(QtWidget):
 
 
 def QCheckBox(*args, **kwargs):
+    """Wrapper for QtWidgets.QCheckBox."""
     with WidgetCheckBox(*args, **kwargs) as widget:
         return widget
 
 
 class WidgetComboBox(QtWidget):
-    """Wrapper for QComboBox."""
+    """Context manager for QComboBox."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QComboBox, *args, **kwargs)
 
@@ -328,12 +331,13 @@ class WidgetComboBox(QtWidget):
 
 
 def QComboBox(*args, **kwargs):
+    """Wrapper for QComboBox."""
     with WidgetComboBox(*args, **kwargs) as widget:
         return widget
 
 
 class WidgetListWidget(QtWidget):
-    """Wrapper for QComboBox."""
+    """Context manager for QListWidget."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QListWidget, *args, **kwargs)
 
@@ -342,16 +346,19 @@ class WidgetListWidget(QtWidget):
 
 
 def QListWidget(*args, **kwargs):
+    """Wrapper for QListWidget."""
     with WidgetListWidget(*args, **kwargs) as widget:
         return widget
 
 
 def QStretch():
+    """Wrapper for addStretch."""
     parent = Parent.get()
     parent.addStretch()
 
 
 class WidgetTabGroup(QtWidget):
+    """Context manager for QTabWidget."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QTabWidget, *args, **kwargs)
         self._num_tabs = 0
@@ -361,10 +368,11 @@ class WidgetTabGroup(QtWidget):
 
 
 class WidgetTab(QtWidget):
+    """Context manager for a tab (QWidget)."""
     def __init__(self, name='', *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QWidget, *args, **kwargs)
         if not isinstance(self.parent(), WidgetTabGroup):
-            raise TypeError('incorrect parent type, expected "QtTabWidget", got "{}"'.format(parent.__class__.__name__))
+            raise TypeError('incorrect parent type, expected "WidgetTabGroup", got "{}"'.format(self.parent().__class__.__name__))
         self._name = name
 
     def __enter__(self):
@@ -378,6 +386,7 @@ class WidgetTab(QtWidget):
 
 @contextmanager
 def TabScrollLayout(*args, **kwargs):
+    """Context manager for a new tab containing a scroll area."""
     with WidgetTab(*args, **kwargs) as tab_widget:
         tab_widget.setContentsMargins(0)
         with LayoutBoxV() as tab_layout:
@@ -387,6 +396,7 @@ def TabScrollLayout(*args, **kwargs):
 
 
 class WidgetScrollArea(QtWidget):
+    """Context manager for QScrollArea."""
     def __init__(self, *args, **kwargs):
         QtWidget.__init__(self, QtWidgets.QScrollArea, *args, **kwargs)
 
@@ -397,7 +407,8 @@ class WidgetScrollArea(QtWidget):
 
 
 class WidgetGroupBox(QtWidget):
+    """Context manager for QGroupBox."""
     def __init__(self, name=''):
         QtWidget.__init__(self, QtWidgets.QGroupBox, name)
         if not isinstance(self.parent(), QtBase):
-            raise TypeError('incorrect parent type, expected "QtBase", got "{}"'.format(parent.__class__.__name__))
+            raise TypeError('incorrect parent type, expected "QtBase", got "{}"'.format(self.parent().__class__.__name__))

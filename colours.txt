@@ -88,6 +88,7 @@ map.Fire.colour.Linear=WhiteToYellowLightOrangeToLightYellowOrangeRedDarkRedToDa
 map.Fire.tracks=True
 map.Fire.keyboard=True
 map.Ivy.colour=WhiteToBlueGreenGreenToBlack
+map.Ivy.tracks=True
 map.Ivy.keyboard=True
 map.Matrix.colour=BlackBlackBlackBlackDarkGreenDarkDarkGreyToBlackBlackBlackBlackBlackGreyGreenToBlackBlackDarkGreyGreenToGreen
 map.Matrix.colour.Linear=BlackBlackBlackBlackBlackDarkGreenDarkDarkGreyToGreen

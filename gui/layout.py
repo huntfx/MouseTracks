@@ -20,41 +20,36 @@ def setup_layout(parent):
                 tab_group.setFixedWidth(278)
                 with QtCustom.TabScrollLayout('Render Options'):
                     
-                    with QtCustom.WidgetGroupBox('Profile Selection'):
-                        with QtCustom.LayoutBoxV():
+                    with QtCustom.WidgetGroupBox('Profile Selection'), QtCustom.LayoutBoxV():
+                        dropdown = QtCustom.QComboBox()
+                        dropdown.addItems(['<current>', 'Default', 'Overwatch', 'Path of Exile'])
+
+                    with QtCustom.WidgetGroupBox('Image Options'), QtCustom.LayoutBoxV():
+                        QtCustom.QComboBox().addItems(['Tracks', 'Clicks', 'Acceleration', 'Keyboard'])
+                        dropdown = QtCustom.QComboBox()
+                        dropdown.addItems(['Time', 'Count'])
+                        dropdown.setVisible(False)
+
+                    with QtCustom.WidgetGroupBox('Colour Options'), QtCustom.LayoutBoxV():
+                        with QtCustom.LayoutBoxH():
+                            QtCustom.QLineEdit('Demon')
                             dropdown = QtCustom.QComboBox()
-                            dropdown.addItems(['<current>', 'Default', 'Overwatch', 'Path of Exile'])
+                            dropdown.addItems(['Presets', 'Citrus', 'Demon', 'Sunburst'])
 
-                    with QtCustom.WidgetGroupBox('Image Options'):
-                        with QtCustom.LayoutBoxV():
-                            QtCustom.QComboBox().addItems(['Tracks', 'Clicks', 'Acceleration', 'Keyboard'])
-                            dropdown = QtCustom.QComboBox()
-                            dropdown.addItems(['Time', 'Count'])
-                            dropdown.setVisible(False)
+                    with QtCustom.WidgetGroupBox('Saving'), QtCustom.LayoutBoxV():
+                        QtCustom.QCheckBox('Only show current session')
+                        with QtCustom.LayoutBoxH():
+                            QtCustom.QPushButton('Save Image')
+                            QtCustom.QStretch()
+                            QtCustom.QPushButton('Export Data')
 
-                    with QtCustom.WidgetGroupBox('Colour Options'):
-                        with QtCustom.LayoutBoxV():
-                            with QtCustom.LayoutBoxH():
-                                QtCustom.QLineEdit('Demon')
-                                dropdown = QtCustom.QComboBox()
-                                dropdown.addItems(['Presets', 'Citrus', 'Demon', 'Sunburst'])
-
-                    with QtCustom.WidgetGroupBox('Saving'):
-                        with QtCustom.LayoutBoxV():
-                            QtCustom.QCheckBox('Only show current session')
-                            with QtCustom.LayoutBoxH():
-                                QtCustom.QPushButton('Save Image')
-                                QtCustom.QStretch()
-                                QtCustom.QPushButton('Export Data')
-
-                    with QtCustom.WidgetGroupBox('Show/Hide Mouse Buttons'):
-                        with QtCustom.LayoutBoxV():
-                            checkbox = QtCustom.QCheckBox('Left Mouse Button')
-                            checkbox.setChecked(True)
-                            checkbox = QtCustom.QCheckBox('Middle Mouse Button')
-                            checkbox.setChecked(True)
-                            checkbox = QtCustom.QCheckBox('Right Mouse Button')
-                            checkbox.setChecked(True)
+                    with QtCustom.WidgetGroupBox('Show/Hide Mouse Buttons'), QtCustom.LayoutBoxV():
+                        checkbox = QtCustom.QCheckBox('Left Mouse Button')
+                        checkbox.setChecked(True)
+                        checkbox = QtCustom.QCheckBox('Middle Mouse Button')
+                        checkbox.setChecked(True)
+                        checkbox = QtCustom.QCheckBox('Right Mouse Button')
+                        checkbox.setChecked(True)
 
                     QtCustom.QStretch()
 
@@ -71,3 +66,11 @@ def setup_layout(parent):
 
         list_widget = QtCustom.QListWidget()
         list_widget.addItems(['test'])
+
+def setup_layout4(parent):
+    QtCustom.Parent.set(parent)
+
+    with QtCustom.LayoutResizableV():
+        QtCustom.QCheckBox('QCheckBox')
+        QtCustom.QPushButton('QPushButton')
+        QtCustom.QLineEdit('QLineEdit')
