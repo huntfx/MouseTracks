@@ -9,7 +9,7 @@ import sys
 import webbrowser
 from multiprocessing import freeze_support
 
-from core.image import user_generate
+from mousetracks.image import user_generate
 
 
 if __name__ == '__main__':

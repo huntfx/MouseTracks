@@ -4,8 +4,8 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import absolute_import
 
-import core.qt.wrappers as QtCustom
-from ext.Qt import QtWidgets, QtCore
+from . import wrappers as QtCustom
+from .Qt import QtWidgets, QtCore
 
 def setup_layout(parent):
     QtCustom.Parent.set(parent)

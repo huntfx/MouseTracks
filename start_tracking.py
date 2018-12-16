@@ -7,9 +7,9 @@ from __future__ import absolute_import
 import sys
 from multiprocessing import freeze_support
 
-from core.config import CONFIG, CONFIG_PATH
-from core.track import start_tracking
-from core.os import tray, console, open_folder, open_file, get_key_press
+from mousetracks.config.settings import CONFIG, CONFIG_PATH
+from mousetracks.track import track
+from mousetracks.utils.os import tray, console, open_folder, open_file, get_key_press
 
 
 if __name__ == '__main__':
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     
     #Run normally
     if no_gui:
-        start_tracking()
+        track()
     
     #Generate images
     elif console.is_set('GenerateImages'):
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         
     #Create new message client
     elif console.is_set('MessageServer'):
-        from core.api import local_message_connect
+        from mousetracks.api import local_message_connect
         
         offset = sys.argv.index('MessageServer')
         port = int(sys.argv[offset+1])
@@ -54,16 +54,16 @@ if __name__ == '__main__':
         import uuid
         from threading import Thread
         
-        from core.api import local_address, shutdown_server, calculate_api_timeout
-        from core.applications import APP_LIST_PATH, AppList
-        from core.base import format_file_path, get_script_path
-        from core.compatibility import Message, input
-        from core.constants import APP_LIST_FILE, DEFAULT_PATH
-        from core.files import Lock, DATA_FOLDER
-        from core.internet import get_url_json, send_request
-        from core.language import LANGUAGE
-        from core.notify import NOTIFY
-        from core.sockets import get_free_port
+        from mousetracks.api import local_address, shutdown_server, calculate_api_timeout
+        from mousetracks.applications import APP_LIST_PATH, AppList
+        from mousetracks.config.language import LANGUAGE
+        from mousetracks.constants import APP_LIST_FILE, DEFAULT_PATH
+        from mousetracks.files import Lock, DATA_FOLDER
+        from mousetracks.misc import format_file_path, get_script_path
+        from mousetracks.notify import NOTIFY
+        from mousetracks.utils.compatibility import Message, input
+        from mousetracks.utils.internet import get_url_json, send_request
+        from mousetracks.utils.sockets import get_free_port
             
         
         def _end_thread(cls):
@@ -85,7 +85,7 @@ if __name__ == '__main__':
             web_port = get_free_port() if web_port is None else web_port
             message_port = get_free_port() if message_port is None else message_port
             server_secret = uuid.uuid4() if server_secret is None else server_secret
-            thread = Thread(target=start_tracking, kwargs={'web_port': web_port, 'message_port': message_port, 'console': False, 'lock': False, 'server_secret': server_secret})
+            thread = Thread(target=track, kwargs={'web_port': web_port, 'message_port': message_port, 'console': False, 'lock': False, 'server_secret': server_secret})
             thread.start()
         
             #Set new port

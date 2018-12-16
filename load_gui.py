@@ -2,8 +2,8 @@ from __future__ import absolute_import
 import sys
 #from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
 
-from ext.Qt import QtWidgets
-from gui.layout import setup_layout
+from moustracks.qt.Qt import QtWidgets
+from moustracks.gui.layout import setup_layout
 import sys
 
 
