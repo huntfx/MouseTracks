@@ -2,7 +2,8 @@ from __future__ import absolute_import
 import sys
 #from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
 
-from moustracks.qt.Qt import QtWidgets
+'''
+from moustracks.utils.qt.Qt import QtWidgets
 from moustracks.gui.layout import setup_layout
 import sys
 
@@ -12,6 +13,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
         setup_layout(self)
+        '''
+
+from mousetracks.gui.connect import MainWindow
+from mousetracks.utils.qt2.Qt import QtWidgets
 
 
 if __name__ == "__main__":
