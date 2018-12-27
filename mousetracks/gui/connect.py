@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from .layout import setup_layout
-from ..utils.qt2.Qt import QtWidgets
+from ..utils.qt.Qt import QtWidgets
 
 
 class MainWindow(QtWidgets.QMainWindow):
