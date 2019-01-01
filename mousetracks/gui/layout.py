@@ -1,6 +1,6 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
-from ..utils.qt.Qt import QtWidgets, QtCore
+from ..utils.qt.Qt import QtWidgets, QtCore, QtGui
 from ..utils.qt.main import QtRoot
 from ..utils.qt import widgets as QtCustom
 
@@ -10,9 +10,9 @@ def setup_layout(parent):
         with container_layout.addVSplitter() as main_layout:
             with main_layout.addLayout(QtWidgets.QHBoxLayout()) as program_layout:
                 
-                program_layout.setContentsMargins(left=0)
-                program_layout.setSpacing(6)
-                program_layout.addWidget(QtWidgets.QLabel('image goes here'))
+                program_layout.setContentsMargins(0)
+                program_layout.setSpacing(0)
+                program_layout.addWidget(QtCustom.ResizableImage(None, pixmap='images/test.jfif'))
                 
                 with program_layout.addTabGroup() as tab_group_layout:
                     tab_group_layout.setFixedWidth(278)
