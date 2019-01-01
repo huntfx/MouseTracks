@@ -7,6 +7,7 @@ from ..utils.qt import widgets as QtCustom
 
 def setup_layout(parent):
     with QtRoot(parent) as container_layout:
+        container_layout.addStatusBar()
         with container_layout.addVSplitter() as main_layout:
             with main_layout.addLayout(QtWidgets.QHBoxLayout()) as program_layout:
                 

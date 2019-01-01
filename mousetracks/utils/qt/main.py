@@ -208,8 +208,10 @@ class QtWidget(QtBase):
 
 class QtRoot(QtLayout):
     """Start the window with this."""
-    pass
-
+    def addStatusBar(self):
+        self.statusBar = QtWidgets.QStatusBar()
+        self.QObject.setStatusBar(self.statusBar)
+        
 
 class QtGroupBoxWidget(QtWidget):
     """Modified QtWidget class for using a QGroupBox."""
