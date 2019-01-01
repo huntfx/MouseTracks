@@ -97,7 +97,6 @@ class QtBase(object):
         self.QObject.setContentsMargins(*margins)
 
 
-
 class QtLayout(QtBase):
     def __init__(self, func, parent=None, *args, **kwargs):
         super(QtLayout, self).__init__(func, parent, *args, **kwargs)
@@ -191,7 +190,7 @@ class QtWidget(QtBase):
                 else:
                     print('Unknown parent QtRoot(widget): {}'.format(parent))
 
-            #We would use addTab here but the name would not be set
+            #We would use addTab here but the name would not be set, so QtTabLayout deals with that
             elif isinstance(parent, QtTabLayout):
                 pass
 
@@ -211,7 +210,48 @@ class QtRoot(QtLayout):
     def addStatusBar(self):
         self.statusBar = QtWidgets.QStatusBar()
         self.QObject.setStatusBar(self.statusBar)
+
+    def addMenuBar(self):
+        return self.QObject.menuBar()
+
+    def addToolBar(self, name):
+        return self.QObject.addToolBar(name)
+
+    def addMenuItem(self):
+        '''
+        #works
+        extractAction = QtWidgets.QAction("Action name", self.QObject, checkable=True)
+        extractAction.setShortcut("Ctrl+Q")
+        extractAction.setStatusTip('Status tip')
+        extractAction.triggered.connect(lambda:self.addToolBar('test'))
+        extractAction.setCheckable(True)
+
+        mainMenu = self.QObject.menuBar()
+        fileMenu = mainMenu.addMenu('&File')
+        fileMenu.addSeparator()
+        fileMenu.addAction(extractAction)
+        fileMenu2 = fileMenu.addMenu('dfa')
+
+
+        extractAction = QtWidgets.QAction("Action name", fileMenu2, checkable=True)
+        extractAction.setShortcut("Ctrl+Q")
+        extractAction.setStatusTip('Status tip')
+        extractAction.triggered.connect(lambda:self.addToolBar('test'))
+
+        fileMenu2.addAction(extractAction)
+        '''
         
+        '''
+        #to do
+        with self.addMenu('Menu') as main_menu:
+            with main_menu.addMenu('Submenu') as sub_menu
+                action = sub_menu.addAction('test action')
+                action.setShortcut('Qtrl+Q')
+                action.setStatusTip('status tip')
+                action.triggered.connect(lambda: None)
+            main_menu.addSeparator()
+        '''
+
 
 class QtGroupBoxWidget(QtWidget):
     """Modified QtWidget class for using a QGroupBox."""

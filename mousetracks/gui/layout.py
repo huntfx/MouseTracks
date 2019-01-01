@@ -13,7 +13,7 @@ def setup_layout(parent):
                 
                 program_layout.setContentsMargins(0)
                 program_layout.setSpacing(0)
-                program_layout.addWidget(QtCustom.ResizableImage(None, pixmap='images/test.jfif'))
+                program_layout.addWidget(QtCustom.ResizableImage('images/test.jfif'))
                 
                 with program_layout.addTabGroup() as tab_group_layout:
                     tab_group_layout.setFixedWidth(278)

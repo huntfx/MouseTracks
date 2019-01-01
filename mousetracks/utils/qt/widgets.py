@@ -7,7 +7,7 @@ from .Qt import QtWidgets, QtCore, QtGui
 
 class ResizableImage(QtWidgets.QLabel):
 
-    def __init__(self, parent=None, pixmap=None, minimumSize=(1, 1), align=QtCore.Qt.AlignCenter):
+    def __init__(self, pixmap=None, parent=None, minimumSize=(1, 1), align=QtCore.Qt.AlignCenter):
         super(ResizableImage, self).__init__(parent)
         self.setMinimumSize(*minimumSize)
         self.setAlignment(align)
