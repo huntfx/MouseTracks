@@ -19,7 +19,6 @@ class ResizableImage(QtWidgets.QLabel):
     def resizeEvent(self, event):
         """Resize the pixmap if it exists, keeping the aspect ratio."""
         if self._pixmapOriginal is not None:
-            
             #Test to make a square in the top left corner
             with self.makeEditable():
                 colour = QtGui.QColor(255, 255, 255).rgb()
@@ -28,7 +27,7 @@ class ResizableImage(QtWidgets.QLabel):
                         self.setPixel(x, y, colour)
 
             size_mult = min(self.width() / self._pixmapWidth, self.height() / self._pixmapHeight)
-            scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, transformMode=QtCore.Qt.SmoothTransformation)
+            scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
             super(ResizableImage, self).setPixmap(scaled_pixmap)
 
         return super(ResizableImage, self).resizeEvent(event)
