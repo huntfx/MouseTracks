@@ -19,22 +19,84 @@ def layoutToWidget(layout):
 
 
 class Mixins(object):
-    """Define any commonly used functions that may need to be added to widgets."""
+    """Define any commonly used methods."""
     class AddLayout(object):
         def addLayout(self, layout):
             self.addWidget(layoutToWidget(layout))
+
+    class AddToLayout(object):
+        @contextmanager
+        def addLayout(self, layout, *args, **kwargs):
+            """Add a layout."""
+            yield self._addLayout(layout, *args, **kwargs)
+
+        def addLayoutWidget(self, layout, *args, **kwargs):
+            """Add a layout that does not contain anything."""
+            return self._addLayout(layout, *args, **kwargs)
+
+        def addWidget(self, widget, *args, **kwargs):
+            """Add a widget."""
+            return self._addWidget(widget, *args, **kwargs)
+
+        @contextmanager
+        def addWidgetLayout(self, widget, *args, **kwargs):
+            """Add a widget that is used like a layout."""
+            yield self._addWidget(widget, *args, **kwargs)
+
+        @contextmanager
+        def addTabGroup(self):
+            with QtTabLayout(self) as widget:
+                yield widget
+
+        @contextmanager
+        def addScrollArea(self, layout):
+            with QtScrollWidget(self) as container_widget, QtLayout(layout, container_widget) as container_layout:
+                yield (container_widget, container_layout)
+
+        @contextmanager
+        def addGroupBox(self, layout, name=''):
+            with QtGroupBoxWidget(self, name) as container_widget, QtLayout(layout, container_widget) as container_layout:
+                yield (container_widget, container_layout)
+
+        @contextmanager
+        def addHSplitter(self):
+            with QtSplitterWidget(self, 'horizontal') as container_widget:
+                yield container_widget
+
+        @contextmanager
+        def addVSplitter(self):
+            with QtSplitterWidget(self, 'vertical') as container_widget:
+                yield container_widget
+
 
 
 class QtBase(object):
     INHERIT = {
         QtWidgets.QLayout: [
+            'contentsMargins',
+            'spacing',
             'setSpacing',
+        ],
+        QtWidgets.QHBoxLayout: [
+            'addStretch',
+        ],
+        QtWidgets.QVBoxLayout: [
             'addStretch',
         ],
         QtWidgets.QWidget: [
             'setVisible',
             'setEnabled',
-            'setLayout'
+            'setLayout',
+            'setSizePolicy',
+            'setMaximumHeight',
+            'setFixedHeight',
+            'setMinimumHeight',
+            'setMaximumWidth',
+            'setFixedWidth',
+            'setMinimumWidth',
+            'setMaximumSize',
+            'setFixedSize',
+            'setMinimumSize',
         ],
         QtWidgets.QComboBox: [
             'addItems'
@@ -47,6 +109,37 @@ class QtBase(object):
         ],
         QtWidgets.QListWidget: [
             'addItems'
+        ],
+        AutoGrid: [
+            'contentsMargins',
+            'setContentsMargins',
+            'spacing',
+            'setSpacing',
+            'addWidget',
+            'addLayout',
+            'removeItem',
+            'removeWidget',
+            'removeLayout',
+            'index',
+            'indexOf',
+            'row',
+            'rowOf',
+            'column',
+            'columnOf',
+            'minimumItemWidth',
+            'setMinimumItemWidth',
+            'maximumItemWidth',
+            'setMaximumItemWidth',
+            'minimumItemHeight',
+            'setMinimumItemHeight',
+            'maximumItemHeight',
+            'setMaximumItemHeight',
+            'zoomSpeed',
+            'setZoomSpeed',
+            'gridSize',
+            'setGridSize',
+            'alignment',
+            'setAlignment',
         ]
     }
 
@@ -97,7 +190,7 @@ class QtBase(object):
         self.QObject.setContentsMargins(*margins)
 
 
-class QtLayout(QtBase):
+class QtLayout(QtBase, Mixins.AddToLayout):
     def __init__(self, func, parent=None, *args, **kwargs):
         super(QtLayout, self).__init__(func, parent, *args, **kwargs)
 
@@ -127,49 +220,6 @@ class QtLayout(QtBase):
     def _addWidget(self, widget, *args, **kwargs):
         with QtWidget(widget, self, *args, **kwargs) as widget:
             return widget
-
-    @contextmanager
-    def addLayout(self, layout, *args, **kwargs):
-        """Add a layout."""
-        yield self._addLayout(layout, *args, **kwargs)
-
-    def addLayoutWidget(self, layout, *args, **kwargs):
-        """Add a layout that does not contain anything."""
-        return self._addLayout(layout, *args, **kwargs)
-
-    def addWidget(self, widget, *args, **kwargs):
-        """Add a widget."""
-        return self._addWidget(widget, *args, **kwargs)
-
-    @contextmanager
-    def addWidgetLayout(self, widget, *args, **kwargs):
-        """Add a widget that is used like a layout."""
-        yield self._addWidget(widget, *args, **kwargs)
-
-    @contextmanager
-    def addTabGroup(self):
-        with QtTabLayout(self) as widget:
-            yield widget
-
-    @contextmanager
-    def addScrollArea(self, layout):
-        with QtScrollWidget(self) as container_widget, QtLayout(layout, container_widget) as container_layout:
-            yield (container_widget, container_layout)
-
-    @contextmanager
-    def addGroupBox(self, layout, name=''):
-        with QtGroupBoxWidget(self, name) as container_widget, QtLayout(layout, container_widget) as container_layout:
-            yield (container_widget, container_layout)
-
-    @contextmanager
-    def addHSplitter(self):
-        with QtSplitterWidget(self, 'horizontal') as container_widget:
-            yield container_widget
-
-    @contextmanager
-    def addVSplitter(self):
-        with QtSplitterWidget(self, 'vertical') as container_widget:
-            yield container_widget
         
 
 class QtWidget(QtBase):
@@ -180,13 +230,13 @@ class QtWidget(QtBase):
             if isinstance(parent, QtRoot):
                 if isinstance(parent.QObject, QtWidgets.QMainWindow):
                     print('{}.setCentralWidget({})'.format(parent.QObject.__class__.__name__, self.QObject.__class__.__name__))
-                    parent.QObject.setCentralWidget(self.QObject)
+                    parent.QObject.setCentralWidget(self.QObject, *args, **kwargs)
                 elif isinstance(parent.QObject, QtWidgets.QToolBar):
                     print('{}.addWidget({})'.format(parent.QObject.__class__.__name__, self.QObject.__class__.__name__))
-                    parent.QObject.addWidget(self.QObject)
+                    parent.QObject.addWidget(self.QObject, *args, **kwargs)
                 elif isinstance(parent.QObject, QtWidgets.QDockWidget):
                     print('{}.setWidget({})'.format(parent.QObject.__class__.__name__, self.QObject.__class__.__name__))
-                    parent.QObject.setWidget(self.QObject)
+                    parent.QObject.setWidget(self.QObject, *args, **kwargs)
                 else:
                     print('Unknown parent QtRoot(widget): {}'.format(parent))
 
@@ -196,11 +246,11 @@ class QtWidget(QtBase):
 
             elif isinstance(parent, QtSplitterWidget):
                 print('{}.addWidget({})'.format(parent.__class__.__name__, self.QObject.__class__.__name__))
-                parent.QObject.addWidget(self.QObject)
+                parent.QObject.addWidget(self.QObject, *args, **kwargs)
 
             elif isinstance(parent, QtLayout):
                 print('{}.addWidget({})'.format(parent.QObject.__class__.__name__, self.QObject.__class__.__name__))
-                parent.QObject.addWidget(self.QObject)
+                parent.QObject.addWidget(self.QObject, *args, **kwargs)
             else:
                 print('Unknown parent (widget): {}'.format(parent))
 
@@ -271,7 +321,7 @@ class QtSplitterLayoutWidget(QtWidget):
         super(QtSplitterLayoutWidget, self).__init__(QtWidgets.QWidget(), parent, *args, **kwargs)
 
 
-class QtSplitterWidget(QtWidget):
+class QtSplitterWidget(QtWidget, Mixins.AddToLayout):
     """Modified QtWidget class for using a QGroupBox."""
     def __init__(self, parent=None, orientation=None):
         if orientation == 'horizontal':
@@ -279,15 +329,16 @@ class QtSplitterWidget(QtWidget):
         else:
             super(QtSplitterWidget, self).__init__(QtWidgets.QSplitter(QtCore.Qt.Vertical), parent)
 
-    @contextmanager
-    def addLayout(self, layout):
+
+    def _addLayout(self, layout):
         with QtSplitterLayoutWidget(self) as widget:
             with QtLayout(layout, widget) as layout:
-                yield layout
+                return layout
 
-    def addWidget(self, widget):
+    def _addWidget(self, widget, *args, **kwargs):
         self.QObject.addWidget(widget)
         return widget
+        
 
 
 class QtTabWidget(QtWidget):

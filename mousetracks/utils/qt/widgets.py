@@ -1,10 +1,10 @@
 """Standalone widgets for use in Qt applications.
 
 
-ResizableImage:
+QResizableImage:
     Subclass of QLabel that is meant to be an image that fills the available space.
     Usage:
-        ri = ResizableImage(path_to_image)
+        ri = QResizableImage(path_to_image)
         with ri.makeEditable():
             ri.setPixel(x, y, QtGui.QColor(r, g, b).rgb())
         layout.addWidget(ri)
@@ -35,32 +35,87 @@ from functools import partial
 from .Qt import QtWidgets, QtCore, QtGui
 
 
-class ResizableImage(QtWidgets.QLabel):
+class QVSlider(QtWidgets.QSlider):
+    def __init__(self, *args, **kwargs):
+        super(QVSlider, self).__init__(QtCore.Qt.Orientation.Vertical, *args, **kwargs)
+
+
+class QHSlider(QtWidgets.QSlider):
+    def __init__(self, *args, **kwargs):
+        super(QHSlider, self).__init__(QtCore.Qt.Orientation.Horizontal, *args, **kwargs)
+
+
+class QIcon(QtGui.QIcon):
+    def __init__(self, pixmap):
+        if isinstance(pixmap, str):
+            pixmap = QtGui.QPixmap(pixmap)
+        super(QIcon, self).__init__(pixmap)
+
+
+class QTextEditResize(QtWidgets.QTextEdit):
+    def __init__(self, *args, **kwargs):
+        super(QTextEditResize, self).__init__(*args, **kwargs)
+        self.setMinimumHeight(22)
+        self.textChanged.connect(self._adjustHeight)
+        self._adjustHeight()
+
+    def _adjustHeight(self):
+        documentHeight = self.document().size().toSize().height()
+        self.setMaximumHeight(max(self.minimumHeight(), documentHeight) + 3)
+
+
+class QResizableImage(QtWidgets.QLabel):
 
     def __init__(self, pixmap=None, parent=None, minimumSize=(1, 1), align=QtCore.Qt.AlignCenter):
-        super(ResizableImage, self).__init__(parent)
+        super(QResizableImage, self).__init__(parent)
         self.setMinimumSize(*minimumSize)
         self.setAlignment(align)
+        self._sizeHint = None
+        
+        #self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+
+        self.setTransformMode(QtCore.Qt.SmoothTransformation)
 
         self._pixmapOriginal = None
         if pixmap is not None:
             self.setPixmap(pixmap)
 
+    def sizeHint(self):
+        if self._sizeHint is None:
+            return super(QResizableImage, self).sizeHint()
+        return QtCore.QSize(*self._sizeHint)
+
+    def transformMode(self):
+        return self._transformMode
+
+    def setTransformMode(self, mode):
+        self._transformMode = mode
+
     def resizeEvent(self, event):
         """Resize the pixmap if it exists, keeping the aspect ratio."""
         if self._pixmapOriginal is not None:
             #Test to make a square in the top left corner
+            '''
             with self.makeEditable():
                 colour = QtGui.QColor(255, 255, 255).rgb()
                 for x in range(50):
                     for y in range(50):
                         self.setPixel(x, y, colour)
-
+                        '''
+            width = self.width()
+            
             size_mult = min(self.width() / self._pixmapWidth, self.height() / self._pixmapHeight)
-            scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
-            super(ResizableImage, self).setPixmap(scaled_pixmap)
+            self._sizeHint = (self._pixmapWidth * size_mult, self._pixmapHeight * size_mult)
+            
+            scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, QtCore.Qt.IgnoreAspectRatio, self.transformMode())
+            #scaled_pixmap = self._pixmapOriginal.scaled(self.width(), self.height(), QtCore.Qt.IgnoreAspectRatio, self.transformMode())
+            super(QResizableImage, self).setPixmap(scaled_pixmap)
 
-        return super(ResizableImage, self).resizeEvent(event)
+        try:
+            return super(QResizableImage, self).resizeEvent(event)
+        finally:
+            self.setMaximumHeight(100000)
 
     @contextmanager
     def makeEditable(self):
@@ -92,12 +147,31 @@ class ResizableImage(QtWidgets.QLabel):
             self._pixmapOriginal = None
             return
 
-        super(ResizableImage, self).setPixmap(pixmap)
+        super(QResizableImage, self).setPixmap(pixmap)
+
+    def setMinimumWidth(self, width):
+        super(QResizableImage, self).setMinimumWidth(width)
+        super(QResizableImage, self).setMinimumHeight(width)
+
+    def setMinimumHeight(self, height):
+        super(QResizableImage, self).setMinimumWidth(height)
+        super(QResizableImage, self).setMinimumHeight(height)
+
+    def setMaximumWidth(self, width):
+        super(QResizableImage, self).setMaximumWidth(width)
+        super(QResizableImage, self).setMaximumHeight(width)
+
+    def setMaximumHeight(self, height):
+        super(QResizableImage, self).setMaximumWidth(height)
+        super(QResizableImage, self).setMaximumHeight(height)
 
 
 
 class AutoGrid(QtWidgets.QScrollArea):
     """Arrange widgets and move to new row if there is not enough room.
+
+    IMPORTANT: update() must be called after adding the widgets or nothing will happen.
+    
 
     Main Methods:
         addWidget(QtWidgets.QWidget)
@@ -107,7 +181,7 @@ class AutoGrid(QtWidgets.QScrollArea):
         removeLayout(QtWidgets.QWidget|QtWidgets.QLayout)
 
     Supported Methods:
-        setAspectRatio
+        setAlignment
         
     Additional Methods:
         setMinimumItemWidth(int): Set the minimum width allowed for items.
@@ -131,9 +205,6 @@ class AutoGrid(QtWidgets.QScrollArea):
         setSpacing(int): Set spacing between each grid item.
             Default: 0
             Query: spacing()
-        setTextPadding(int): Set padding between the text and widget.
-            Default: 5
-            Query: textPadding()
         setGridSize(int): Set the height of each widget.
             Default: 250
             Query: gridSize()
@@ -149,6 +220,8 @@ class AutoGrid(QtWidgets.QScrollArea):
 
     TYPE_WIDGET = 0
     TYPE_LAYOUT = 1
+
+    widgetIconSet = QtCore.Signal(QtWidgets.QWidget)
 
     def __init__(self, parent=None):
         super(AutoGrid, self).__init__(parent)
@@ -172,10 +245,11 @@ class AutoGrid(QtWidgets.QScrollArea):
         self.setMinimumItemWidth()
         self.setMinimumItemHeight()
         self.setContentsMargins(0)
-        self.setTextPadding(5)
         self.setSpacing(5)
         self.setGridSize(250)
         self.setZoomSpeed(1)
+
+        self.widgetIconSet.connect(self._itemIconUpdated)
 
         #Inbuilt Qt methods
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
@@ -185,16 +259,16 @@ class AutoGrid(QtWidgets.QScrollArea):
         self._widgetReady = True
 
     @staticmethod
-    def _paintEventOverride(self, old_paint, text, event):
+    def _paintEventOverride(self, text, event):
         """Override paintEvent on widgets to also draw text."""
-        old_paint(event)
+        self._autoGridOriginalPaintEvent(event)
         text_flags = QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom  | QtCore.Qt.TextWordWrap
 
         #Setup font
         font = QtGui.QFont()
         font.setBold(True)
         font.setCapitalization(QtGui.QFont.AllUppercase)
-        font_size = self.height() ** 0.6
+        font_size = self.height() ** 0.6 - 2
         font.setPixelSize(font_size)
 
         #Setup painter
@@ -203,7 +277,7 @@ class AutoGrid(QtWidgets.QScrollArea):
 
         #Draw text
         shadow_offset = max(1, round(font_size / 10))
-        padding = self.autoGridTextPadding()
+        padding = round(font_size / 10)
         width = self.width() - padding * 2 - shadow_offset
         height = self.height() - padding * 2 - shadow_offset
         painter.setPen(QtGui.QColor(0, 0, 0))
@@ -212,6 +286,12 @@ class AutoGrid(QtWidgets.QScrollArea):
         painter.drawText(QtCore.QRect(padding, padding, width, height), text_flags, text)
 
         painter.setBackground(QtGui.QColor(0, 0, 0))
+
+    @staticmethod
+    def _setIconOverride(self, signal, event):
+        result = self._autoGridOriginalSetIcon(event)
+        signal.emit(self)
+        return result
 
     def setGridSize(self, size):
         self._gridSize = size
@@ -233,23 +313,31 @@ class AutoGrid(QtWidgets.QScrollArea):
     def gridSize(self):
         return self._gridSize
 
-    def setTextPadding(self, padding=0):
-        self._textPadding = padding
+    def _itemIconUpdated(self, item):
+        """Change the stored icon data if the icon has been changed."""
+        self._itemList[item]['original_icon'] = item.icon()
+        if self._itemList[item]['original_icon']:
+            self._itemList[item]['original_icon_size'] = max(self._itemList[item]['original_icon'].availableSizes())
+        else:
+            self._itemList[item]['original_icon_size'] = None
+        self._resizeImages(item)
 
-    def textPadding(self):
-        return self._textPadding
-
-    def _addItem(self, item, text, aspectRatio, itemType):
+    def _addItem(self, item, text, aspectRatio, itemType, insertPosition=None):
         if item not in self._itemList:
             
-            #Override the paint method
+            #Override the paint method to draw text
             if text and hasattr(item, 'paintEvent'):
-                old_paint = item.paintEvent
-                item.autoGridTextPadding = self.textPadding
-                item.paintEvent = partial(self._paintEventOverride, item, old_paint, text)
+                item._autoGridOriginalPaintEvent = item.paintEvent
+                item.paintEvent = partial(self._paintEventOverride, item, text)
+            
+            #Override setting icon to allow signals
+            if hasattr(item, 'setIcon'):
+                item._autoGridOriginalSetIcon = item.setIcon
+                item.setIcon = partial(self._setIconOverride, item, self.widgetIconSet)
             
             #Calculate button ratio
-            icon_sizes = item.icon().availableSizes()
+            icon = item.icon()
+            icon_sizes = icon.availableSizes()
             if icon_sizes:
                 size = max(icon_sizes)
                 width = size.width()
@@ -263,41 +351,53 @@ class AutoGrid(QtWidgets.QScrollArea):
             self._itemList[item] = {
                 'type': itemType, 
                 'aspect': aspectRatio,
-                'original_icon': item.icon(),
+                'original_icon': icon,
                 'original_icon_size': size if icon_sizes else None,
                 'current_row': -1,
                 'current_column': -1,
             }
-            self._itemOrder.append(item)
+            if insertPosition is None:
+                self._itemOrder.append(item)
+            else:
+                self._itemOrder = self._itemOrder[:insertPosition] + [item] + self._itemOrder[insertPosition:]
             self._resizeImages(item)
-            self.setMinimumItemWidth(self.minimumItemWidth())
-            self.setMaximumItemWidth(self.maximumItemWidth())
+
+        return item
     
     def _resizeImages(self, *items):
         """Resize an image for the current row height."""
         for item in (items or self._itemList):
-            if item is not None:
-                new_width = self._gridSize * self._itemList[item]['aspect']
-                new_size = QtCore.QSize(new_width, self._gridSize)
+            if item is None:
+                continue
 
-                if self._itemList[item]['original_icon_size'] is not None:
-                    too_short = self._itemList[item]['original_icon_size'].height() < self._gridSize
-                    too_thin = self._itemList[item]['original_icon_size'].width() < self._gridSize * self._itemList[item]['aspect']
-                    if too_short or too_thin:
-                        pixmap = self._itemList[item]['original_icon'].pixmap(self._itemList[item]['original_icon_size']).scaledToHeight(self._gridSize)
-                        item.setIcon(pixmap)
+            new_width = self._gridSize * self._itemList[item]['aspect']
+            new_size = QtCore.QSize(new_width, self._gridSize)
 
-                item.setFixedSize(new_size)
-                item.setIconSize(new_size)
-                self._itemList[item]['width'] = new_width
-                self._itemList[item]['height'] = self._gridSize
-                self.setMinimumWidth(new_width)
+            #Redraw the icon
+            if self._itemList[item]['original_icon_size'] is not None:
+                too_short = self._itemList[item]['original_icon_size'].height() < self._gridSize
+                too_thin = self._itemList[item]['original_icon_size'].width() < self._gridSize * self._itemList[item]['aspect']
+                if too_short or too_thin:
+                    pixmap = self._itemList[item]['original_icon'].pixmap(self._itemList[item]['original_icon_size']).scaledToHeight(self._gridSize)
+                    item._autoGridOriginalSetIcon(pixmap)
+
+            item.setIconSize(new_size)
+            item.setFixedSize(new_size)
+            self._itemList[item]['width'] = new_width
+            self._itemList[item]['height'] = self._gridSize
+            self.setMinimumWidth(new_width)
 
     def addWidget(self, widget, text='', aspectRatio=None):
-        self._addItem(widget, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_WIDGET)
+        return self._addItem(widget, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_WIDGET)
 
     def addLayout(self, layout, text='', aspectRatio=None):
-        self._addItem(layout, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_LAYOUT)
+        return self._addItem(layout, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_LAYOUT)
+
+    def insertWidget(self, position, widget, text='', aspectRatio=None):
+        return self._addItem(widget, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_WIDGET, insertPosition=position)
+
+    def insertLayout(self, position, text='', aspectRatio=None):
+        return self._addItem(layout, text=text, aspectRatio=aspectRatio, itemType=self.TYPE_LAYOUT, insertPosition=position)
 
     def setMinimumWidth(self, width):
         width += self._scrollBarWidth + self._contentsWidth + 5
@@ -329,7 +429,7 @@ class AutoGrid(QtWidgets.QScrollArea):
         return self.width() - self._contentsWidth - self._scrollBarWidth
 
     def buildLayout(self):
-        if not self._itemOrder:
+        if not self._itemOrder or not self._widgetReady:
             return
 
         #Get alignment information
