@@ -70,12 +70,14 @@ class QResizableImage(QtWidgets.QLabel):
         super(QResizableImage, self).__init__(parent)
         self.setMinimumSize(*minimumSize)
         self.setAlignment(align)
-        self._sizeHint = None
         
-        #self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sp = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sp.setHeightForWidth(True)
+        self.setSizePolicy(sp)
 
+        self.setDebugMode(False)
         self.setTransformMode(QtCore.Qt.SmoothTransformation)
+        self._sizeHint = None
 
         self._pixmapOriginal = None
         if pixmap is not None:
@@ -86,11 +88,21 @@ class QResizableImage(QtWidgets.QLabel):
             return super(QResizableImage, self).sizeHint()
         return QtCore.QSize(*self._sizeHint)
 
+    def heightForWidth(self, width):
+        return width / self._pixmapAspect
+
     def transformMode(self):
         return self._transformMode
 
     def setTransformMode(self, mode):
         self._transformMode = mode
+    
+    def debugMode(self):
+        return self._debugMode
+
+    def setDebugMode(self, debug):
+        """Disable the aspect scaling and instead fill all the available space."""
+        self._debugMode = debug
 
     def resizeEvent(self, event):
         """Resize the pixmap if it exists, keeping the aspect ratio."""
@@ -108,14 +120,13 @@ class QResizableImage(QtWidgets.QLabel):
             size_mult = min(self.width() / self._pixmapWidth, self.height() / self._pixmapHeight)
             self._sizeHint = (self._pixmapWidth * size_mult, self._pixmapHeight * size_mult)
             
-            scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, QtCore.Qt.IgnoreAspectRatio, self.transformMode())
-            #scaled_pixmap = self._pixmapOriginal.scaled(self.width(), self.height(), QtCore.Qt.IgnoreAspectRatio, self.transformMode())
+            if self.debugMode():
+                scaled_pixmap = self._pixmapOriginal.scaled(self.width(), self.height(), QtCore.Qt.IgnoreAspectRatio, self.transformMode())
+            else:
+                scaled_pixmap = self._pixmapOriginal.scaled(self._pixmapWidth * size_mult, self._pixmapHeight * size_mult, QtCore.Qt.IgnoreAspectRatio, self.transformMode())
             super(QResizableImage, self).setPixmap(scaled_pixmap)
 
-        try:
-            return super(QResizableImage, self).resizeEvent(event)
-        finally:
-            self.setMaximumHeight(100000)
+        return super(QResizableImage, self).resizeEvent(event)
 
     @contextmanager
     def makeEditable(self):
@@ -140,31 +151,18 @@ class QResizableImage(QtWidgets.QLabel):
         self._pixmapOriginal = pixmap
         self._pixmapWidth = pixmap.width()
         self._pixmapHeight = pixmap.height()
+        self._pixmapAspect = self._pixmapWidth / self._pixmapHeight
         self._pixmapImage = None
 
         #Cancel if the pixmap is empty
         if not self._pixmapWidth or not self._pixmapHeight:
             self._pixmapOriginal = None
+            self.sizePolicy().setHeightForWidth(False)
             return
 
+        self.sizePolicy().setHeightForWidth(True)
+
         super(QResizableImage, self).setPixmap(pixmap)
-
-    def setMinimumWidth(self, width):
-        super(QResizableImage, self).setMinimumWidth(width)
-        super(QResizableImage, self).setMinimumHeight(width)
-
-    def setMinimumHeight(self, height):
-        super(QResizableImage, self).setMinimumWidth(height)
-        super(QResizableImage, self).setMinimumHeight(height)
-
-    def setMaximumWidth(self, width):
-        super(QResizableImage, self).setMaximumWidth(width)
-        super(QResizableImage, self).setMaximumHeight(width)
-
-    def setMaximumHeight(self, height):
-        super(QResizableImage, self).setMaximumWidth(height)
-        super(QResizableImage, self).setMaximumHeight(height)
-
 
 
 class AutoGrid(QtWidgets.QScrollArea):
@@ -238,6 +236,7 @@ class AutoGrid(QtWidgets.QScrollArea):
         self._itemOrder = []
         self._scrollBarWidth = int(QtWidgets.QScrollBar().sizeHint().width())
         self._maxAspect = 0
+        self._previousLayout = []
 
         #Custom methods
         self.setMaximumItemWidth()
@@ -379,7 +378,7 @@ class AutoGrid(QtWidgets.QScrollArea):
                 too_thin = self._itemList[item]['original_icon_size'].width() < self._gridSize * self._itemList[item]['aspect']
                 if too_short or too_thin:
                     pixmap = self._itemList[item]['original_icon'].pixmap(self._itemList[item]['original_icon_size']).scaledToHeight(self._gridSize)
-                    item._autoGridOriginalSetIcon(pixmap)
+                    item._autoGridOriginalSetIcon(QtGui.QIcon(pixmap))
 
             item.setIconSize(new_size)
             item.setFixedSize(new_size)
@@ -454,6 +453,7 @@ class AutoGrid(QtWidgets.QScrollArea):
             grid.addStretch()
         
         #Add each item to layouts inside the grid
+        self._previousLayout = []
         for item in self._itemOrder + [None]:
             item_data = self._itemList[item]
             item_data['current_column'] = current_column
@@ -471,19 +471,22 @@ class AutoGrid(QtWidgets.QScrollArea):
                 layout = None
 
             #Create a new row
-            if item is not None and layout is None:
-                current_width = item_data['width']
-                layout = QtWidgets.QHBoxLayout()
-                layout.setSpacing(self._spacing)
-                layout.setContentsMargins(0, 0, 0, 0)
-                layout.setAlignment(QtCore.Qt.AlignLeft)
-                layout.alignment()
+            if item is not None:
+                if layout is None:
+                    current_width = item_data['width']
+                    layout = QtWidgets.QHBoxLayout()
+                    layout.setSpacing(self._spacing)
+                    layout.setContentsMargins(0, 0, 0, 0)
+                    layout.setAlignment(QtCore.Qt.AlignLeft)
+                    layout.alignment()
 
-                current_row += 1
-                current_column = 0
+                    self._previousLayout.append(0)
+                    current_row += 1
+                    current_column = 0
 
-                if align_h[1] or align_h[2]:
-                    layout.addStretch()
+                    if align_h[1] or align_h[2]:
+                        layout.addStretch()
+                self._previousLayout[-1] += 1
 
             #Add item to layout
             if item_type == self.TYPE_WIDGET:
@@ -500,9 +503,26 @@ class AutoGrid(QtWidgets.QScrollArea):
         temp_widget.setLayout(grid)
         self.setWidget(temp_widget)
     
+    def _generateLayoutData(self):
+        """Calculate the new size of the grid to avoid too many redraws."""
+        padding = self.spacing()
+        max_width = self.contentsWidth()
+        row_data = [0]
+        current_width = -padding
+        for item in self._itemOrder:
+            item_data = self._itemList[item]
+            current_width += item_data['width'] + padding
+            if current_width > max_width:
+                row_data.append(1)
+                current_width = item_data['width']
+            else:
+                row_data[-1] += 1
+        return row_data
+
     def resizeEvent(self, event=None):
         super(AutoGrid, self).resizeEvent(event)
-        self.buildLayout()
+        if self._generateLayoutData() != self._previousLayout:
+            self.buildLayout()
 
     def setZoomSpeed(self, value):
         self._zoomSpeed = max(0, value / 10)
