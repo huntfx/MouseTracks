@@ -19,6 +19,7 @@ import winerror
 import win32ui
 from multiprocessing import freeze_support
 
+from .main import WindowHandle
 from ....compatibility import callable, iteritems
 
 
