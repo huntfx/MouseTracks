@@ -180,6 +180,11 @@ class CustomOpen(object):
                     self.zip = zipfile.ZipFile(self.file, 'r')
                 except zipfile.BadZipfile:
                     as_zip = False
+                
+                # Check for corrupted zip file
+                ziptest = self.zip.testzip()
+                if ziptest:
+                    raise zipfile.BadZipfile('bad file in zip: {}'.format(ziptest))
             else:
                 if self.file is None:
                     self._file_object = BytesIO()

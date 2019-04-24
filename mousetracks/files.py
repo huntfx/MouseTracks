@@ -9,6 +9,7 @@ import time
 import zlib
 import os
 import sys
+import zipfile
 from operator import itemgetter
 from tempfile import gettempdir
 
@@ -189,7 +190,7 @@ def load_data(profile_name=None, _reset_sessions=True, _update_metadata=True, _c
             loaded_data = decode_file(f, legacy=f.zip is None, lazy_load_path=paths['Main'])
             
     #Load backup if file is corrupted
-    except (zlib.error, ValueError):
+    except (zlib.error, ValueError, zipfile.BadZipfile):
         try:
             with CustomOpen(paths['Backup'], 'rb') as f:
                 loaded_data = decode_file(f, legacy=f.zip is None, lazy_load_path=paths['Main'])
