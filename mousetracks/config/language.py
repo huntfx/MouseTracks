@@ -221,9 +221,19 @@ LANGUAGE_DEFAULTS = {
             'value': 'Application lost focus: [APPLICATION-NAME]',
             'level': 2
         },
+        'ApplicationUnfocused': {
+            '__info__': 'Valid Replacements: [APPLICATION-NAME]',
+            'value': 'Application lost focus: [APPLICATION-NAME]',
+            'level': 2
+        },
         'ApplicationLoad': {
             '__info__': 'Valid Replacements: [APPLICATION-NAME]',
             'value': 'Switching profile to [APPLICATION-NAME].',
+            'level': 2
+        },
+        'ApplicationUnload': {
+            '__info__': 'Valid Replacements: [APPLICATION-NAME]',
+            'value': 'Application data unloaded: [APPLICATION-NAME].',
             'level': 2
         },
         'ApplicationListen': {

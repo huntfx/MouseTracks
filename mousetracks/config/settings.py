@@ -98,20 +98,20 @@ CONFIG_DEFAULTS = {
             'type': int,
             'min': 0
         },
-        'MaximumAttemptsNormal': {
+        'MaximumAttempts': {
             '__info__': 'Maximum number of failed save attempts before the tracking continues.',
             'value': 3,
             'type': int,
             'min': 1
         },
-        'MaximumAttemptsSwitch': {
-            '__info__': 'Maximum number of failed save attempts when switching profile.',
-            'value': 24,
-            'type': int,
-            'min': 1
-        },
         'WaitAfterFail': {
             '__info__': 'How many seconds to wait before trying again.',
+            'value': 5,
+            'type': int,
+            'min': 0
+        },
+        'SavesBeforeUnload': {
+            '__info__': 'How many saves can pass before an application is unloaded from memory.',
             'value': 5,
             'type': int,
             'min': 0

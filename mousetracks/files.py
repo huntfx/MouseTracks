@@ -17,7 +17,7 @@ from .utils import numpy
 from .config.settings import CONFIG
 from .constants import DEFAULT_NAME, MAX_INT
 from .misc import CustomOpen, format_file_path, format_name
-from .utils.compatibility import PYTHON_VERSION, ModuleNotFoundError, BytesIO, unicode, pickle, iteritems
+from .utils.compatibility import PYTHON_VERSION, ModuleNotFoundError, BytesIO, unicode, pickle, iteritems, BytesIO
 from .utils.os import remove_file, rename_file, create_folder, hide_file, get_modified_time, list_directory, file_exists, get_file_size
 from .versions import VERSION, FILE_VERSION, upgrade_version, IterateMaps
 
@@ -44,19 +44,23 @@ LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLD
 #LOCK_FILE = '{}/mousetrack-{}.lock'.format(DATA_FOLDER, 1)   #Data folder (for testing)
 
 
-def _unpickle_pre_v34(data):
+class RenameUnpickler(pickle.Unpickler):
     """Any data saved before file version 34 will also have the "core.files.LoadData" class saved.
-    This will fake it for unpickling since all we need is a dict.
+    This will remap it
+
+    https://stackoverflow.com/a/53327348/2403000
     """
-    try:
-        return pickle.loads(data)
-    except (ImportError, ModuleNotFoundError):
-        class _DictOverride(dict):
-            pass
-        class _ImportOverride(object):
-            LoadData = _DictOverride
-        sys.modules['core.files'] = _ImportOverride
-        return pickle.loads(data)
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == 'core.files':
+            renamed_module = 'mousetracks.files'
+        return super(RenameUnpickler, self).find_class(renamed_module, name)
+
+    @classmethod
+    def loads(cls, pickled_bytes):
+        file_obj = BytesIO(pickled_bytes)
+        return cls(file_obj).load()
+
 
 def get_data_filename(name=None):
     """Get file name of data file."""
@@ -133,7 +137,7 @@ def decode_file(f, legacy=False, lazy_load_path=None):
     
     #New zip format (file version 26)
     try:
-        data = _unpickle_pre_v34(f.read('data.pkl'))
+        data = RenameUnpickler.loads(f.read('data.pkl'))
         numpy_maps = []
         i = 0
         if lazy_load_path is None:
@@ -146,7 +150,7 @@ def decode_file(f, legacy=False, lazy_load_path=None):
             
     #Original zip format
     except KeyError:
-        data = _unpickle_pre_v34(f.read('_'))
+        data = RenameUnpickler.loads(f.read('_'))
         numpy_maps = [numpy.load(f.read(i)) for i in range(int(f.read('n')))]
     
     #Reconnect the numpy maps
