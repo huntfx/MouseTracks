@@ -1,4 +1,4 @@
-﻿// Add any applications you want to be tracked here.
+// Add any applications you want to be tracked here.
 // Two separate applications can have the same name, and will be tracked under the same file.
 // Put each app on a new line, in the format "MyGame.exe: Game Name". The executable file is case sensitive.
 // You may also limit it to a certain window name, for example if the game uses a generic executable name.
@@ -15,6 +15,7 @@
 6kinoko.exe: New Super Marisa Land
 7DaysToDie.exe: 7 Days to Die
 8bitboy.exe: 8BitBoy
+A Blind Legend.exe
 AbeWin.exe: Oddworld: Abe's Oddysee
 AbsoluteDrift.exe: Absolute Drift
 AC3SP.exe: Assassin's Creed 3
@@ -47,6 +48,7 @@ Albion-Online.exe: Albion Online
 AlienBreed-Impact.exe: Alien Breed Impact
 AlienBreed2Assault.exe: Alien Breed 2: Assault
 Allegiance.exe
+AlphaPrime.exe: Alpha Prime
 altitude.exe: Alltitude
 Amnesia.exe: Amnesia: The Dark Descent
 Anarchy.exe: Anarchy Online
@@ -54,12 +56,17 @@ Angeldust.exe
 Anno2205.exe: Anno 2205
 anno5.exe: Anno 2070
 anowor.exe: Another World
+AnthemDemo.exe: Anthem
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
+Application-steam-x32.exe: Banished
+Application-steam-x64.exe: Banished
 ApplicationFrameHost.exe: <ignore>
 ApplicationFrameHost.exe[bonk.io - Official Site: Play Bonk Here!<*>- Microsoft Edge]: bonk.io
+ApplicationFrameHost.exe[Gears of War 4]
 ApplicationFrameHost.exe[Halo 5: Forge]
+ApplicationFrameHost.exe[Madness: Project Nexus<*>]: Madness: Project Nexus
 ApplicationFrameHost.exe[Sea of Thieves Closed Beta]: Sea of Thieves
 ApplicationFrameHost.exe[Sea of Thieves]
 ArcheAge.exe
@@ -93,9 +100,11 @@ AvP_Launcher.exe: Alien Vs Predator
 Awesomenauts.exe
 AxiomVerge.exe: Axiom Verge
 BackToBed.exe: Back to Bed
+Baldur.exe: Baldur's Gate
 BangBangRacing.exe: Bang Bang Racing
 BarkleyV120.exe: Charles Barkley: Shut Up and Jam Gaiden
 Bastion.exe
+BATALJ Beta.exe: BATALJ
 BatmanAC.exe: Batman: Arkham City
 BatmanAK.exe: Batman Arkham Knight
 BattleBlockTheater.exe: BattleBlock Theater
@@ -154,6 +163,8 @@ BorderlandsPreSequel.exe: Borderlands: the Pre-Sequel
 braid.exe: Braid
 brawlhalla.app: Brawlhalla
 Brawlhalla.exe
+Breach-Win64-Shipping.exe: Breach
+Breach.exe
 broforce_beta.exe: Broforce
 Brothers.exe: Brothers - A Tale of Two Sons
 Bugs.exe: BBLiT
@@ -232,6 +243,8 @@ csgo.exe: Counter Strike: Global Offensive
 Cube.exe: Cube World
 cw.exe: Closers Dimension Conflict
 CW3.exe: Creeper World 3: Arc Eternal
+Cyberdrome-Win64-Shipping.exe: Cyberdrome
+Cyberdrome.exe
 cyphers.exe: Cyphers
 DAOrigins.exe: Dragon Age: Origins
 daorigins.exe: Dragon Age: Origins
@@ -304,6 +317,7 @@ Dishonored.exe
 DisneyInfinity2.exe: Disney Infinity
 DisneyInfinity3.exe: Disney Infinity
 Distance.exe
+Dividebysheep.exe: Divide By Sheep
 DMC-DevilMayCry.exe: DmC - Devil May Cry
 dndclient.exe: Dungeons & Dragons Online
 DNF.exe: Dungeon & Fighter
@@ -453,6 +467,9 @@ Fran Bow.exe
 FreeStyle2.exe: Freestyle Basketball 2
 From_The_Depths.exe: From The Depths
 FrontMissionEvolved.exe: Front Mission Evolved
+Frostpunk.exe
+FrostRunner-Win64-Shipping.exe: FrostRunner
+FrostRunner.exe
 Frozen Throne.app: Warcraft III
 fsx.exe: Microsoft Flight Simulator X
 FTLGame.exe: FTL: Faster Than Light
@@ -478,6 +495,7 @@ GeometryWars.exe: Geometry Wars
 GGXXACPR_Win.exe: Guilty Gear XX Accent Core Plus R
 gh3.exe: Guitar Hero 3: Legends of Rock
 GHWT.exe: Guitar Hero World Tour
+GIZMO_GAME-Win64-Shipping.exe: Gizmo
 GJL.exe: Galactic Junk League
 Glquake.exe: Quake
 gn_enbu.exe: Touhou Puppet Dance Performance
@@ -487,6 +505,7 @@ GodMode.exe: God Mode
 GooG.exe: Grey Goo
 GP5.exe: Guitar Pro 5
 grandia2.exe: Grandia 2
+GRB.exe: Tom Clancy's Ghost Recon Breakpoint
 Grickle101.exe: Puzzle Agent
 Grickle102.exe: Puzzle Agent 2
 grid2.exe: Grid 2
@@ -505,6 +524,8 @@ Guac.exe: Guacamelee
 guild-quest.exe: Guild Quest
 GuiltyGearXrd.exe: Guilty Gear Xrd -SIGN-
 GuitarPro.exe: Guitar Pro 6
+GuitarPro.exe[Activation]: <ignore>
+GuitarPro7.exe: Guitar Pro 7
 GunsofIcarusOnline.app: Guns of Icarus - Online
 GunsOfIcarusOnline.exe: Guns of Icarus - Online
 Gunz2_Steam.exe: GunZ 2: The Second duel
@@ -597,6 +618,7 @@ iracingsim64.exe: iRacing
 isaac-ng.exe: The Binding of Isaac: Rebirth
 Isaac.app: The Binding of Isaac
 Isaac.exe: The Binding of Isaac
+Isaac.exe[]: <ignore>
 istrolid.exe: Istrolid
 iw3mp.exe: Call of Duty: Modern Warfare
 iw3sp.exe: Call of Duty: Modern Warfare
@@ -653,6 +675,8 @@ lcgol.exe: Lara Croft and the Guardian of Light
 League of Legends.exe
 left4dead.exe: Left 4 Dead
 left4dead2.exe: Left 4 Dead 2
+LEGOHobbit.exe: LEGO: The Hobbit
+LEGOHobbit_DX11.exe: LEGO: The Hobbit
 LethalLeague.app: Lethal League
 LethalLeague.exe: Lethal League
 LifeIsStrange.exe: Life Is Strange
@@ -703,7 +727,7 @@ MassEffect3Demo.exe: Mass Effect 3
 MasterReboot.exe: Master Reboot
 MaxPayne3.exe: Max Payne 3
 maya.exe: Autodesk Maya
-maya.exe[]: <disable>
+maya.exe[]: <ignore>
 maya.exe[Output Window]: <disable>
 MBA.exe: Magical Battle Arena
 MBAA.exe: Melty Blood Actress Again: Current Code
@@ -744,6 +768,7 @@ Mountain.exe
 mow_assualt_squad.exe: Men Of War: Assault Squad
 mowas2.exe: Men Of War: Assault Squad 2
 mspaint.exe: Paint
+mstsc.exe[<*>Remote Desktop Connection]: Remote Desktop
 mudlet.exe: Mudlet
 mugen.exe: M.U.G.E.N
 MugenSouls.exe: Mugen Souls
@@ -860,10 +885,12 @@ polybridge.exe: Poly Bridge
 Polynomial.exe: The Polynomial
 popcapgame1.exe: Plants Vs Zombies
 portal2.exe: Portal 2
+PortalWars-Win64-Shipping.exe: Splitgate: Arena Warfare
 Powder.exe: The Powder Toy
 PPSSPPWindows.exe: PPSSPP
 PPSSPPWindows64.exe: PPSSPP
 Prepar3D.exe
+Prey.exe
 PrimalCarnageGame.exe: Primal Cargnage
 Prison Architect Safe Mode.exe: Prison Architect
 Prison Architect.exe
@@ -874,16 +901,20 @@ ProjectG.exe: PangYa!
 projectzomboid32.exe: Project Zomboid
 projectzomboid64.exe: Project Zomboid
 Proteus.exe: Mega Man Legacy Collection
+ProtoG.exe: Proto-G
+ProtoG_PreProduction.exe: Proto-G
+prototypef.exe: Prototype
 pso.exe: Phantasy Star Online
 pso2.exe: Phantasy Star Online 2
 psobb.exe: Phantasy Star Online Blue Burst
 PuyoVS.exe: Puyo Puyo VS 2
 Pyrite Heart.exe
+q2rtx.exe: Quake II
 quake.exe: Quake
 quake1.exe: Quake I
-quake2.exe: Quake 2
-quake3.exe: Quake 3
-Quake4.exe: Quake 4
+quake2.exe: Quake II
+quake3.exe: Quake III
+Quake4.exe: Quake IV
 QuakeChampions.exe: Quake Champions
 quakelive.exe: Quake Live
 quakelive_steam.exe: Quake Live
@@ -894,6 +925,7 @@ Quiplash.exe
 RA3EP1.exe: Command and Conquer: Red Alert 3
 RaceTheSun.exe: Race The Sun
 Rage.exe: RAGE
+Rage64.exe: RAGE
 ragexe.exe: Ragnarok Online
 Railroads.exe: Sid Meier's Railroads!
 RainbowSix.exe: Tom Clancy's Rainbow Six Siege
@@ -995,6 +1027,7 @@ ShadowComplex-Win32.exe: Shadow Complex
 Shadowgrounds.exe
 ShadowOfMordor.exe: Shadow Of Mordor
 Shadowrun.exe: Shadowrun Returns
+ShadowWarrior2.exe: Shadow Warrior 2
 ShantaeCurse.exe: Shantae and the Pirate's Curse
 shatteredplanet.exe: Shattered Planet
 ShatteredSkies.exe: Shattered Skies
@@ -1086,11 +1119,14 @@ strife-ve.exe: Strife: Veteran Edition
 strife.exe: Strife
 StrikersEdge.exe: Striker's Edge
 StrikersEdge.exe[Strikers Edge Configuration]: <ignore>
+Styx2-Win64-Shipping.exe: Styx: Shards of Darkness
+Styx2.exe: Styx: Shards of Darkness
 StyxGame.exe: Styx: Master of Shadows
 SublevelZero.exe: Sublevel Zero
 Subnautica.exe
 Suguri.exe
 SuperDungeonBros.exe: Super Dungeon Bros
+superflight.exe: Superflight
 superhexagon.exe: Super Hexagon
 SUPERHOT.exe
 SuperMeatBoy.exe: Super Meat Boy
@@ -1171,6 +1207,7 @@ The Sacred Tears TRUE.exe
 TheCrew.exe: The Crew
 TheDivision.exe: The Division
 thedivision.exe: The Division
+TheDivision2.exe: The Division 2
 TheForest.exe: The Forest
 TheLab.exe: The Lab
 THEMOD 1.3.exe: Tony Hawk's Underground 2
@@ -1181,6 +1218,7 @@ TheSecretWorldDX11.exe: The Secret World
 thespacegame.exe: Ascent - The Space Game
 TheWalkingDead2.exe: The Walking Dead Season Two
 TheWolfAmongUs.exe: The Wolf Among Us
+THG_DEMO_3.exe: Titanic: Honor and Glory
 Think of the Children Beta.exe: Think of the Children
 This War of Mine.exe
 thmhj.exe: Fantastic Danmaku Festival
@@ -1341,6 +1379,8 @@ XCOM2.exe: XCOM 2
 XcomEW.exe: XCOM: Enemy Unknown
 XComGame.exe: XCOM: Enemy Unknown
 Xenonauts.exe
+XenonRacer-Win64-Shipping.exe: Xenon Racer
+XenonRacer.exe: Xenon Racer
 Xonotic.exe
 XR_3DA.exe: S.T.A.L.K.E.R.: Shadow of Chernobyl
 XRebirth.exe: X Rebirth

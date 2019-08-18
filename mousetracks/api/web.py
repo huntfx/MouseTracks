@@ -28,7 +28,13 @@ def _get_ports():
     
 def _get_config():
     app.config['PIPE_REQUEST_SEND'].send(FEEDBACK_CONFIG)
-    return app.config['PIPE_CONFIG_RECV'].recv()
+    try:
+        return app.config['PIPE_CONFIG_RECV'].recv()
+
+    # In Python 3, it somehow skips running Config.__init__
+    # This isn't a major feature so just disable it
+    except AttributeError:
+        return {}
     
     
 def _get_status():

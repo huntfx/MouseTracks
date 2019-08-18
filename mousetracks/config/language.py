@@ -1567,7 +1567,7 @@ class Language(object):
             
         try:
             gap = float(data[0])
-        except ValueError:
+        except (ValueError, IndexError):
             gap = 1
         else:
             del data[0]
