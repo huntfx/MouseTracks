@@ -295,7 +295,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     #Change resolutions to major keys
     if file_version < 24:
         data['Resolution'] = {}
-        resolutions = data['Maps']['Tracks'].keys()
+        resolutions = list(data['Maps']['Tracks'].keys())
         for resolution in resolutions:
             data['Resolution'][resolution] = {}
             data['Resolution'][resolution]['Tracks'] = data['Maps']['Tracks'].pop(resolution)

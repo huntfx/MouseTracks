@@ -310,6 +310,7 @@ def background_process(q_recv, q_send):
                         store['Applications'][store['CurrentProgramName']] = {
                             'Data': data,
                             'ActivitySinceLastSave': False,
+                            'SavesSinceLastActivity': 0,
                         }
                         
                         #Check new resolution
