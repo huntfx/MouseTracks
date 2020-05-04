@@ -23,17 +23,17 @@ class IterateMaps(object):
     """Iterate and process all resolutions for a profile."""
     def __init__(self, maps):
         self.maps = maps
-        
-    def _iterate(self, maps, command, extra=None, _legacy=False, _lazy_load_path=None, _resolution=None):            
+
+    def _iterate(self, maps, command, extra=None, _legacy=False, _lazy_load_path=None, _resolution=None):
         for key, value in iteritems(maps):
-            
+
             if isinstance(key, tuple):
                 _resolution = key
 
             #Old format where resolution was separate for each map
             if _legacy and isinstance(key, (str, unicode)):
                 self._iterate(value, command, extra, _legacy=_legacy)
-            
+
             #New format when each resolution contains all the maps
             elif not _legacy and isinstance(value, dict):
                 self._iterate(value, command, extra, _legacy=_legacy, _lazy_load_path=_lazy_load_path, _resolution=_resolution)
@@ -43,14 +43,14 @@ class IterateMaps(object):
                 array = maps[key]
                 maps[key] = len(self._map_list)
                 self._map_list.append(array)
-            
+
             #Rejoin the numpy arrays with the data
             elif command == 'join':
                 if _lazy_load_path is None:
                     maps[key] = extra[value]
                 else:
                     maps[key] = numpy.LazyLoader(_lazy_load_path, value, resolution=_resolution)
-            
+
             #Convert dicts to numpy arrays (only used on old files)
             elif command == 'convert' and _legacy:
                 width, height = key
@@ -58,7 +58,7 @@ class IterateMaps(object):
                 for x, y in value:
                     numpy_array[y][x] = value[(x, y)]
                 maps[key] = numpy_array
-                
+
     def separate(self):
         """Separate the numpy maps from the main data, and replace with an integer."""
         self._map_list = []
@@ -68,7 +68,7 @@ class IterateMaps(object):
     def join(self, numpy_maps, _legacy=False, _lazy_load_path=None):
         """Merge with the numpy maps again."""
         self._iterate(self.maps, 'join', numpy_maps, _legacy=_legacy, _lazy_load_path=_lazy_load_path)
-    
+
     def convert(self):
         """Convert the old map dictionaries to numpy arrays."""
         self._iterate(self.maps, 'convert', _legacy=True)
@@ -78,22 +78,22 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
     """Files from an older version will be run through this function.
     It will always be compatible between any two versions.
     """
-    
+
     #Convert from old versions to new
     try:
         file_version = data['FileVersion']
     except KeyError:
-        legacy_history = ['-1', '2.0'] + ['2.0.{}'.format(i) for i in (1, '1b', 2, 3, 4, 5, '5b', 6, '6b', 
-                                                                       '6c', 7, 8, 9, '9b', '9c', '9d', '9e', 
+        legacy_history = ['-1', '2.0'] + ['2.0.{}'.format(i) for i in (1, '1b', 2, 3, 4, 5, '5b', 6, '6b',
+                                                                       '6c', 7, 8, 9, '9b', '9c', '9d', '9e',
                                                                        10, '10b', '10c', '10d', 11, 12, 13)]
         try:
             file_version = legacy_history.index(str(data['Version']))
         except KeyError:
             file_version = 0
     original_version = file_version
-            
+
     current_time = time.time()
-    
+
     #Base format
     if file_version < 1:
         data['Count'] = 0
@@ -104,20 +104,20 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         data['LastSave'] = current_time
         data['TimesLoaded'] = 0
         data['Version'] = '2.0'
-    
+
     #Add acceleration tracking
     if file_version < 2:
         data['Acceleration'] = {}
-    
+
     #Rename acceleration to speed, change tracking method
     if file_version < 3:
         del data['Acceleration']
         data['Speed'] = {}
-    
+
     #Experimenting with combined speed and position tracks
     if file_version < 4:
         data['Combined'] = {}
-    
+
     #Separate click maps, record both keys pressed and how long
     if file_version < 5:
         if update_metadata:
@@ -130,13 +130,13 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                          'Total': data['Ticks'],
                          'Recorded': data['Count']}
         del data['Count']
-    
+
     #Save creation date and rename modified date
     if file_version < 6:
         data['Time'] = {'Created': data['LastSave'],
                         'Modified': data['LastSave']}
         del data['LastSave']
-    
+
     #Group maps and add extras for experimenting on
     if file_version < 7:
         data['Maps'] = {'Tracks': data['Tracks'], 'Clicks': data['Clicks'],
@@ -147,27 +147,27 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         del data['Clicks']
         del data['Speed']
         del data['Combined']
-    
+
     #Separate tick counts for different maps
     if file_version < 8:
         data['Ticks']['Current'] = {'Tracks': data['Ticks']['Current'],
                                     'Speed': data['Ticks']['Current']}
-    
-    #Remove speed and combined maps as they don't look very interesting    
+
+    #Remove speed and combined maps as they don't look very interesting
     if file_version < 9:
         del data['Maps']['Speed']
         del data['Maps']['Combined']
         del data['Ticks']['Current']['Speed']
-    
+
     #Record when session started
     if file_version < 10:
         data['Ticks']['Session'] = {'Current': data['Ticks']['Current']['Tracks'],
                                     'Total': data['Ticks']['Total']}
-    
-    #Record keystokes per session    
+
+    #Record keystokes per session
     if file_version < 11:
         data['Keys'] = {'All': data['Keys'], 'Session': {'Pressed': {}, 'Held': {}}}
-    
+
     #Fixed some incorrect key names
     if file_version < 12:
         changes = {'UNDERSCORE': 'HYPHEN',
@@ -185,18 +185,18 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                 data['Keys']['Session']['Held'][new] = data['Keys']['Session']['Held'].pop(old)
             except KeyError:
                 pass
-    
+
     #Store each session start
     if file_version < 13:
         data['SessionStarts'] = []
-    
+
     #Remove invalid track coordinates
     if file_version < 14:
-        for resolution in data['Maps']['Tracks']:
-            for k in data['Maps']['Tracks'][resolution].keys():
+        for resolution, resolution_data in tuple(data['Maps']['Tracks'].items()):
+            for k in tuple(resolution_data):
                 if not 0 < k[0] < resolution[0] or not 0 < k[1] < resolution[1]:
                     del data['Maps']['Tracks'][resolution][k]
-    
+
     #Matched format of session and total ticks, converted all back to integers
     if file_version < 15:
         data['Ticks']['Tracks'] = int(data['Ticks']['Current']['Tracks'])
@@ -207,11 +207,11 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             for k in data['Maps']['Tracks'][resolution]:
                 if isinstance(data['Maps']['Tracks'][resolution][k], float):
                     data['Maps']['Tracks'][resolution][k] = int(data['Maps']['Tracks'][resolution][k])
-    
+
     #Created separate map for clicks this session
     if file_version < 16:
         data['Maps']['Session'] = {'Clicks': {}}
-    
+
     #Remove temporary maps as they were messy, add double clicks
     if file_version < 17:
         del data['Maps']['Temp1']
@@ -224,17 +224,17 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         del data['Maps']['Temp8']
         data['Maps']['DoubleClicks'] = {}
         data['Maps']['Session']['DoubleClicks'] = {}
-    
+
     #Maintainence to remove invalid resolutions (the last update caused a few)
     if file_version < 18:
-    
+
         def _test_resolution(aspects, x, y):
             for ax, ay in aspects:
                 dx = x / ax
                 if not dx % 1 and dx * ay == y:
                     return True
             return False
-            
+
         aspects = [
             (4, 3),
             (16, 9),
@@ -242,20 +242,20 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             (18, 9),
             (21, 9),
         ]
-        
+
         #Reverse and check for multi monitor setups
         aspects += [(y, x) for x, y in aspects]
         aspects += [(x * 2, y) for x, y in aspects] + [(x * 3, y) for x, y in aspects] + [(x * 5, y) for x, y in aspects]
-        
+
         maps = ('Tracks', 'Clicks', 'DoubleClicks')
         for map in maps:
             for resolution in data['Maps'][map].keys():
                 if not _test_resolution(aspects, *resolution):
                     del data['Maps'][map][resolution]
-    
-    #Rearrange some maps and convert to numpy arrays    
+
+    #Rearrange some maps and convert to numpy arrays
     if file_version < 19:
-                        
+
         for maps in (data['Maps'], data['Maps']['Session']):
             maps['Click'] = {'Single': {'Left': {}, 'Middle': {}, 'Right': {}},
                              'Double': {'Left': {}, 'Middle': {}, 'Right': {}}}
@@ -269,29 +269,29 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                 maps['Click']['Double']['Middle'][resolution] = maps['DoubleClicks'][resolution][1]
                 maps['Click']['Double']['Right'][resolution] = maps['DoubleClicks'][resolution][2]
             del maps['DoubleClicks']
-        
+
         IterateMaps(data['Maps']).convert()
-    
+
     #Reset double click maps for code update
     if file_version < 20:
         data['Maps']['Click']['Double'] = {'Left': {}, 'Middle': {}, 'Right': {}}
-    
+
     #Track time between key presses and mistakes
     if file_version < 21:
         data['Keys']['All']['Intervals'] = {}
         data['Keys']['Session']['Intervals'] = {}
         data['Keys']['All']['Mistakes'] = {}
         data['Keys']['Session']['Mistakes'] = {}
-    
-    #Record more accurate intervals for each keystroke    
+
+    #Record more accurate intervals for each keystroke
     if file_version < 22:
         data['Keys']['All']['Intervals'] = {'Total': data['Keys']['All']['Intervals'], 'Individual': {}}
         data['Keys']['Session']['Intervals'] = {'Total': data['Keys']['Session']['Intervals'], 'Individual': {}}
-    
+
     #Gamepad tracking
     if file_version < 23:
         data['Gamepad'] = {'All': {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}}
-    
+
     #Change resolutions to major keys
     if file_version < 24:
         data['Resolution'] = {}
@@ -331,42 +331,42 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                                  'Middle': click_d_m,
                                  'Right': click_d_r}}
             data['Resolution'][resolution]['Clicks']['All'] = clicks
-            
+
         del data['Maps']
-    
+
     #Record history for later animation
     if file_version < 25:
         data['HistoryAnimation'] = {'Tracks': [], 'Clicks': [], 'Keyboard': []}
-        
+
     #Add version update history and distance travelled
     if file_version < 27:
         data['VersionHistory'] = {}
         data['Distance'] = {'Tracks': 0.0}
-    
+
     #Add speed maps
     if file_version < 28:
         for resolution in data['Resolution']:
             data['Resolution'][resolution]['Speed'] = numpy.array(resolution, create=True)
-        
+
     #Reset all intervals due to bug in how they were calculated, and clean mistakes
     if file_version < 29:
         data['Keys']['All']['Intervals'] = {'Total': {}, 'Individual': {}}
-        
+
         allowed_keys = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890')
         allowed_keys.update(['SPACE', 'COMMA', 'PERIOD', 'BACK'])
 
         #Build list of invalid keys
         invalid = []
         for first_key, values in iteritems(data['Keys']['All']['Mistakes']):
-        
+
             if first_key not in allowed_keys:
                 invalid.append(first_key)
                 continue
-                
+
             for last_key in values:
                 if last_key not in allowed_keys:
                     invalid.append((first_key, last_key))
-        
+
         #Remove invalid keys
         for key in invalid:
             if isinstance(key, (str, unicode)):
@@ -374,13 +374,13 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             else:
                 first_key, last_key = key
                 del data['Keys']['All']['Mistakes'][first_key][last_key]
-    
+
 
     #Add brush stroke maps (speed map only recorded while clicking)
     if file_version < 30:
         for resolution in data['Resolution']:
             data['Resolution'][resolution]['Strokes'] = numpy.array(resolution, create=True)
-    
+
     #Remove click sessions and add map for separate brush stroke tracking
     if file_version < 31:
         for resolution in data['Resolution']:
@@ -388,7 +388,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
             data['Resolution'][resolution]['StrokesSeparate'] = {'Left': numpy.array(resolution, create=True),
                                                                  'Middle': numpy.array(resolution, create=True),
                                                                  'Right': numpy.array(resolution, create=True)}
-    
+
     #Add capability for session time tracking
     if file_version < 32:
         data['Sessions'] = [[i, 0, 0] for i in data.pop('SessionStarts')]
@@ -499,7 +499,7 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
                         pass
                     else:
                         data['Keys'][session][dict_key][key_int] = count + data['Keys'][session][dict_key].get(key_int, 0)
-        
+
         #Update key intervals
         for session in ('All', 'Session'):
             separated = data['Keys'][session]['Intervals']['Individual']
@@ -535,29 +535,29 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         pass
 
     version_update = data.get('FileVersion', '0') != FILE_VERSION
-    
+
     #Track when the updates happen
     if version_update:
         start_version = max(original_version, 27)
         for i in range(start_version, FILE_VERSION+1):
             data['VersionHistory'][i] = current_time
-        
+
     if update_metadata:
         data['Version'] = VERSION
 
         #TODO: Auto update file version
-        data['FileVersion'] = FILE_VERSION 
-            
+        data['FileVersion'] = FILE_VERSION
+
     #Only count as new session if updated or last save was recent (<60 minutes)
     new_session = reset_sessions and (not data['Sessions'] or current_time - 3600 > data['Time']['Modified'])
     if new_session or version_update and original_version < 27:
-        
+
         #Remove old session if too short, since it's recreated we can technically just change the time to keep the stats
         if data['Sessions'] and 0 < data['Sessions'][-1][1] < CONFIG['Advanced']['MinSessionTime']:
             data['Sessions'][-1][0] = current_time
         else:
             data['Sessions'].append([current_time, 0, 0])
-        
+
         data['Ticks']['Session']['Tracks'] = data['Ticks']['Tracks']
         data['Ticks']['Session']['Total'] = data['Ticks']['Total']
         data['Keys']['Session']['Pressed'] = {}
@@ -566,5 +566,5 @@ def upgrade_version(data={}, reset_sessions=True, update_metadata=True):
         data['Keys']['Session']['Mistakes'] = {}
         data['Gamepad']['Session'] = {'Buttons': {'Pressed': {}, 'Held': {}}, 'Axis': {}}
         data['TimesLoaded'] += 1
-        
+
     return data
