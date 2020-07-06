@@ -87,6 +87,21 @@ def running_processes(q_recv, q_send, background_send):
                         app_start = LANGUAGE.strings['Tracking']['ApplicationStart']
                         app_end = LANGUAGE.strings['Tracking']['ApplicationEnd']
                     else:
+                        # Somewhat hacky way to detect if the application is full screen spanning multiple monitors
+                        # If this is the case, we want to record both monitors as normal
+                        app_is_windowed = True
+                        if MULTI_MONITOR and app_resolution is not None:
+                            x_min = x_max = y_min = y_max = 0
+                            for info in monitor_info():
+                                x1, y1, x2, y2 = info
+                                x_min = min(x_min, x1)
+                                x_max = max(x_max, x2)
+                                y_min = min(y_min, y1)
+                                y_max = max(y_max, y2)
+                            if (x_max - x_min, y_max - y_min) == app_resolution[1]:
+                                app_is_windowed = False
+
+                        send['ApplicationResolution'] = app_resolution if app_is_windowed else None
                         app_start = LANGUAGE.strings['Tracking']['ApplicationFocused']
                         app_end = LANGUAGE.strings['Tracking']['ApplicationUnfocused']
                 
