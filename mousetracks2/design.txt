@@ -1,0 +1,89 @@
+Qt window:
+    sends: start, stop, pause, reload
+    receives: image data (display in widget), console data (display with logging module with handler to widget)
+    processes: get mouse location to draw on top of temporary image data in realtime
+
+    Spawns foreground process:
+        sends: data to background thread, text to Qt window
+        receives: commands from Qt
+        processes: mouse position and keyboard status
+
+        Spawns program check thread:
+            sends: application, resolution
+            processes: which application is loaded
+        
+        Spawns background process:
+            receives: data from foreground process
+            sends: text
+            processes: number crunching, saving data
+
+
+data.mtk2:
+    sessions/2020-01-01.json       # [{'start_date': val, 'resolutions': {'1920x1080': ticks}}]
+    metadata.json       # {'created': val, 'modified': val, 'file_version': val, 'save_completed': True}
+    data/
+        <width_height>/
+            settings.json               # {'render': True}
+            stats.json                  # {'mouse_distance': val, 'ticks': val, 'session_count': val}
+            tracks/
+                <track_name>.json
+                <track_name>.npy
+            heatmaps/
+                <track_name>.json
+                <track_name>.npy
+            keyboard/
+                counts.json             # {opcode: count}
+                time.json               # {opcode: time}
+                [disabled] mistakes.json           # if backspace pressed once, record {opcode: {opcode: count}}
+                [disabled] consecutive.json        # number of times key followed another {opcode: {opcode: count}}
+                [disabled] intervals.json          # time between key processes {opcode: {opcode: time}}
+            gamepad/
+                counts.json             # {button: count}
+                time.json               # {button: time}
+                axis.json               # {axis: {value: count}}
+
+
+On load:
+    Check "save_completed" flag is set, if not load backup
+    Verify all data is valid
+    Lazily load what is needed
+
+On save:
+    Copy to backup dir
+    Delete "save_completed" flag
+    Write to temp files in zip
+    Move old files
+    Move temp files
+    Delete old files
+    Write "save_completed" flag
+
+Each tracking option will be saved with a json file containing settings.
+
+Track options:
+    {
+        'name': str,
+        'record': 'time|speed|count',
+        'contiguous': true,
+        'limit': true,
+        'when_pressed': [],
+        'when_not_pressed': [],
+    }
+
+Heatmap options:
+    {
+        'name': str,
+        'record': 'pressed|held',
+        'type': 'single|double',
+        'opcode': 0,
+        'when_pressed': [],
+        'when_not_pressed': [],
+    }
+
+Keyboard options:
+    {
+        'name': str,
+        'record': 'pressed|held',
+        'type': 'single|double',
+        'when_pressed': [],
+        'when_not_pressed': [],
+    }
