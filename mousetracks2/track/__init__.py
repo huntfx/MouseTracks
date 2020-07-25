@@ -3,7 +3,7 @@ from functools import partial
 from queue import Empty
 
 from constants import *
-from utils import mouse_position
+from utils import cursor_position, main_monitor_resolution
 
 
 class MainThread(object):
@@ -97,10 +97,11 @@ class MainThread(object):
             except Empty:
                 continue
 
-    def main(self):
+    def run(self):
         """Main loop to do all the realtime processing."""
         paused = False
         mouse_pos_old = None
+        resolution_old = None
         ticks = 0
         start = time.time()
         while self.running():
@@ -115,7 +116,19 @@ class MainThread(object):
                     if not self.paused():
                         self.mapping_pausable[data]()
 
+            # Handle realtime data
+            mouse_pos = cursor_position()
+            resolution = main_monitor_resolution()
+
+            # Remap mouse position to be within 0 and 1
+            if mouse_pos_old != mouse_pos or resolution != resolution_old:
+                remapped = (a / b for a, b in zip(mouse_pos, resolution))
+                self.send_event(ThreadEvent.MouseMove, remapped)
+
             # End of loop
+            mouse_pos_old = mouse_pos
+            resolution_old = resolution
+
             ticks += 1
             time_expected = ticks / self.gui.ups()
             time_diff = time.time() - start
@@ -123,15 +136,12 @@ class MainThread(object):
                 time.sleep(time_expected - time_diff)
 
 
-    def run(self):
-        """Execute the main loop and catch any errors."""
-        try:
-            self.main()
-        except BaseException:
-            self.send_event(ThreadEvent.Exception)
-            raise
-
-
 def run(gui):
-    """Wrap the class in a function that can be run."""
-    MainThread(gui).run()
+    """Execute the main loop and catch any errors."""
+    main = MainThread(gui)
+
+    try:
+        main.run()
+    except BaseException:
+        main.send_event(ThreadEvent.Exception)
+        raise

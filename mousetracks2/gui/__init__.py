@@ -139,12 +139,16 @@ class MainWindow(VFXWindow):
         elif event == ThreadEvent.Exception:
             self.setState(ThreadState.Stopped)
 
+        elif event == ThreadEvent.MouseMove:
+            coordinate = args[0]
+            if all(0 >= n >= 1 for n in coordinate):
+                pass  # TODO: Draw to QImage
+
     @QtCore.Slot()
     def startTracking(self):
         """Start/unpause the script."""
         if self.thread():
             self.sendToThread(GUICommand.Unpause)
-
         else:
             self.startThread()
 
