@@ -1,6 +1,6 @@
 # Mouse Tracks
 
-<i>Current Status: I've now got a full time job, so development on this has slowed. Since I have improved a lot since starting this, it's looking like the best idea would be to restart the project, and design it in a way where it's a lot more modular, I can hook it into a GUI, and have more efficient loading/saving of data files. I also plan on creating a [website](https://github.com/Peter92/FlaskWeb) to host the project.</i>
+<i>Current Status: I've got a full time job, so development on this has slowed. My plan is to start fresh with a much cleaner code base, where it'll be a lot more stable and modular than the current version.</i>
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
