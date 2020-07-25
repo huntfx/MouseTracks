@@ -1,7 +1,9 @@
+import time
 from functools import partial
 from queue import Empty
 
 from constants import *
+from utils import mouse_position
 
 
 class MainThread(object):
@@ -10,7 +12,7 @@ class MainThread(object):
     processing, and also handles the communication with the GUI.
     """
 
-    def __init__(self, gui):
+    def __init__(self, gui, ups=60):
         """Setup the tracking thread.
 
         Parameters:
@@ -20,6 +22,7 @@ class MainThread(object):
                 cope well with sending signals across threads.
         """
         self.gui = gui
+        self.ups = ups
         self.start()
 
         # Map commands to functions
@@ -33,22 +36,22 @@ class MainThread(object):
             GUICommand.RaiseException: lambda: 1/0,
         }
 
-    def send_event(self, event):
+    def send_event(self, event, *args, **kwargs):
         """Send an event back to the GUI.
-        
+
         Parameters:
             event (ThreadEvent): Event to send to the GUI.
         """
         if not isinstance(event, ThreadEvent):
             event = ThreadEvent[event]
-        self.gui.receiveFromThread(event)
-    
+        self.gui.receiveFromThread(event, *args, **kwargs)
+
     def start(self):
         """Mark the script as started."""
         self._running = True
         self.pause(False)
         self.send_event(ThreadEvent.Started)
-    
+
     def running(self):
         """Get if the script is still running."""
         return self._running
@@ -97,6 +100,9 @@ class MainThread(object):
     def main(self):
         """Main loop to do all the realtime processing."""
         paused = False
+        mouse_pos_old = None
+        ticks = 0
+        start = time.time()
         while self.running():
             # Handle any GUI commands
             for data in self.get_commands():
@@ -108,6 +114,14 @@ class MainThread(object):
                 elif data in self.mapping_pausable:
                     if not self.paused():
                         self.mapping_pausable[data]()
+
+            # End of loop
+            ticks += 1
+            time_expected = ticks / self.gui.ups()
+            time_diff = time.time() - start
+            if time_expected > time_diff:
+                time.sleep(time_expected - time_diff)
+
 
     def run(self):
         """Execute the main loop and catch any errors."""

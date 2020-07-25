@@ -10,6 +10,7 @@ from constants import *
 class MainWindow(VFXWindow):
     def __init__(self, **kwargs):
         self._function = kwargs.pop('func')
+        self._ups = kwargs.pop('ups', 60)
 
         super().__init__(**kwargs)
 
@@ -40,13 +41,19 @@ class MainWindow(VFXWindow):
         # Window setup
         self.setState(ThreadState.Stopped)
 
+    def closeEvent(self, event):
+        """Safely close the thread."""
+        if self.thread():
+            self.stopTracking()
+        return super().closeEvent(event)
+
     def state(self):
         """Get the current script state."""
         return self._state
 
     def setState(self, state):
         """Set the new thread state.
-        
+
         Parameters:
             state (ThreadState): State of the thread.
                 It can be Running, Paused or Stopped.
@@ -68,6 +75,10 @@ class MainWindow(VFXWindow):
         except AttributeError:
             self._queue = Queue()
         return self._queue
+
+    def ups(self):
+        """Get the number of updates per second."""
+        return self._ups
 
     def thread(self):
         """Get the current running thread.
@@ -95,7 +106,7 @@ class MainWindow(VFXWindow):
     def sendToThread(self, command):
         """Send a command to the thread.
         If the thread isn't running, the command will be ignored.
-        
+
         Parameters:
             command (GUICommand): Command to send to thread.
 
@@ -107,9 +118,9 @@ class MainWindow(VFXWindow):
             return True
         return False
 
-    def receiveFromThread(self, event):
+    def receiveFromThread(self, event, *args, **kwargs):
         """Handle any events sent back from the main thread.
-        
+
         Parameters:
             event (ThreadEvent): Event received from thread.
         """
@@ -151,7 +162,3 @@ class MainWindow(VFXWindow):
     def excTracking(self):
         """For testing only, send a command to raise an exception."""
         self.sendToThread(GUICommand.RaiseException)
-
-
-if __name__ == '__main__':
-    TempWindow.show()
