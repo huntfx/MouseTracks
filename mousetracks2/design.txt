@@ -11,33 +11,52 @@ Qt window:
         Spawns program check thread:
             sends: application, resolution
             processes: which application is loaded
-        
+
         Spawns background process:
             receives: data from foreground process
             sends: text
             processes: number crunching, saving data
 
 
-data.mtk2:
-    sessions/2020-01-01.json       # [{'start_date': val, 'resolutions': {'1920x1080': ticks}}]
-    metadata.json       # {'created': val, 'modified': val, 'file_version': val, 'save_completed': True}
+file.mtk2:
+    sessions/
+        <y-m-d>.json        # [{'start_date': val, 'resolutions': {'1920x1080': ticks}}]
+
+    metadata.json           # {'created': val, 'modified': val, 'file_version': val, 'save_completed': True}
+
+    config/                 # Store settings related to each trackable item
+        track/
+            <track_name>.json
+        heatmap/
+            <track_name>.json
+        keyboard/
+            <track_name>.json
+
+    history/                # Optionally keep a history of x ticks
+        track/
+            <track_name>.pkl            # [[resolution, (x, y), (x, y)], [resolution, (x, y)]]
+        heatmap/
+            <track_name>.pkl
+
     data/
         <width_height>/
             settings.json               # {'render': True}
-            stats.json                  # {'mouse_distance': val, 'ticks': val, 'session_count': val}
-            tracks/
-                <track_name>.json
+            stats.json                  # {'mouse_distance': val, 'ticks': val}
+            track/
                 <track_name>.npy
-            heatmaps/
-                <track_name>.json
+            heatmap/
                 <track_name>.npy
             keyboard/
-                counts.json             # {opcode: count}
-                time.json               # {opcode: time}
+                counts.json             # {scancode: count}
+                time.json               # {scancode: time}
                 [disabled] mistakes.json           # if backspace pressed once, record {opcode: {opcode: count}}
                 [disabled] consecutive.json        # number of times key followed another {opcode: {opcode: count}}
                 [disabled] intervals.json          # time between key processes {opcode: {opcode: time}}
             gamepad/
+                counts.json             # {button: count}
+                time.json               # {button: time}
+                axis.json               # {axis: {value: count}}
+            [disabled] joystick/        # Got nothing to test this on
                 counts.json             # {button: count}
                 time.json               # {button: time}
                 axis.json               # {axis: {value: count}}
@@ -62,28 +81,34 @@ Each tracking option will be saved with a json file containing settings.
 Track options:
     {
         'name': str,
-        'record': 'time|speed|count',
-        'contiguous': true,
-        'limit': true,
-        'when_pressed': [],
-        'when_not_pressed': [],
+        'record': 'time|speed|count',               # position over time / speed of mouse / number of passes on pixel
+        'contiguous': true,                         # If gaps between updates should draw a line
+        'limiter_ticks': int/None,                    # Run the limiter after this many ticks have elapsed
+        'limiter_action': 'divide|subtract|trim'   # Divide all / remove start / remove end
+        'limiter_amount': int/float,                  # What to divide/subtract from every value
+        'scancode_pressed': [],
+        'scancode_released': [],
+        'history_length': 0,
     }
+    # Default is "record: time, contiguous: True, limiter_ticks: 425000, limiter_action: divide, limiter_amount: 1.1"
+    # Speed while lmb pressed is "record: speed, contiguous: False, limiter_ticks: None, scancode_pressed: [0x01]"
 
 Heatmap options:
     {
         'name': str,
         'record': 'pressed|held',
         'type': 'single|double',
-        'opcode': 0,
-        'when_pressed': [],
-        'when_not_pressed': [],
+        'scancode': 0,
+        'scancode_pressed': [],
+        'scancode_released': [],
+        'history_length': 0,
     }
 
 Keyboard options:
     {
         'name': str,
         'record': 'pressed|held',
-        'type': 'single|double',
-        'when_pressed': [],
-        'when_not_pressed': [],
+        'required_presses': '1|2',
+        'scancode_pressed': [],
+        'scancode_released': [],
     }
