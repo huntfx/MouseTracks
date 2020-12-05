@@ -572,20 +572,20 @@ def _track(web_port=None, message_port=None, server_secret=None):
                             frame_data['GamepadButtonPress'] = buttons_held
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(buttons_held):
-                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonHeld'], ID=id, BUTTONS=', '.join(buttons),
-                                   BUTTONS_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
+                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonHeld'], ID=id, BUTTONS=', '.join(map(str, buttons)),
+                                   BUTTON_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
 
                     if _buttons_pressed:
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(_buttons_pressed):
-                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonPressed'], ID=id, BUTTONS=', '.join(buttons),
-                                   BUTTONS_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
+                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonPressed'], ID=id, BUTTONS=', '.join(map(str, buttons)),
+                                   BUTTON_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
 
                     if _buttons_released:
                         store['LastActivity'] = ticks
                         for id, buttons in iteritems(_buttons_released):
-                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonReleased'], ID=id, BUTTONS=', '.join(buttons),
-                                   BUTTONS_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
+                            NOTIFY(LANGUAGE.strings['Tracking']['GamepadButtonReleased'], ID=id, BUTTONS=', '.join(map(str, buttons)),
+                                   BUTTON_PLURAL=LANGUAGE.strings['Words'][('GamepadButtonSingle', 'GamepadButtonPlural')[len(buttons) != 1]])
 
 
                 #Resolution
