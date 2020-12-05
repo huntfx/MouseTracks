@@ -119,11 +119,12 @@ class XInputJoystick(event.EventDispatcher):
         del values['self']
         self.__dict__.update(values)
 
-        super(self.__class__, self).__init__()
+        super(XInputJoystick, self).__init__()
 
         self._last_state = self.get_state()
         self.received_packets = 0
         self.missed_packets = 0
+        self.device_number = device_number
 
         # Set the method that will be called to normalize
         #  the values for analog axis.
@@ -178,7 +179,7 @@ class XInputJoystick(event.EventDispatcher):
         # Set up function argument types and return type
         XInputGetBatteryInformation = xinput.XInputGetBatteryInformation
         XInputGetBatteryInformation.argtypes = [ctypes.c_uint, ctypes.c_ubyte, ctypes.POINTER(XINPUT_BATTERY_INFORMATION)]
-        XInputGetBatteryInformation.restype = ctypes.c_uint 
+        XInputGetBatteryInformation.restype = ctypes.c_uint
 
         battery = XINPUT_BATTERY_INFORMATION(0,0)
         XInputGetBatteryInformation(self.device_number, BATTERY_DEVTYPE_GAMEPAD, ctypes.byref(battery))
