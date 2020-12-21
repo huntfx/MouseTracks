@@ -18,48 +18,46 @@ Qt window:
             processes: number crunching, saving data
 
 
-file.mtk2:
+<game>.mtk2:
     sessions/
         <y-m-d>.json        # [{'start_date': val, 'resolutions': {'1920x1080': ticks}}]
 
-    metadata.json           # {'created': val, 'modified': val, 'file_version': val, 'save_completed': True}
+    metadata.json           # {'created': val, 'modified': val, 'version': val, 'save_completed': True, 'ticks': int, selected_track: <track_name>, selected_colour: <colour_name>}
 
-    config/                 # Store settings related to each trackable item
-        track/
-            <track_name>.json
-        heatmap/
-            <track_name>.json
-        keyboard/
-            <track_name>.json
+    # Settings for each track type (see below for different data)
+    config/
+        <track_name>.json
 
-    history/                # Optionally keep a history of x ticks
-        track/
-            <track_name>.pkl            # [[resolution, (x, y), (x, y)], [resolution, (x, y)]]
-        heatmap/
-            <track_name>.pkl
+    stats/
+        <track_name>.json                               # {'distance': int, 'ticks': int}
 
     data/
-        <width_height>/
-            settings.json               # {'render': True}
-            stats.json                  # {'mouse_distance': val, 'ticks': val}
-            track/
+        # Resolution based tracking
+        screen/
+            <width_height>/
+                movement/
+                    <track_name>.npy
+                heatmap/
+                    <track_name>.npy
+
+        # Gamepad / joystick based tracking
+        radial/
+            movement/
                 <track_name>.npy
             heatmap/
                 <track_name>.npy
-            keyboard/
-                counts.json             # {scancode: count}
-                time.json               # {scancode: time}
-                [disabled] mistakes.json           # if backspace pressed once, record {opcode: {opcode: count}}
-                [disabled] consecutive.json        # number of times key followed another {opcode: {opcode: count}}
-                [disabled] intervals.json          # time between key processes {opcode: {opcode: time}}
-            gamepad/
-                counts.json             # {button: count}
-                time.json               # {button: time}
-                axis.json               # {axis: {value: count}}
-            [disabled] joystick/        # Got nothing to test this on
-                counts.json             # {button: count}
-                time.json               # {button: time}
-                axis.json               # {axis: {value: count}}
+
+        # Keyboard / gamepad button tracking
+        input/
+            <track_name>.json                           # {scancode: count/time}
+
+        # History tracking
+        history/
+            <track_name>.pkl                            # [[resolution, (x, y), (x, y)], [resolution, (x, y)]] - can be tracks or heatmap
+
+    render/
+        <track_name>_<colour>.jpg
+
 
 
 On load:
@@ -76,39 +74,48 @@ On save:
     Delete old files
     Write "save_completed" flag
 
+
 Each tracking option will be saved with a json file containing settings.
 
-Track options:
+Common options:
     {
         'name': str,
+        'type': 'movement|radial|input',
+        'while': {
+            'scancode_pressed': [],
+            'scancode_not_pressed': [],
+            'gamepad_pressed': [],
+            'gamepad_not_pressed': [],
+        },
+    }
+
+Movement options:
+    {
+        'component': mouse|gamepad_l|gamepad_r|joystick
         'record': 'time|speed|count',               # position over time / speed of mouse / number of passes on pixel
         'contiguous': true,                         # If gaps between updates should draw a line
-        'limiter_ticks': int/None,                    # Run the limiter after this many ticks have elapsed
-        'limiter_action': 'divide|subtract|trim'   # Divide all / remove start / remove end
-        'limiter_amount': int/float,                  # What to divide/subtract from every value
-        'scancode_pressed': [],
-        'scancode_released': [],
-        'history_length': 0,
+        'limiter': {
+            'enabled': true,                        # If false, just set the limiter to numpys max int value
+            'ticks': int,                           # Run the limiter after this many ticks have elapsed
+            'action': 'divide|subtract|trim'        # Divide all / remove start / remove end
+            'amount': int/float,                    # What to divide/subtract from every value
+        },
     }
     # Default is "record: time, contiguous: True, limiter_ticks: 425000, limiter_action: divide, limiter_amount: 1.1"
     # Speed while lmb pressed is "record: speed, contiguous: False, limiter_ticks: None, scancode_pressed: [0x01]"
+    # Controller left thumbstick heatmap is "record: count, contiguous: False, limiter_ticks: None"
 
 Heatmap options:
     {
-        'name': str,
+        'component': mouse|gamepad_l|gamepad_r|joystick         # what to use to get the coordinates
         'record': 'pressed|held',
-        'type': 'single|double',
-        'scancode': 0,
-        'scancode_pressed': [],
-        'scancode_released': [],
+        'presses': int,                             # single / double click
+        'scancode': [],
+        'gamepad': [],
         'history_length': 0,
     }
 
-Keyboard options:
+Input options:
     {
-        'name': str,
         'record': 'pressed|held',
-        'required_presses': '1|2',
-        'scancode_pressed': [],
-        'scancode_released': [],
     }
