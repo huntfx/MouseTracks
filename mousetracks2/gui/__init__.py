@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from Qt import QtCore, QtWidgets, QtGui
-from queue import Queue, Empty
 from threading import Thread
 from vfxwindow import VFXWindow
 
@@ -8,13 +7,29 @@ from constants import *
 
 
 class MainWindow(VFXWindow):
-    def __init__(self, **kwargs):
-        self._function = kwargs.pop('func')
-        self._ups = kwargs.pop('ups', 60)
+    """Window used to wrap the main program.
+    This does not directly do any tracking, it is just meant as an
+    interface to the script itself.
 
+    Communication:
+        Every time an option is chosen in the GUI, a corresponding
+        command is added to the queue. The thread will read the queue
+        in a "first in first out" method. If the thread is "paused",
+        then it will still read all commands, but it may ignore some.
+        The queue contains instances of `GUICommand`.
+
+        The thread in return will send data back by using the
+        `receiveFromThread` method. Instead of using a queue, the GUI
+        will instantly execute the command. This uses instances of
+        `ThreadEvent`.
+    """
+
+    def __init__(self, func, **kwargs):
         super().__init__(**kwargs)
+        self._function = func
 
-        # [TEMPORARY] Layout setup
+        # Setup layout
+        # This is a design meant for debugging purposes
         layout = QtWidgets.QVBoxLayout()
         start = QtWidgets.QPushButton('Start')
         start.clicked.connect(self.startTracking)
@@ -53,32 +68,14 @@ class MainWindow(VFXWindow):
 
     def setState(self, state):
         """Set the new thread state.
+        This is for display purposes only.
 
         Parameters:
             state (ThreadState): State of the thread.
                 It can be Running, Paused or Stopped.
         """
-        try:
-            oldState = self._state
-        except AttributeError:
-            oldState = ThreadState.Stopped
         self._state = state
         self.status.setText(state.name)
-
-        if state != oldState:
-            print(f'Thread state changed: {state.name}')
-
-    def queue(self):
-        """Return the queue for the thread to read."""
-        try:
-            return self._queue
-        except AttributeError:
-            self._queue = Queue()
-        return self._queue
-
-    def ups(self):
-        """Get the number of updates per second."""
-        return self._ups
 
     def thread(self):
         """Get the current running thread.
@@ -89,16 +86,8 @@ class MainWindow(VFXWindow):
         return self._thread
 
     def startThread(self):
-        """Setup and start a thread."""
-        # Empty the queue if needed
-        # This is a redundency measure and shouldn't need to run
-        while not self.queue().empty():
-            try:
-                self.queue().get(False)
-            except Empty:
-                continue
-
-        # Start thread
+        """Start the main process in a thread."""
+        self.queue = []
         self._thread = Thread(target=self._function, args=(self,))
         self._thread.daemon = True
         self._thread.start()
@@ -113,8 +102,8 @@ class MainWindow(VFXWindow):
         Returns:
             True if the command was sent, otherwise False.
         """
-        if self.thread():
-            self.queue().put(command)
+        if self.thread() is not None:
+            self.queue.append(command)
             return True
         return False
 
@@ -164,5 +153,7 @@ class MainWindow(VFXWindow):
 
     @QtCore.Slot()
     def excTracking(self):
-        """For testing only, send a command to raise an exception."""
+        """Send a command to raise an exception.
+        For testing purposes only.
+        """
         self.sendToThread(GUICommand.RaiseException)

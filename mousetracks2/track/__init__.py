@@ -12,14 +12,12 @@ class MainThread(object):
     processing, and also handles the communication with the GUI.
     """
 
-    def __init__(self, gui, ups=60):
+    def __init__(self, gui=None, ups=60):
         """Setup the tracking thread.
 
         Parameters:
             gui (QObject): The main GUI.
-                Requires a queue() and receiveFromThread(event) method.
-                This was done instead of arguments since Qt doesn't
-                cope well with sending signals across threads.
+            ups (int): The number of updates per second.
         """
         self.gui = gui
         self.ups = ups
@@ -36,29 +34,41 @@ class MainThread(object):
             GUICommand.RaiseException: lambda: 1/0,
         }
 
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        try:
+            old_state = self._state
+        except AttributeError:
+            old_state = ThreadState.Stopped
+        self._state = state
+        if old_state != state:
+            print(f'Thread state changed: {state.name}')
+
     def send_event(self, event, *args, **kwargs):
         """Send an event back to the GUI.
 
         Parameters:
             event (ThreadEvent): Event to send to the GUI.
         """
+        if self.gui is None:
+            return
         if not isinstance(event, ThreadEvent):
             event = ThreadEvent[event]
         self.gui.receiveFromThread(event, *args, **kwargs)
 
     def start(self):
         """Mark the script as started."""
-        self._running = True
         self.pause(False)
+        self.state = ThreadState.Running
         self.send_event(ThreadEvent.Started)
-
-    def running(self):
-        """Get if the script is still running."""
-        return self._running
 
     def stop(self):
         """Mark the script as stopped."""
-        self._running = False
+        self.state = ThreadState.Stopped
         self.send_event(ThreadEvent.Stopped)
 
     def pause(self, pause=None):
@@ -72,65 +82,61 @@ class MainThread(object):
         """
         if pause is None:
             try:
-                pause = not self._pause
+                pause = self.state != ThreadState.Paused
             except AttributeError:
                 pause = True
-        self._pause = pause
 
         if pause:
+            self.state = ThreadState.Paused
             self.send_event(ThreadEvent.Paused)
         else:
+            self.state = ThreadState.Running
             self.send_event(ThreadEvent.Unpaused)
-
-    def paused(self):
-        """Return True or False if the thread is in a paused state."""
-        return self._pause
-
-    def get_commands(self):
-        """Generator to get information from the main thread.
-        The data is sorted by order of importance.
-        """
-        commands = []
-        while not self.gui.queue().empty():
-            try:
-                yield self.gui.queue().get(False)
-            except Empty:
-                continue
 
     def run(self):
         """Main loop to do all the realtime processing."""
-        paused = False
-        mouse_pos_old = None
-        resolution_old = None
+        mouse_pos_old = resolution_old = None
         ticks = 0
         start = time.time()
-        while self.running():
+        while self.state != ThreadState.Stopped:
             # Handle any GUI commands
-            for data in self.get_commands():
-                # Important commands
-                if data in self.mapping_important:
-                    self.mapping_important[data]()
+            if self.gui is not None:
+                while self.gui.queue:
+                    command = self.gui.queue.pop(0)
 
-                # Pausable commands
-                elif data in self.mapping_pausable:
-                    if not self.paused():
-                        self.mapping_pausable[data]()
+                    # Commands that must be executed
+                    if command in self.mapping_important:
+                        self.mapping_important[command]()
+
+                    # Commands that may only run if not paused
+                    elif command in self.mapping_pausable:
+                        if self.state != ThreadState.Paused:
+                            self.mapping_pausable[command]()
 
             # Handle realtime data
-            mouse_pos = cursor_position()
-            resolution = main_monitor_resolution()
+            if self.state == ThreadState.Running:
+                mouse_pos = cursor_position()
+                mouse_moved = mouse_pos != mouse_pos_old
+                resolution = main_monitor_resolution()
+                resolution_changed = resolution != resolution_old
 
-            # Remap mouse position to be within 0 and 1
-            if mouse_pos_old != mouse_pos or resolution != resolution_old:
-                remapped = (a / b for a, b in zip(mouse_pos, resolution))
-                self.send_event(ThreadEvent.MouseMove, remapped)
+                # Remap mouse position to be within 0 and 1
+                # This is for the GUI "live" preview, and is not actually recorded
+                # TODO: Make work with multiple screens
+                if mouse_moved or resolution_changed:
+                    remapped = tuple(a / b for a, b in zip(mouse_pos, resolution))
+                    self.send_event(ThreadEvent.MouseMove, remapped)
 
-            # End of loop
-            mouse_pos_old = mouse_pos
-            resolution_old = resolution
+                if mouse_moved:
+                    print(f'Mouse moved: {mouse_pos}')
 
+                # Store old values
+                mouse_pos_old = mouse_pos
+                resolution_old = resolution
+
+            # Ensure loop is running at the correct UPS
             ticks += 1
-            time_expected = ticks / self.gui.ups()
+            time_expected = ticks / self.ups
             time_diff = time.time() - start
             if time_expected > time_diff:
                 time.sleep(time_expected - time_diff)

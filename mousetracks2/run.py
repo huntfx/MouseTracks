@@ -7,4 +7,4 @@ from track import run
 
 
 if __name__ == '__main__':
-    MainWindow.show(func=run)
+    MainWindow.show(run)
