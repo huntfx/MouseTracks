@@ -3,7 +3,7 @@ from functools import partial
 from queue import Empty
 
 from constants import *
-from utils import cursor_position, main_monitor_resolution
+from utils import cursor_position, get_monitor_locations
 
 
 class MainThread(object):
@@ -95,7 +95,13 @@ class MainThread(object):
 
     def run(self):
         """Main loop to do all the realtime processing."""
-        mouse_pos_old = resolution_old = None
+        check_mouse_position_interval = 1
+        check_mouse_position_override = False
+        check_monitors_interval = 1
+        check_monitors_override = False
+
+        old_mouse_pos = old_monitors = None
+        old_monitor_index = monitor_index = None
         ticks = 0
         start = time.time()
         while self.state != ThreadState.Stopped:
@@ -115,24 +121,64 @@ class MainThread(object):
 
             # Handle realtime data
             if self.state == ThreadState.Running:
-                mouse_pos = cursor_position()
-                mouse_moved = mouse_pos != mouse_pos_old
-                resolution = main_monitor_resolution()
-                resolution_changed = resolution != resolution_old
+                # Get mouse data
+                if not ticks % check_mouse_position_interval or check_mouse_position_override:
+                    check_mouse_position_override = False
+                    mouse_pos = cursor_position()
+                    mouse_moved = mouse_pos != old_mouse_pos
 
-                # Remap mouse position to be within 0 and 1
-                # This is for the GUI "live" preview, and is not actually recorded
-                # TODO: Make work with multiple screens
-                if mouse_moved or resolution_changed:
-                    remapped = tuple(a / b for a, b in zip(mouse_pos, resolution))
-                    self.send_event(ThreadEvent.MouseMove, remapped)
+                # Get monitor data
+                if not ticks % check_monitors_interval or check_monitors_override:
+                    check_monitors_override = False
+                    monitors = get_monitor_locations()
+                    monitors_changed = monitors != old_monitors
 
+                # Check mouse data against monitors
+                if mouse_pos is None:  # Cancel if there is no mouse data
+                    refresh_monitor_index = False
+                elif monitor_index is None:  # If index hasn't been set yet
+                    refresh_monitor_index = True
+                elif mouse_moved or monitors_changed:  # If there's been any changes
+                    refresh_monitor_index = True
+                else:
+                    refresh_monitor_index = False
+                if refresh_monitor_index:
+                    mx, my = mouse_pos
+                    for i, (x1, y1, x2, y2) in enumerate(monitors):
+                        if x1 <= mouse_pos[0] < x2 and y1 <= mouse_pos[1] < y2:
+                            # Keep track of which monitor the mouse is on
+                            monitor_index = i
+
+                            # Remap mouse position to be within 0 and 1
+                            # This is for the GUI "live" preview only
+                            remapped = (
+                                (mouse_pos[0] - x1) / (x2 - x1),
+                                (mouse_pos[1] - y1) / (y2 - y1),
+                            )
+                            self.send_event(ThreadEvent.MouseMove, remapped)
+                            break
+
+                    # If this part fails, monitors may have changed since being recorded
+                    else:
+                        print(
+                          f'Unknown monitor detected (mouse: {mouse_pos}, saved: '
+                          f'{monitors}, actual: {get_monitor_locations()}'
+                        )
+                        check_monitors_override = True
+                        monitor_index = None
+                        continue
+                mouse_monitor_changed = monitor_index != old_monitor_index
+
+                if mouse_monitor_changed:
+                    vres = monitors[monitor_index][3] - monitors[monitor_index][1]
+                    print(f'Mouse moved to {vres}p monitor')
                 if mouse_moved:
                     print(f'Mouse moved: {mouse_pos}')
 
                 # Store old values
-                mouse_pos_old = mouse_pos
-                resolution_old = resolution
+                old_mouse_pos = mouse_pos
+                old_monitors = monitors
+                old_monitor_index = monitor_index
 
             # Ensure loop is running at the correct UPS
             ticks += 1

@@ -1,27 +1,24 @@
-"""Windows functions.
+"""Windows specific functions.
 
 This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
-from ctypes import windll, Structure, c_long, byref
-
-
-class POINT(Structure):
-    _fields_ = [('x', c_long), ('y', c_long)]
+import win32api
+import win32con
 
 
 def cursor_position():
     """Get the current mouse position.
 
     Returns:
-        (x, y) coordinates
-
-    Source: https://stackoverflow.com/a/24567802/2403000
+        (x, y) as integers
+        None in the case of any error
     """
-    cursor = POINT()
-    windll.user32.GetCursorPos(byref(cursor))
-    return (cursor.x, cursor.y)
+    try:
+        return win32api.GetCursorPos()
+    except win32api.error:
+        return None
 
 
 def main_monitor_resolution():
@@ -29,7 +26,16 @@ def main_monitor_resolution():
     Any secondary screens will be ignored.
 
     Returns:
-        (width, height)
+        (width, height) as integers
     """
-    user32 = windll.user32
-    return (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
+    return (win32api.GetSystemMetrics(win32con.SM_CXSCREEN),
+            win32api.GetSystemMetrics(win32con.SM_CYSCREEN))
+
+
+def get_monitor_locations2():
+    """Get the location of each monitor.
+
+    Returns:
+        ((x1, y1, x2, y2),) as 4 integers for each monitor
+    """
+    return tuple(m[2] for m in win32api.EnumDisplayMonitors())

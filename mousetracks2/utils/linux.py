@@ -1,5 +1,6 @@
-"""Linux functions.
-Thanks to u/Astrrum for the code.
+"""Linux specific functions.
+
+Special thanks: u/Astrrum
 
 This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
@@ -25,5 +26,5 @@ def main_monitor_resolution():
     Returns:
         (width, height)
     """
-    d = Display().screen()
-    return (d.width_in_pixels, d.height_in_pixels)
+    display = Display().screen()
+    return (display.width_in_pixels, display.height_in_pixels)

@@ -1,5 +1,6 @@
-"""Mac functions.
-Thanks to u/zlft for the code.
+"""Mac specific functions.
+
+Special thanks: u/zlft
 
 This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
