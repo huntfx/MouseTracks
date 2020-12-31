@@ -3,7 +3,8 @@ from functools import partial
 from queue import Empty
 
 from constants import *
-from utils import cursor_position, get_monitor_locations
+from utils import (DOUBLE_CLICK_INTERVAL,
+                   cursor_position, get_monitor_locations, check_key_press)
 
 
 class MainThread(object):
@@ -22,6 +23,8 @@ class MainThread(object):
         self.gui = gui
         self.ups = ups
         self.start()
+
+        self.double_click_ticks = int(round(self.ups * DOUBLE_CLICK_INTERVAL))
 
         # Map commands to functions
         self.mapping_important = {
@@ -95,13 +98,12 @@ class MainThread(object):
 
     def run(self):
         """Main loop to do all the realtime processing."""
-        check_mouse_position_interval = 1
-        check_mouse_position_override = False
         check_monitors_interval = 1
         check_monitors_override = False
 
         old_mouse_pos = old_monitors = None
         old_monitor_index = monitor_index = None
+        keys = {item: [0] * 255 for item in ('tick', 'prev', 'count', 'held')}
         ticks = 0
         start = time.time()
         while self.state != ThreadState.Stopped:
@@ -122,16 +124,42 @@ class MainThread(object):
             # Handle realtime data
             if self.state == ThreadState.Running:
                 # Get mouse data
-                if not ticks % check_mouse_position_interval or check_mouse_position_override:
-                    check_mouse_position_override = False
-                    mouse_pos = cursor_position()
-                    mouse_moved = mouse_pos != old_mouse_pos
+                mouse_pos = cursor_position()
+                mouse_moved = mouse_pos != old_mouse_pos
 
                 # Get monitor data
                 if not ticks % check_monitors_interval or check_monitors_override:
                     check_monitors_override = False
                     monitors = get_monitor_locations()
                     monitors_changed = monitors != old_monitors
+
+                # Get keyboard/mouse clicks
+                # Note this will not see anything faster than 1/60th of a second
+                for key, val in enumerate(keys['tick']):
+                    previously_pressed = bool(val)
+                    currently_pressed = bool(check_key_press(key))
+
+                    # Detect individual key releases
+                    if previously_pressed and not currently_pressed:
+                        print(f'Key/button released: {key}')
+                        keys['tick'][key] = keys['held'][key] = 0
+
+                    # Detect when a key is being held down
+                    elif previously_pressed and currently_pressed:
+                        keys['held'][key] += 1
+                        print(f'Key/button held: {key}')
+
+                    # Detect when a new key is pressed
+                    elif not previously_pressed and currently_pressed:
+                        print(f'Key/button pressed: {key}')
+
+                        # Figure out if a double click happened
+                        if ticks - keys['prev'][key] < self.double_click_ticks:
+                            keys['count'][key] += 1
+                            print(f'Presses detected: {keys["count"][key]}')
+                        else:
+                            keys['count'][key] = 1
+                        keys['tick'][key] = keys['prev'][key] = ticks
 
                 # Check mouse data against monitors
                 if mouse_pos is None:  # Cancel if there is no mouse data

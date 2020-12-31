@@ -19,3 +19,11 @@ if 'get_monitor_locations' not in globals():
         """
         width, height = main_monitor_resolution()
         return ((0, 0, width, height),)
+
+
+if 'check_key_press' not in globals():
+    check_key_press = lambda key: False
+
+
+if 'DOUBLE_CLICK_INTERVAL' not in globals():
+    DOUBLE_CLICK_INTERVAL = 0.5
