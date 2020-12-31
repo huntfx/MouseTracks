@@ -96,6 +96,23 @@ class MainThread(object):
             self.state = ThreadState.Running
             self.send_event(ThreadEvent.Unpaused)
 
+    def process_gui(self):
+        """Process any commands being sent from the GUI."""
+        if self.gui is None:
+            return
+
+        while self.gui.queue:
+            command = self.gui.queue.pop(0)
+
+            # Commands that must be executed
+            if command in self.mapping_important:
+                self.mapping_important[command]()
+
+            # Commands that may only run if not paused
+            elif command in self.mapping_pausable:
+                if self.state != ThreadState.Paused:
+                    self.mapping_pausable[command]()
+
     def run(self):
         """Main loop to do all the realtime processing."""
         check_monitors_interval = 1
@@ -107,19 +124,7 @@ class MainThread(object):
         ticks = 0
         start = time.time()
         while self.state != ThreadState.Stopped:
-            # Handle any GUI commands
-            if self.gui is not None:
-                while self.gui.queue:
-                    command = self.gui.queue.pop(0)
-
-                    # Commands that must be executed
-                    if command in self.mapping_important:
-                        self.mapping_important[command]()
-
-                    # Commands that may only run if not paused
-                    elif command in self.mapping_pausable:
-                        if self.state != ThreadState.Paused:
-                            self.mapping_pausable[command]()
+            self.process_gui()
 
             # Handle realtime data
             if self.state == ThreadState.Running:
