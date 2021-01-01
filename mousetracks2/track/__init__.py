@@ -1,10 +1,16 @@
 import time
+from collections import defaultdict
 from functools import partial
 from queue import Empty
 
 from constants import *
 from utils import (DOUBLE_CLICK_INTERVAL,
                    cursor_position, get_monitor_locations, check_key_press)
+
+try:
+    import XInput
+except ImportError:
+    XInput = None
 
 
 class MainThread(object):
@@ -36,6 +42,10 @@ class MainThread(object):
         self.mapping_pausable = {
             GUICommand.RaiseException: lambda: 1/0,
         }
+
+        # Warning message
+        if XInput is None:
+            print('Unable to load XInput library')
 
     @property
     def state(self):
@@ -117,10 +127,15 @@ class MainThread(object):
         """Main loop to do all the realtime processing."""
         check_monitors_interval = 1
         check_monitors_override = False
+        check_gamepad_interval = 60
+        check_gamepad_override = False
 
         old_mouse_pos = old_monitors = None
         old_monitor_index = monitor_index = None
         keys = {item: [0] * 255 for item in ('tick', 'prev', 'count', 'held')}
+        gamepads = {item: [(0, 0)] * 4 for item in ('thumb_l', 'thumb_r')}
+        gamepads.update({item: [0] * 4 for item in ('trig_l', 'trig_r')})
+        gamepads['buttons'] = {item: [defaultdict(int)] * 4 for item in ('tick', 'prev', 'count', 'held')}
         ticks = 0
         start = time.time()
         while self.state != ThreadState.Stopped:
@@ -192,6 +207,7 @@ class MainThread(object):
                             break
 
                     # If this part fails, monitors may have changed since being recorded
+                    # Skip this loop and try again, but this time refresh the data
                     else:
                         print(
                           f'Unknown monitor detected (mouse: {mouse_pos}, saved: '
@@ -207,6 +223,63 @@ class MainThread(object):
                     print(f'Mouse moved to {vres}p monitor')
                 if mouse_moved:
                     print(f'Mouse moved: {mouse_pos}')
+
+                # Get gamepad information
+                if XInput is not None:
+                    # Determine which gamepads are connected
+                    if not ticks % check_gamepad_interval or check_gamepad_override:
+                        check_gamepad_override = False
+                        connected_gamepads = XInput.get_connected()
+
+                    for gamepad in (i for i, active in enumerate(connected_gamepads) if active):
+                        # Get a snapshot of the current gamepad state
+                        try:
+                            state = XInput.get_state(gamepad)
+                        except XInput.XInputNotConnectedError:
+                            continue
+                        thumb_l, thumb_r = XInput.get_thumb_values(state)
+                        trig_l, trig_r = XInput.get_trigger_values(state)
+                        buttons = XInput.get_button_values(state)
+
+                        if thumb_l != gamepads['thumb_l'][gamepad]:
+                            print(f'Gamepad {gamepad+1} left thumb moved: {thumb_l}')
+                        if thumb_r != gamepads['thumb_r'][gamepad]:
+                            print(f'Gamepad {gamepad+1} right thumb moved: {thumb_r}')
+                        if trig_l != gamepads['trig_l'][gamepad]:
+                            print(f'Gamepad {gamepad+1} left trigger moved: {trig_l}')
+                        if trig_r != gamepads['trig_r'][gamepad]:
+                            print(f'Gamepad {gamepad+1} right trigger moved: {trig_r}')
+
+                        gamepads['thumb_l'][gamepad] = thumb_l
+                        gamepads['thumb_r'][gamepad] = thumb_r
+                        gamepads['trig_l'][gamepad] = trig_l
+                        gamepads['trig_r'][gamepad] = trig_r
+
+                        for button, val in buttons.items():
+                            previously_pressed = bool(gamepads['buttons']['tick'][gamepad][button])
+                            currently_pressed = val
+
+                            # Detect individual button releases
+                            if previously_pressed and not currently_pressed:
+                                print(f'Button released: {button}')
+                                gamepads['buttons']['tick'][gamepad][button] = gamepads['buttons']['held'][gamepad][button] = 0
+
+                            # Detect when a button is being held down
+                            elif previously_pressed and currently_pressed:
+                                gamepads['buttons']['held'][gamepad][button] += 1
+                                print(f'Button held: {button}')
+
+                            # Detect when a new button is pressed
+                            elif not previously_pressed and currently_pressed:
+                                print(f'Button pressed: {button}')
+
+                                # Figure out if a double press happened
+                                if ticks - gamepads['buttons']['prev'][gamepad][button] < self.double_click_ticks:
+                                    gamepads['buttons']['count'][gamepad][button] += 1
+                                    print(f'Presses detected: {gamepads["buttons"]["count"][gamepad][button]}')
+                                else:
+                                    gamepads['buttons']['count'][gamepad][button] = 1
+                                gamepads['buttons']['tick'][gamepad][button] = gamepads['buttons']['prev'][gamepad][button] = ticks
 
                 # Store old values
                 old_mouse_pos = mouse_pos
