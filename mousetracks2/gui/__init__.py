@@ -50,6 +50,18 @@ class MainWindow(VFXWindow):
         horizontal.addWidget(self.status)
         layout.addLayout(horizontal)
 
+        horizontal = QtWidgets.QHBoxLayout()
+        horizontal.addWidget(QtWidgets.QLabel('Total Mouse Distance:'))
+        self.distance = QtWidgets.QLabel('0.0')
+        horizontal.addWidget(self.distance)
+        layout.addLayout(horizontal)
+
+        horizontal = QtWidgets.QHBoxLayout()
+        horizontal.addWidget(QtWidgets.QLabel('Current Mouse Speed:'))
+        self.speed = QtWidgets.QLabel('0.0')
+        horizontal.addWidget(self.speed)
+        layout.addLayout(horizontal)
+
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(layout)
 
@@ -107,7 +119,7 @@ class MainWindow(VFXWindow):
             return True
         return False
 
-    def receiveFromThread(self, event, *args, **kwargs):
+    def receiveFromThread(self, event, *data):
         """Handle any events sent back from the main thread.
 
         Parameters:
@@ -129,9 +141,24 @@ class MainWindow(VFXWindow):
             self.setState(ThreadState.Stopped)
 
         elif event == ThreadEvent.MouseMove:
-            coordinate = args[0]
+            coordinate = data[0]
             if all(0 >= n >= 1 for n in coordinate):
                 pass  # TODO: Draw to QImage
+
+        elif event == ThreadEvent.MouseDistance:
+            distance = data[0]
+            prefix = ''
+            if distance > 100000000:
+                distance /= 1000000
+                prefix = 'M'
+            elif distance > 100000:
+                distance /= 1000
+                prefix = 'K'
+            self.distance.setText(str(round(distance, 2)) + prefix)
+
+        elif event == ThreadEvent.MouseSpeed:
+            speed = data[0]
+            self.speed.setText(str(round(speed, 2)))
 
     @QtCore.Slot()
     def startTracking(self):

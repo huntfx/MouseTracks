@@ -27,3 +27,14 @@ if 'check_key_press' not in globals():
 
 if 'DOUBLE_CLICK_INTERVAL' not in globals():
     DOUBLE_CLICK_INTERVAL = 0.5
+
+
+def match_pixel_to_monitor(pixel, monitors):
+    """Find which monitor a pixel is on.
+
+    Returns:
+        index of monitor, or None
+    """
+    for i, (x1, y1, x2, y2) in enumerate(monitors):
+        if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
+            return i

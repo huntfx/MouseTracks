@@ -52,6 +52,10 @@ class ThreadEvent(Enum):
                 Tuple of mouse position coordinates.
                     Each coordinate is within a range of 0 to 1, where
                     (0, 0) is top left.
+        MouseDistance: Distance the mouse has moved.
+            Just for fun and will be removed later.
+        MouseSpeed: Current speed of the mouse.
+            Just for fun and will be removed later.
     """
 
     Started = auto()
@@ -60,12 +64,17 @@ class ThreadEvent(Enum):
     Unpaused = auto()
     Exception = auto()
     MouseMove = auto()
+    MouseDistance = auto()
+    MouseSpeed = auto()
 
 
-class ProcessEvent(Enum):
-    """Event from the main thread sent to the processing thread.
+class ProcessCommand(Enum):
+    """Command from the main thread sent to the processing thread.
 
     Enums:
+        Tick: Send each tick while the program is actively running.
+            Arguments:
+                int of current ticks.
         MonitorChanged: When different monitors are detected.
             Arguments:
                 Tuple of monitor data in the format (x1, y1, x2, y2).
@@ -106,6 +115,7 @@ class ProcessEvent(Enum):
                 Index of controller.
                 Value of trigger.
     """
+    Tick = auto()
     MonitorChanged = auto()
     MouseMove = auto()
     KeyPressed = auto()
@@ -118,3 +128,13 @@ class ProcessEvent(Enum):
     GamepadThumbR = auto()
     GamepadTriggerL = auto()
     GamepadTriggerR = auto()
+
+
+class ProcessEvent(Enum):
+    """Event from the processing thread sent to the main thread.
+
+    Error: Stop execution if an exception occurred.
+    MouseDistance: The distance calculated from the mouse movement.
+    """
+    Error = auto()
+    MouseDistance = auto()
