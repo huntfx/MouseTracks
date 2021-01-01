@@ -49,7 +49,7 @@ class ThreadEvent(Enum):
         MouseMove: After moving the mouse.
             The purpose is for the GUI to update a preview image.
             Arguments:
-                (x, y): Tuple of mouse position coordinates.
+                Tuple of mouse position coordinates.
                     Each coordinate is within a range of 0 to 1, where
                     (0, 0) is top left.
     """
@@ -60,3 +60,56 @@ class ThreadEvent(Enum):
     Unpaused = auto()
     Exception = auto()
     MouseMove = auto()
+
+
+class ProcessEvent(Enum):
+    """Event from the main thread sent to the processing thread.
+
+    Enums:
+        MonitorChanged: When different monitors are detected.
+            Arguments:
+                Tuple of monitor data in the format (x1, y1, x2, y2).
+        MouseMove: When moving the mouse.
+            Arguments:
+                Tuple of mouse position coordinates.
+                    Each coordinate is within a range of 0 to 1, where
+                    (0, 0) is top left.
+        KeyPressed: When a key is pressed.
+            Arguments:
+                Scan code of the key as an int.
+                Number of times pressed in quick succession.
+        KeyHeld: When a key is held down.
+            Arguments:
+                Scan code of the key as an int.
+        KeyReleased: When a key is released.
+            Arguments:
+                Scan code of the key as an int.
+        GamepadButtonPressed: When a gamepad button is pressed.
+            Arguments:
+                Name of the button.
+                Number of times pressed in quick succession.
+        GamepadButtonHeld: When a gamepad button is held down.
+            Arguments:
+                Name of the button.
+        GamepadButtonReleased: When a gamepad button is released.
+            Arguments:
+                Name of the button.
+        GamepadThumb(L/R): When a gamepad thumbstick is moved.
+            Arguments:
+                Tuple of thumbstick coordinates.
+        GamepadTrigger(L/R): When a gamepad trigger is moved.
+            Arguments:
+                Value of trigger.
+    """
+    MonitorChanged = auto()
+    MouseMove = auto()
+    KeyPressed = auto()
+    KeyHeld = auto()
+    KeyReleased = auto()
+    GamepadButtonPressed = auto()
+    GamepadButtonHeld = auto()
+    GamepadButtonReleased = auto()
+    GamepadThumbL = auto()
+    GamepadThumbR = auto()
+    GamepadTriggerL = auto()
+    GamepadTriggerR = auto()
