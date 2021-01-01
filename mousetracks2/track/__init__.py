@@ -2,10 +2,11 @@ import time
 from collections import defaultdict
 from functools import partial
 from queue import Empty
+from multiprocessing import Queue
 
 from constants import *
-from utils import (DOUBLE_CLICK_INTERVAL,
-                   cursor_position, get_monitor_locations, check_key_press)
+from track import process
+from utils import DOUBLE_CLICK_INTERVAL, cursor_position, get_monitor_locations, check_key_press
 
 try:
     import XInput
@@ -47,6 +48,11 @@ class MainThread(object):
         if XInput is None:
             print('Unable to load XInput library')
 
+        # Start background process
+        self.process_sender = Queue()
+        self.process_receiver = Queue()
+        self.process = process.start(self.process_sender, self.process_receiver)
+
     @property
     def state(self):
         return self._state
@@ -85,13 +91,13 @@ class MainThread(object):
             ProcessEvent.KeyPressed: 'Key pressed: {} (x{})',
             ProcessEvent.KeyHeld: 'Key held: {}',
             ProcessEvent.KeyReleased: 'Key released: {}',
-            ProcessEvent.GamepadButtonPressed: 'Button pressed: {} (x{})',
-            ProcessEvent.GamepadButtonHeld: 'Button held: {}',
-            ProcessEvent.GamepadButtonReleased: 'Button released: {}',
-            ProcessEvent.GamepadThumbL: 'Left thumbstick moved: {}',
-            ProcessEvent.GamepadThumbR: 'Reft thumbstick moved: {}',
-            ProcessEvent.GamepadTriggerL: 'Left trigger moved: {}',
-            ProcessEvent.GamepadTriggerR: 'Right trigger moved: {}',
+            ProcessEvent.GamepadButtonPressed: 'Gamepad {} button pressed: {} (x{})',
+            ProcessEvent.GamepadButtonHeld: 'Gamepad {} button held: {}',
+            ProcessEvent.GamepadButtonReleased: 'Gamepad {} button released: {}',
+            ProcessEvent.GamepadThumbL: 'Gamepad {} left thumbstick moved: {}',
+            ProcessEvent.GamepadThumbR: 'Gamepad {} right thumbstick moved: {}',
+            ProcessEvent.GamepadTriggerL: 'Gamepad {} left trigger moved: {}',
+            ProcessEvent.GamepadTriggerR: 'Gamepad {} right trigger moved: {}',
         }
         if event in event_messages:
             print(event_messages[event].format(*args))
@@ -101,6 +107,8 @@ class MainThread(object):
             coordinates = ((x1, y1) for x1, y1, x2, y2 in monitor_data)
             monitor_str = ', '.join('{} at {}'.format(*i) for i in zip(resolutions, coordinates))
             print('Monitor setup changed: ' + monitor_str)
+
+        self.process_sender.put((event, args))
 
     def start(self):
         """Mark the script as started."""
@@ -161,7 +169,7 @@ class MainThread(object):
 
         old_mouse_pos = old_monitors = None
         old_monitor_index = monitor_index = None
-        connected_gamepads = old_gamepads = None
+        connected_gamepads = old_gamepads = [False] * 4
         keys = {item: [0] * 255 for item in ('tick', 'prev', 'count', 'held')}
         gamepads = {item: [(0, 0)] * 4 for item in ('thumb_l', 'thumb_r')}
         gamepads.update({item: [0] * 4 for item in ('trig_l', 'trig_r')})
@@ -170,7 +178,12 @@ class MainThread(object):
         start = time.time()
         while self.state != ThreadState.Stopped:
             self.process_gui()
-            queue = []
+
+            # Receive data from the processing thread
+            while not self.process_receiver.empty():
+                received = self.process_receiver.get()
+                if isinstance(received, Exception):
+                    return self.stop()
 
             # Get monitor data
             if not ticks % check_monitors_interval or check_monitors_override:
@@ -281,13 +294,13 @@ class MainThread(object):
                         buttons = XInput.get_button_values(state)
 
                         if thumb_l != gamepads['thumb_l'][gamepad]:
-                            self.send_processEvent(ProcessEvent.GamepadThumbL, thumb_l)
+                            self.send_processEvent(ProcessEvent.GamepadThumbL, gamepad, thumb_l)
                         if thumb_r != gamepads['thumb_r'][gamepad]:
-                            self.send_processEvent(ProcessEvent.GamepadThumbR, thumb_r)
+                            self.send_processEvent(ProcessEvent.GamepadThumbR, gamepad, thumb_r)
                         if trig_l != gamepads['trig_l'][gamepad]:
-                            self.send_processEvent(ProcessEvent.GamepadTriggerL, trig_l)
+                            self.send_processEvent(ProcessEvent.GamepadTriggerL, gamepad, trig_l)
                         if trig_r != gamepads['trig_r'][gamepad]:
-                            self.send_processEvent(ProcessEvent.GamepadTriggerR, trig_r)
+                            self.send_processEvent(ProcessEvent.GamepadTriggerR, gamepad, trig_r)
 
                         gamepads['thumb_l'][gamepad] = thumb_l
                         gamepads['thumb_r'][gamepad] = thumb_r
@@ -301,12 +314,12 @@ class MainThread(object):
                             # Detect individual button releases
                             if previously_pressed and not currently_pressed:
                                 gamepads['buttons']['tick'][gamepad][button] = gamepads['buttons']['held'][gamepad][button] = 0
-                                self.send_process_event(ProcessEvent.GamepadButtonReleased, button)
+                                self.send_process_event(ProcessEvent.GamepadButtonReleased, gamepad, button)
 
                             # Detect when a button is being held down
                             elif previously_pressed and currently_pressed:
                                 gamepads['buttons']['held'][gamepad][button] += 1
-                                self.send_process_event(ProcessEvent.GamepadButtonHeld, button)
+                                self.send_process_event(ProcessEvent.GamepadButtonHeld, gamepad, button)
 
                             # Detect when a new button is pressed
                             elif not previously_pressed and currently_pressed:
@@ -317,7 +330,7 @@ class MainThread(object):
                                 else:
                                     count[button] = 1
                                 gamepads['buttons']['tick'][gamepad][button] = prev[button] = ticks
-                                self.send_process_event(ProcessEvent.GamepadButtonPressed, button, count[button])
+                                self.send_process_event(ProcessEvent.GamepadButtonPressed, gamepad, button, count[button])
 
                 # Store old values
                 old_mouse_pos = mouse_pos

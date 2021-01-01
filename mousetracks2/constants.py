@@ -86,19 +86,24 @@ class ProcessEvent(Enum):
                 Scan code of the key as an int.
         GamepadButtonPressed: When a gamepad button is pressed.
             Arguments:
+                Index of controller.
                 Name of the button.
                 Number of times pressed in quick succession.
         GamepadButtonHeld: When a gamepad button is held down.
             Arguments:
+                Index of controller.
                 Name of the button.
         GamepadButtonReleased: When a gamepad button is released.
             Arguments:
+                Index of controller.
                 Name of the button.
         GamepadThumb(L/R): When a gamepad thumbstick is moved.
             Arguments:
+                Index of controller.
                 Tuple of thumbstick coordinates.
         GamepadTrigger(L/R): When a gamepad trigger is moved.
             Arguments:
+                Index of controller.
                 Value of trigger.
     """
     MonitorChanged = auto()
