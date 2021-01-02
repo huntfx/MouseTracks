@@ -72,9 +72,10 @@ class ProcessCommand(Enum):
     """Command from the main thread sent to the processing thread.
 
     Enums:
+        Pause: Forget certain settings when the thread is paused.
         Tick: Send each tick while the program is actively running.
             Arguments:
-                int of current ticks.
+                int of total ticks.
         MonitorChanged: When different monitors are detected.
             Arguments:
                 Tuple of monitor data in the format (x1, y1, x2, y2).
@@ -115,6 +116,7 @@ class ProcessCommand(Enum):
                 Index of controller.
                 Value of trigger.
     """
+    Pause = auto()
     Tick = auto()
     MonitorChanged = auto()
     MouseMove = auto()

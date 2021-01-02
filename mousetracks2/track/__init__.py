@@ -139,6 +139,7 @@ class MainThread(object):
         if pause:
             self.state = ThreadState.Paused
             self.send_gui_event(ThreadEvent.Paused)
+            self.send_process_event(ProcessCommand.Pause)
         else:
             self.state = ThreadState.Running
             self.send_gui_event(ThreadEvent.Unpaused)

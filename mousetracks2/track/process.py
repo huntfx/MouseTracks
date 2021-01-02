@@ -20,6 +20,7 @@ class BackgroundProcess(object):
         self.sender = sender
 
         self.command_mapping = {
+            ProcessCommand.Pause: self.pause,
             ProcessCommand.Tick: self.tick,
             ProcessCommand.MonitorChanged: self.monitor_change,
             ProcessCommand.MouseMove: self.mouse_mouse,
@@ -58,6 +59,10 @@ class BackgroundProcess(object):
         """
         self.ticks += 1
 
+    def pause(self):
+        """Reset certain settings on pause."""
+        self.mouse_pos = None
+
     def monitor_change(self, data):
         """Record new monitor data."""
         self.monitor_data = data
@@ -70,6 +75,12 @@ class BackgroundProcess(object):
             prev_mouse_pos = None
 
         self.mouse_pos = pos
+
+        # In certain cases such as the login screen, the position can't be read
+        if self.mouse_pos is None:
+            if prev_mouse_pos is not None:
+                print('Unknown mouse position')
+            return
 
         # Calculate the distance (or speed)
         distance = calculate_distance(self.mouse_pos, prev_mouse_pos)
