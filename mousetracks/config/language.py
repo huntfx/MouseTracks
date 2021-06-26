@@ -410,7 +410,7 @@ LANGUAGE_DEFAULTS = {
             'value': 'Gamepad [ID]: holding [BUTTON-PLURAL] [BUTTONS]',
             'level': 1
         },
-        'GamepadButtonHeld': {
+        'GamepadButtonReleased': {
             '__info__': 'Valid Replacements: [ID] [BUTTON-PLURAL] [BUTTONS]',
             'value': 'Gamepad [ID]: released [BUTTON-PLURAL] [BUTTONS]',
             'level': 0
@@ -1523,7 +1523,7 @@ def get_language_paths(*languages):
     if paths['Inherit']['KeyboardKeys']:
         paths['NewLinks']['KeyboardKeyBackup'] = os.path.join(LANGUAGE_BASE_PATH, KEYBOARD_KEYS_FOLDER, paths['Inherit']['Strings']+'.ini')
     paths['NewLinks']['KeyboardKeyBase'] = os.path.join(LANGUAGE_BASE_PATH, KEYBOARD_KEYS_FOLDER, 'en_GB.ini')
-    
+
     return paths
 
 
@@ -1531,7 +1531,7 @@ class Language(object):
     def __init__(self, local_language=None):
         self.local_language = local_language or CONFIG['Main']['Language']
         self.reload()
-    
+
     def reload(self, local_language=None):
         self.paths = get_language_paths(local_language or CONFIG['Main']['Language'], DEFAULT_LANGUAGE)
         self.strings = self._strings()
@@ -1564,34 +1564,34 @@ class Language(object):
                     data = f.readlines()
             except IOError:
                 data = []
-            
+
         try:
             gap = float(data[0])
         except (ValueError, IndexError):
             gap = 1
         else:
             del data[0]
-        
+
         for row in data:
             keyboard_layout.append([])
-            
+
             #Handle half rows
             row = row.strip()
             if not row:
                 continue
-            
+
             #Remove second half of keyboard if required
             if extended:
                 row = row.replace(':', '')
             else:
                 row = row.split(':', 1)[0]
-            
+
             for key in row.split('+'):
-            
+
                 key_data = key.split('|')
                 default_height = 1
                 default_width = 1
-                
+
                 #Get key name if set, otherwise change the width
                 try:
                     name = str(key_data[0])
@@ -1600,7 +1600,7 @@ class Language(object):
                         raise IndexError
                 except IndexError:
                     default_width = gap
-                
+
                 #Set width and height
                 try:
                     width = float(key_data[1])
@@ -1614,9 +1614,9 @@ class Language(object):
                     height = default_height
                 else:
                     height = max(0, height)
-                
+
                 keyboard_layout[-1].append((name, width, height))
-                
+
         return keyboard_layout
 
 LANGUAGE = Language()
