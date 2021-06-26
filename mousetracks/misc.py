@@ -99,6 +99,8 @@ class TextFile(object):
                 self.encoding = 'utf8'
             elif header.startswith(self.UTF16_MARKER):
                 self.encoding = 'utf16'
+            else:
+                self.encoding = 'utf8'
 
         #Check valid encodings if writing
         if 'w' in self.mode:

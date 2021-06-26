@@ -101,14 +101,14 @@ class AppList(object):
         else:
             #Read from script directory
             try:
-                with TextFile(path.replace('\\', '/').split('/')[-1], 'r') as f:
+                with TextFile(path.replace('\\', '/').split('/')[-1], 'r', encoding='utf-8') as f:
                     lines = [i.strip() for i in f.readlines()]
             except IOError:
                 lines = []
                 
             #Read from documents
             try:
-                with TextFile(path, 'r') as f:
+                with TextFile(path, 'r', encoding='utf-8') as f:
                     lines += [i.strip() for i in f.readlines()]
             except IOError:
                 if not lines:
@@ -189,7 +189,7 @@ class AppList(object):
         
         if path is None:
             path = self.path
-        with TextFile(path, 'wb', 'utf-8') as f:
+        with TextFile(path, 'wb', encoding='utf-8') as f:
             f.write(result.encode('utf-8'))
         return result
 
