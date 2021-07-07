@@ -1,0 +1,12 @@
+numpy
+psutil
+scipy
+pillow
+flask
+
+pywin32; platform_system=='Windows' 
+
+pyxhook; platform_system=='Linux' 
+python-xlib; platform_system=='Linux'
+
+AppKit; platform_system=='Mac'

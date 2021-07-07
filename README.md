@@ -79,14 +79,14 @@ By default, the tracking area is limited to the application window, but with no 
  - [Flask](http://flask.pocoo.org/) (optional - used for the API)
  - [PyCrypto](https://pypi.python.org/pypi/pycrypto) (optional - encrypt API messages)
  - ~~[pyglet](https://pypi.python.org/pypi/pyglet/1.3.0)~~ - included in code
- 
-<b>Requirements (Windows):</b> 
+
+<b>Requirements (Windows):</b>
  - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - used for the tray icon)
  - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (required for gamepad tracking in Windows)~~ - included in code
- 
+
 <b>Requirements (Linux) (WIP):</b>
  - [xlib](https://pypi.python.org/pypi/python-xlib)
-  - ~~[pyxhook](https://github.com/JeffHoogland/pyxhook/blob/master/pyxhook.py)~~ - included in code
-  
+ - [pyxhook](https://pypi.org/project/pyxhook/)
+
 <b>Requirements (Mac) (WIP):</b>
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
