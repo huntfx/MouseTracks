@@ -625,6 +625,14 @@ LANGUAGE_DEFAULTS = {
         },
     },
     'Keys': {
+        5: {
+            '__info__': 'Mouse button 4.',
+            'value': 'Mouse 4'
+        },
+        6: {
+            '__info__': 'Mouse button 5.',
+            'value': 'Mouse 5'
+        },
         8: {
             '__info__': 'Keyboard key for Backspace.',
             'value': 'Backspace'
