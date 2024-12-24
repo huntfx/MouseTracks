@@ -43,11 +43,18 @@ class Hub:
             self._p_processing.start()
 
     def stop_tracking(self):
+        tracking_alive = self._p_tracking.is_alive()
+        processing_alive = self._p_processing.is_alive()
+        if not tracking_alive and not processing_alive:
+            return
+
         print('Sending stop tracking signals...')
-        if self._p_tracking.is_alive():
+        if tracking_alive:
             self._q_tracking.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.Exit))
-        if self._p_processing.is_alive():
+        if processing_alive:
             self._q_processing.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.Exit))
+
+    def stop(self):
         self._q_main.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.Exit))
 
     def _start_queue_handler(self):
@@ -67,14 +74,10 @@ class Hub:
                             print('During handling of the above exception, another exception occurred:\n')
                             raise exc
 
-                        case ipc.Type.Ping:
-                            if received_message.data >= 300:
-                                print('Sending trigger to raise exception...')
-                                self._q_processing.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.Raise))
-
                         # Exit the process
                         # Note that any subprocesses must be shut down first
                         case ipc.Type.Exit:
+                            self.stop_tracking()
                             return
 
                 # Forward messages to the tracking process
@@ -92,7 +95,7 @@ class Hub:
         try:
             self._start_queue_handler()
         except Exception:
-            self.stop_tracking()
+            self.stop()
             raise
 
 

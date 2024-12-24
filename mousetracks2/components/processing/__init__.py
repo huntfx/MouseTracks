@@ -11,11 +11,17 @@ def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = 
             print('Shutting down processing process...')
             return
 
-        case ipc.Type.Ping:
-            print(f'Background thread received ping with data {q_data}')
-
         case ipc.Type.Raise:
             raise ValueError('test exception')
+
+        case ipc.Type.MouseMove:
+            print(f'Mouse has moved to {q_data}')
+
+        case ipc.Type.MouseClick:
+            print(f'Mouse button {q_data} clicked')
+
+        case ipc.Type.MouseDoubleClick:
+            print(f'Mouse button {q_data} double clicked')
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):

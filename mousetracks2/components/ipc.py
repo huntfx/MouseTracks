@@ -23,6 +23,12 @@ class Type(Enum):
     """Signal for the process to exit."""
     Traceback = auto()
     """When an unhandled exception is raised."""
+    MouseMove = auto()
+    """When the mouse cursor is moved."""
+    MouseClick = auto()
+    """When the mouse has been clicked."""
+    MouseDoubleClick = auto()
+    """When the mouse has been double clicked."""
 
 
 @dataclass
