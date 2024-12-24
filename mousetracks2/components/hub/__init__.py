@@ -20,7 +20,7 @@ class Hub:
         self._q_tracking = multiprocessing.Queue()
         self._q_processing = multiprocessing.Queue()
 
-        self._p_tracking = multiprocessing.Process(target=tracking.track, args=(self._q_main, self._q_tracking))
+        self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
 
     def start_tracking(self):

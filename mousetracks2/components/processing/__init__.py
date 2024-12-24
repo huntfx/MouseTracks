@@ -5,25 +5,25 @@ from .. import ipc
 
 
 
-def process_data(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
-    while True:
-        received_data = q_receive.get()
+def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = None):
+    match q_type:
+        case ipc.Type.Exit:
+            print('Shutting down processing process...')
+            return
 
-        match received_data.type:
-            case ipc.Type.Exit:
-                print('Shutting down processing process...')
-                return
+        case ipc.Type.Ping:
+            print(f'Background thread received ping with data {q_data}')
 
-            case ipc.Type.Ping:
-                print(f'Background thread received ping with data {received_data.data}')
-
-            case ipc.Type.Raise:
-                raise ValueError('test exception')
+        case ipc.Type.Raise:
+            raise ValueError('test exception')
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
     try:
-        process_data(q_send, q_receive)
+        while True:
+            received_data = q_receive.get()
+            process_data(q_send, received_data.type, received_data.data)
+
     # Catch error after KeyboardInterrupt
     except EOFError:
         return
