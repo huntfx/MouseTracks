@@ -16,6 +16,10 @@ def track(q_send, q_receive):
             while not q_receive.empty():
                 received_message = q_receive.get()
                 print(f'Tracking received message: {received_message}')
+                match received_message.type:
+                    case ipc.Type.Exit:
+                        print('Shutting down tracking process...')
+                        return
 
             # Send a ping (for debugging)
             if not tick % UPDATES_PER_SECOND:
