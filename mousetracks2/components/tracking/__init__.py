@@ -2,6 +2,7 @@ import time
 from itertools import count
 
 from . import utils
+from .. import ipc
 
 
 UPDATES_PER_SECOND = 60
@@ -18,8 +19,8 @@ def track(q_send, q_receive):
 
             # Send a ping (for debugging)
             if not tick % UPDATES_PER_SECOND:
-                q_send.put({'target': 'hub', 'type': 'PING', 'data': tick})
+                q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.Ping, tick))
 
             # Send a self ping (for debugging)
             if not tick % (UPDATES_PER_SECOND * 10):
-                q_send.put({'target': 'tracking', 'type': 'PING', 'data': tick})
+                q_send.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.Ping, tick))
