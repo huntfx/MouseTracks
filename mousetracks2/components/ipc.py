@@ -10,6 +10,7 @@ class Target(Enum):
     Hub = auto()
     Tracking = auto()
     Processing = auto()
+    GUI = auto()
 
 
 class Type(Enum):
@@ -29,6 +30,14 @@ class Type(Enum):
     """When the mouse has been clicked."""
     MouseDoubleClick = auto()
     """When the mouse has been double clicked."""
+    StartTracking = auto()
+    """Start the tracking."""
+    StopTracking = auto()
+    """Stop the tracking completely."""
+    PauseTracking = auto()
+    """Prevent the tracking from recording anything."""
+    GuiExitSignal = auto()
+    """Send a notification that the GUI is closing."""
 
 
 @dataclass

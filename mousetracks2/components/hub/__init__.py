@@ -9,7 +9,7 @@ Components:
 
 import multiprocessing
 
-from .. import ipc, tracking, processing
+from .. import ipc, tracking, processing, gui
 
 
 class Hub:
@@ -21,12 +21,20 @@ class Hub:
         self._q_processing = multiprocessing.Queue()
 
         self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
+        self._p_tracking.daemon = True
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
+        self._p_processing.daemon = True
+        self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_processing))
+        self._p_gui.daemon = True
 
     def start_tracking(self):
-        print('Starting up tracking threads...')
+        print('Starting tracking...')
         tracking_alive = self._p_tracking.is_alive()
         processing_alive = self._p_processing.is_alive()
+
+        # Resume paused processes
+        if tracking_alive:
+            self._q_tracking.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.StartTracking))
 
         # Empty queues
         if not tracking_alive:
@@ -38,8 +46,12 @@ class Hub:
 
         # Start processes
         if not tracking_alive:
+            self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
+            self._p_tracking.daemon = True
             self._p_tracking.start()
         if not processing_alive:
+            self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
+            self._p_processing.daemon = True
             self._p_processing.start()
 
     def stop_tracking(self):
@@ -50,9 +62,16 @@ class Hub:
 
         print('Sending stop tracking signals...')
         if tracking_alive:
-            self._q_tracking.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.Exit))
+            self._q_tracking.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.StopTracking))
         if processing_alive:
             self._q_processing.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.Exit))
+
+        # TODO: Join only after signal sent back that its shut down
+        if tracking_alive:
+            self._p_tracking.join()
+        if processing_alive:
+            self._p_processing.join()
+        print('Tracking has stopped')
 
     def stop(self):
         self._q_main.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.Exit))
@@ -66,6 +85,15 @@ class Hub:
                 case ipc.Target.Hub:
                     match received_message.type:
 
+                        case ipc.Type.StartTracking:
+                            self.start_tracking()
+
+                        case ipc.Type.StopTracking:
+                            self.stop_tracking()
+
+                        case ipc.Type.PauseTracking:
+                            self._q_tracking.put(ipc.QueueItem(ipc.Target.Tracking, ipc.Type.PauseTracking))
+
                         # An error has been raised
                         case ipc.Type.Traceback:
                             exc, tb = received_message.data
@@ -76,7 +104,7 @@ class Hub:
 
                         # Exit the process
                         # Note that any subprocesses must be shut down first
-                        case ipc.Type.Exit:
+                        case ipc.Type.Exit | ipc.Type.GuiExitSignal:
                             self.stop_tracking()
                             return
 
@@ -98,8 +126,5 @@ class Hub:
             self.stop()
             raise
 
-
-if __name__ == '__main__':
-    hub = Hub()
-    hub.start_tracking()
-    hub.start_queue_handler()
+    def start_gui(self):
+        self._p_gui.start()

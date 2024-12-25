@@ -5,11 +5,12 @@ from .. import ipc
 
 
 
-def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = None):
+def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = None) -> bool:
+    """Process an item of data."""
     match q_type:
         case ipc.Type.Exit:
             print('Shutting down processing process...')
-            return
+            return False
 
         case ipc.Type.Raise:
             raise ValueError('test exception')
@@ -23,12 +24,15 @@ def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = 
         case ipc.Type.MouseDoubleClick:
             print(f'Mouse button {q_data} double clicked')
 
+    return True
+
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
     try:
         while True:
             received_data = q_receive.get()
-            process_data(q_send, received_data.type, received_data.data)
+            if not process_data(q_send, received_data.type, received_data.data):
+                return
 
     # Catch error after KeyboardInterrupt
     except EOFError:

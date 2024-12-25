@@ -14,6 +14,7 @@ DOUBLE_CLICK_TIME = 500
 def run(q_send, q_receive):
 
     last_activity = 0
+    state = ipc.Type.StartTracking
 
     mouse_double_click = DOUBLE_CLICK_TIME / 1000 * UPDATES_PER_SECOND
 
@@ -28,10 +29,17 @@ def run(q_send, q_receive):
         while not q_receive.empty():
             received_message = q_receive.get()
             print(f'Tracking received message: {received_message}')
+
             match received_message.type:
-                case ipc.Type.Exit:
-                    print('Shutting down tracking process...')
-                    return
+                case ipc.Type.PauseTracking | ipc.Type.StartTracking | ipc.Type.StopTracking:
+                    state = received_message.type
+
+        # Handle tracking states
+        if state == ipc.Type.PauseTracking:
+            continue
+        if state == ipc.Type.StopTracking:
+            print('Shutting down tracking process...')
+            return
 
         mouse_position = cursor_position()
 
