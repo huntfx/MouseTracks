@@ -61,6 +61,7 @@ class Traceback(Message):
         print('During handling of the above exception, another exception occurred:\n')
         raise self.exception
 
+
 @dataclass
 class TrackingState(Message):
     """Set a tracking state."""
@@ -70,7 +71,7 @@ class TrackingState(Message):
         Pause = auto()
         Stop = auto()
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing, init=False)
+    target: int = field(default=Target.Tracking | Target.Processing, init=False)
     state: State
 
 

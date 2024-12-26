@@ -24,23 +24,26 @@ class Hub:
 
         self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
+        self._p_tracking.start()
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
+        self._p_processing.start()
         self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
 
+        self._tracking_init = False
+
     def start_tracking(self):
         """Start the tracking."""
-        self._start_tracking()
         self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     def _start_tracking(self):
         """Start the tracking processes if required."""
-        print('Starting tracking processes...')
+        print('[Hub] Starting tracking processes...')
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
         if tracking_running and processing_running:
-            print('Skipping: already running')
+            print('[Hub] Skipping: already running')
             return
 
         # Shut down any existing threads
@@ -62,10 +65,10 @@ class Hub:
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
-        print('Started tracking processes')
+        print('[Hub] Started tracking processes')
 
     def stop_tracking(self):
-        print('Sending stop tracking signal...')
+        print('[Hub] Sending stop tracking signal...')
         self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
         # print('Waiting for tracking to shut down...')
@@ -76,7 +79,7 @@ class Hub:
         # if self._p_processing.is_alive():
         #     self._p_processing.join()
 
-        print('Safely shut down processes')
+        print('[Hub] Safely shut down processes')
 
     def process_data(self, message: ipc.Message):
         match message:
@@ -91,7 +94,7 @@ class Hub:
                 message.reraise()
 
             case ipc.DebugRaiseError():
-                raise RuntimeError('test exception')
+                raise RuntimeError('[Hub] Test Exception')
 
         return True
 
@@ -108,7 +111,7 @@ class Hub:
 
             if received_message.target & ipc.Target.Hub:
                 if not self.process_data(received_message):
-                    print('Exit requested, shutting down...')
+                    print('[Hub] Exit requested, shutting down...')
                     running = False
 
             if received_message.target & ipc.Target.Tracking:
@@ -121,13 +124,13 @@ class Hub:
                 self._q_gui.put(received_message)
 
     def start_queue_handler(self):
-        print('Queue handler started.')
+        print('[Hub] Queue handler started.')
         try:
             self._start_queue_handler()
         except Exception:
             self._q_main.put(ipc.Exit())
             raise
-        print('Queue handler shut down.')
+        print('[Hub] Queue handler shut down.')
 
     def start_gui(self):
         self._p_gui.start()
