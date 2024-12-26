@@ -31,6 +31,7 @@ class MouseMove(Message):
     """Mouse has moved to a new location on the screen."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
+    tick: int
     position: tuple[int, int]
 
 

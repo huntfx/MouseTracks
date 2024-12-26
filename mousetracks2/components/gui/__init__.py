@@ -2,8 +2,35 @@ from enum import Enum, auto
 from PySide6 import QtCore, QtWidgets, QtGui
 from threading import Thread
 import sys
+import queue
 from .. import ipc
+from ...utils.math import calculate_line, calculate_distance
+from ...utils.win import cursor_position
 
+
+class QueueWorker(QtCore.QObject):
+    """Worker for polling the queue in a background thread."""
+    message_received = QtCore.Signal(object)  # Signal to send received data
+
+    def __init__(self, queue):
+        super().__init__()
+        self.queue = queue
+        self.running = True
+
+    def run(self):
+        """Continuously poll the queue for messages."""
+        while True:
+            try:
+                message = self.queue.get(timeout=1)
+            except queue.Empty:
+                if self.running:
+                    continue
+                break
+            self.message_received.emit(message)
+
+    def stop(self):
+        """Stop the worker."""
+        self.running = False
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -28,6 +55,11 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__(**kwargs)
         self.q_send = q_send
         self.q_receive = q_receive
+
+        self.mouse_distance = 0
+        self.mouse_speed = 0
+        self.mouse_position = cursor_position()
+        self.mouse_move_tick = 0
 
         # Setup layout
         # This is a design meant for debugging purposes
@@ -76,6 +108,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # Window setup
         self.setState('stopped')
 
+        # Start queue worker
+        self.queue_thread = QtCore.QThread()
+        self.queue_worker = QueueWorker(q_receive)
+        self.queue_worker.moveToThread(self.queue_thread)
+
+        # Connect signals and slots
+        self.queue_worker.message_received.connect(self.processMessage)
+        self.queue_thread.started.connect(self.queue_worker.run)
+        self.queue_thread.finished.connect(self.queue_worker.deleteLater)
+
+        # Start the thread
+        self.queue_thread.start()
+
     def closeEvent(self, event):
         """Safely close the thread."""
         if self.thread():
@@ -96,6 +141,20 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self._state = state
         self.status.setText(state)
+
+    def processMessage(self, message: ipc.Message):
+        match message:
+            case ipc.MouseMove():
+                distance_to_previous = calculate_distance(message.position, self.mouse_position)
+                if message.tick == self.mouse_move_tick + 1:
+                    self.mouse_speed = distance_to_previous
+                self.mouse_distance += distance_to_previous
+
+                self.distance.setText(str(int(self.mouse_distance)))
+                self.speed.setText(str(int(self.mouse_speed)))
+
+                self.mouse_position = message.position
+                self.mouse_move_tick = message.tick
 
     @QtCore.Slot()
     def startTracking(self):
@@ -135,7 +194,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Send a signal that the GUI has closed."""
+        self.queue_worker.stop()
         self.q_send.put(ipc.Exit())
+        self.queue_thread.quit()
+        self.queue_thread.wait()
         super().closeEvent(event)
 
 

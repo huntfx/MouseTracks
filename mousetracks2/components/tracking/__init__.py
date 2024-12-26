@@ -92,7 +92,7 @@ class Tracking:
             if mouse_position != data.mouse_position:
                 data.mouse_position = mouse_position
                 last_activity = tick
-                self.send_data(ipc.MouseMove(mouse_position))
+                self.send_data(ipc.MouseMove(tick, mouse_position))
 
             for mouse_button, clicked in get_mouse_click().items():
                 if not clicked:
