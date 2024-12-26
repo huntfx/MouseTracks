@@ -14,7 +14,7 @@ DOUBLE_CLICK_TIME = 500
 def run(q_send, q_receive):
 
     last_activity = 0
-    state = ipc.Type.StartTracking
+    state = ipc.TrackingState.State.Pause
 
     mouse_double_click = DOUBLE_CLICK_TIME / 1000 * UPDATES_PER_SECOND
 
@@ -27,19 +27,26 @@ def run(q_send, q_receive):
 
         # Process messages from the queue
         while not q_receive.empty():
-            received_message = q_receive.get()
-            print(f'Tracking received message: {received_message}')
+            message = q_receive.get()
 
-            match received_message.type:
-                case ipc.Type.PauseTracking | ipc.Type.StartTracking | ipc.Type.StopTracking:
-                    state = received_message.type
+            match message:
+                case ipc.TrackingState():
+                    state = message.state
+
+                case ipc.DebugRaiseError():
+                    raise RuntimeError('test exception')
 
         # Handle tracking states
-        if state == ipc.Type.PauseTracking:
-            continue
-        if state == ipc.Type.StopTracking:
-            print('Shutting down tracking process...')
-            return
+        match state:
+            case ipc.TrackingState.State.Start:
+                pass
+            case ipc.TrackingState.State.Pause:
+                continue
+            case ipc.TrackingState.State.Stop:
+                print('Tracking shut down.')
+                return
+            case _:
+                raise RuntimeError(f'unknown state {state}')
 
         mouse_position = cursor_position()
 
@@ -59,7 +66,7 @@ def run(q_send, q_receive):
         if mouse_position != state_mouse_position:
             state_mouse_position = mouse_position
             last_activity = tick
-            q_send.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.MouseMove, mouse_position))
+            q_send.put(ipc.MouseMove(mouse_position))
 
         for mouse_button, clicked in get_mouse_click().items():
             if not clicked:
@@ -70,10 +77,8 @@ def run(q_send, q_receive):
             # First click
             if click_latest != tick - 1:
                 # Check if previous click was within the double click period
-                if click_start + mouse_double_click > tick:
-                    q_send.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.MouseDoubleClick, mouse_button))
-                else:
-                    q_send.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.MouseClick, mouse_button))
+                double_click = click_start + mouse_double_click > tick
+                q_send.put(ipc.MouseClick(mouse_button, mouse_position, double_click))
                 state_mouse_clicks[mouse_button] = (tick, tick)
 
             # Being held

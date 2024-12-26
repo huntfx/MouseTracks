@@ -5,33 +5,32 @@ from .. import ipc
 
 
 
-def process_data(q_send: multiprocessing.Queue, q_type: ipc.Type, q_data: any = None) -> bool:
+def process_data(q_send: multiprocessing.Queue, message: ipc.Message) -> bool:
     """Process an item of data."""
-    match q_type:
-        case ipc.Type.Exit:
-            print('Shutting down processing process...')
+    match message:
+        case ipc.MouseMove():
+            print(f'Mouse has moved to {message.position}')
+
+        case ipc.MouseClick(double=True):
+            print(f'Mouse button {message.button} double clicked')
+
+        case ipc.MouseClick():
+            print(f'Mouse button {message.button} clicked')
+
+        case ipc.DebugRaiseError():
+            raise RuntimeError('test exception')
+
+        case ipc.TrackingState(state=ipc.TrackingState.State.Stop):
+            print('Processing shut down.')
             return False
-
-        case ipc.Type.Raise:
-            raise ValueError('test exception')
-
-        case ipc.Type.MouseMove:
-            print(f'Mouse has moved to {q_data}')
-
-        case ipc.Type.MouseClick:
-            print(f'Mouse button {q_data} clicked')
-
-        case ipc.Type.MouseDoubleClick:
-            print(f'Mouse button {q_data} double clicked')
 
     return True
 
 
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
+def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
     try:
         while True:
-            received_data = q_receive.get()
-            if not process_data(q_send, received_data.type, received_data.data):
+            if not process_data(q_send, q_receive.get()):
                 return
 
     # Catch error after KeyboardInterrupt
@@ -39,4 +38,4 @@ def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
         return
 
     except Exception as e:
-        q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.Traceback, (e, traceback.format_exc())))
+        q_send.put(ipc.Traceback(e, traceback.format_exc()))

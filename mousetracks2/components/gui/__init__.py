@@ -41,9 +41,16 @@ class MainWindow(QtWidgets.QMainWindow):
         pause = QtWidgets.QPushButton('Pause')
         pause.clicked.connect(self.pauseTracking)
         layout.addWidget(pause)
-        crash = QtWidgets.QPushButton('Raise Exception')
-        crash.clicked.connect(self.excTracking)
+        crash = QtWidgets.QPushButton('Raise Exception (tracking)')
+        crash.clicked.connect(self.raiseTracking)
         layout.addWidget(crash)
+        crash = QtWidgets.QPushButton('Raise Exception (processing)')
+        crash.clicked.connect(self.raiseProcessing)
+        layout.addWidget(crash)
+        crash = QtWidgets.QPushButton('Raise Exception (hub)')
+        crash.clicked.connect(self.raiseHub)
+        layout.addWidget(crash)
+
 
         horizontal = QtWidgets.QHBoxLayout()
         horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
@@ -93,28 +100,42 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def startTracking(self):
         """Start/unpause the script."""
-        self.q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.StartTracking))
+        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()
     def pauseTracking(self):
         """Pause/unpause the script."""
-        self.q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.PauseTracking))
+        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
     @QtCore.Slot()
     def stopTracking(self):
         """Stop the script."""
-        self.q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.StopTracking))
+        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
     @QtCore.Slot()
-    def excTracking(self):
+    def raiseTracking(self):
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.QueueItem(ipc.Target.Processing, ipc.Type.Raise))
+        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Tracking))
+
+    @QtCore.Slot()
+    def raiseProcessing(self):
+        """Send a command to raise an exception.
+        For testing purposes only.
+        """
+        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Processing))
+
+    @QtCore.Slot()
+    def raiseHub(self):
+        """Send a command to raise an exception.
+        For testing purposes only.
+        """
+        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Hub))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Send a signal that the GUI has closed."""
-        self.q_send.put(ipc.QueueItem(ipc.Target.Hub, ipc.Type.GuiExitSignal))
+        self.q_send.put(ipc.Exit())
         super().closeEvent(event)
 
 

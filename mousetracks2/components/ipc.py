@@ -1,47 +1,20 @@
 """Standard format for data to be sent through communication queues."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 
-class Target(Enum):
+class Target:
     """System components that can send or receive messages."""
 
-    Hub = auto()
-    Tracking = auto()
-    Processing = auto()
-    GUI = auto()
-
-
-class Type(Enum):
-    """Message types exchanged between components."""
-
-    Ping = auto()
-    """Send a ping. Only in use for debugging."""
-    Raise = auto()
-    """Raise an exception. Only in use for debugging."""
-    Exit = auto()
-    """Signal for the process to exit."""
-    Traceback = auto()
-    """When an unhandled exception is raised."""
-    MouseMove = auto()
-    """When the mouse cursor is moved."""
-    MouseClick = auto()
-    """When the mouse has been clicked."""
-    MouseDoubleClick = auto()
-    """When the mouse has been double clicked."""
-    StartTracking = auto()
-    """Start the tracking."""
-    StopTracking = auto()
-    """Stop the tracking completely."""
-    PauseTracking = auto()
-    """Prevent the tracking from recording anything."""
-    GuiExitSignal = auto()
-    """Send a notification that the GUI is closing."""
+    Hub = 0b1
+    Tracking = 0b10
+    Processing = 0b100
+    GUI = 0b1000
 
 
 @dataclass
-class QueueItem:
+class Message:
     """Represents an item to be passed through a communication queue.
 
     Attributes:
@@ -50,6 +23,83 @@ class QueueItem:
         data: Optional data payload associated with the message.
     """
 
-    target: Target
-    type: Type
-    data: any = None
+    target: int = field(default=0)
+
+
+@dataclass
+class MouseMove(Message):
+    """Mouse has moved to a new location on the screen."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    position: tuple[int, int]
+
+
+@dataclass
+class MouseClick(Message):
+    """Mouse has been clicked."""
+
+    target: int = field(default=Target.GUI, init=False)
+    button: int
+    position: tuple[int, int]
+    double: bool = field(default=False)
+
+
+@dataclass
+class Traceback(Message):
+    """Send data when a traceback is raised."""
+
+    target: int = field(default=Target.Hub, init=False)
+    exception: Exception
+    traceback: str
+
+    def reraise(self):
+        """Re-raise the exception.
+        Since the full traceback isn't accessible from a different
+        thread, replicate Python's behaviour by showing both exceptions.
+        """
+        print(self.traceback)
+        print('During handling of the above exception, another exception occurred:\n')
+        raise self.exception
+
+@dataclass
+class TrackingState(Message):
+    """Set a tracking state."""
+
+    class State(Enum):
+        Start = auto()
+        Pause = auto()
+        Stop = auto()
+
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing, init=False)
+    state: State
+
+
+@dataclass
+class Exit(Message):
+    """Quit the whole application."""
+
+    target: int = field(default=Target.Hub, init=False)
+
+
+@dataclass
+class DebugRaiseError(Message):
+    """Raise an error for debugging."""
+
+
+# Test code as an example to refer back to
+if __name__ == '__main__':
+    test = [
+        MouseClick(button=1, position=(0, 0)),
+        MouseClick(button=2, position=(0, 0)),
+        MouseMove(position=(0, 0)),
+    ]
+    for data in test:
+        match data:
+            case MouseClick(button=1) if data.target & Target.GUI:
+                print('Mouse button 1 clicked')
+            case MouseClick():
+                print(f'Mouse button {data.button} clicked at {data.position}')
+            case MouseMove(position=pos):
+                print(f'Mouse moved to {pos}')
+            case _:
+                print('Unknown item')
