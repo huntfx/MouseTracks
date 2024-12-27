@@ -50,6 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
         will instantly execute the command. This uses instances of
         `ThreadEvent`.
     """
+    update_pixel = QtCore.Signal(int, int, QtGui.QColor)
 
     def __init__(self, q_send, q_receive, **kwargs):
         super().__init__(**kwargs)
@@ -83,7 +84,6 @@ class MainWindow(QtWidgets.QMainWindow):
         crash.clicked.connect(self.raiseHub)
         layout.addWidget(crash)
 
-
         horizontal = QtWidgets.QHBoxLayout()
         horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
         self.status = QtWidgets.QLabel()
@@ -101,6 +101,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.speed = QtWidgets.QLabel('0.0')
         horizontal.addWidget(self.speed)
         layout.addLayout(horizontal)
+
+        # Create a label to display the pixmap
+        self.image_label = QtWidgets.QLabel()
+        #self.image_label.setFixedSize(width, height)
+        layout.addWidget(self.image_label)
+        # Create a QPixmap and QImage
+        self.pixmap = QtGui.QPixmap(360, 240)
+        self.pixmap.fill(QtCore.Qt.white)  # Start with a white background
+        self.image_label.setPixmap(self.pixmap)
+        self.image = self.pixmap.toImage()
+        self.update_pixel.connect(self.update_pixmap_pixel)
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(layout)
@@ -156,6 +167,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
 
+                # remap to 1440p (hardcoded for now)
+                if 0 <= message.position[0] < 2560 and 0 <= message.position[1] < 1440:
+                    x = message.position[0] * self.image.width() / 2560
+                    y = message.position[1] * self.image.height() / 1440
+                    self.update_pixel.emit(x, y, QtCore.Qt.black)
+
     @QtCore.Slot()
     def startTracking(self):
         """Start/unpause the script."""
@@ -199,6 +216,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.quit()
         self.queue_thread.wait()
         super().closeEvent(event)
+
+    @QtCore.Slot(int, int, QtGui.QColor)
+    def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor):
+        """Update a specific pixel in the QImage and refresh the display."""
+        self.image.setPixelColor(x, y, colour)
+
+        self.pixmap.convertFromImage(self.image)
+        self.image_label.setPixmap(self.pixmap)
 
 
 def run(q_send, q_receive):
