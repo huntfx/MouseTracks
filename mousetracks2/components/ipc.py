@@ -77,6 +77,14 @@ class TrackingState(Message):
 
 
 @dataclass
+class MonitorsChanged(Message):
+    """Send the location of each monitor when the setup changes."""
+
+    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    data: list[tuple[int, int, int, int]]
+
+
+@dataclass
 class Exit(Message):
     """Quit the whole application."""
 

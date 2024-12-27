@@ -80,12 +80,12 @@ class Tracking:
             # If so then wait and try again
             if mouse_position is None:
                 if not data.mouse_inactive:
-                    print('[tracking] Mouse Undetected.')
+                    print('[Tracking] Mouse Undetected.')
                     data.mouse_inactive = True
                 time.sleep(2)
                 continue
             if data.mouse_inactive:
-                print('[tracking] Mouse detected.')
+                print('[Tracking] Mouse detected.')
                 data.mouse_inactive = False
 
             # Update mouse movement
@@ -116,7 +116,8 @@ class Tracking:
                 monitor_data = monitor_locations()
                 if data.monitors != monitor_data:
                     data.monitors = monitor_data
-                    last_activity = tick
+                    print('[Tracking] Monitor change detected')
+                    self.send_data(ipc.MonitorsChanged(monitor_data))
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:

@@ -5,12 +5,12 @@ import sys
 import queue
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
-from ...utils.win import cursor_position
+from ...utils.win import cursor_position, monitor_locations
 
 
 class QueueWorker(QtCore.QObject):
     """Worker for polling the queue in a background thread."""
-    message_received = QtCore.Signal(object)  # Signal to send received data
+    message_received = QtCore.Signal(ipc.Message)
 
     def __init__(self, queue):
         super().__init__()
@@ -61,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_speed = 0
         self.mouse_position = cursor_position()
         self.mouse_move_tick = 0
+        self.monitor_data = monitor_locations()
+        self.previous_monitor = None
 
         # Setup layout
         # This is a design meant for debugging purposes
@@ -125,7 +127,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker.moveToThread(self.queue_thread)
 
         # Connect signals and slots
-        self.queue_worker.message_received.connect(self.processMessage)
+        self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
 
@@ -153,34 +155,70 @@ class MainWindow(QtWidgets.QMainWindow):
         self._state = state
         self.status.setText(state)
 
-    def processMessage(self, message: ipc.Message):
+    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Detect which monitor the pixel is on."""
+        for x1, y1, x2, y2 in self.monitor_data:
+            if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
+                return ((x2 - x1, y2 - y1), (x1, y1))
+
+    @QtCore.Slot(ipc.Message)
+    def process_message(self, message: ipc.Message):
         match message:
+            # When monitors change, store the new data
+            case ipc.MonitorsChanged():
+                self.monitor_data = message.data
+
+            # When the mouse moves, update stats and draw it
+            # The drawing is an approximation and not a render
             case ipc.MouseMove():
+                is_moving = message.tick == self.mouse_move_tick + 1
+
+                # Calculate basic data
                 distance_to_previous = calculate_distance(message.position, self.mouse_position)
-                if message.tick == self.mouse_move_tick + 1:
+                if is_moving:
                     self.mouse_speed = distance_to_previous
                 self.mouse_distance += distance_to_previous
 
+                # Get all the pixels between the two points
+                pixels = []
+                if is_moving:
+                    pixels.extend(calculate_line(self.mouse_position, message.position))
+                pixels.append(message.position)
+
+                # Determine if the start and end point are in the same monitor
+                current_monitor, offset = self._monitor_offset(message.position)
+                if is_moving:
+                    crosses_multiple_monitors = self.previous_monitor != (current_monitor, offset)
+                else:
+                    crosses_multiple_monitors = False
+                width_multiplier = self.image.width() / current_monitor[0]
+                height_multiplier = self.image.height() / current_monitor[1]
+
+                seen = set()
+                for pixel in pixels:
+                    # Refresh data per pixel if the cursor crosses monitors
+                    if crosses_multiple_monitors:
+                        current_monitor, offset = self._monitor_offset(pixel)
+                        width_multiplier = self.image.width() / current_monitor[0]
+                        height_multiplier = self.image.height() / current_monitor[1]
+
+                    # Downscale the pixel
+                    x = int((pixel[0] - offset[0]) * width_multiplier)
+                    y = int((pixel[1] - offset[1]) * height_multiplier)
+
+                    # Send (unique) pixels to be drawn
+                    if (x, y) not in seen:
+                        self.update_pixel.emit(int(x), int(y), QtCore.Qt.black)
+                        seen.add((x, y))
+
+                # Update the widgets
                 self.distance.setText(str(int(self.mouse_distance)))
                 self.speed.setText(str(int(self.mouse_speed)))
-
-                # remap to 1440p (hardcoded for now)
-                width_downscale = self.image.width() / 2560
-                height_downscale = self.image.height() / 1440
-                new_downscale = (int(message.position[0] * width_downscale), int(message.position[1] * height_downscale))
-                if message.tick == self.mouse_move_tick + 1:
-                    old_downscale = (int(self.mouse_position[0] * width_downscale), int(self.mouse_position[1] * height_downscale))
-                else:
-                    old_downscale = new_downscale
-                self.update_pixel.emit(new_downscale[0], new_downscale[1], QtCore.Qt.black)
-                for x, y in calculate_line(old_downscale, new_downscale):
-                    if 0 <= x < self.image.width() and 0 <= y < self.image.height():
-                        self.update_pixel.emit(x, y, QtCore.Qt.black)
 
                 # Update the saved data
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
-
+                self.previous_monitor = (current_monitor, offset)
 
     @QtCore.Slot()
     def startTracking(self):
