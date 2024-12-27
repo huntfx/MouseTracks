@@ -72,7 +72,7 @@ class TrackingState(Message):
         Pause = auto()
         Stop = auto()
 
-    target: int = field(default=Target.Tracking | Target.Processing, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing, init=False)
     state: State
 
 

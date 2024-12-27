@@ -24,10 +24,8 @@ class Hub:
 
         self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
-        self._p_tracking.start()
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
-        self._p_processing.start()
         self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
 
@@ -39,12 +37,12 @@ class Hub:
 
     def _start_tracking(self):
         """Start the tracking processes if required."""
-        print('[Hub] Starting tracking processes...')
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
         if tracking_running and processing_running:
-            print('[Hub] Skipping: already running')
             return
+
+        print('[Hub] Starting tracking processes...')
 
         # Shut down any existing threads
         if tracking_running or processing_running:
