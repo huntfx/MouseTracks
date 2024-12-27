@@ -164,14 +164,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.distance.setText(str(int(self.mouse_distance)))
                 self.speed.setText(str(int(self.mouse_speed)))
 
+                # remap to 1440p (hardcoded for now)
+                width_downscale = self.image.width() / 2560
+                height_downscale = self.image.height() / 1440
+                new_downscale = (int(message.position[0] * width_downscale), int(message.position[1] * height_downscale))
+                if message.tick == self.mouse_move_tick + 1:
+                    old_downscale = (int(self.mouse_position[0] * width_downscale), int(self.mouse_position[1] * height_downscale))
+                else:
+                    old_downscale = new_downscale
+                self.update_pixel.emit(new_downscale[0], new_downscale[1], QtCore.Qt.black)
+                for x, y in calculate_line(old_downscale, new_downscale):
+                    if 0 <= x < self.image.width() and 0 <= y < self.image.height():
+                        self.update_pixel.emit(x, y, QtCore.Qt.black)
+
+                # Update the saved data
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
 
-                # remap to 1440p (hardcoded for now)
-                if 0 <= message.position[0] < 2560 and 0 <= message.position[1] < 1440:
-                    x = message.position[0] * self.image.width() / 2560
-                    y = message.position[1] * self.image.height() / 1440
-                    self.update_pixel.emit(x, y, QtCore.Qt.black)
 
     @QtCore.Slot()
     def startTracking(self):

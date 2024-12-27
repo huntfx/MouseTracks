@@ -7,15 +7,14 @@ Source: https://github.com/Peter92/MouseTracks
 from __future__ import division
 
 
-def calculate_distance(p1, p2=None):
+def calculate_distance(p1: tuple[int, int], p2: tuple[int, int]) -> float:
     """Find the distance between two (x, y) coordinates."""
-    if p2 is None:
+    if p1 == p2:
         return 0.0
-    distance = ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
-    return distance
+    return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
 
 
-def calculate_line(start, end):
+def calculate_line(start: tuple[int, int], end: tuple[int, int]) -> list[tuple[int, int]]:
     """Calculates path in terms of pixels between two points.
     Does not include the start and end point.
     """
@@ -87,6 +86,7 @@ def calculate_line(start, end):
             return result
 
     raise ValueError('failed to find path between {start}, {end}'.format(start, end))
+
 
 def calculate_circle(radius, segments=(True, True, True, True)):
     """Get the area and outline of a circle as pixels.
