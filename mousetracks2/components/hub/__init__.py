@@ -17,32 +17,48 @@ class Hub:
     """Set up individual components with queues for communication."""
 
     def __init__(self):
+        """Initialise the hub with queues and processes."""
+        # Setup queues
         self._q_main = multiprocessing.Queue()
         self._q_tracking = multiprocessing.Queue()
         self._q_processing = multiprocessing.Queue()
         self._q_gui = multiprocessing.Queue()
 
-        self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
-        self._p_tracking.daemon = True
-        self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
-        self._p_processing.daemon = True
+        # Setup processes
         self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
+        self._create_tracking_processes()
 
-        self._tracking_init = False
+    def _create_tracking_processes(self) -> None:
+        """Setup the processes required for tracking.
+        If these are shut down, then a new process needs to be created.
+        """
+        self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
+        self._p_tracking.daemon = True
+        self._p_tracking.start()
+        self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
+        self._p_processing.daemon = True
+        self._p_processing.start()
 
-    def start_tracking(self):
-        """Start the tracking."""
+    def start_tracking(self) -> None:
+        """Start the tracking.
+        This will load the threads and send a signal to them.
+        """
+        print('[Hub] Sending start tracking signal...')
         self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
+    def stop_tracking(self):
+        print('[Hub] Sending stop tracking signal...')
+        self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
+
     def _start_tracking(self):
-        """Start the tracking processes if required."""
+        """Start up the tracking processes if required."""
+        print('[Hub] Starting tracking processes...')
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
         if tracking_running and processing_running:
+            print('[Hub] Tracking already running')
             return
-
-        print('[Hub] Starting tracking processes...')
 
         # Shut down any existing threads
         if tracking_running or processing_running:
@@ -54,29 +70,14 @@ class Hub:
         while not self._q_processing.empty():
             self._q_processing.get()
 
-        self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Start))
-
         # Start processes
-        self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
-        self._p_tracking.daemon = True
-        self._p_tracking.start()
-        self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
-        self._p_processing.daemon = True
-        self._p_processing.start()
+        self._create_tracking_processes()
         print('[Hub] Started tracking processes')
 
-    def stop_tracking(self):
-        print('[Hub] Sending stop tracking signal...')
-        self._q_main.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
-
-        # print('Waiting for tracking to shut down...')
-        # if self._p_tracking.is_alive():
-        #     self._p_tracking.join()
-
-        # print('Waiting for processing to shut down...')
-        # if self._p_processing.is_alive():
-        #     self._p_processing.join()
-
+    def cleanup_on_exit(self):
+        """Safely close down processes on exit."""
+        self._p_tracking.join()
+        self._p_processing.join()
         print('[Hub] Safely shut down processes')
 
     def process_data(self, message: ipc.Message):
@@ -96,16 +97,15 @@ class Hub:
 
         return True
 
-    def _start_queue_handler(self):
-        running = True
+    def _start_queue_handler(self, running=True):
         while True:
             # Get the next message
-            # If the app is shutting down, then it will safely stop
-            # after processing remaining messages
             try:
                 received_message = self._q_main.get(timeout=None if running else 0.1)
+
+            # Process all remaining messages before shutdown
             except queue.Empty:
-                return
+                break
 
             if received_message.target & ipc.Target.Hub:
                 if not self.process_data(received_message):
@@ -121,13 +121,19 @@ class Hub:
             if received_message.target & ipc.Target.GUI:
                 self._q_gui.put(received_message)
 
+        self.cleanup_on_exit()
+
     def start_queue_handler(self):
         print('[Hub] Queue handler started.')
         try:
             self._start_queue_handler()
+
+        # If an error occurs, trigger a safe shutdown
         except Exception:
             self._q_main.put(ipc.Exit())
+            self._start_queue_handler(running=False)
             raise
+
         print('[Hub] Queue handler shut down.')
 
     def start_gui(self):
