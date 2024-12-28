@@ -317,7 +317,7 @@ class RenderImage(object):
         colour_range = self._get_colour_range(min_value, max_value, 'GenerateTracks', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
-        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+        image_output = image_output.resize(output_resolution, Image.LANCZOS)
 
         if file_path is None:
             file_path = self.name.generate('Tracks', reload=True)
@@ -341,7 +341,7 @@ class RenderImage(object):
         colour_range = self._get_colour_range(min_value, max_value, 'GenerateSpeed', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
-        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+        image_output = image_output.resize(output_resolution, Image.LANCZOS)
 
         if file_path is None:
             file_path = self.name.generate('Speed', reload=True)
@@ -365,7 +365,7 @@ class RenderImage(object):
         colour_range = self._get_colour_range(min_value, max_value, 'GenerateStrokes', custom_map=colour_override)
         
         image_output = arrays_to_colour(colour_range, upscaled_arrays)
-        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+        image_output = image_output.resize(output_resolution, Image.LANCZOS)
 
         if file_path is None:
             file_path = self.name.generate('Strokes', reload=True)
@@ -403,7 +403,7 @@ class RenderImage(object):
         colour_range = self._get_colour_range(min_value, max_value, 'GenerateHeatmap', custom_map=colour_override)
         
         image_output = Image.fromarray(colour_range.convert_to_rgb(heatmap))
-        image_output = image_output.resize(output_resolution, Image.ANTIALIAS)
+        image_output = image_output.resize(output_resolution, Image.LANCZOS)
 
         if file_path is None:
             file_path = self.name.generate('Clicks', reload=True)
