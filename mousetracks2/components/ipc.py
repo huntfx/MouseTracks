@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
+import numpy as np
 
 
 class Target:
@@ -82,6 +83,20 @@ class MonitorsChanged(Message):
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
     data: list[tuple[int, int, int, int]]
+
+
+@dataclass
+class GuiArrayRequest(Message):
+    """The GUI requests an array."""
+    target: int = field(default=Target.Processing, init=False)
+
+
+@dataclass
+class GuiArrayReply(Message):
+    """The GUI gets sent an array."""
+    target: int = field(default=Target.GUI, init=False)
+    array: np.ndarray
+    tick: int
 
 
 @dataclass

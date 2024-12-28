@@ -44,6 +44,12 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> bool:
         """Process an item of data."""
         match message:
+            case ipc.GuiArrayRequest():
+                x1, y1, x2, y2 = self.monitor_data[0]
+                width = x2 - x1
+                height = y2 - y1
+                self.q_send.put(ipc.GuiArrayReply(self.mouse_track_maps[(width, height)], self.mouse_move_tick))
+
             case ipc.MouseMove():
                 print(f'[Processing] Mouse has moved to {message.position}')
                 is_moving = message.tick == self.mouse_move_tick + 1

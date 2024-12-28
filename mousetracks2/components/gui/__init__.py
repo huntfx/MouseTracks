@@ -3,9 +3,59 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from threading import Thread
 import sys
 import queue
+import math
+import numpy as np
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
+
+try:
+    from scipy import ndimage
+except ImportError:
+    ndimage = None
+
+
+def max_pool_downscale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+    """Downscale the array using max pooling with edge correction.
+
+    All credit goes to ChatGPT here. With scipy it's a tiny bit faster
+    but I've left both ways for the time being.
+    """
+    input_height, input_width = array.shape
+
+    # Compute the pooling size
+    block_width = input_width / target_width
+    block_height = input_height / target_height
+
+    # Use scipy
+    if ndimage is not None:
+        # Apply maximum filter with block size
+        pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
+
+        # Downsample by slicing
+        stride_y = input_height / target_height
+        stride_x = input_width / target_width
+
+        indices_y = (np.arange(target_height) * stride_y).astype(int)
+        indices_x = (np.arange(target_width) * stride_x).astype(int)
+
+        return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
+
+    # Create an output array
+    pooled = np.zeros((target_height, target_width), dtype=array.dtype)
+
+    for y in range(target_height - 1):
+        for x in range(target_width - 1):
+            # Compute the bounds of the current block
+            x_start = int(x * block_width)
+            x_end = min(int((x + 1) * block_width), input_width)
+            y_start = int(y * block_height)
+            y_end = min(int((y + 1) * block_height), input_height)
+
+            # Pool the maximum value from the block
+            pooled[y, x] = array[y_start:y_end, x_start:x_end].max()
+
+    return pooled
 
 
 class QueueWorker(QtCore.QObject):
@@ -56,6 +106,9 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__(**kwargs)
         self.q_send = q_send
         self.q_receive = q_receive
+
+        self.pause_redraw = False
+        self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
 
         self.mouse_distance = 0
         self.mouse_speed = 0
@@ -110,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.image_label)
         # Create a QPixmap and QImage
         self.pixmap = QtGui.QPixmap(360, 240)
-        self.pixmap.fill(QtCore.Qt.white)  # Start with a white background
+        self.pixmap.fill(QtCore.Qt.black)
         self.image_label.setPixmap(self.pixmap)
         self.image = self.pixmap.toImage()
         self.update_pixel.connect(self.update_pixmap_pixel)
@@ -121,6 +174,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Window setup
         self.setState('stopped')
 
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(1000)
+
         # Start queue worker
         self.queue_thread = QtCore.QThread()
         self.queue_worker = QueueWorker(q_receive)
@@ -130,9 +186,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
+        self.timer.timeout.connect(self.request_redraw)
 
         # Start the thread
         self.queue_thread.start()
+        self.timer.start()
 
     def closeEvent(self, event):
         """Safely close the thread."""
@@ -161,12 +219,42 @@ class MainWindow(QtWidgets.QMainWindow):
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
 
+    def request_redraw(self):
+        self.pause_redraw = True
+        self.q_send.put(ipc.GuiArrayRequest())
+
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message):
         match message:
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
+
+            # Draw the new pixmap
+            case ipc.GuiArrayReply():
+                width, height = self.pixmap.width(), self.pixmap.height()
+                array = max_pool_downscale(message.array, width, height)
+
+                # Normalise values from 0 - 255
+                if np.any(array):
+                    array = (255 * array / np.max(array))
+
+                # Create a QImage from the array
+                height, width = array.shape
+                image = QtGui.QImage(array.astype(np.uint8).data, width, height, QtGui.QImage.Format_Grayscale8)
+
+                # Scale the QImage to fit the pixmap size
+                scaled_image = image.scaled(width, height, QtCore.Qt.KeepAspectRatio)
+
+                # Draw the QImage onto the QPixmap
+                painter = QtGui.QPainter(self.pixmap)
+                painter.drawImage(0, 0, scaled_image)
+                painter.end()
+                self.image_label.setPixmap(self.pixmap)
+                self.image = self.pixmap.toImage()
+
+                # Resume drawing
+                self.pause_redraw = False
 
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
@@ -201,7 +289,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     # Send (unique) pixels to be drawn
                     if (x, y) not in seen:
-                        self.update_pixel.emit(int(x), int(y), QtCore.Qt.black)
+                        self.update_pixel.emit(int(x), int(y), QtCore.Qt.white)
                         seen.add((x, y))
 
                 # Update the widgets
@@ -260,11 +348,18 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor):
         """Update a specific pixel in the QImage and refresh the display."""
-        self.image.setPixelColor(x, y, colour)
+        if self.pause_redraw:
+            self.redraw_queue.append((x, y, colour))
 
+        self.image.setPixelColor(x, y, colour)
         self.pixmap.convertFromImage(self.image)
         self.image_label.setPixmap(self.pixmap)
 
+        if not self.pause_redraw and self.redraw_queue:
+            redraw_queue = tuple(self.redraw_queue)
+            self.redraw_queue.clear()
+            for x, y, colour in redraw_queue:
+                self.update_pixmap_pixel(x, y, colour)
 
 def run(q_send, q_receive):
     app = QtWidgets.QApplication(sys.argv)
