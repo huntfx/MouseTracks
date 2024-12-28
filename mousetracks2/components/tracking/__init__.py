@@ -67,6 +67,25 @@ class Tracking:
                     print('[Tracking] Shut down.')
                     return
 
+    def _check_monitor_data(self, data: DataState, pixel: tuple[int, int]) -> None:
+        """Check if the monitor data is valid for the pixel.
+        If not, recalculate it and update the other components.
+        """
+        for x1, y1, x2, y2 in data.monitors:
+            if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
+                break
+        else:
+            self._refresh_monitor_data(data)
+
+    def _refresh_monitor_data(self, data: DataState) -> None:
+        """Check the monitor data is up to date.
+        If not, then send a signal with the updated data.
+        """
+        data.monitors, old_data = monitor_locations(), data.monitors
+        if old_data != data.monitors:
+            print('[Tracking] Monitor change detected')
+            self.send_data(ipc.MonitorsChanged(data.monitors))
+
     def run(self):
         print('[Tracking] Loaded.')
 
@@ -74,6 +93,10 @@ class Tracking:
         mouse_double_click = DOUBLE_CLICK_TIME / 1000 * UPDATES_PER_SECOND
 
         for tick, data in self._run_with_state():
+            # Check resolution and update if required
+            if tick and not tick % 60:
+                self._refresh_monitor_data(data)
+
             mouse_position = cursor_position()
 
             # Check if mouse position is inactive (such as a screensaver)
@@ -92,6 +115,7 @@ class Tracking:
             if mouse_position != data.mouse_position:
                 data.mouse_position = mouse_position
                 last_activity = tick
+                self._check_monitor_data(data, mouse_position)
                 self.send_data(ipc.MouseMove(tick, mouse_position))
 
             for mouse_button, clicked in get_mouse_click().items():
@@ -110,14 +134,6 @@ class Tracking:
                 # Being held
                 else:
                     data.mouse_clicks[mouse_button] = (click_start, tick)
-
-            # Check resolution and update if required
-            if tick and not tick % 60:
-                monitor_data = monitor_locations()
-                if data.monitors != monitor_data:
-                    data.monitors = monitor_data
-                    print('[Tracking] Monitor change detected')
-                    self.send_data(ipc.MonitorsChanged(monitor_data))
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
