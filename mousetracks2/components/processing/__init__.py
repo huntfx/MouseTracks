@@ -101,29 +101,37 @@ class Processing:
         """Process an item of data."""
         match message:
             case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.TimeSincePause | ipc.ThumbnailType.Speed):
-                x1, y1, x2, y2 = self.monitor_data[0]
-                width = x2 - x1
-                height = y2 - y1
 
+                # Choose the data to work on
                 maps: dict[tuple[int, int], np.ndarray]
                 match message.type:
                     case ipc.ThumbnailType.Time:
                         maps = self.mouse_track_maps
+
+                    # Subtract a value from each array and ensure it doesn't go below 0
                     case ipc.ThumbnailType.TimeSincePause:
-                        maps = {k: (v - self.pause_tick) for k, v in self.mouse_track_maps.items()}
+                        maps = {}
+                        for res, array in self.mouse_track_maps.items():
+                            partial_array = array - self.pause_tick
+                            partial_array[partial_array < 0] = 0
+                            maps[res] = partial_array
+
                     case ipc.ThumbnailType.Speed:
                         maps = self.mouse_speed_maps
-                array = maps[(width, height)]
 
-                # Downscale and normalise values from 0 to 255
-                array[array < 0] = 0
-                downscaled_array = array_rescale(array, message.width, message.height)
-                max_time = np.max(downscaled_array) or 1
-                normalised_array = (255 * downscaled_array / max_time).astype(np.uint8)
+                # Downscale and normalise values to 0-255
+                normalised_arrays = []
+                for array in maps.values():
+                    downscaled_array = array_rescale(array, message.width, message.height)
+                    max_time = np.max(downscaled_array) or 1
+                    normalised_arrays.append((255 * downscaled_array / max_time).astype(np.uint8))
 
-                # Map it to a colour lookup table
+                # Combine the arrays using the maximum values of each
+                combined_array = np.maximum.reduce(normalised_arrays)
+
+                # Map to a colour lookup table
                 colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
-                coloured_array = colour_lookup[normalised_array]
+                coloured_array = colour_lookup[combined_array]
 
                 self.q_send.put(ipc.Thumbnail(message.type, coloured_array, self.mouse_move_tick))
 
