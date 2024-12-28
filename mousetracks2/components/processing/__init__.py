@@ -95,36 +95,91 @@ class Processing:
         for x1, y1, x2, y2 in self.monitor_data:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
-        raise ValueError('coordinate not in monitors')
+        raise ValueError(f'coordinate {pixel} not in monitors')
+
+    def _cursor_move(self, message: ipc.MouseMove) -> None:
+        """Handle a mouse move message.
+
+        There are some caveats that are hard to handle. If a mouse is
+        programmatically moved, then it will jump to a location on the
+        screen. A check can be done to skip drawing if the cursor wasn't
+        previously moving, but the first frame of movement wil also
+        always get skipped. Detecting the vector of movement was tried,
+        but it was too overcomplicated and wasn't good enough.
+
+        There's never been an issue with the original script, so the
+        behaviour has been copied.
+        - Time tracks are fully recorded, and will capture jumps.
+        This is fine as those tracks will be buried over time.
+        - Speed tracks are only recorded if the cursor was previously
+        moving, the downside being it will still record any jumps while
+        moving, and will always skip the first frame of movement.
+        """
+        print(f'[Processing] Mouse has moved to {message.position}')
+        distance = calculate_distance(message.position, self.mouse_position)
+        moving = message.tick == self.mouse_move_tick + 1
+
+        # Calculate the data
+        pixels = [message.position]
+        if distance:
+            self.mouse_distance += distance
+            pixels.extend(calculate_line(message.position, self.mouse_position))
+            pixels.append(self.mouse_position)
+
+        # Add the pixels to an array
+        for pixel in pixels:
+            current_monitor, offset = self._monitor_offset(pixel)
+            x = pixel[0] - offset[0]
+            y = pixel[1] - offset[1]
+
+            self.mouse_track_maps[current_monitor][(y, x)] = self.mouse_move_count
+            if distance and moving:
+                self.mouse_speed_maps[current_monitor][(y, x)] = max(self.mouse_speed_maps[current_monitor][(y, x)], distance)
+
+        # Update the saved data
+        self.mouse_move_count += 1
+        self.mouse_position = message.position
+        self.mouse_move_tick = message.tick
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
-            case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.TimeSincePause | ipc.ThumbnailType.Speed):
-
+            case ipc.RenderRequest(type=ipc.RenderType.Time | ipc.RenderType.TimeSincePause | ipc.RenderType.Speed,
+                                   width=scale_width, height=scale_height):
+                print('[Processing] Render request received...')
                 # Choose the data to work on
                 maps: dict[tuple[int, int], np.ndarray]
                 match message.type:
-                    case ipc.ThumbnailType.Time:
+                    case ipc.RenderType.Time:
                         maps = self.mouse_track_maps
 
                     # Subtract a value from each array and ensure it doesn't go below 0
-                    case ipc.ThumbnailType.TimeSincePause:
+                    case ipc.RenderType.TimeSincePause:
                         maps = {}
                         for res, array in self.mouse_track_maps.items():
                             partial_array = array - self.pause_tick
                             partial_array[partial_array < 0] = 0
                             maps[res] = partial_array
 
-                    case ipc.ThumbnailType.Speed:
+                    case ipc.RenderType.Speed:
                         maps = self.mouse_speed_maps
+
+                # If doing a full render, find the largest most common resolution
+                if not message.thumbnail:
+                    popularity = {}
+                    for res, array in maps.items():
+                        popularity[res] = np.sum(array > 0)
+                    threshold = max(popularity.values()) * 0.9
+                    scale_width, scale_height = max(res for res, value in popularity.items() if value > threshold)
+                    scale_width *= 2
+                    scale_height *= 2
 
                 # Downscale and normalise values to 0-255
                 normalised_arrays = []
                 for array in maps.values():
-                    downscaled_array = array_rescale(array, message.width, message.height)
-                    max_time = np.max(downscaled_array) or 1
-                    normalised_arrays.append((255 * downscaled_array / max_time).astype(np.uint8))
+                    scaled_array = array_rescale(array, scale_width, scale_height)
+                    max_time = np.max(scaled_array) or 1
+                    normalised_arrays.append((255 * scaled_array / max_time).astype(np.uint8))
 
                 # Combine the arrays using the maximum values of each
                 combined_array = np.maximum.reduce(normalised_arrays)
@@ -133,34 +188,11 @@ class Processing:
                 colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
                 coloured_array = colour_lookup[combined_array]
 
-                self.q_send.put(ipc.Thumbnail(message.type, coloured_array, self.mouse_move_tick))
+                self.q_send.put(ipc.Render(message.type, coloured_array, self.mouse_move_tick, message.thumbnail))
+                print('[Processing] Render request completed')
 
             case ipc.MouseMove():
-                print(f'[Processing] Mouse has moved to {message.position}')
-                # Calculate the data
-                pixels = [message.position]
-                distance = 0.0
-                if self.mouse_position is not None and message.tick == self.mouse_move_tick + 1:
-                    distance = calculate_distance(message.position, self.mouse_position)
-                    self.mouse_distance += distance
-
-                    line = calculate_line(message.position, self.mouse_position)
-                    if line:
-                        pixels.extend(line)
-                        pixels.append(self.mouse_position)
-
-                # Add the pixels to an array
-                for pixel in pixels:
-                    current_monitor, offset = self._monitor_offset(pixel)
-                    x = pixel[0] - offset[0]
-                    y = pixel[1] - offset[1]
-                    self.mouse_track_maps[current_monitor][(y, x)] = self.mouse_move_count
-                    self.mouse_speed_maps[current_monitor][(y, x)] = max(self.mouse_speed_maps[current_monitor][(y, x)], distance)
-
-                # Update the saved data
-                self.mouse_move_count += 1
-                self.mouse_position = message.position
-                self.mouse_move_tick = message.tick
+                self._cursor_move(message)
 
             case ipc.MouseClick(double=True):
                 print(f'[Processing] Mouse button {message.button} double clicked.')

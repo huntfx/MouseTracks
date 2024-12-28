@@ -14,8 +14,8 @@ class Target:
     GUI = 0b1000
 
 
-class ThumbnailType(Enum):
-    """Possible types of thumbnail renders."""
+class RenderType(Enum):
+    """Possible types of renders."""
 
     Time = auto()
     TimeSincePause = auto()
@@ -94,22 +94,24 @@ class MonitorsChanged(Message):
 
 
 @dataclass
-class ThumbnailRequest(Message):
-    """Request a thumbnail render."""
+class RenderRequest(Message):
+    """Request a render."""
 
     target: int = field(default=Target.Processing, init=False)
-    type: ThumbnailType
+    type: RenderType
     width: int
     height: int
+    thumbnail: bool = field(default=False)
 
 
 @dataclass
-class Thumbnail(Message):
-    """A thumbnail has been rendered."""
+class Render(Message):
+    """A render has been completed."""
     target: int = field(default=Target.GUI, init=False)
-    type: ThumbnailType
+    type: RenderType
     data: np.ndarray
     tick: int
+    thumbnail: bool = field(default=False)
 
 
 @dataclass

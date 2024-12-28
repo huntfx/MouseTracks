@@ -1,9 +1,11 @@
-
+import os
 import sys
 import queue
 import math
 import multiprocessing
 
+import numpy as np
+from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from .. import ipc
@@ -69,7 +71,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_move_tick = 0
         self.mouse_move_count = 0
         self.monitor_data = monitor_locations()
-        self.thumbnail_type = ipc.ThumbnailType.Time
+        self.render_type = ipc.RenderType.Time
 
         # Setup layout
         # This is a design meant for debugging purposes
@@ -92,12 +94,15 @@ class MainWindow(QtWidgets.QMainWindow):
         crash = QtWidgets.QPushButton('Raise Exception (hub)')
         crash.clicked.connect(self.raiseHub)
         layout.addWidget(crash)
+        render = QtWidgets.QPushButton('Render')
+        render.clicked.connect(self.render)
+        layout.addWidget(render)
 
         self.thumbtype = QtWidgets.QComboBox()
-        self.thumbtype.addItem('Time', ipc.ThumbnailType.Time)
-        self.thumbtype.addItem('Time (since pause)', ipc.ThumbnailType.TimeSincePause)
-        self.thumbtype.addItem('Speed', ipc.ThumbnailType.Speed)
-        self.thumbtype.currentIndexChanged.connect(self.thumbnail_type_changed)
+        self.thumbtype.addItem('Time', ipc.RenderType.Time)
+        self.thumbtype.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.thumbtype.addItem('Speed', ipc.RenderType.Speed)
+        self.thumbtype.currentIndexChanged.connect(self.render_type_changed)
         layout.addWidget(self.thumbtype)
 
         horizontal = QtWidgets.QHBoxLayout()
@@ -146,9 +151,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.start()
 
     @QtCore.Slot(int)
-    def thumbnail_type_changed(self, idx: int) -> None:
+    def render_type_changed(self, idx: int) -> None:
         """Change the thumbnail type and trigger a redraw."""
-        self.thumbnail_type = self.thumbtype.itemData(idx)
+        self.render_type = self.thumbtype.itemData(idx)
         self.request_thumbnail(force=True)
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
@@ -156,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for x1, y1, x2, y2 in self.monitor_data:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
-        raise ValueError('coordinate not in monitors')
+        raise ValueError(f'coordinate {pixel} not in monitors')
 
     def request_thumbnail(self, force: bool = False) -> None:
         """Send a request to draw a thumbnail.
@@ -166,7 +171,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return
         self.pause_redraw = True
-        self.q_send.put(ipc.ThumbnailRequest(self.thumbnail_type, self.pixmap.width(), self.pixmap.height()))
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), True))
+
+    def render(self) -> None:
+        """Send a render request."""
+        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, False))
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
@@ -175,8 +184,22 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
 
+            # Save a render
+            case ipc.Render(data=array, thumbnail=False):
+                dialog = QtWidgets.QFileDialog()
+                dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+                dialog.setNameFilters(['PNG Files (*.png)", "JPEG Files (*.jpg *.jpeg)'])
+                dialog.setDefaultSuffix('png')
+                file_path, accept = dialog.getSaveFileName(None, 'Save Image', '', 'Image Files (*.png *.jpg)')
+
+                if accept:
+                    im = Image.fromarray(array)
+                    im.resize((2560, 1440), Image.Resampling.LANCZOS)
+                    im.save(file_path)
+                    os.startfile(file_path)
+
             # Draw the new pixmap
-            case ipc.Thumbnail(data=array):
+            case ipc.Render(data=array, thumbnail=True):
                 # Create a QImage from the array
                 height, width, channels = array.shape
                 if channels == 1:
@@ -242,15 +265,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Trigger a GUI update
                 if self.mouse_move_count:
                     update_smoothness = 4
-                    match self.thumbnail_type:
+                    match self.render_type:
                         # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-                        case ipc.ThumbnailType.Time:
+                        case ipc.RenderType.Time:
                             update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_count))))
                         # With speed it must be constant, doesn't work as well live
-                        case ipc.ThumbnailType.Speed | ipc.ThumbnailType.TimeSincePause:
+                        case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause:
                             update_frequency = 50
                         case _:
-                            raise NotImplementedError(self.thumbnail_type)
+                            raise NotImplementedError(self.render_type)
                     if not self.mouse_move_count % (update_frequency // update_smoothness):
                         self.request_thumbnail()
 
@@ -265,7 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         # Special case to redraw thumbnail
-        if self.thumbtype.currentData() == ipc.ThumbnailType.TimeSincePause:
+        if self.thumbtype.currentData() == ipc.RenderType.TimeSincePause:
             self.request_thumbnail()
 
     @QtCore.Slot()
@@ -305,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
-        if self.thumbnail_type in (ipc.ThumbnailType.Time, ipc.ThumbnailType.TimeSincePause):
+        if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
             self.image.setPixelColor(x, y, colour)
             self.pixmap.convertFromImage(self.image)
             self.image_label.setPixmap(self.pixmap)

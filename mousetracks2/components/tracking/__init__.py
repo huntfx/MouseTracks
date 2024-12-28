@@ -75,6 +75,7 @@ class Tracking:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 break
         else:
+            print('[Tracking] Error with mouse position, refreshing monitor data...')
             self._refresh_monitor_data(data)
 
     def _refresh_monitor_data(self, data: DataState) -> None:
@@ -93,10 +94,6 @@ class Tracking:
         mouse_double_click = DOUBLE_CLICK_TIME / 1000 * UPDATES_PER_SECOND
 
         for tick, data in self._run_with_state():
-            # Check resolution and update if required
-            if tick and not tick % 60:
-                self._refresh_monitor_data(data)
-
             mouse_position = cursor_position()
 
             # Check if mouse position is inactive (such as a screensaver)
@@ -110,6 +107,10 @@ class Tracking:
             if data.mouse_inactive:
                 print('[Tracking] Mouse detected.')
                 data.mouse_inactive = False
+
+            # Check resolution and update if required
+            if tick and not tick % 60:
+                self._refresh_monitor_data(data)
 
             # Update mouse movement
             if mouse_position != data.mouse_position:
