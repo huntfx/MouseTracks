@@ -86,16 +86,19 @@ class MonitorsChanged(Message):
 
 
 @dataclass
-class GuiArrayRequest(Message):
-    """The GUI requests an array."""
+class ThumbnailRequest(Message):
+    """Request a thumbnail render."""
+
     target: int = field(default=Target.Processing, init=False)
+    width: int
+    height: int
 
 
 @dataclass
-class GuiArrayReply(Message):
-    """The GUI gets sent an array."""
+class Thumbnail(Message):
+    """A thumbnail has been rendered."""
     target: int = field(default=Target.GUI, init=False)
-    array: np.ndarray
+    data: np.ndarray
     tick: int
 
 

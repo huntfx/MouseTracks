@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import numpy as np
 import traceback
@@ -5,6 +6,11 @@ import traceback
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
+
+try:
+    from scipy import ndimage
+except ImportError:
+    ndimage = None
 
 
 class ExitRequest(Exception):
@@ -18,6 +24,49 @@ class PixelArray(dict):
     def __missing__(self, key: tuple[int, int]) -> np.ndarray:
         self[key] = value = np.zeros((key[1], key[0]), dtype=np.int64)
         return value
+
+
+def max_pool_downscale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+    """Downscale the array using max pooling with edge correction.
+
+    All credit goes to ChatGPT here. With scipy it's a tiny bit faster
+    but I've left both ways for the time being.
+    """
+    input_height, input_width = array.shape
+
+    # Compute the pooling size
+    block_width = input_width / target_width
+    block_height = input_height / target_height
+
+    # Use scipy
+    if ndimage is not None:
+        # Apply maximum filter with block size
+        pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
+
+        # Downsample by slicing
+        stride_y = input_height / target_height
+        stride_x = input_width / target_width
+
+        indices_y = (np.arange(target_height) * stride_y).astype(int)
+        indices_x = (np.arange(target_width) * stride_x).astype(int)
+
+        return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
+
+    # Create an output array
+    pooled = np.zeros((target_height, target_width), dtype=array.dtype)
+
+    for y in range(target_height - 1):
+        for x in range(target_width - 1):
+            # Compute the bounds of the current block
+            x_start = int(x * block_width)
+            x_end = min(int((x + 1) * block_width), input_width)
+            y_start = int(y * block_height)
+            y_end = min(int((y + 1) * block_height), input_height)
+
+            # Pool the maximum value from the block
+            pooled[y, x] = array[y_start:y_end, x_start:x_end].max()
+
+    return pooled
 
 
 class Processing:
@@ -44,11 +93,20 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> bool:
         """Process an item of data."""
         match message:
-            case ipc.GuiArrayRequest():
+            case ipc.ThumbnailRequest():
                 x1, y1, x2, y2 = self.monitor_data[0]
                 width = x2 - x1
                 height = y2 - y1
-                self.q_send.put(ipc.GuiArrayReply(self.mouse_track_maps[(width, height)], self.mouse_move_tick))
+                array = self.mouse_track_maps[(width, height)]
+
+                # Resample the array to match the requested size
+                downscaled = max_pool_downscale(array, message.width, message.height)
+
+                # Normalize values from 0 to 255
+                if np.any(downscaled):
+                    downscaled = (255 * downscaled / np.max(downscaled))
+
+                self.q_send.put(ipc.Thumbnail(downscaled, self.mouse_move_tick))
 
             case ipc.MouseMove():
                 print(f'[Processing] Mouse has moved to {message.position}')
