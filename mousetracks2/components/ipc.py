@@ -18,6 +18,7 @@ class ThumbnailType(Enum):
     """Possible types of thumbnail renders."""
 
     Time = auto()
+    TimeSincePause = auto()
     Speed = auto()
 
 

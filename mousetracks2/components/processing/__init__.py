@@ -87,6 +87,8 @@ class Processing:
         self.mouse_move_tick = 0
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
+        self.pause_tick = 0
+        self.state = ipc.TrackingState.State.Pause
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
         """Detect which monitor the pixel is on."""
@@ -97,7 +99,7 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> bool:
         """Process an item of data."""
         match message:
-            case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.Speed):
+            case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.TimeSincePause | ipc.ThumbnailType.Speed):
                 x1, y1, x2, y2 = self.monitor_data[0]
                 width = x2 - x1
                 height = y2 - y1
@@ -105,11 +107,14 @@ class Processing:
                 match message.type:
                     case ipc.ThumbnailType.Time:
                         maps = self.mouse_track_maps
+                    case ipc.ThumbnailType.TimeSincePause:
+                        maps = {k: (v - self.pause_tick) for k, v in self.mouse_track_maps.items()}
                     case ipc.ThumbnailType.Speed:
                         maps = self.mouse_speed_maps
                 array = maps[(width, height)]
 
                 # Downscale and normalise values from 0 to 255
+                array[array < 0] = 0
                 downscaled_array = array_rescale(array, message.width, message.height)
                 max_time = np.max(downscaled_array) or 1
                 normalised_array = (255 * downscaled_array / max_time).astype(np.uint8)
@@ -160,8 +165,16 @@ class Processing:
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
-            case ipc.TrackingState(state=ipc.TrackingState.State.Stop):
-                raise ExitRequest
+            case ipc.TrackingState():
+                match message.state:
+                    case ipc.TrackingState.State.Stop:
+                        raise ExitRequest
+                    case ipc.TrackingState.State.Pause:
+                        self.pause_tick = self.mouse_move_count
+                self.state = message.state
+
+            case _:
+                raise NotImplementedError(message)
 
 
     def run(self) -> None:

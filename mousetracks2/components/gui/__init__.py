@@ -95,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.thumbtype = QtWidgets.QComboBox()
         self.thumbtype.addItem('Time', ipc.ThumbnailType.Time)
+        self.thumbtype.addItem('Time (since pause)', ipc.ThumbnailType.TimeSincePause)
         self.thumbtype.addItem('Speed', ipc.ThumbnailType.Speed)
         self.thumbtype.currentIndexChanged.connect(self.thumbnail_type_changed)
         layout.addWidget(self.thumbtype)
@@ -275,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         case ipc.ThumbnailType.Time:
                             update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_ticks))))
                         # With speed it must be constant, doesn't work as well live
-                        case ipc.ThumbnailType.Speed:
+                        case ipc.ThumbnailType.Speed | ipc.ThumbnailType.TimeSincePause:
                             update_frequency = 50
                         case _:
                             raise NotImplementedError(self.thumbnail_type)
@@ -291,6 +292,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def pauseTracking(self):
         """Pause/unpause the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
+
+        # Special case to redraw thumbnail
+        if self.thumbtype.currentData() == ipc.ThumbnailType.TimeSincePause:
+            self.request_thumbnail()
 
     @QtCore.Slot()
     def stopTracking(self):
@@ -329,7 +334,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor):
         """Update a specific pixel in the QImage and refresh the display."""
-        if self.thumbnail_type == ipc.ThumbnailType.Time:
+        if self.thumbnail_type in (ipc.ThumbnailType.Time, ipc.ThumbnailType.TimeSincePause):
             self.image.setPixelColor(x, y, colour)
             self.pixmap.convertFromImage(self.image)
             self.image_label.setPixmap(self.pixmap)
