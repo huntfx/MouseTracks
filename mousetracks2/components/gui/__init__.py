@@ -180,29 +180,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_distance += distance_to_previous
 
                 # Get all the pixels between the two points
-                pixels = []
-                if is_moving:
-                    pixels.extend(calculate_line(self.mouse_position, message.position))
-                pixels.append(message.position)
-
-                # Determine if the start and end point are in the same monitor
-                current_monitor, offset = self._monitor_offset(message.position)
-                if is_moving:
-                    crosses_multiple_monitors = self.previous_monitor != (current_monitor, offset)
-                else:
-                    crosses_multiple_monitors = False
-                width_multiplier = self.image.width() / current_monitor[0]
-                height_multiplier = self.image.height() / current_monitor[1]
+                # Unlike the processing component, this skips the first
+                # point as there are no colour gradients to see
+                pixels = [message.position]
+                if is_moving and self.mouse_position != message.position:
+                    pixels.extend(calculate_line(message.position, self.mouse_position))
 
                 seen = set()
                 for pixel in pixels:
-                    # Refresh data per pixel if the cursor crosses monitors
-                    if crosses_multiple_monitors:
-                        current_monitor, offset = self._monitor_offset(pixel)
-                        width_multiplier = self.image.width() / current_monitor[0]
-                        height_multiplier = self.image.height() / current_monitor[1]
+                    # Refresh data per pixel
+                    # This could be done only when the cursor changes
+                    # monitor, but it's not computationally heavy
+                    current_monitor, offset = self._monitor_offset(pixel)
+                    width_multiplier = self.image.width() / current_monitor[0]
+                    height_multiplier = self.image.height() / current_monitor[1]
 
-                    # Downscale the pixel
+                    # Downscale the pixel to match the pixmap
                     x = int((pixel[0] - offset[0]) * width_multiplier)
                     y = int((pixel[1] - offset[1]) * height_multiplier)
 
