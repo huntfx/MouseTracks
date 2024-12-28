@@ -1,7 +1,7 @@
 import multiprocessing
 import time
 from dataclasses import dataclass, field
-from itertools import count
+from typing import Optional
 
 from . import utils
 from .. import ipc
@@ -17,7 +17,7 @@ DOUBLE_CLICK_TIME = 500
 class DataState:
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
-    mouse_position: tuple[0, 0] = field(default_factory=cursor_position)
+    mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
 
 

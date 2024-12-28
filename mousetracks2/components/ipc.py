@@ -122,22 +122,3 @@ class Exit(Message):
 @dataclass
 class DebugRaiseError(Message):
     """Raise an error for debugging."""
-
-
-# Test code as an example to refer back to
-if __name__ == '__main__':
-    test = [
-        MouseClick(button=1, position=(0, 0)),
-        MouseClick(button=2, position=(0, 0)),
-        MouseMove(position=(0, 0)),
-    ]
-    for data in test:
-        match data:
-            case MouseClick(button=1) if data.target & Target.GUI:
-                print('Mouse button 1 clicked')
-            case MouseClick():
-                print(f'Mouse button {data.button} clicked at {data.position}')
-            case MouseMove(position=pos):
-                print(f'Mouse moved to {pos}')
-            case _:
-                print('Unknown item')

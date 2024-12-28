@@ -15,7 +15,7 @@ class ExitRequest(Exception):
 
 
 class PixelArray(dict):
-    def __init__(self, dtype: np.dtype):
+    def __init__(self, dtype: type[np.integer]) -> None:
         self._dtype = dtype
 
     def __missing__(self, key: tuple[int, int]) -> np.ndarray:
@@ -82,7 +82,7 @@ class Processing:
         self.mouse_speed_maps = PixelArray(np.uint16)  # Up to 65,535
         self.mouse_move_count = 0
 
-        self.mouse_distance = 0
+        self.mouse_distance = 0.0
         self.mouse_position = cursor_position()
         self.mouse_move_tick = 0
         self.monitor_data = monitor_locations()
@@ -95,8 +95,9 @@ class Processing:
         for x1, y1, x2, y2 in self.monitor_data:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
+        raise ValueError('coordinate not in monitors')
 
-    def _process_message(self, message: ipc.Message) -> bool:
+    def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
             case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.TimeSincePause | ipc.ThumbnailType.Speed):
@@ -104,6 +105,7 @@ class Processing:
                 width = x2 - x1
                 height = y2 - y1
 
+                maps: dict[tuple[int, int], np.ndarray]
                 match message.type:
                     case ipc.ThumbnailType.Time:
                         maps = self.mouse_track_maps
@@ -127,17 +129,17 @@ class Processing:
 
             case ipc.MouseMove():
                 print(f'[Processing] Mouse has moved to {message.position}')
-                is_moving = message.tick == self.mouse_move_tick + 1
-
-                # Calculate basic data
-                distance_to_previous = calculate_distance(message.position, self.mouse_position)
-                self.mouse_distance += distance_to_previous
-
-                # Get all the pixels between the two points
+                # Calculate the data
                 pixels = [message.position]
-                if is_moving and self.mouse_position != message.position:
-                    pixels.extend(calculate_line(message.position, self.mouse_position))
-                    pixels.append(self.mouse_position)
+                distance = 0.0
+                if self.mouse_position is not None and message.tick == self.mouse_move_tick + 1:
+                    distance = calculate_distance(message.position, self.mouse_position)
+                    self.mouse_distance += distance
+
+                    line = calculate_line(message.position, self.mouse_position)
+                    if line:
+                        pixels.extend(line)
+                        pixels.append(self.mouse_position)
 
                 # Add the pixels to an array
                 for pixel in pixels:
@@ -145,12 +147,12 @@ class Processing:
                     x = pixel[0] - offset[0]
                     y = pixel[1] - offset[1]
                     self.mouse_track_maps[current_monitor][(y, x)] = self.mouse_move_count
-                    self.mouse_speed_maps[current_monitor][(y, x)] = distance_to_previous
+                    self.mouse_speed_maps[current_monitor][(y, x)] = max(self.mouse_speed_maps[current_monitor][(y, x)], distance)
 
                 # Update the saved data
+                self.mouse_move_count += 1
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
-                self.mouse_move_count += 1
 
             case ipc.MouseClick(double=True):
                 print(f'[Processing] Mouse button {message.button} double clicked.')
@@ -176,7 +178,6 @@ class Processing:
             case _:
                 raise NotImplementedError(message)
 
-
     def run(self) -> None:
         print('[Processing] Loaded.')
 
@@ -195,5 +196,5 @@ class Processing:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
 
 
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
+def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
     Processing(q_send, q_receive).run()

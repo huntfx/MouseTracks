@@ -1,10 +1,11 @@
-from enum import Enum, auto
-from PySide6 import QtCore, QtWidgets, QtGui
-from threading import Thread
+
 import sys
 import queue
 import math
-import numpy as np
+import multiprocessing
+
+from PySide6 import QtCore, QtWidgets, QtGui
+
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
@@ -14,12 +15,12 @@ class QueueWorker(QtCore.QObject):
     """Worker for polling the queue in a background thread."""
     message_received = QtCore.Signal(ipc.Message)
 
-    def __init__(self, queue):
+    def __init__(self, queue: multiprocessing.Queue) -> None:
         super().__init__()
         self.queue = queue
         self.running = True
 
-    def run(self):
+    def run(self) -> None:
         """Continuously poll the queue for messages."""
         while True:
             try:
@@ -30,7 +31,7 @@ class QueueWorker(QtCore.QObject):
                 break
             self.message_received.emit(message)
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the worker."""
         self.running = False
 
@@ -54,21 +55,20 @@ class MainWindow(QtWidgets.QMainWindow):
     """
     update_pixel = QtCore.Signal(int, int, QtGui.QColor)
 
-    def __init__(self, q_send, q_receive, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+        super().__init__()
         self.q_send = q_send
         self.q_receive = q_receive
 
         self.pause_redraw = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
 
-        self.mouse_distance = 0
-        self.mouse_speed = 0
+        self.mouse_distance = 0.0
+        self.mouse_speed = 0.0
         self.mouse_position = cursor_position()
         self.mouse_move_tick = 0
-        self.mouse_move_ticks = 0
+        self.mouse_move_count = 0
         self.monitor_data = monitor_locations()
-        self.previous_monitor = None
         self.thumbnail_type = ipc.ThumbnailType.Time
 
         # Setup layout
@@ -124,16 +124,13 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.image_label)
         # Create a QPixmap and QImage
         self.pixmap = QtGui.QPixmap(360, 240)
-        self.pixmap.fill(QtCore.Qt.black)
+        self.pixmap.fill(QtCore.Qt.GlobalColor.black)
         self.image_label.setPixmap(self.pixmap)
         self.image = self.pixmap.toImage()
         self.update_pixel.connect(self.update_pixmap_pixel)
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(layout)
-
-        # Window setup
-        self.setState('stopped')
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -148,29 +145,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Start the thread
         self.queue_thread.start()
 
-    def closeEvent(self, event):
-        """Safely close the thread."""
-        if self.thread():
-            self.stopTracking()
-        return super().closeEvent(event)
-
-    def state(self):
-        """Get the current script state."""
-        return self._state
-
-    def setState(self, state):
-        """Set the new thread state.
-        This is for display purposes only.
-
-        Parameters:
-            state (ThreadState): State of the thread.
-                It can be Running, Paused or Stopped.
-        """
-        self._state = state
-        self.status.setText(state)
-
     @QtCore.Slot(int)
-    def thumbnail_type_changed(self, idx):
+    def thumbnail_type_changed(self, idx: int) -> None:
         """Change the thumbnail type and trigger a redraw."""
         self.thumbnail_type = self.thumbtype.itemData(idx)
         self.request_thumbnail(force=True)
@@ -180,8 +156,9 @@ class MainWindow(QtWidgets.QMainWindow):
         for x1, y1, x2, y2 in self.monitor_data:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
+        raise ValueError('coordinate not in monitors')
 
-    def request_thumbnail(self, force=False):
+    def request_thumbnail(self, force: bool = False) -> None:
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
@@ -192,7 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q_send.put(ipc.ThumbnailRequest(self.thumbnail_type, self.pixmap.width(), self.pixmap.height()))
 
     @QtCore.Slot(ipc.Message)
-    def process_message(self, message: ipc.Message):
+    def process_message(self, message: ipc.Message) -> None:
         match message:
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -203,15 +180,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Create a QImage from the array
                 height, width, channels = array.shape
                 if channels == 1:
-                    image_format = QtGui.QImage.Format_Grayscale8
+                    image_format = QtGui.QImage.Format.Format_Grayscale8
                 elif channels == 3:
-                    image_format = QtGui.QImage.Format_RGB888
+                    image_format = QtGui.QImage.Format.Format_RGB888
                 else:
                     raise NotImplementedError(channels)
                 image = QtGui.QImage(array.data, width, height, image_format)
 
                 # Scale the QImage to fit the pixmap size
-                scaled_image = image.scaled(width, height, QtCore.Qt.KeepAspectRatio)
+                scaled_image = image.scaled(width, height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
                 # Draw the QImage onto the QPixmap
                 painter = QtGui.QPainter(self.pixmap)
@@ -225,20 +202,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
             case ipc.MouseMove():
-                is_moving = message.tick == self.mouse_move_tick + 1
-
-                # Calculate basic data
-                distance_to_previous = calculate_distance(message.position, self.mouse_position)
-                if is_moving:
-                    self.mouse_speed = distance_to_previous
-                self.mouse_distance += distance_to_previous
-                self.mouse_move_ticks += 1
-
-                # Get all the pixels between the two points
-                # Unlike the processing component, this skips the first
-                # point as there are no colour gradients to see
                 pixels = [message.position]
-                if is_moving and self.mouse_position != message.position:
+                if self.mouse_position is not None and message.tick == self.mouse_move_tick + 1:
+                    # Calculate basic data
+                    distance_to_previous = calculate_distance(message.position, self.mouse_position)
+                    self.mouse_speed = distance_to_previous
+                    self.mouse_distance += distance_to_previous
+
+                    # Get all the pixels between the two points
                     pixels.extend(calculate_line(message.position, self.mouse_position))
 
                 seen = set()
@@ -256,7 +227,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     # Send (unique) pixels to be drawn
                     if (x, y) not in seen:
-                        self.update_pixmap_pixel(int(x), int(y), QtCore.Qt.white)
+                        self.update_pixmap_pixel(int(x), int(y), QtCore.Qt.GlobalColor.white)
                         seen.add((x, y))
 
                 # Update the widgets
@@ -264,32 +235,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.speed.setText(str(int(self.mouse_speed)))
 
                 # Update the saved data
+                self.mouse_move_count += 1
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
-                self.previous_monitor = (current_monitor, offset)
 
                 # Trigger a GUI update
-                if self.mouse_move_ticks:
+                if self.mouse_move_count:
                     update_smoothness = 4
                     match self.thumbnail_type:
                         # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
                         case ipc.ThumbnailType.Time:
-                            update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_ticks))))
+                            update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_count))))
                         # With speed it must be constant, doesn't work as well live
                         case ipc.ThumbnailType.Speed | ipc.ThumbnailType.TimeSincePause:
                             update_frequency = 50
                         case _:
                             raise NotImplementedError(self.thumbnail_type)
-                    if not self.mouse_move_ticks % (update_frequency // update_smoothness):
+                    if not self.mouse_move_count % (update_frequency // update_smoothness):
                         self.request_thumbnail()
 
     @QtCore.Slot()
-    def startTracking(self):
+    def startTracking(self) -> None:
         """Start/unpause the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()
-    def pauseTracking(self):
+    def pauseTracking(self) -> None:
         """Pause/unpause the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
@@ -298,26 +269,26 @@ class MainWindow(QtWidgets.QMainWindow):
             self.request_thumbnail()
 
     @QtCore.Slot()
-    def stopTracking(self):
+    def stopTracking(self) -> None:
         """Stop the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
     @QtCore.Slot()
-    def raiseTracking(self):
+    def raiseTracking(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.Tracking))
 
     @QtCore.Slot()
-    def raiseProcessing(self):
+    def raiseProcessing(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.Processing))
 
     @QtCore.Slot()
-    def raiseHub(self):
+    def raiseHub(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
@@ -332,7 +303,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().closeEvent(event)
 
     @QtCore.Slot(int, int, QtGui.QColor)
-    def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor):
+    def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
         if self.thumbnail_type in (ipc.ThumbnailType.Time, ipc.ThumbnailType.TimeSincePause):
             self.image.setPixelColor(x, y, colour)
@@ -349,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_pixmap_pixel(x, y, colour)
 
 
-def run(q_send, q_receive):
+def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
     app = QtWidgets.QApplication(sys.argv)
     m = MainWindow(q_send, q_receive)
     m.show()

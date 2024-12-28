@@ -6,22 +6,24 @@ Source: https://github.com/Peter92/MouseTracks
 
 from __future__ import division
 
+from typing import Optional
 
-def calculate_distance(p1: tuple[int, int], p2: tuple[int, int]) -> float:
+
+def calculate_distance(p1: tuple[int, int], p2: Optional[tuple[int, int]]) -> float:
     """Find the distance between two (x, y) coordinates."""
-    if p1 == p2:
+    if p2 is None or p1 == p2:
         return 0.0
     return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
 
 
-def calculate_line(start: tuple[int, int], end: tuple[int, int]) -> list[tuple[int, int]]:
+def calculate_line(start: tuple[int, int], end: Optional[tuple[int, int]]) -> list[tuple[int, int]]:
     """Calculates path in terms of pixels between two points.
     Does not include the start and end point.
     """
-    result = []
+    result: list[tuple[int, int]] = []
 
     # Return nothing if the two points are the same
-    if start == end:
+    if end is None or start == end:
         return result
 
     difference = (end[0] - start[0], end[1] - start[1])
@@ -85,7 +87,7 @@ def calculate_line(start: tuple[int, int], end: tuple[int, int]) -> list[tuple[i
         if end[0] in (x-1, x, x+1) and end[1] in (y-1, y, y+1):
             return result
 
-    raise ValueError('failed to find path between {start}, {end}'.format(start, end))
+    raise ValueError(f'failed to find path between {start}, {end}')
 
 
 def calculate_circle(radius, segments=(True, True, True, True)):
