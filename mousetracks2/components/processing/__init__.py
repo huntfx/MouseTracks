@@ -1,16 +1,13 @@
 import math
 import multiprocessing
-import numpy as np
 import traceback
+
+import numpy as np
+from scipy import ndimage
 
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
-
-try:
-    from scipy import ndimage
-except ImportError:
-    ndimage = None
 
 
 class ExitRequest(Exception):
@@ -26,47 +23,54 @@ class PixelArray(dict):
         return value
 
 
-def max_pool_downscale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
-    """Downscale the array using max pooling with edge correction.
-
-    All credit goes to ChatGPT here. With scipy it's a tiny bit faster
-    but I've left both ways for the time being.
-    """
+def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+    """Rescale the array with the correct filtering."""
     input_height, input_width = array.shape
 
-    # Compute the pooling size
-    block_width = input_width / target_width
+    # No rescaling required
+    if target_height == input_height and target_width == input_width:
+        return array
+
+    # Upscale without blurring
+    if target_height > input_height or target_width > input_width:
+        zoom_factor = (target_height / input_height, target_width / input_width)
+        return ndimage.zoom(array, zoom_factor, order=0)
+
+    # Downscale without losing detail (credit to ChatGPT)
     block_height = input_height / target_height
+    block_width = input_width / target_width
+    pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
 
-    # Use scipy
-    if ndimage is not None:
-        # Apply maximum filter with block size
-        pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
+    indices_y = np.linspace(0, input_height - 1, target_height).astype(int)
+    indices_x = np.linspace(0, input_width - 1, target_width).astype(int)
+    return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
 
-        # Downsample by slicing
-        stride_y = input_height / target_height
-        stride_x = input_width / target_width
 
-        indices_y = (np.arange(target_height) * stride_y).astype(int)
-        indices_x = (np.arange(target_width) * stride_x).astype(int)
+def generate_colour_lookup(*colours: tuple[int, int, int], steps: int = 256) -> np.ndarray:
+    """Generate a color lookup table transitioning smoothly between given colors."""
+    lookup = np.zeros((steps, 3), dtype=np.uint8)
 
-        return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
+    num_transitions = len(colours) - 1
+    steps_per_transition = steps // num_transitions
+    remaining_steps = steps % num_transitions  # Distribute extra steps evenly
 
-    # Create an output array
-    pooled = np.zeros((target_height, target_width), dtype=array.dtype)
+    start_index = 0
+    for i in range(num_transitions):
+        # Determine start and end colors for the current transition
+        start_color = np.array(colours[i])
+        end_color = np.array(colours[i + 1])
 
-    for y in range(target_height - 1):
-        for x in range(target_width - 1):
-            # Compute the bounds of the current block
-            x_start = int(x * block_width)
-            x_end = min(int((x + 1) * block_width), input_width)
-            y_start = int(y * block_height)
-            y_end = min(int((y + 1) * block_height), input_height)
+        # Adjust steps for the last transition to include any remaining steps
+        current_steps = steps_per_transition + (i < remaining_steps)
 
-            # Pool the maximum value from the block
-            pooled[y, x] = array[y_start:y_end, x_start:x_end].max()
+        # Linearly interpolate between start_color and end_color
+        for j in range(current_steps):
+            t = j / (current_steps - 1)  # Normalized position (0 to 1)
+            lookup[start_index + j] = (1 - t) * start_color + t * end_color
 
-    return pooled
+        start_index += current_steps
+
+    return lookup
 
 
 class Processing:
@@ -106,11 +110,15 @@ class Processing:
                 array = maps[(width, height)]
 
                 # Downscale and normalise values from 0 to 255
-                downscaled = max_pool_downscale(array, message.width, message.height)
-                if np.any(downscaled):
-                    downscaled = (255 * downscaled / np.max(downscaled))
+                downscaled_array = array_rescale(array, message.width, message.height)
+                max_time = np.max(downscaled_array) or 1
+                normalised_array = (255 * downscaled_array / max_time).astype(np.uint8)
 
-                self.q_send.put(ipc.Thumbnail(message.type, downscaled, self.mouse_move_tick))
+                # Map it to a colour lookup table
+                colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
+                coloured_array = colour_lookup[normalised_array]
+
+                self.q_send.put(ipc.Thumbnail(message.type, coloured_array, self.mouse_move_tick))
 
             case ipc.MouseMove():
                 print(f'[Processing] Mouse has moved to {message.position}')

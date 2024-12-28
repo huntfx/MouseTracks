@@ -200,8 +200,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # Draw the new pixmap
             case ipc.Thumbnail(data=array):
                 # Create a QImage from the array
-                height, width = array.shape
-                image = QtGui.QImage(array.astype(np.uint8).data, width, height, QtGui.QImage.Format_Grayscale8)
+                height, width, channels = array.shape
+                if channels == 1:
+                    image_format = QtGui.QImage.Format_Grayscale8
+                elif channels == 3:
+                    image_format = QtGui.QImage.Format_RGB888
+                else:
+                    raise NotImplementedError(channels)
+                image = QtGui.QImage(array.data, width, height, image_format)
 
                 # Scale the QImage to fit the pixmap size
                 scaled_image = image.scaled(width, height, QtCore.Qt.KeepAspectRatio)
@@ -262,17 +268,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.previous_monitor = (current_monitor, offset)
 
                 # Trigger a GUI update
-                # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-                # Set the smoothness to a higher value to lower that
                 if self.mouse_move_ticks:
                     update_smoothness = 4
                     match self.thumbnail_type:
+                        # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
                         case ipc.ThumbnailType.Time:
-                            update_frequency = 10 ** int(math.log10(max(10, self.mouse_move_ticks)))
+                            update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_ticks))))
+                        # With speed it must be constant, doesn't work as well live
                         case ipc.ThumbnailType.Speed:
                             update_frequency = 50
                         case _:
-                            update_frequency = 10000
+                            raise NotImplementedError(self.thumbnail_type)
                     if not self.mouse_move_ticks % (update_frequency // update_smoothness):
                         self.request_thumbnail()
 
