@@ -69,6 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_move_ticks = 0
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
+        self.thumbnail_type = ipc.ThumbnailType.Time
 
         # Setup layout
         # This is a design meant for debugging purposes
@@ -91,6 +92,12 @@ class MainWindow(QtWidgets.QMainWindow):
         crash = QtWidgets.QPushButton('Raise Exception (hub)')
         crash.clicked.connect(self.raiseHub)
         layout.addWidget(crash)
+
+        self.thumbtype = QtWidgets.QComboBox()
+        self.thumbtype.addItem('Time', ipc.ThumbnailType.Time)
+        self.thumbtype.addItem('Speed', ipc.ThumbnailType.Speed)
+        self.thumbtype.currentIndexChanged.connect(self.thumbnail_type_changed)
+        layout.addWidget(self.thumbtype)
 
         horizontal = QtWidgets.QHBoxLayout()
         horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
@@ -161,21 +168,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self._state = state
         self.status.setText(state)
 
+    @QtCore.Slot(int)
+    def thumbnail_type_changed(self, idx):
+        """Change the thumbnail type and trigger a redraw."""
+        self.thumbnail_type = self.thumbtype.itemData(idx)
+        self.request_thumbnail(force=True)
+
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
         """Detect which monitor the pixel is on."""
         for x1, y1, x2, y2 in self.monitor_data:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 return ((x2 - x1, y2 - y1), (x1, y1))
 
-    def request_thumbnail(self):
+    def request_thumbnail(self, force=False):
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
         # If already redrawing then prevent building up commands
-        if self.pause_redraw:
+        if self.pause_redraw and not force:
             return
         self.pause_redraw = True
-        self.q_send.put(ipc.ThumbnailRequest(self.pixmap.width(), self.pixmap.height()))
+        self.q_send.put(ipc.ThumbnailRequest(self.thumbnail_type, self.pixmap.width(), self.pixmap.height()))
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message):
@@ -253,7 +266,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Set the smoothness to a higher value to lower that
                 if self.mouse_move_ticks:
                     update_smoothness = 4
-                    update_frequency = 10 ** int(math.log10(max(10, self.mouse_move_ticks)))
+                    match self.thumbnail_type:
+                        case ipc.ThumbnailType.Time:
+                            update_frequency = 10 ** int(math.log10(max(10, self.mouse_move_ticks)))
+                        case ipc.ThumbnailType.Speed:
+                            update_frequency = 50
+                        case _:
+                            update_frequency = 10000
                     if not self.mouse_move_ticks % (update_frequency // update_smoothness):
                         self.request_thumbnail()
 
@@ -304,9 +323,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor):
         """Update a specific pixel in the QImage and refresh the display."""
-        self.image.setPixelColor(x, y, colour)
-        self.pixmap.convertFromImage(self.image)
-        self.image_label.setPixmap(self.pixmap)
+        if self.thumbnail_type == ipc.ThumbnailType.Time:
+            self.image.setPixelColor(x, y, colour)
+            self.pixmap.convertFromImage(self.image)
+            self.image_label.setPixmap(self.pixmap)
 
         # Queue commands if redrawing is paused
         # This allows them to be resubmitted

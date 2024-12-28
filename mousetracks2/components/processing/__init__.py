@@ -93,20 +93,24 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> bool:
         """Process an item of data."""
         match message:
-            case ipc.ThumbnailRequest():
+            case ipc.ThumbnailRequest(type=ipc.ThumbnailType.Time | ipc.ThumbnailType.Speed):
                 x1, y1, x2, y2 = self.monitor_data[0]
                 width = x2 - x1
                 height = y2 - y1
-                array = self.mouse_track_maps[(width, height)]
 
-                # Resample the array to match the requested size
+                match message.type:
+                    case ipc.ThumbnailType.Time:
+                        maps = self.mouse_track_maps
+                    case ipc.ThumbnailType.Speed:
+                        maps = self.mouse_speed_maps
+                array = maps[(width, height)]
+
+                # Downscale and normalise values from 0 to 255
                 downscaled = max_pool_downscale(array, message.width, message.height)
-
-                # Normalize values from 0 to 255
                 if np.any(downscaled):
                     downscaled = (255 * downscaled / np.max(downscaled))
 
-                self.q_send.put(ipc.Thumbnail(downscaled, self.mouse_move_tick))
+                self.q_send.put(ipc.Thumbnail(message.type, downscaled, self.mouse_move_tick))
 
             case ipc.MouseMove():
                 print(f'[Processing] Mouse has moved to {message.position}')
@@ -123,7 +127,7 @@ class Processing:
                     pixels.append(self.mouse_position)
 
                 # Add the pixels to an array
-                for pixel in [self.mouse_position] + calculate_line(self.mouse_position, message.position) + [message.position]:
+                for pixel in pixels:
                     current_monitor, offset = self._monitor_offset(pixel)
                     x = pixel[0] - offset[0]
                     y = pixel[1] - offset[1]
@@ -132,6 +136,7 @@ class Processing:
 
                 # Update the saved data
                 self.mouse_position = message.position
+                self.mouse_move_tick = message.tick
                 self.mouse_move_count += 1
 
             case ipc.MouseClick(double=True):

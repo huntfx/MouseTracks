@@ -14,6 +14,13 @@ class Target:
     GUI = 0b1000
 
 
+class ThumbnailType(Enum):
+    """Possible types of thumbnail renders."""
+
+    Time = auto()
+    Speed = auto()
+
+
 @dataclass
 class Message:
     """Represents an item to be passed through a communication queue.
@@ -90,6 +97,7 @@ class ThumbnailRequest(Message):
     """Request a thumbnail render."""
 
     target: int = field(default=Target.Processing, init=False)
+    type: ThumbnailType
     width: int
     height: int
 
@@ -98,6 +106,7 @@ class ThumbnailRequest(Message):
 class Thumbnail(Message):
     """A thumbnail has been rendered."""
     target: int = field(default=Target.GUI, init=False)
+    type: ThumbnailType
     data: np.ndarray
     tick: int
 
