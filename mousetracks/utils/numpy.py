@@ -13,12 +13,6 @@ from ..misc import CustomOpen
 
 
 _NUMPY_DTYPES = {
-    'bool_': numpy.bool_,
-    'int_': numpy.int_,
-    'float_': numpy.float_,
-    'complex_': numpy.complex_,
-    'intc': numpy.intc,
-    'intp': numpy.intp,
     'int8': numpy.int8,
     'int16': numpy.int16,
     'int32': numpy.int32,
@@ -30,8 +24,6 @@ _NUMPY_DTYPES = {
     'float16': numpy.float16,
     'float32': numpy.float32,
     'float64': numpy.float64,
-    'complex64': numpy.complex64,
-    'complex128': numpy.complex128,
 }
 
 def process_numpy_array(func):
