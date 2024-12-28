@@ -74,8 +74,8 @@ class Processing:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.mouse_track_maps = PixelArray(np.int32)  # Up to 2,147,483,648
-        self.mouse_speed_maps = PixelArray(np.int16)  # Up to 32,767
+        self.mouse_track_maps = PixelArray(np.uint32)  # Up to 4,294,967,295
+        self.mouse_speed_maps = PixelArray(np.uint16)  # Up to 65,535
         self.mouse_move_count = 0
 
         self.mouse_distance = 0
