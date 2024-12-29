@@ -172,7 +172,7 @@ class Processing:
                     case ipc.RenderType.TimeSincePause:
                         maps = {}
                         for res, array in self.mouse_track_maps.items():
-                            partial_array = array - self.pause_tick
+                            partial_array = array.astype(np.int64) - self.pause_tick
                             partial_array[partial_array < 0] = 0
                             maps[res] = partial_array
 
