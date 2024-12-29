@@ -204,11 +204,17 @@ class Processing:
             case ipc.MouseMove():
                 self._cursor_move(message)
 
-            case ipc.MouseClick(double=True):
-                print(f'[Processing] Mouse button {message.button} double clicked.')
-
             case ipc.MouseClick():
-                print(f'[Processing] Mouse button {message.button} clicked.')
+                if message.double:
+                    arrays = self.mouse_double_clicks
+                    print(f'[Processing] Mouse button {message.button} double clicked.')
+                else:
+                    arrays = self.mouse_single_clicks
+                    print(f'[Processing] Mouse button {message.button} clicked.')
+
+                current_monitor, offset = self._monitor_offset(message.position)
+                index = (message.position[1] - offset[1], message.position[0] - offset[0])
+                arrays.set_value(current_monitor, index, int(arrays[current_monitor][index]) + 1)
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
