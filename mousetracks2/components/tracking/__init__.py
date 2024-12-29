@@ -1,5 +1,6 @@
 import multiprocessing
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -87,7 +88,7 @@ class Tracking:
             print('[Tracking] Monitor change detected')
             self.send_data(ipc.MonitorsChanged(data.monitors))
 
-    def run(self):
+    def _run(self):
         print('[Tracking] Loaded.')
 
         last_activity = 0
@@ -135,6 +136,21 @@ class Tracking:
                 # Being held
                 else:
                     data.mouse_clicks[mouse_button] = (click_start, tick)
+
+    def run(self) -> None:
+        print('[Tracking] Loaded.')
+
+        try:
+            self._run()
+
+        # Catch error after KeyboardInterrupt
+        except EOFError:
+            print('[Tracking] Force shut down.')
+            return
+
+        except Exception as e:
+            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            print('[Tracking] Error shut down.')
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
