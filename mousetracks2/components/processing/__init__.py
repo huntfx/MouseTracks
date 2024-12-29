@@ -197,7 +197,10 @@ class Processing:
                     normalised_arrays.append((scaled_array.astype(np.float64) * (255 / max_time)).astype(np.uint8))
 
                 # Combine the arrays using the maximum values of each
-                combined_array = np.maximum.reduce(normalised_arrays)
+                if normalised_arrays:
+                    combined_array = np.maximum.reduce(normalised_arrays)
+                else:
+                    combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
                 # Map to a colour lookup table
                 colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
