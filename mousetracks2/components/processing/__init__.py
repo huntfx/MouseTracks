@@ -175,7 +175,7 @@ class Processing:
                         maps = self.mouse_speed_maps
 
                 # If doing a full render, find the largest most common resolution
-                if not message.thumbnail:
+                if message.high_quality:
                     popularity = {}
                     for res, array in maps.items():
                         popularity[res] = np.sum(array > 0)
@@ -198,7 +198,7 @@ class Processing:
                 colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
                 coloured_array = colour_lookup[combined_array]
 
-                self.q_send.put(ipc.Render(message.type, coloured_array, self.mouse_move_tick, message.thumbnail))
+                self.q_send.put(ipc.Render(message.type, coloured_array, self.mouse_move_tick, not message.high_quality))
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():

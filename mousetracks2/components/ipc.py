@@ -101,7 +101,7 @@ class RenderRequest(Message):
     type: RenderType
     width: int
     height: int
-    thumbnail: bool = field(default=False)
+    high_quality: bool = field(default=False)
 
 
 @dataclass

@@ -171,11 +171,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return
         self.pause_redraw = True
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), True))
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), False))
 
     def render(self) -> None:
         """Send a render request."""
-        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, False))
+        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, True))
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
