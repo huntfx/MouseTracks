@@ -162,11 +162,13 @@ class Processing:
         self.mouse_move_tick = message.tick
 
         # Check if array compression is required
+        # This is important for the time maps
+        # For speed, it just helps flatten out values that are too large
         if self.mouse_move_count > COMPRESSION_THRESHOLD:
             print(f'[Processing] Tracking threshold reached, reducing values...')
-            for res, array in self.mouse_track_maps.items():
-                self.mouse_track_maps[res] = (array / 1.1).astype(array.dtype)
-            self.mouse_move_count = int(self.mouse_move_count / COMPRESSION_FACTOR)
+            for maps in (self.mouse_track_maps, self.mouse_speed_maps):
+                for res, array in maps.items():
+                    maps[res] = (array / 1.1).astype(array.dtype)
             print(f'[Processing] Reduced all arrays')
 
     def _process_message(self, message: ipc.Message) -> None:
