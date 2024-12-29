@@ -15,12 +15,21 @@ class ExitRequest(Exception):
 
 
 class PixelArray(dict):
-    def __init__(self, dtype: type[np.integer]) -> None:
-        self._dtype = dtype
-
     def __missing__(self, key: tuple[int, int]) -> np.ndarray:
-        self[key] = value = np.zeros((key[1], key[0]), dtype=np.int64)
+        self[key] = value = np.zeros((key[1], key[0]), dtype=np.uint8)
         return value
+
+    def set_value(self, key: tuple[int, int], index: tuple[int, int], value: int) -> None:
+        """Set a value in an array, updating the type if required."""
+        array = self[key]
+
+        if value >= np.iinfo(array.dtype).max:
+            for dtype in (np.uint16, np.uint32, np.uint64):
+                if value < np.iinfo(dtype).max:
+                    self[key] = array = array.astype(dtype)
+                    break
+
+        array[index] = value
 
 
 def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
@@ -41,8 +50,8 @@ def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> n
     block_width = input_width / target_width
     pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
 
-    indices_y = np.linspace(0, input_height - 1, target_height).astype(int)
-    indices_x = np.linspace(0, input_width - 1, target_width).astype(int)
+    indices_y = np.linspace(0, input_height - 1, target_height).astype(np.uint64)
+    indices_x = np.linspace(0, input_width - 1, target_width).astype(np.uint64)
     return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
 
 
@@ -78,8 +87,10 @@ class Processing:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.mouse_track_maps = PixelArray(np.uint32)  # Up to 4,294,967,295
-        self.mouse_speed_maps = PixelArray(np.uint16)  # Up to 65,535
+        self.mouse_track_maps = PixelArray()
+        self.mouse_speed_maps = PixelArray()
+        self.mouse_single_clicks = PixelArray()
+        self.mouse_double_clicks = PixelArray()
         self.mouse_move_count = 0
 
         self.mouse_distance = 0.0
@@ -129,12 +140,11 @@ class Processing:
         # Add the pixels to an array
         for pixel in pixels:
             current_monitor, offset = self._monitor_offset(pixel)
-            x = pixel[0] - offset[0]
-            y = pixel[1] - offset[1]
+            index = (pixel[1] - offset[1], pixel[0] - offset[0])
 
-            self.mouse_track_maps[current_monitor][(y, x)] = self.mouse_move_count
+            self.mouse_track_maps.set_value(current_monitor, index, self.mouse_move_count)
             if distance and moving:
-                self.mouse_speed_maps[current_monitor][(y, x)] = max(self.mouse_speed_maps[current_monitor][(y, x)], distance)
+                self.mouse_speed_maps.set_value(current_monitor, index, max(self.mouse_speed_maps[current_monitor][index], int(100 * distance)))
 
         # Update the saved data
         self.mouse_move_count += 1
@@ -179,7 +189,7 @@ class Processing:
                 for array in maps.values():
                     scaled_array = array_rescale(array, scale_width, scale_height)
                     max_time = np.max(scaled_array) or 1
-                    normalised_arrays.append((255 * scaled_array / max_time).astype(np.uint8))
+                    normalised_arrays.append((scaled_array.astype(np.float64) * (255 / max_time)).astype(np.uint8))
 
                 # Combine the arrays using the maximum values of each
                 combined_array = np.maximum.reduce(normalised_arrays)
