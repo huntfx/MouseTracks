@@ -10,6 +10,11 @@ from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
 
 
+COMPRESSION_FACTOR = 1.1
+
+COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
+
+
 class ExitRequest(Exception):
     """Custom exception to raise and catch when an exit is requested."""
 
@@ -155,6 +160,14 @@ class Processing:
         self.mouse_move_count += 1
         self.mouse_position = message.position
         self.mouse_move_tick = message.tick
+
+        # Check if array compression is required
+        if self.mouse_move_count > COMPRESSION_THRESHOLD:
+            print(f'[Processing] Tracking threshold reached, reducing values...')
+            for res, array in self.mouse_track_maps.items():
+                self.mouse_track_maps[res] = (array / 1.1).astype(array.dtype)
+            self.mouse_move_count = int(self.mouse_move_count / COMPRESSION_FACTOR)
+            print(f'[Processing] Reduced all arrays')
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""

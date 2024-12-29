@@ -13,6 +13,11 @@ from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
 
 
+COMPRESSION_FACTOR = 1.1
+
+COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
+
+
 class QueueWorker(QtCore.QObject):
     """Worker for polling the queue in a background thread."""
     message_received = QtCore.Signal(ipc.Message)
@@ -261,6 +266,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_move_count += 1
                 self.mouse_position = message.position
                 self.mouse_move_tick = message.tick
+
+                # Check if array compression is required
+                if self.mouse_move_count > COMPRESSION_THRESHOLD:
+                    self.mouse_move_count = int(self.mouse_move_count / COMPRESSION_FACTOR)
 
                 # Trigger a GUI update
                 if self.mouse_move_count:
