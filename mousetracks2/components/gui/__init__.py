@@ -98,13 +98,6 @@ class MainWindow(QtWidgets.QMainWindow):
         render.clicked.connect(self.render)
         layout.addWidget(render)
 
-        self.thumbtype = QtWidgets.QComboBox()
-        self.thumbtype.addItem('Time', ipc.RenderType.Time)
-        self.thumbtype.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
-        self.thumbtype.addItem('Speed', ipc.RenderType.Speed)
-        self.thumbtype.currentIndexChanged.connect(self.render_type_changed)
-        layout.addWidget(self.thumbtype)
-
         horizontal = QtWidgets.QHBoxLayout()
         horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
         self.status = QtWidgets.QLabel()
@@ -122,6 +115,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.speed = QtWidgets.QLabel('0.0')
         horizontal.addWidget(self.speed)
         layout.addLayout(horizontal)
+
+        self.thumbtype = QtWidgets.QComboBox()
+        self.thumbtype.addItem('Time', ipc.RenderType.Time)
+        self.thumbtype.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.thumbtype.addItem('Speed', ipc.RenderType.Speed)
+        self.thumbtype.currentIndexChanged.connect(self.render_type_changed)
+        layout.addWidget(self.thumbtype)
 
         # Create a label to display the pixmap
         self.image_label = QtWidgets.QLabel()

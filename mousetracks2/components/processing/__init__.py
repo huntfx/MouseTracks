@@ -127,6 +127,11 @@ class Processing:
         moving, and will always skip the first frame of movement.
         """
         print(f'[Processing] Mouse has moved to {message.position}')
+
+        # If the ticks match then overwrite the old data
+        if message.tick == self.mouse_move_tick:
+            self.mouse_position = message.position
+
         distance = calculate_distance(message.position, self.mouse_position)
         moving = message.tick == self.mouse_move_tick + 1
 
@@ -246,10 +251,12 @@ class Processing:
 
         # Catch error after KeyboardInterrupt
         except EOFError:
+            print('[Processing] Force shut down.')
             return
 
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            print('[Processing] Error shut down.')
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:

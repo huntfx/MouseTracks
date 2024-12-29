@@ -42,8 +42,17 @@ class Hub:
     def stop_tracking(self):
         print('[Hub] Sending stop tracking signal...')
         self._process_message(ipc.TrackingState(ipc.TrackingState.State.Stop))
+
+        # Wait for processes to end
         self._p_tracking.join()
         self._p_processing.join()
+
+        # Empty queues
+        while not self._q_tracking.empty():
+            self._q_tracking.get()
+        while not self._q_processing.empty():
+            self._q_processing.get()
+
         print('[Hub] Tracking processes safely shut down')
 
     def _create_tracking_processes(self) -> None:
@@ -75,12 +84,6 @@ class Hub:
         if tracking_running or processing_running:
             print('[Hub] Shutting down existing processes before starting new ones')
             self.stop_tracking()
-
-        # Empty queues
-        while not self._q_tracking.empty():
-            self._q_tracking.get()
-        while not self._q_processing.empty():
-            self._q_processing.get()
 
         # Start processes
         self._create_tracking_processes()
@@ -123,12 +126,14 @@ class Hub:
             self.start_tracking()
 
         print('[Hub] Queue handler started.')
+        running = True
         try:
-            while True:
-                self._process_message(self._q_main.get())
-
-        except ExitRequest:
-            print('[Hub] Exit requested, shutting down...')
+            while running or not self._q_main.empty():
+                try:
+                    self._process_message(self._q_main.get())
+                except ExitRequest:
+                    print('[Hub] Exit requested, triggring shut down...')
+                    running = False
 
         # Ensure threads are safely shut down
         finally:
