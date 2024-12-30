@@ -299,18 +299,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
             case ipc.MouseMove():
-                pixels = [message.position]
                 if self.mouse_position is not None and message.tick == self.mouse_move_tick + 1:
                     # Calculate basic data
                     distance_to_previous = calculate_distance(message.position, self.mouse_position)
                     self.mouse_speed = distance_to_previous
                     self.mouse_distance += distance_to_previous
 
-                    # Get all the pixels between the two points
-                    pixels.extend(calculate_line(message.position, self.mouse_position))
-
                 seen = set()
-                for pixel in pixels:
+                for pixel in calculate_line(message.position, self.mouse_position):
                     # Refresh data per pixel
                     # This could be done only when the cursor changes
                     # monitor, but it's not computationally heavy
@@ -358,6 +354,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def startTracking(self) -> None:
         """Start/unpause the script."""
+        self.mouse_position = cursor_position()  # Prevent erroneous line jumps
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()

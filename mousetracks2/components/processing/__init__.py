@@ -142,11 +142,9 @@ class Processing:
         moving = message.tick == self.mouse_move_tick + 1
 
         # Calculate the data
-        pixels = [message.position]
+        pixels = calculate_line(message.position, self.mouse_position)
         if distance:
             self.mouse_distance += distance
-            pixels.extend(calculate_line(message.position, self.mouse_position))
-            pixels.append(self.mouse_position)
 
         # Add the pixels to an array
         for pixel in pixels:
