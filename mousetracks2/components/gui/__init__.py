@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from mousetracks.image import colours
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
@@ -68,39 +69,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q_receive = q_receive
 
         self.pause_redraw = False
+        self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
-
-        self.mouse_distance = 0.0
-        self.mouse_speed = 0.0
-        self.mouse_position = cursor_position()
-        self.mouse_move_tick = 0
-        self.mouse_move_count = 0
-        self.monitor_data = monitor_locations()
-        self.render_type = ipc.RenderType.Time
 
         # Setup layout
         # This is a design meant for debugging purposes
         layout = QtWidgets.QVBoxLayout()
         start = QtWidgets.QPushButton('Start')
-        start.clicked.connect(self.startTracking)
         layout.addWidget(start)
-        start = QtWidgets.QPushButton('Stop')
-        start.clicked.connect(self.stopTracking)
-        layout.addWidget(start)
+        stop = QtWidgets.QPushButton('Stop')
+        layout.addWidget(stop)
         pause = QtWidgets.QPushButton('Pause')
-        pause.clicked.connect(self.pauseTracking)
         layout.addWidget(pause)
-        crash = QtWidgets.QPushButton('Raise Exception (tracking)')
-        crash.clicked.connect(self.raiseTracking)
-        layout.addWidget(crash)
-        crash = QtWidgets.QPushButton('Raise Exception (processing)')
-        crash.clicked.connect(self.raiseProcessing)
-        layout.addWidget(crash)
-        crash = QtWidgets.QPushButton('Raise Exception (hub)')
-        crash.clicked.connect(self.raiseHub)
-        layout.addWidget(crash)
+        crasht = QtWidgets.QPushButton('Raise Exception (tracking)')
+        layout.addWidget(crasht)
+        crashp = QtWidgets.QPushButton('Raise Exception (processing)')
+        layout.addWidget(crashp)
+        crashh = QtWidgets.QPushButton('Raise Exception (hub)')
+        layout.addWidget(crashh)
         render = QtWidgets.QPushButton('Render')
-        render.clicked.connect(self.render)
         layout.addWidget(render)
 
         horizontal = QtWidgets.QHBoxLayout()
@@ -121,12 +108,14 @@ class MainWindow(QtWidgets.QMainWindow):
         horizontal.addWidget(self.speed)
         layout.addLayout(horizontal)
 
-        self.thumbtype = QtWidgets.QComboBox()
-        self.thumbtype.addItem('Time', ipc.RenderType.Time)
-        self.thumbtype.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
-        self.thumbtype.addItem('Speed', ipc.RenderType.Speed)
-        self.thumbtype.currentIndexChanged.connect(self.render_type_changed)
-        layout.addWidget(self.thumbtype)
+        self.render_type_input = QtWidgets.QComboBox()
+        self.render_type_input.addItem('Time', ipc.RenderType.Time)
+        self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.render_type_input.addItem('Speed', ipc.RenderType.Speed)
+        layout.addWidget(self.render_type_input)
+
+        self.render_colour_input = QtWidgets.QComboBox()
+        layout.addWidget(self.render_colour_input)
 
         # Create a label to display the pixmap
         self.image_label = QtWidgets.QLabel()
@@ -142,12 +131,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(layout)
 
+        self.mouse_distance = 0.0
+        self.mouse_speed = 0.0
+        self.mouse_position = cursor_position()
+        self.mouse_move_tick = 0
+        self.mouse_move_count = 0
+        self.monitor_data = monitor_locations()
+        self.render_type = ipc.RenderType.Time
+        self.render_colour = 'BlackToRedToWhite'
+
         # Start queue worker
         self.queue_thread = QtCore.QThread()
         self.queue_worker = QueueWorker(q_receive)
         self.queue_worker.moveToThread(self.queue_thread)
 
         # Connect signals and slots
+        start.clicked.connect(self.startTracking)
+        stop.clicked.connect(self.stopTracking)
+        pause.clicked.connect(self.pauseTracking)
+        crasht.clicked.connect(self.raiseTracking)
+        crashp.clicked.connect(self.raiseProcessing)
+        crashh.clicked.connect(self.raiseHub)
+        render.clicked.connect(self.render)
+        self.render_type_input.currentIndexChanged.connect(self.render_type_changed)
+        self.render_colour_input.currentIndexChanged.connect(self.render_colour_changed)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
@@ -155,10 +162,69 @@ class MainWindow(QtWidgets.QMainWindow):
         # Start the thread
         self.queue_thread.start()
 
+    @property
+    def render_colour(self) -> str:
+        """Get the render colour."""
+        return self._render_colour
+
+    @render_colour.setter
+    def render_colour(self, colour: str) -> None:
+        """Set the render colour.
+        This will update the current pixel colour too.
+        """
+        self._render_colour = colour
+        self.pixel_colour = colours.calculate_colour_map(colour)[-1]
+
+    @property
+    def pixel_colour(self) -> tuple[int, int, int, int]:
+        """Get the pixel colour to draw with."""
+        return self._pixel_colour
+
+    @pixel_colour.setter
+    def pixel_colour(self, colour: tuple[int, int, int, int]):
+        """Set the pixel colour to draw with."""
+        self._pixel_colour = QtGui.QColor(*colour)
+
+    @property
+    def render_type(self) -> ipc.RenderType:
+        """Get the render type."""
+        return self._render_type
+
+    @render_type.setter
+    def render_type(self, render_type: ipc.RenderType):
+        """Set the render type.
+        This populates the available colour maps.
+        """
+        self._render_type = render_type
+
+        # Add items to render colour input
+        self.pause_colour_change = True
+        previous_text = self.render_colour_input.currentData()
+
+        self.render_colour_input.clear()
+        self.render_colour_input.addItem('Default', 'BlackToRedToWhite')
+        for data in colours.parse_colour_file()['Maps'].values():
+            if render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause, ipc.RenderType.Speed):
+                if data['Type']['tracks']:
+                    self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+        if previous_text and previous_text != self.render_colour_input.currentData():
+            self.render_colour_input.setCurrentIndex(self.render_colour_input.findData(previous_text))
+            self.render_colour = self.render_colour_input.currentData()
+
+        self.pause_colour_change = False
+
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
-        """Change the thumbnail type and trigger a redraw."""
-        self.render_type = self.thumbtype.itemData(idx)
+        """Change the render type and trigger a redraw."""
+        self.render_type = self.render_type_input.itemData(idx)
+        self.request_thumbnail(force=True)
+
+    @QtCore.Slot(int)
+    def render_colour_changed(self, idx: int) -> None:
+        """Change the render colour and trigger a redraw."""
+        if self.pause_colour_change:
+            return
+        self.render_colour = self.render_colour_input.itemData(idx)
         self.request_thumbnail(force=True)
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
@@ -176,11 +242,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return
         self.pause_redraw = True
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), False))
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, False))
 
     def render(self) -> None:
         """Send a render request."""
-        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, True))
+        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, self.render_colour, True))
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
@@ -207,12 +273,15 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.Render(data=array, thumbnail=True):
                 # Create a QImage from the array
                 height, width, channels = array.shape
-                if channels == 1:
-                    image_format = QtGui.QImage.Format.Format_Grayscale8
-                elif channels == 3:
-                    image_format = QtGui.QImage.Format.Format_RGB888
-                else:
-                    raise NotImplementedError(channels)
+                match channels:
+                    case 1:
+                        image_format = QtGui.QImage.Format.Format_Grayscale8
+                    case 3:
+                        image_format = QtGui.QImage.Format.Format_RGB888
+                    case 4:
+                        image_format = QtGui.QImage.Format.Format_RGBA8888
+                    case _:
+                        raise NotImplementedError(channels)
                 image = QtGui.QImage(array.data, width, height, image_format)
 
                 # Scale the QImage to fit the pixmap size
@@ -255,7 +324,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     # Send (unique) pixels to be drawn
                     if (x, y) not in seen:
-                        self.update_pixmap_pixel(int(x), int(y), QtCore.Qt.GlobalColor.white)
+                        self.update_pixmap_pixel(int(x), int(y), self.pixel_colour)
                         seen.add((x, y))
 
                 # Update the widgets
@@ -297,7 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         # Special case to redraw thumbnail
-        if self.thumbtype.currentData() == ipc.RenderType.TimeSincePause:
+        if self.render_type_input.currentData() == ipc.RenderType.TimeSincePause:
             self.request_thumbnail()
 
     @QtCore.Slot()

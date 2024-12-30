@@ -5,6 +5,7 @@ import traceback
 import numpy as np
 from scipy import ndimage
 
+from mousetracks.image import colours
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance
 from ...utils.win import cursor_position, monitor_locations
@@ -60,9 +61,9 @@ def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> n
     return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
 
 
-def generate_colour_lookup(*colours: tuple[int, int, int], steps: int = 256) -> np.ndarray:
+def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256) -> np.ndarray:
     """Generate a color lookup table transitioning smoothly between given colors."""
-    lookup = np.zeros((steps, 3), dtype=np.uint8)
+    lookup = np.zeros((steps, 4), dtype=np.uint8)
 
     num_transitions = len(colours) - 1
     steps_per_transition = steps // num_transitions
@@ -218,7 +219,7 @@ class Processing:
                     combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
                 # Map to a colour lookup table
-                colour_lookup = generate_colour_lookup((0, 0, 0), (255, 0, 0), (255, 255, 255))
+                colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
                 coloured_array = colour_lookup[combined_array]
 
                 self.q_send.put(ipc.Render(message.type, coloured_array, self.mouse_move_tick, not message.high_quality))

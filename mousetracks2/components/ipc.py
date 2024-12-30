@@ -101,6 +101,7 @@ class RenderRequest(Message):
     type: RenderType
     width: int
     height: int
+    colour_map: str
     high_quality: bool = field(default=False)
 
 
