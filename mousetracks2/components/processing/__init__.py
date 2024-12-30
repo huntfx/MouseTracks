@@ -167,7 +167,7 @@ class Processing:
             print(f'[Processing] Tracking threshold reached, reducing values...')
             for maps in (self.mouse_track_maps, self.mouse_speed_maps):
                 for res, array in maps.items():
-                    maps[res] = (array / 1.1).astype(array.dtype)
+                    maps[res] = (array / COMPRESSION_FACTOR).astype(array.dtype)
             print(f'[Processing] Reduced all arrays')
 
     def _process_message(self, message: ipc.Message) -> None:
