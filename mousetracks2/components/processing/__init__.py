@@ -173,8 +173,8 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
-            case ipc.RenderRequest(type=ipc.RenderType.Time | ipc.RenderType.TimeSincePause | ipc.RenderType.Speed,
-                                   width=scale_width, height=scale_height):
+            case ipc.RenderRequest(width=width, height=height,
+                                   type=ipc.RenderType.Time | ipc.RenderType.TimeSincePause | ipc.RenderType.Speed):
                 print('[Processing] Render request received...')
                 # Choose the data to work on
                 maps: dict[tuple[int, int], np.ndarray]
@@ -193,15 +193,27 @@ class Processing:
                     case ipc.RenderType.Speed:
                         maps = self.mouse_speed_maps
 
-                # If doing a full render, find the largest most common resolution
-                if message.high_quality:
+                # Find the largest most common resolution
+                if width is None or height is None:
                     popularity = {}
                     for res, array in maps.items():
                         popularity[res] = np.sum(array > 0)
                     threshold = max(popularity.values()) * 0.9
-                    scale_width, scale_height = max(res for res, value in popularity.items() if value > threshold)
-                    scale_width *= 2
-                    scale_height *= 2
+                    _width, _height = max(res for res, value in popularity.items() if value > threshold)
+
+                    if width is None and height is None:
+                        width = _width
+                        height = _height
+                    else:
+                        aspect = _width / _height
+                        if width is None:
+                            width = int(height * aspect)
+                        if height is None:
+                            height = int(width / aspect)
+
+                # Apply the sampling amount
+                scale_width = int(width * message.sampling)
+                scale_height = int(height * message.sampling)
 
                 # Downscale and normalise values to 0-255
                 normalised_arrays = []
@@ -220,7 +232,7 @@ class Processing:
                 colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
                 coloured_array = colour_lookup[combined_array]
 
-                self.q_send.put(ipc.Render(message.type, coloured_array, self.mouse_move_tick, not message.high_quality))
+                self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling, self.mouse_move_tick))
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():

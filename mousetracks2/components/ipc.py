@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from typing import Optional
 import numpy as np
 
 
@@ -99,20 +100,21 @@ class RenderRequest(Message):
 
     target: int = field(default=Target.Processing, init=False)
     type: RenderType
-    width: int
-    height: int
+    width: Optional[int]
+    height: Optional[int]
     colour_map: str
-    high_quality: bool = field(default=False)
+    sampling: int
 
 
 @dataclass
 class Render(Message):
     """A render has been completed."""
+
     target: int = field(default=Target.GUI, init=False)
     type: RenderType
-    data: np.ndarray
+    array: np.ndarray
+    sampling: int
     tick: int
-    thumbnail: bool = field(default=False)
 
 
 @dataclass

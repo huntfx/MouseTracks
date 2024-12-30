@@ -87,8 +87,17 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(crashp)
         crashh = QtWidgets.QPushButton('Raise Exception (hub)')
         layout.addWidget(crashh)
+
+        horizontal = QtWidgets.QHBoxLayout()
         render = QtWidgets.QPushButton('Render')
-        layout.addWidget(render)
+        horizontal.addWidget(render)
+        horizontal.addWidget(QtWidgets.QLabel('Sampling'))
+        self.sampling = QtWidgets.QDoubleSpinBox()
+        self.sampling.setMinimum(1)
+        self.sampling.setValue(4)
+        self.sampling.setMaximum(8)
+        horizontal.addWidget(self.sampling)
+        layout.addLayout(horizontal)
 
         horizontal = QtWidgets.QHBoxLayout()
         horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
@@ -242,11 +251,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return
         self.pause_redraw = True
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, False))
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1.0))
 
     def render(self) -> None:
         """Send a render request."""
-        self.q_send.put(ipc.RenderRequest(self.render_type, 2560, 1440, self.render_colour, True))
+        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.sampling.value()))
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
@@ -255,46 +264,50 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
 
-            # Save a render
-            case ipc.Render(data=array, thumbnail=False):
-                dialog = QtWidgets.QFileDialog()
-                dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-                dialog.setNameFilters(['PNG Files (*.png)", "JPEG Files (*.jpg *.jpeg)'])
-                dialog.setDefaultSuffix('png')
-                file_path, accept = dialog.getSaveFileName(None, 'Save Image', '', 'Image Files (*.png *.jpg)')
+            case ipc.Render():
+                height, width, channels = message.array.shape
 
-                if accept:
-                    im = Image.fromarray(array)
-                    im.resize((2560, 1440), Image.Resampling.LANCZOS)
-                    im.save(file_path)
-                    os.startfile(file_path)
+                target_height = int(height / message.sampling)
+                target_width = int(width / message.sampling)
 
-            # Draw the new pixmap
-            case ipc.Render(data=array, thumbnail=True):
-                # Create a QImage from the array
-                height, width, channels = array.shape
-                match channels:
-                    case 1:
-                        image_format = QtGui.QImage.Format.Format_Grayscale8
-                    case 3:
-                        image_format = QtGui.QImage.Format.Format_RGB888
-                    case 4:
-                        image_format = QtGui.QImage.Format.Format_RGBA8888
-                    case _:
-                        raise NotImplementedError(channels)
-                image = QtGui.QImage(array.data, width, height, image_format)
+                # Draw the new pixmap
+                if (target_width, target_height) == (360, 240):
+                    match channels:
+                        case 1:
+                            image_format = QtGui.QImage.Format.Format_Grayscale8
+                        case 3:
+                            image_format = QtGui.QImage.Format.Format_RGB888
+                        case 4:
+                            image_format = QtGui.QImage.Format.Format_RGBA8888
+                        case _:
+                            raise NotImplementedError(channels)
+                    image = QtGui.QImage(message.array.data, width, height, image_format)
 
-                # Scale the QImage to fit the pixmap size
-                scaled_image = image.scaled(width, height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+                    # Scale the QImage to fit the pixmap size
+                    scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
-                # Draw the QImage onto the QPixmap
-                painter = QtGui.QPainter(self.pixmap)
-                painter.drawImage(0, 0, scaled_image)
-                painter.end()
-                self.image_label.setPixmap(self.pixmap)
-                self.image = self.pixmap.toImage()
+                    # Draw the QImage onto the QPixmap
+                    painter = QtGui.QPainter(self.pixmap)
+                    painter.drawImage(0, 0, scaled_image)
+                    painter.end()
+                    self.image_label.setPixmap(self.pixmap)
+                    self.image = self.pixmap.toImage()
 
-                self.pause_redraw = False
+                    self.pause_redraw = False
+
+                # Save a render
+                else:
+                    dialog = QtWidgets.QFileDialog()
+                    dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+                    dialog.setNameFilters(['PNG Files (*.png)", "JPEG Files (*.jpg *.jpeg)'])
+                    dialog.setDefaultSuffix('png')
+                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', '', 'Image Files (*.png *.jpg)')
+
+                    if accept:
+                        im = Image.fromarray(message.array)
+                        im.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                        im.save(file_path)
+                        os.startfile(file_path)
 
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
