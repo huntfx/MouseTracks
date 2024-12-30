@@ -52,7 +52,10 @@ class PythonVersion(object):
                 v_num = float(value)
             except ValueError:
                 return str(self), value
-            return float(self), v_num
+            # Compare as tuple since otherwise 3.2 > 3.11
+            a = [int(x) for x in str(float(self)).split('.')]
+            b = [int(x) for x in str(v_num).split('.')]
+            return a, b
         return int(self), v_num
     
     def __eq__(self, value):
