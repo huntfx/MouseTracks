@@ -121,6 +121,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Time', ipc.RenderType.Time)
         self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
         self.render_type_input.addItem('Speed', ipc.RenderType.Speed)
+        self.render_type_input.addItem('Clicks', ipc.RenderType.SingleClick)
+        self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -145,6 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_position = cursor_position()
         self.mouse_move_tick = 0
         self.mouse_move_count = 0
+        self.mouse_click_count = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -213,9 +216,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour_input.clear()
         self.render_colour_input.addItem('Default', 'BlackToRedToWhite')
         for data in colours.parse_colour_file()['Maps'].values():
-            if render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause, ipc.RenderType.Speed):
-                if data['Type']['tracks']:
-                    self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+            match render_type:
+                case ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed:
+                    if data['Type']['tracks']:
+                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+                case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
+                    if data['Type']['clicks']:
+                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
         if previous_text and previous_text != self.render_colour_input.currentData():
             self.render_colour_input.setCurrentIndex(self.render_colour_input.findData(previous_text))
             self.render_colour = self.render_colour_input.currentData()
@@ -309,6 +316,20 @@ class MainWindow(QtWidgets.QMainWindow):
                         im.save(file_path)
                         os.startfile(file_path)
 
+            case ipc.MouseClick():
+                self.mouse_click_count += 1
+
+                # Trigger a GUI update
+                if self.mouse_move_count:
+                    update_smoothness = 4
+                    match self.render_type:
+                        case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
+                            update_frequency = 1
+                        case _:
+                            update_frequency = 0
+                    if update_frequency and not self.mouse_move_count % math.ceil(update_frequency / update_smoothness):
+                        self.request_thumbnail()
+
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
             case ipc.MouseMove():
@@ -360,8 +381,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause:
                             update_frequency = 50
                         case _:
-                            raise NotImplementedError(self.render_type)
-                    if not self.mouse_move_count % (update_frequency // update_smoothness):
+                            update_frequency = 0
+                    if update_frequency and not self.mouse_move_count % math.ceil(update_frequency / update_smoothness):
                         self.request_thumbnail()
 
     @QtCore.Slot()

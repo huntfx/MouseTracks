@@ -21,6 +21,8 @@ class RenderType(Enum):
     Time = auto()
     TimeSincePause = auto()
     Speed = auto()
+    SingleClick = auto()
+    DoubleClick = auto()
 
 
 @dataclass
