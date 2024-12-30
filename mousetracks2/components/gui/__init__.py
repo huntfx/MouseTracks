@@ -286,6 +286,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             image_format = QtGui.QImage.Format.Format_RGB888
                         case 4:
                             image_format = QtGui.QImage.Format.Format_RGBA8888
+                            self.pixmap.fill(QtCore.Qt.GlobalColor.transparent)
                         case _:
                             raise NotImplementedError(channels)
                     image = QtGui.QImage(message.array.data, width, height, image_format)
