@@ -129,3 +129,10 @@ class Exit(Message):
 @dataclass
 class DebugRaiseError(Message):
     """Raise an error for debugging."""
+
+
+@dataclass
+class ProcessShutDownNotification(Message):
+    """Send a notification from a process that it has ended."""
+    target: int = field(default=Target.Hub, init=False)
+    source: int

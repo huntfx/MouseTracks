@@ -40,20 +40,39 @@ class Hub:
         self._process_message(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     def stop_tracking(self):
+        """Stop the tracking processes.
+
+        A stop signal is pushed to the queue, so that the processes can
+        finish what they're doing then exit. Joining before the process
+        has already exited will cause a lock for some reason, so waiting
+        until they send a close notification back is required.
+        """
         print('[Hub] Sending stop tracking signal...')
         self._process_message(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
+        print('[Hub] Waiting for close notification from processes...')
+        tracking_running = self._p_tracking.is_alive()
+        processing_running = self._p_processing.is_alive()
+        while tracking_running or processing_running:
+            match self._q_main.get():
+                case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
+                    tracking_running = False
+                case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
+                    processing_running = False
+
         # Wait for processes to end
+        print('[Hub] Joining processes...')
         self._p_tracking.join()
         self._p_processing.join()
 
-        # Empty queues
+        # Flush process queues
+        # This is only in case of restarting the tracking again
         while not self._q_tracking.empty():
             self._q_tracking.get()
         while not self._q_processing.empty():
             self._q_processing.get()
 
-        print('[Hub] Tracking processes safely shut down')
+        print('[Hub] Processes safely shut down')
 
     def _create_tracking_processes(self) -> None:
         """Setup the processes required for tracking.

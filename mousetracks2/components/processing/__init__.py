@@ -413,6 +413,9 @@ class Processing:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
             print('[Processing] Error shut down.')
 
+        self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Processing))
+        print('[Processing] Sent process closed notification.')
+
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
     Processing(q_send, q_receive).run()
