@@ -1,7 +1,7 @@
 import math
 import multiprocessing
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
@@ -19,11 +19,16 @@ COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 
 UPDATES_PER_SECOND = 60
 
-DOUBLE_CLICK_TIME = 500
+DOUBLE_CLICK_MS = 500
 """Maximum time in ms where a double click is valid."""
 
-DOUBLE_CLICK_TOLERANCE = 8
+DOUBLE_CLICK_TOL = 8
 """Maximum pixels where a double click is valid."""
+
+INACTIVITY_MS = 300000
+"""Time in ms before the user is classed as "inactive"."""
+
+INACTIVITY_MS = 2000
 
 
 def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
@@ -113,12 +118,8 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
 class PreviousMouseClick:
     """Store data related to the last mouse click."""
     message: ipc.MouseClick
+    tick: int
     double_clicked: bool
-
-    @property
-    def tick(self) -> int:
-        """Get the message tick."""
-        return self.message.tick
 
     @property
     def button(self) -> int:
@@ -129,6 +130,50 @@ class PreviousMouseClick:
     def position(self) -> tuple[int, int]:
         """Get the message position."""
         return self.message.position
+
+@dataclass
+class Tick:
+    """Store data related to ticks."""
+
+    current: int = field(default=0)
+    previous: int = field(default=0)
+    active: int = field(default=0)
+    inactive: int = field(default=0)
+
+    @property
+    def activity(self) -> int:
+        """Get the number of active ticks."""
+        amount = self.active
+        if self.is_active:
+            amount += self.since_active
+        return amount
+
+    @property
+    def inactivity(self) -> int:
+        """Get the number of inactive ticks."""
+        amount = self.inactive
+        if not self.is_active:
+            amount += self.since_active
+        return amount
+
+    @property
+    def is_active(self) -> bool:
+        """Determine if currently active."""
+        threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        return self.since_active <= threshold
+
+    @property
+    def since_active(self) -> int:
+        """Get the number of ticks since the last activity."""
+        return self.current - self.previous
+
+    def set_active(self) -> None:
+        """Update the last tick activity."""
+        if self.is_active:
+            self.active += self.since_active
+        else:
+            self.inactive += self.since_active
+        self.previous = self.current
 
 
 class Processing:
@@ -141,6 +186,8 @@ class Processing:
         self.mouse_single_clicks = PixelArray()
         self.mouse_double_clicks = PixelArray()
         self.mouse_move_count = 0
+
+        self.tick = Tick()
 
         self.mouse_distance = 0.0
         self.mouse_position = cursor_position()
@@ -179,11 +226,11 @@ class Processing:
         print(f'[Processing] Mouse has moved to {message.position}')
 
         # If the ticks match then overwrite the old data
-        if message.tick == self.mouse_move_tick:
+        if self.tick.current == self.mouse_move_tick:
             self.mouse_position = message.position
 
         distance = calculate_distance(message.position, self.mouse_position)
-        moving = message.tick == self.mouse_move_tick + 1
+        moving = self.tick.current == self.mouse_move_tick + 1
 
         # Calculate the data
         pixels = calculate_line(message.position, self.mouse_position)
@@ -202,7 +249,7 @@ class Processing:
         # Update the saved data
         self.mouse_move_count += 1
         self.mouse_position = message.position
-        self.mouse_move_tick = message.tick
+        self.mouse_move_tick = self.tick.current
 
         # Check if array compression is required
         # This is important for the time maps
@@ -217,6 +264,10 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
+            # Update the current tick
+            case ipc.Tick():
+                self.tick.current = message.tick
+
             case ipc.RenderRequest(width=width, height=height,
                                    type=ipc.RenderType.Time | ipc.RenderType.TimeSincePause | ipc.RenderType.Speed):
                 print('[Processing] Render request received...')
@@ -351,15 +402,18 @@ class Processing:
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
+                self.tick.set_active()
                 self._cursor_move(message)
 
             case ipc.MouseClick():
+                self.tick.set_active()
+
                 previous = self.previous_mouse_click
                 double_click = (
                     previous is not None
                     and previous.button == message.button
-                    and previous.tick + (UPDATES_PER_SECOND * DOUBLE_CLICK_TIME / 1000) > message.tick
-                    and calculate_distance(previous.position, message.position) <= DOUBLE_CLICK_TOLERANCE
+                    and previous.tick + (UPDATES_PER_SECOND * DOUBLE_CLICK_MS / 1000) > self.tick.current
+                    and calculate_distance(previous.position, message.position) <= DOUBLE_CLICK_TOL
                     and not previous.double_clicked
                 )
 
@@ -374,7 +428,7 @@ class Processing:
                 index = (message.position[1] - offset[1], message.position[0] - offset[0])
                 arrays.set_value(current_monitor, index, int(arrays[current_monitor][index]) + 1)
 
-                self.previous_mouse_click = PreviousMouseClick(message, double_click)
+                self.previous_mouse_click = PreviousMouseClick(message, self.tick.current, double_click)
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')

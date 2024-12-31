@@ -151,6 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
+        self.tick_current = 0
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -267,6 +268,9 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
         match message:
+            case ipc.Tick():
+                self.tick_current = message.tick
+
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
@@ -334,7 +338,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # When the mouse moves, update stats and draw it
             # The drawing is an approximation and not a render
             case ipc.MouseMove():
-                if self.mouse_position is not None and message.tick == self.mouse_move_tick + 1:
+                if self.mouse_position is not None and self.tick_current == self.mouse_move_tick + 1:
                     # Calculate basic data
                     distance_to_previous = calculate_distance(message.position, self.mouse_position)
                     self.mouse_speed = distance_to_previous
@@ -365,7 +369,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Update the saved data
                 self.mouse_move_count += 1
                 self.mouse_position = message.position
-                self.mouse_move_tick = message.tick
+                self.mouse_move_tick = self.tick_current
 
                 # Check if array compression is required
                 if self.mouse_move_count > COMPRESSION_THRESHOLD:

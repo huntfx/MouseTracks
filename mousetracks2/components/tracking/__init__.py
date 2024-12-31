@@ -94,15 +94,15 @@ class Tracking:
         last_activity = 0
 
         for tick, data in self._run_with_state():
+            self.send_data(ipc.Tick(tick))
+
             mouse_position = cursor_position()
 
             # Check if mouse position is inactive (such as a screensaver)
-            # If so then wait and try again
             if mouse_position is None:
                 if not data.mouse_inactive:
                     print('[Tracking] Mouse Undetected.')
                     data.mouse_inactive = True
-                time.sleep(2)
                 continue
             if data.mouse_inactive:
                 print('[Tracking] Mouse detected.')
@@ -117,7 +117,7 @@ class Tracking:
                 data.mouse_position = mouse_position
                 last_activity = tick
                 self._check_monitor_data(data, mouse_position)
-                self.send_data(ipc.MouseMove(tick, mouse_position))
+                self.send_data(ipc.MouseMove(mouse_position))
 
             for mouse_button, clicked in get_mouse_click().items():
                 if not clicked:
@@ -128,7 +128,7 @@ class Tracking:
 
                 # First click
                 if click_latest != tick - 1:
-                    self.send_data(ipc.MouseClick(tick, mouse_button, mouse_position))
+                    self.send_data(ipc.MouseClick(mouse_button, mouse_position))
                     data.mouse_clicks[mouse_button] = (tick, tick)
 
                 # Being held
