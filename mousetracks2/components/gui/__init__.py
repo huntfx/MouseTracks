@@ -225,8 +225,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                     if data['Type']['clicks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+
+        # Load previous colour if available, otherwise revert to default
         if previous_text and previous_text != self.render_colour_input.currentData():
-            self.render_colour_input.setCurrentIndex(self.render_colour_input.findData(previous_text))
+            if idx := self.render_colour_input.findData(previous_text) < -1:
+                self.render_colour_input.setCurrentIndex(idx)
             self.render_colour = self.render_colour_input.currentData()
 
         self.pause_colour_change = False
