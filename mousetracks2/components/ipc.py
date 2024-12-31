@@ -74,6 +74,22 @@ class MouseHeld(Message):
 
 
 @dataclass
+class KeyPress(Message):
+    """Key has been pressed."""
+
+    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    opcode: int
+
+
+@dataclass
+class KeyHeld(Message):
+    """Key is being held."""
+
+    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    opcode: int
+
+
+@dataclass
 class Traceback(Message):
     """Send data when a traceback is raised."""
 

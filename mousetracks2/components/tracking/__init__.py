@@ -1,12 +1,13 @@
 import multiprocessing
 import time
 import traceback
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
 
 from . import utils
 from .. import ipc
-from ...utils.win import cursor_position, monitor_locations, get_mouse_click
+from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS
 
 
 UPDATES_PER_SECOND = 60
@@ -20,6 +21,7 @@ class DataState:
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
+    key_presses: dict[int, int] = field(default_factory=dict)
 
 
 class Tracking:
@@ -119,22 +121,27 @@ class Tracking:
                 self._check_monitor_data(data, mouse_position)
                 self.send_data(ipc.MouseMove(mouse_position))
 
-            for mouse_button, clicked in get_mouse_click().items():
-                if not clicked:
-                    continue
-
-                click_start, click_latest = data.mouse_clicks.get(mouse_button, (0, 0))
+            # Record key presses / mouse clicks
+            for opcode in filter(check_key_press, range(0x01, 0xFF)):
                 last_activity = tick
 
-                # First click
-                if click_latest != tick - 1:
-                    self.send_data(ipc.MouseClick(mouse_button, mouse_position))
-                    data.mouse_clicks[mouse_button] = (tick, tick)
+                press_start, press_latest = data.key_presses.get(opcode, (0, 0))
+
+                # First press
+                if press_latest != tick - 1:
+                    if opcode in MOUSE_BUTTONS:
+                        self.send_data(ipc.MouseClick(opcode, mouse_position))
+                    else:
+                        self.send_data(ipc.KeyPress(opcode))
+                    data.key_presses[opcode] = (tick, tick)
 
                 # Being held
                 else:
-                    self.send_data(ipc.MouseHeld(mouse_button, mouse_position))
-                    data.mouse_clicks[mouse_button] = (click_start, tick)
+                    if opcode in MOUSE_BUTTONS:
+                        self.send_data(ipc.MouseHeld(opcode, mouse_position))
+                    else:
+                        self.send_data(ipc.KeyHeld(opcode))
+                    data.key_presses[opcode] = (press_start, tick)
 
     def run(self) -> None:
         print('[Tracking] Loaded.')

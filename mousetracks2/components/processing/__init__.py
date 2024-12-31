@@ -41,8 +41,8 @@ def array_target_resolution(resolution_arrays: dict[tuple[int, int], np.ndarray]
         return width, height
 
     popularity = {}
-    for res, array in resolution_arrays.items():
-        popularity[res] = np.sum(array > 0)
+    for res, handler in resolution_arrays.items():
+        popularity[res] = np.sum(handler.array > 0)
     threshold = max(popularity.values()) * 0.9
     _width, _height = max(res for res, value in popularity.items() if value > threshold)
 
@@ -72,22 +72,45 @@ class ExitRequest(Exception):
     """Custom exception to raise and catch when an exit is requested."""
 
 
-class PixelArray(dict):
-    def __missing__(self, key: tuple[int, int]) -> np.ndarray:
-        self[key] = value = np.zeros((key[1], key[0]), dtype=np.uint8)
-        return value
 
-    def set_value(self, key: tuple[int, int], index: tuple[int, int], value: int) -> None:
-        """Set a value in an array, updating the type if required."""
-        array = self[key]
+class IntArrayHandler:
+    """Create an integer array and update the dtype when required."""
 
-        if value >= np.iinfo(array.dtype).max:
-            for dtype in (np.uint16, np.uint32, np.uint64):
-                if value < np.iinfo(dtype).max:
-                    self[key] = array = array.astype(dtype)
+    DTYPES = [np.uint16, np.uint32, np.uint64]
+    MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
+
+    def __init__(self, shape: int | list[int]) -> None:
+        self.array = np.zeros(shape, dtype=np.uint8)
+        self.max_value = np.iinfo(np.uint8).max
+
+    def __str__(self) -> str:
+        return str(self.array)
+
+    def __repr__(self) -> str:
+        return repr(self.array)
+
+    def __getitem__(self, item: any) -> int:
+        """Get an array item."""
+        return self.array[item]
+
+    def __setitem__(self, item: any, value: int) -> None:
+        """Set an array item, changing dtype if required."""
+        if value > self.max_value:
+            for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
+                if value < max_value:
+                    self.max_value = max_value
+                    self.array = self.array.astype(dtype)
                     break
 
-        array[index] = value
+        self.array[item] = value
+
+
+class ResolutionArray(dict):
+    """Store multiple arrays for different resolutions."""
+
+    def __missing__(self, key: tuple[int, int]) -> IntArrayHandler:
+        self[key] = IntArrayHandler([key[1], key[0]])
+        return self[key]
 
 
 def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
@@ -208,12 +231,14 @@ class Processing:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.mouse_track_maps = PixelArray()
-        self.mouse_speed_maps = PixelArray()
-        self.mouse_single_clicks = PixelArray()
-        self.mouse_double_clicks = PixelArray()
-        self.mouse_held_clicks = PixelArray()
+        self.mouse_track_maps = ResolutionArray()
+        self.mouse_speed_maps = ResolutionArray()
+        self.mouse_single_clicks = ResolutionArray()
+        self.mouse_double_clicks = ResolutionArray()
+        self.mouse_held_clicks = ResolutionArray()
         self.mouse_move_count = 0
+        self.key_held = IntArrayHandler(0xFF)
+        self.key_presses = IntArrayHandler(0xFF)
 
         self.tick = Tick()
 
@@ -270,9 +295,9 @@ class Processing:
             current_monitor, offset = self._monitor_offset(pixel)
             index = (pixel[1] - offset[1], pixel[0] - offset[0])
 
-            self.mouse_track_maps.set_value(current_monitor, index, self.mouse_move_count)
+            self.mouse_track_maps[current_monitor][index] = self.mouse_move_count
             if distance and moving:
-                self.mouse_speed_maps.set_value(current_monitor, index, max(self.mouse_speed_maps[current_monitor][index], int(100 * distance)))
+                self.mouse_speed_maps[current_monitor][index] = max(self.mouse_speed_maps[current_monitor][index], int(100 * distance))
 
         # Update the saved data
         self.mouse_move_count += 1
@@ -333,7 +358,7 @@ class Processing:
 
         # Scale all arrays to the same size and combine
         if maps:
-            rescaled_arrays = [array_rescale(array, scale_width, scale_height) for array in maps.values()]
+            rescaled_arrays = [array_rescale(handler.array, scale_width, scale_height) for handler in maps.values()]
             final_array = np.maximum.reduce(rescaled_arrays)
         else:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
@@ -379,7 +404,7 @@ class Processing:
 
                 current_monitor, offset = self._monitor_offset(message.position)
                 index = (message.position[1] - offset[1], message.position[0] - offset[0])
-                self.mouse_held_clicks.set_value(current_monitor, index, int(self.mouse_held_clicks[current_monitor][index]) + 1)
+                self.mouse_held_clicks[current_monitor][index] += 1
 
             case ipc.MouseClick():
                 self.tick.set_active()
@@ -402,9 +427,18 @@ class Processing:
 
                 current_monitor, offset = self._monitor_offset(message.position)
                 index = (message.position[1] - offset[1], message.position[0] - offset[0])
-                arrays.set_value(current_monitor, index, int(arrays[current_monitor][index]) + 1)
+                arrays[current_monitor][index] += 1
 
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick.current, double_click)
+
+            case ipc.KeyPress():
+                self.tick.set_active()
+                print(f'[Processing] Key {message.opcode} pressed.')
+                self.key_presses[message.opcode] += 1
+
+            case ipc.KeyHeld():
+                self.tick.set_active()
+                self.key_held[message.opcode] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
