@@ -23,6 +23,7 @@ class RenderType(Enum):
     Speed = auto()
     SingleClick = auto()
     DoubleClick = auto()
+    HeldClick = auto()
 
 
 @dataclass
@@ -57,6 +58,15 @@ class MouseMove(Message):
 @dataclass
 class MouseClick(Message):
     """Mouse has been clicked."""
+
+    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    button: int
+    position: tuple[int, int]
+
+
+@dataclass
+class MouseHeld(Message):
+    """Mouse button is being held."""
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
     button: int

@@ -133,6 +133,7 @@ class Tracking:
 
                 # Being held
                 else:
+                    self.send_data(ipc.MouseHeld(mouse_button, mouse_position))
                     data.mouse_clicks[mouse_button] = (click_start, tick)
 
     def run(self) -> None:

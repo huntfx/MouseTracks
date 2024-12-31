@@ -123,6 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Speed', ipc.RenderType.Speed)
         self.render_type_input.addItem('Clicks', ipc.RenderType.SingleClick)
         self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
+        self.render_type_input.addItem('Held Clicks', ipc.RenderType.HeldClick)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -221,7 +222,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 case ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed:
                     if data['Type']['tracks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
-                case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
+                case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                     if data['Type']['clicks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
         if previous_text and previous_text != self.render_colour_input.currentData():
@@ -321,18 +322,18 @@ class MainWindow(QtWidgets.QMainWindow):
                         im.save(file_path)
                         os.startfile(file_path)
 
-            case ipc.MouseClick():
+            case ipc.MouseClick() | ipc.MouseHeld():
                 self.mouse_click_count += 1
 
                 # Trigger a GUI update
-                if self.mouse_move_count:
+                if self.mouse_click_count:
                     update_smoothness = 4
                     match self.render_type:
-                        case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
+                        case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                             update_frequency = 1
                         case _:
                             update_frequency = 0
-                    if update_frequency and not self.mouse_move_count % math.ceil(update_frequency / update_smoothness):
+                    if update_frequency and not self.mouse_click_count % math.ceil(update_frequency / update_smoothness):
                         self.request_thumbnail()
 
             # When the mouse moves, update stats and draw it

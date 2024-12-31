@@ -212,6 +212,7 @@ class Processing:
         self.mouse_speed_maps = PixelArray()
         self.mouse_single_clicks = PixelArray()
         self.mouse_double_clicks = PixelArray()
+        self.mouse_held_clicks = PixelArray()
         self.mouse_move_count = 0
 
         self.tick = Tick()
@@ -317,6 +318,9 @@ class Processing:
             case ipc.RenderType.DoubleClick:
                 maps = self.mouse_double_clicks
 
+            case ipc.RenderType.HeldClick:
+                maps = self.mouse_held_clicks
+
             case _:
                 raise NotImplementedError(message.type)
 
@@ -335,7 +339,7 @@ class Processing:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
         # Special case for heatmaps
-        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick):
+        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
             # Convert the array to a linear array
             unique_values, unique_indexes = np.unique(final_array, return_inverse=True)
 
@@ -369,6 +373,13 @@ class Processing:
             case ipc.MouseMove():
                 self.tick.set_active()
                 self._cursor_move(message)
+
+            case ipc.MouseHeld():
+                self.tick.set_active()
+
+                current_monitor, offset = self._monitor_offset(message.position)
+                index = (message.position[1] - offset[1], message.position[0] - offset[0])
+                self.mouse_held_clicks.set_value(current_monitor, index, int(self.mouse_held_clicks[current_monitor][index]) + 1)
 
             case ipc.MouseClick():
                 self.tick.set_active()
