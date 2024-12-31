@@ -59,7 +59,7 @@ class MouseMove(Message):
 class MouseClick(Message):
     """Mouse has been clicked."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: int = field(default=Target.Processing, init=False)
     button: int
     position: tuple[int, int]
 
@@ -68,7 +68,7 @@ class MouseClick(Message):
 class MouseHeld(Message):
     """Mouse button is being held."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: int = field(default=Target.Processing, init=False)
     button: int
     position: tuple[int, int]
 
@@ -77,7 +77,7 @@ class MouseHeld(Message):
 class KeyPress(Message):
     """Key has been pressed."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: int = field(default=Target.Processing, init=False)
     opcode: int
 
 
@@ -85,7 +85,25 @@ class KeyPress(Message):
 class KeyHeld(Message):
     """Key is being held."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: int = field(default=Target.Processing, init=False)
+    opcode: int
+
+
+@dataclass
+class ButtonPress(Message):
+    """Gamepad button has been pressed."""
+
+    target: int = field(default=Target.Processing, init=False)
+    gamepad: int
+    opcode: int
+
+
+@dataclass
+class ButtonHeld(Message):
+    """Gamepad button is being held."""
+
+    target: int = field(default=Target.Processing, init=False)
+    gamepad: int
     opcode: int
 
 

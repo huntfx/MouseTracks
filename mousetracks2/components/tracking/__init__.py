@@ -5,6 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
 
+import XInput
+
 from . import utils
 from .. import ipc
 from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS
@@ -21,7 +23,11 @@ class DataState:
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
+    gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
+    gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
+    gamepad_force_recheck: bool = field(default=False)
     key_presses: dict[int, int] = field(default_factory=dict)
+    button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
 
 
 class Tracking:
@@ -142,6 +148,47 @@ class Tracking:
                     else:
                         self.send_data(ipc.KeyHeld(opcode))
                     data.key_presses[opcode] = (press_start, tick)
+
+            # Determine which gamepads are connected
+            if not tick % 60 or data.gamepad_force_recheck:
+                data.gamepads_current = XInput.get_connected()
+                data.gamepad_force_recheck = False
+
+                if data.gamepads_current != data.gamepads_previous:
+                    print('[Tracking] Gamepad change detected')
+                    data.gamepads_previous = data.gamepads_current
+
+            for gamepad, active in enumerate(data.gamepads_current):
+                if not active:
+                    continue
+
+                # Get a snapshot of the current gamepad state
+                try:
+                    state = XInput.get_state(gamepad)
+                except XInput.XInputNotConnectedError:
+                    data.gamepad_force_recheck = True
+                    continue
+
+                thumb_l, thumb_r = XInput.get_thumb_values(state)
+                trig_l, trig_r = XInput.get_trigger_values(state)
+                buttons = XInput.get_button_values(state)
+
+                if not (thumb_l or thumb_r or trig_l or trig_r or buttons):
+                    continue
+                last_activity = tick
+
+                for button, state in buttons.items():
+                    if not state:
+                        continue
+                    opcode = getattr(XInput, f'BUTTON_{button}')
+
+                    press_start, press_latest = data.button_presses.get(opcode, (0, 0))
+                    if press_latest != tick - 1:
+                        self.send_data(ipc.ButtonPress(gamepad, opcode))
+                        data.button_presses[opcode] = (tick, tick)
+                    else:
+                        self.send_data(ipc.ButtonHeld(gamepad, opcode))
+                        data.button_presses[opcode] = (press_start, tick)
 
     def run(self) -> None:
         print('[Tracking] Loaded.')

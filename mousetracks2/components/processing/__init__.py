@@ -239,6 +239,8 @@ class Processing:
         self.mouse_move_count = 0
         self.key_held = IntArrayHandler(0xFF)
         self.key_presses = IntArrayHandler(0xFF)
+        self.button_held = IntArrayHandler(16)
+        self.button_presses = IntArrayHandler(16)
 
         self.tick = Tick()
 
@@ -439,6 +441,15 @@ class Processing:
             case ipc.KeyHeld():
                 self.tick.set_active()
                 self.key_held[message.opcode] += 1
+
+            case ipc.ButtonPress():
+                self.tick.set_active()
+                print(f'[Processing] Key {message.opcode} pressed.')
+                self.button_presses[int(math.log2(message.opcode))] += 1
+
+            case ipc.ButtonHeld():
+                self.tick.set_active()
+                self.button_held[int(math.log2(message.opcode))] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
