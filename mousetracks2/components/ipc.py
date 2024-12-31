@@ -52,9 +52,9 @@ class MouseClick(Message):
     """Mouse has been clicked."""
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
+    tick: int
     button: int
     position: tuple[int, int]
-    double: bool = field(default=False)
 
 
 @dataclass

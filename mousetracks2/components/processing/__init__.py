@@ -1,6 +1,8 @@
 import math
 import multiprocessing
 import traceback
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 from scipy import ndimage
@@ -14,6 +16,14 @@ from ...utils.win import cursor_position, monitor_locations
 COMPRESSION_FACTOR = 1.1
 
 COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
+
+UPDATES_PER_SECOND = 60
+
+DOUBLE_CLICK_TIME = 500
+"""Maximum time in ms where a double click is valid."""
+
+DOUBLE_CLICK_TOLERANCE = 8
+"""Maximum pixels where a double click is valid."""
 
 
 def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
@@ -98,6 +108,29 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     return lookup
 
 
+
+@dataclass
+class PreviousMouseClick:
+    """Store data related to the last mouse click."""
+    message: ipc.MouseClick
+    double_clicked: bool
+
+    @property
+    def tick(self) -> int:
+        """Get the message tick."""
+        return self.message.tick
+
+    @property
+    def button(self) -> int:
+        """Get the message button."""
+        return self.message.button
+
+    @property
+    def position(self) -> tuple[int, int]:
+        """Get the message position."""
+        return self.message.position
+
+
 class Processing:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         self.q_send = q_send
@@ -112,6 +145,7 @@ class Processing:
         self.mouse_distance = 0.0
         self.mouse_position = cursor_position()
         self.mouse_move_tick = 0
+        self.previous_mouse_click: Optional[PreviousMouseClick] = None
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
         self.pause_tick = 0
@@ -320,7 +354,16 @@ class Processing:
                 self._cursor_move(message)
 
             case ipc.MouseClick():
-                if message.double:
+                previous = self.previous_mouse_click
+                double_click = (
+                    previous is not None
+                    and previous.button == message.button
+                    and previous.tick + (UPDATES_PER_SECOND * DOUBLE_CLICK_TIME / 1000) > message.tick
+                    and calculate_distance(previous.position, message.position) <= DOUBLE_CLICK_TOLERANCE
+                    and not previous.double_clicked
+                )
+
+                if double_click:
                     arrays = self.mouse_double_clicks
                     print(f'[Processing] Mouse button {message.button} double clicked.')
                 else:
@@ -330,6 +373,8 @@ class Processing:
                 current_monitor, offset = self._monitor_offset(message.position)
                 index = (message.position[1] - offset[1], message.position[0] - offset[0])
                 arrays.set_value(current_monitor, index, int(arrays[current_monitor][index]) + 1)
+
+                self.previous_mouse_click = PreviousMouseClick(message, double_click)
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')

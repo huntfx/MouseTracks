@@ -92,7 +92,6 @@ class Tracking:
         print('[Tracking] Loaded.')
 
         last_activity = 0
-        mouse_double_click = DOUBLE_CLICK_TIME / 1000 * UPDATES_PER_SECOND
 
         for tick, data in self._run_with_state():
             mouse_position = cursor_position()
@@ -124,25 +123,17 @@ class Tracking:
                 if not clicked:
                     continue
 
-                click_start, click_latest, double_clicked = data.mouse_clicks.get(mouse_button, (0, 0, False))
+                click_start, click_latest = data.mouse_clicks.get(mouse_button, (0, 0))
                 last_activity = tick
 
                 # First click
                 if click_latest != tick - 1:
-                    # Check if previous click was within the double click period
-                    double_click = click_start + mouse_double_click > tick and not double_clicked
-
-                    # Skip double click if other mouse buttons are being held
-                    if len(data.mouse_clicks) > 1:
-                        if max(v[1] for k, v in data.mouse_clicks.items() if k != mouse_button) > click_latest:
-                            double_click = False
-
-                    self.send_data(ipc.MouseClick(mouse_button, mouse_position, double_click))
-                    data.mouse_clicks[mouse_button] = (tick, tick, double_click)
+                    self.send_data(ipc.MouseClick(tick, mouse_button, mouse_position))
+                    data.mouse_clicks[mouse_button] = (tick, tick)
 
                 # Being held
                 else:
-                    data.mouse_clicks[mouse_button] = (click_start, tick, double_clicked)
+                    data.mouse_clicks[mouse_button] = (click_start, tick)
 
     def run(self) -> None:
         print('[Tracking] Loaded.')
