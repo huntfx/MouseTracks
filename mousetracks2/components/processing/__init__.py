@@ -31,14 +31,41 @@ INACTIVITY_MS = 300000
 INACTIVITY_MS = 2000
 
 
+def array_target_resolution(resolution_arrays: dict[tuple[int, int], np.ndarray],
+                            width: Optional[int] = None, height: Optional[int] = None) -> tuple[int, int]:
+    """Calculate a target resolution.
+    If width or height is given, then it will be used.
+    The aspect ratio is taken into consideration.
+    """
+    if width is not None and height is not None:
+        return width, height
+
+    popularity = {}
+    for res, array in resolution_arrays.items():
+        popularity[res] = np.sum(array > 0)
+    threshold = max(popularity.values()) * 0.9
+    _width, _height = max(res for res, value in popularity.items() if value > threshold)
+
+    if width is None and height is None:
+        return _width, _height
+
+    aspect = _width / _height
+    if width is None:
+        return int(height * aspect), height
+    return width, int(width / aspect)
+
+
+def array_to_uint8(array: np.ndarray) -> np.ndarray:
+    """Normalise an array to map it's values from 0-255."""
+    max_value = np.max(array)
+    if not max_value:
+        return np.zeros(array.shape, dtype=np.uint8)
+    return (array.astype(np.float64) * (255 / max_value)).astype(np.uint8)
+
+
 def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
     """Calculate size of gaussian blur."""
     return int(round(min(width, height) * base * multiplier))
-
-
-def range_array(array: np.ndarray) -> np.ndarray:
-    unique_values, mapped_array = np.unique(array, return_inverse=True)
-    return mapped_array
 
 
 class ExitRequest(Exception):
@@ -261,6 +288,74 @@ class Processing:
                     maps[res] = (array / COMPRESSION_FACTOR).astype(array.dtype)
             print(f'[Processing] Reduced all arrays')
 
+    def _render_array(self, message: ipc.RenderRequest):
+        """Render an array (tracks / heatmaps)."""
+        print('[Processing] Render request received...')
+        width = message.width
+        height = message.height
+
+        # Choose the data to render
+        maps: dict[tuple[int, int], np.ndarray]
+        match message.type:
+            case ipc.RenderType.Time:
+                maps = self.mouse_track_maps
+
+            # Subtract a value from each array and ensure it doesn't go below 0
+            case ipc.RenderType.TimeSincePause:
+                maps = {}
+                for res, array in self.mouse_track_maps.items():
+                    partial_array = array.astype(np.int64) - self.pause_tick
+                    partial_array[partial_array < 0] = 0
+                    maps[res] = partial_array
+
+            case ipc.RenderType.Speed:
+                maps = self.mouse_speed_maps
+
+            case ipc.RenderType.SingleClick:
+                maps = self.mouse_single_clicks
+
+            case ipc.RenderType.DoubleClick:
+                maps = self.mouse_double_clicks
+
+            case _:
+                raise NotImplementedError(message.type)
+
+        # Find the largest most common resolution
+        width, height = array_target_resolution(maps, width, height)
+
+        # Apply the sampling amount
+        scale_width = int(width * message.sampling)
+        scale_height = int(height * message.sampling)
+
+        # Scale all arrays to the same size and combine
+        if maps:
+            rescaled_arrays = [array_rescale(array, scale_width, scale_height) for array in maps.values()]
+            final_array = np.maximum.reduce(rescaled_arrays)
+        else:
+            final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
+
+        # Special case for heatmaps
+        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick):
+            # Convert the array to a linear array
+            unique_values, unique_indexes = np.unique(final_array, return_inverse=True)
+
+            # Apply a gaussian blur
+            blur_amount = gaussian_size(scale_width, scale_height)
+            final_array = ndimage.gaussian_filter(unique_indexes.astype(np.float64), sigma=blur_amount)
+
+            # TODO: Reimplement the heatmap range clipping
+            # It will be easier to test once saving works and a heavier heatmap can be used
+            # min_value = np.min(heatmap)
+            # all_values = np.sort(heatmap.ravel(), unique=True)
+            # max_value = all_values[int(round(len(unique_values) * 0.005))]
+
+        # Convert the array to 0-255 and map to a colour lookup table
+        colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
+        coloured_array = colour_lookup[array_to_uint8(final_array)]
+
+        self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling, self.mouse_move_tick))
+        print('[Processing] Render request completed')
+
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
@@ -268,138 +363,8 @@ class Processing:
             case ipc.Tick():
                 self.tick.current = message.tick
 
-            case ipc.RenderRequest(width=width, height=height,
-                                   type=ipc.RenderType.Time | ipc.RenderType.TimeSincePause | ipc.RenderType.Speed):
-                print('[Processing] Render request received...')
-                # Choose the data to work on
-                maps: dict[tuple[int, int], np.ndarray]
-                match message.type:
-                    case ipc.RenderType.Time:
-                        maps = self.mouse_track_maps
-
-                    # Subtract a value from each array and ensure it doesn't go below 0
-                    case ipc.RenderType.TimeSincePause:
-                        maps = {}
-                        for res, array in self.mouse_track_maps.items():
-                            partial_array = array.astype(np.int64) - self.pause_tick
-                            partial_array[partial_array < 0] = 0
-                            maps[res] = partial_array
-
-                    case ipc.RenderType.Speed:
-                        maps = self.mouse_speed_maps
-
-                    case _:
-                        raise NotImplementedError(message.type)
-
-                # Find the largest most common resolution
-                if width is None or height is None:
-                    popularity = {}
-                    for res, array in maps.items():
-                        popularity[res] = np.sum(array > 0)
-                    threshold = max(popularity.values()) * 0.9
-                    _width, _height = max(res for res, value in popularity.items() if value > threshold)
-
-                    if width is None and height is None:
-                        width = _width
-                        height = _height
-                    else:
-                        aspect = _width / _height
-                        if width is None:
-                            width = int(height * aspect)
-                        if height is None:
-                            height = int(width / aspect)
-
-                # Apply the sampling amount
-                scale_width = int(width * message.sampling)
-                scale_height = int(height * message.sampling)
-
-                # Downscale and normalise values to 0-255
-                normalised_arrays = []
-                for array in maps.values():
-                    scaled_array = array_rescale(array, scale_width, scale_height)
-                    max_time = np.max(scaled_array) or 1
-                    normalised_arrays.append((scaled_array.astype(np.float64) * (255 / max_time)).astype(np.uint8))
-
-                # Combine the arrays using the maximum values of each
-                if normalised_arrays:
-                    combined_array = np.maximum.reduce(normalised_arrays)
-                else:
-                    combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
-
-                # Map to a colour lookup table
-                colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
-                coloured_array = colour_lookup[combined_array]
-
-                self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling, self.mouse_move_tick))
-                print('[Processing] Render request completed')
-
-            case ipc.RenderRequest(width=width, height=height,
-                                   type=ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick):
-
-                maps: dict[tuple[int, int], np.ndarray]
-                match message.type:
-                    case ipc.RenderType.SingleClick:
-                        maps = self.mouse_single_clicks
-                    case ipc.RenderType.DoubleClick:
-                        maps = self.mouse_double_clicks
-                    case _:
-                        raise NotImplementedError(message.type)
-
-                # Find the largest most common resolution
-                if width is None or height is None:
-                    popularity = {}
-                    for res, array in maps.items():
-                        popularity[res] = np.sum(array > 0)
-                    threshold = max(popularity.values()) * 0.9
-                    _width, _height = max(res for res, value in popularity.items() if value > threshold)
-
-                    if width is None and height is None:
-                        width = _width
-                        height = _height
-                    else:
-                        aspect = _width / _height
-                        if width is None:
-                            width = int(height * aspect)
-                        if height is None:
-                            height = int(width / aspect)
-
-                # Apply the sampling amount
-                scale_width = int(width * message.sampling)
-                scale_height = int(height * message.sampling)
-
-                # Scale all arrays to the same size
-                rescaled_arrays = []
-                for array in maps.values():
-                    rescaled_arrays.append(array_rescale(array, scale_width, scale_height))
-
-                if rescaled_arrays:
-                    combined_array = np.add.reduce(rescaled_arrays, dtype=np.uint64)
-                else:
-                    combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
-
-                # Convert the array to a linear array
-                unique_values, unique_indexes = np.unique(combined_array, return_inverse=True)
-
-                # Apply a gaussian blur on the raw data
-                blur_amount = gaussian_size(scale_width, scale_height)
-                heatmap = ndimage.gaussian_filter(unique_indexes.astype(np.float64), sigma=blur_amount)
-
-                # Convert the array to 0-255
-                max_value = np.max(heatmap) or 1
-                normalised = (heatmap.astype(np.float64) * (255 / max_value)).astype(np.uint8)
-
-                # Map to a colour lookup table
-                colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
-                coloured_array = colour_lookup[normalised]
-
-                # TODO: Reimplement the heatmap range clipping
-                # will be easier to test once a heavier heatmap can be used
-                # min_value = np.min(heatmap)
-                # all_values = np.sort(heatmap.ravel(), unique=True)
-                # max_value = all_values[int(round(len(unique_values) * 0.005))]
-
-                self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling, self.mouse_move_tick))
-                print('[Processing] Render request completed')
+            case ipc.RenderRequest():
+                self._render_array(message)
 
             case ipc.MouseMove():
                 self.tick.set_active()
