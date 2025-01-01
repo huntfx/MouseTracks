@@ -482,20 +482,23 @@ class Processing:
 
             case ipc.ThumbstickMove():
                 self.tick.set_active()
-
-                x, y = message.position
-                remapped = (int(-y * 1024 + 1024), int(x * 1024 + 1024))
+                width = height = 2048
+                x = int((message.position[0] + 1) * (width - 1) / 2)
+                y = int((message.position[1] + 1) * (height - 1) / 2)
+                remapped = (height - y - 1, x)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
-                        self._record_move(self.thumbstick_l_map, remapped, (2048, 2048))
+                        self._record_move(self.thumbstick_l_map, remapped, (width, height))
                     case ipc.ThumbstickMove.Thumbstick.Right:
-                        self._record_move(self.thumbstick_r_map, remapped, (2048, 2048))
+                        self._record_move(self.thumbstick_r_map, remapped, (width, height))
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
             case ipc.TriggerMove():
-                position = 4 + int(message.left * 2040), 4 + int(message.right * 2040)
-                self._record_move(self.trigger_map, position, (2048, 2048))
+                width = height = 2048
+                x = int(message.left * (width - 1))
+                y = int(message.right * (height - 1))
+                self._record_move(self.trigger_map, (x, y), (width, height))
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
