@@ -124,15 +124,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input = QtWidgets.QComboBox()
         self.render_type_input.addItem('Time', ipc.RenderType.Time)
         self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.render_type_input.addItem('Time (heatmap)', ipc.RenderType.TimeHeatmap)
         self.render_type_input.addItem('Speed', ipc.RenderType.Speed)
         self.render_type_input.addItem('Clicks', ipc.RenderType.SingleClick)
         self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
         self.render_type_input.addItem('Held Clicks', ipc.RenderType.HeldClick)
         self.render_type_input.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
         self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
+        self.render_type_input.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
         self.render_type_input.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
         self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
-        self.render_type_input.addItem('Trigger (test)', ipc.RenderType.Trigger)
+        self.render_type_input.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
+        self.render_type_input.addItem('Triggers', ipc.RenderType.Trigger)
+        self.render_type_input.addItem('Triggers (heatmap)', ipc.RenderType.TriggerHeatmap)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -290,8 +294,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 count = self.cursor_data.move_count
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             # With speed it must be constant, doesn't work as well live
-            case (ipc.RenderType.Speed | ipc.RenderType.TimeSincePause
-                    | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
+            case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause | ipc.RenderType.TimeHeatmap:
                 update_frequency = 50
                 count = self.cursor_data.move_count
             case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
@@ -306,9 +309,18 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.Thumbstick_R:
                 count = self.thumbstick_r_data.move_count
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_L_Heatmap:
+                count = self.thumbstick_l_data.move_count
+                update_frequency = 50
+            case ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_R_Heatmap:
+                count = self.thumbstick_r_data.move_count
+                update_frequency = 50
             case ipc.RenderType.Trigger:
                 count = self.trigger_data.move_count
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case ipc.RenderType.TriggerHeatmap:
+                count = self.trigger_data.move_count
+                update_frequency = 50
             case _:
                 return
 

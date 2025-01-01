@@ -19,6 +19,7 @@ class RenderType(Enum):
     """Possible types of renders."""
 
     Time = auto()
+    TimeHeatmap = auto()
     TimeSincePause = auto()
     Speed = auto()
     SingleClick = auto()
@@ -28,7 +29,10 @@ class RenderType(Enum):
     Thumbstick_L = auto()
     Thumbstick_R_SPEED = auto()
     Thumbstick_L_SPEED = auto()
+    Thumbstick_R_Heatmap = auto()
+    Thumbstick_L_Heatmap = auto()
     Trigger = auto()
+    TriggerHeatmap = auto()
 
 
 @dataclass

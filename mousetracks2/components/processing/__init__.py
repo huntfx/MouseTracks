@@ -233,6 +233,7 @@ class Tick:
 class MapData:
     time_arrays: ResolutionArray = field(default_factory=ResolutionArray)
     speed_arrays: ResolutionArray = field(default_factory=ResolutionArray)
+    count_arrays: ResolutionArray = field(default_factory=ResolutionArray)
     position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     distance: float = field(default=0.0)
     move_count: int = field(default=0)
@@ -308,6 +309,7 @@ class Processing:
                 current_monitor = force_monitor
 
             data.time_arrays[current_monitor][pixel] = data.move_count
+            data.count_arrays[current_monitor][pixel] += 1
             if distance and moving:
                 data.speed_arrays[current_monitor][pixel] = max(data.speed_arrays[current_monitor][pixel], int(100 * distance))
 
@@ -337,6 +339,9 @@ class Processing:
         match message.type:
             case ipc.RenderType.Time:
                 maps = self.cursor_map.time_arrays
+
+            case ipc.RenderType.TimeHeatmap:
+                maps = self.cursor_map.count_arrays
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
@@ -370,8 +375,17 @@ class Processing:
             case ipc.RenderType.Thumbstick_L_SPEED:
                 maps = self.thumbstick_l_map.speed_arrays
 
+            case ipc.RenderType.Thumbstick_R_Heatmap:
+                maps = self.thumbstick_r_map.count_arrays
+
+            case ipc.RenderType.Thumbstick_L_Heatmap:
+                maps = self.thumbstick_l_map.count_arrays
+
             case ipc.RenderType.Trigger:
                 maps = self.trigger_map.time_arrays
+
+            case ipc.RenderType.TriggerHeatmap:
+                maps = self.trigger_map.count_arrays
 
             case _:
                 raise NotImplementedError(message.type)
@@ -391,7 +405,8 @@ class Processing:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
         # Special case for heatmaps
-        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
+        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TriggerHeatmap,
+                            ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap):
             # Convert the array to a linear array
             unique_values, unique_indexes = np.unique(final_array, return_inverse=True)
 
