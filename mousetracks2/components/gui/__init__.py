@@ -124,6 +124,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Clicks', ipc.RenderType.SingleClick)
         self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
         self.render_type_input.addItem('Held Clicks', ipc.RenderType.HeldClick)
+        self.render_type_input.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
+        self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
+        self.render_type_input.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
+        self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -149,6 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_move_tick = 0
         self.mouse_move_count = 0
         self.mouse_click_count = 0
+        self.gamepad_thumbstick_count = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -225,6 +230,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                     if data['Type']['clicks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+                case ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R:
+                    if data['Type']['tracks']:
+                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
 
         # Load previous colour if available, otherwise revert to default
         if previous_text and previous_text != self.render_colour_input.currentData():
@@ -274,6 +282,27 @@ class MainWindow(QtWidgets.QMainWindow):
         match message:
             case ipc.Tick():
                 self.tick_current = message.tick
+
+                update_smoothness = 4
+                match self.render_type:
+                    # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
+                    case ipc.RenderType.Time:
+                        update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_count))))
+                        count = self.mouse_move_count
+                    # With speed it must be constant, doesn't work as well live
+                    case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause:
+                        update_frequency = 50
+                        count = self.mouse_move_count
+                    case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
+                        update_frequency = 1
+                        count = self.mouse_click_count
+                    case ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R:
+                        update_frequency = 50
+                        count = self.gamepad_thumbstick_count
+                    case _:
+                        update_frequency = 0
+                if update_frequency and not count % math.ceil(update_frequency / update_smoothness):
+                    self.request_thumbnail()
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -393,6 +422,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             update_frequency = 0
                     if update_frequency and not self.mouse_move_count % math.ceil(update_frequency / update_smoothness):
                         self.request_thumbnail()
+
+            case ipc.ThumbstickMove():
+                self.gamepad_thumbstick_count += 1
 
     @QtCore.Slot()
     def startTracking(self) -> None:

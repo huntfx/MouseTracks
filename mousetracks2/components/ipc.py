@@ -24,6 +24,10 @@ class RenderType(Enum):
     SingleClick = auto()
     DoubleClick = auto()
     HeldClick = auto()
+    Thumbstick_R = auto()
+    Thumbstick_L = auto()
+    Thumbstick_R_SPEED = auto()
+    Thumbstick_L_SPEED = auto()
 
 
 @dataclass
@@ -108,6 +112,20 @@ class ButtonHeld(Message):
 
 
 @dataclass
+class ThumbstickMove(Message):
+    """Thumbstic location."""
+
+    class Thumbstick(Enum):
+        Left = auto()
+        Right = auto()
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    gamepad: int
+    thumbstick: Thumbstick
+    position: tuple[float, float]
+
+
+@dataclass
 class Traceback(Message):
     """Send data when a traceback is raised."""
 
@@ -166,7 +184,6 @@ class Render(Message):
     type: RenderType
     array: np.ndarray
     sampling: int
-    tick: int
 
 
 @dataclass

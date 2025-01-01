@@ -79,8 +79,11 @@ class IntArrayHandler:
     DTYPES = [np.uint16, np.uint32, np.uint64]
     MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
 
-    def __init__(self, shape: int | list[int]) -> None:
-        self.array = np.zeros(shape, dtype=np.uint8)
+    def __init__(self, shape: int | list[int] | np.ndarray) -> None:
+        if isinstance(shape, np.ndarray):
+            self.array = shape
+        else:
+            self.array = np.zeros(shape, dtype=np.uint8)
         self.max_value = np.iinfo(np.uint8).max
 
     def __str__(self) -> str:
@@ -163,7 +166,6 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     return lookup
 
 
-
 @dataclass
 class PreviousMouseClick:
     """Store data related to the last mouse click."""
@@ -180,6 +182,7 @@ class PreviousMouseClick:
     def position(self) -> tuple[int, int]:
         """Get the message position."""
         return self.message.position
+
 
 @dataclass
 class Tick:
@@ -226,17 +229,28 @@ class Tick:
         self.previous = self.current
 
 
+@dataclass
+class MapData:
+    time_arrays: ResolutionArray = field(default_factory=ResolutionArray)
+    speed_arrays: ResolutionArray = field(default_factory=ResolutionArray)
+    position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
+    distance: float = field(default=0.0)
+    move_count: int = field(default=0)
+    move_tick: int = field(default=0)
+
+
 class Processing:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.mouse_track_maps = ResolutionArray()
-        self.mouse_speed_maps = ResolutionArray()
+        self.cursor_map = MapData()
+        self.thumbstick_l_map = MapData()
+        self.thumbstick_r_map = MapData()
+
         self.mouse_single_clicks = ResolutionArray()
         self.mouse_double_clicks = ResolutionArray()
         self.mouse_held_clicks = ResolutionArray()
-        self.mouse_move_count = 0
         self.key_held = IntArrayHandler(0xFF)
         self.key_presses = IntArrayHandler(0xFF)
         self.button_held = IntArrayHandler(16)
@@ -244,9 +258,6 @@ class Processing:
 
         self.tick = Tick()
 
-        self.mouse_distance = 0.0
-        self.mouse_position = cursor_position()
-        self.mouse_move_tick = 0
         self.previous_mouse_click: Optional[PreviousMouseClick] = None
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
@@ -260,15 +271,16 @@ class Processing:
                 return ((x2 - x1, y2 - y1), (x1, y1))
         raise ValueError(f'coordinate {pixel} not in monitors')
 
-    def _cursor_move(self, message: ipc.MouseMove) -> None:
-        """Handle a mouse move message.
+    def _record_move(self, data: MapData, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> None:
+        """Record a movement for time and speed.
 
         There are some caveats that are hard to handle. If a mouse is
         programmatically moved, then it will jump to a location on the
         screen. A check can be done to skip drawing if the cursor wasn't
         previously moving, but the first frame of movement wil also
-        always get skipped. Detecting the vector of movement was tried,
-        but it was too overcomplicated and wasn't good enough.
+        always get skipped. Detecting the vector of movement didn't
+        work as well as expected, and would have been too complex to
+        maintain.
 
         There's never been an issue with the original script, so the
         behaviour has been copied.
@@ -278,40 +290,37 @@ class Processing:
         moving, the downside being it will still record any jumps while
         moving, and will always skip the first frame of movement.
         """
-        print(f'[Processing] Mouse has moved to {message.position}')
-
         # If the ticks match then overwrite the old data
-        if self.tick.current == self.mouse_move_tick:
-            self.mouse_position = message.position
+        if self.tick.current == data.move_tick:
+            data.position = position
 
-        distance = calculate_distance(message.position, self.mouse_position)
-        moving = self.tick.current == self.mouse_move_tick + 1
-
-        # Calculate the data
-        pixels = calculate_line(message.position, self.mouse_position)
-        if distance:
-            self.mouse_distance += distance
+        distance = calculate_distance(position, data.position)
+        data.distance += distance
+        moving = self.tick.current == data.move_tick + 1
 
         # Add the pixels to an array
-        for pixel in pixels:
-            current_monitor, offset = self._monitor_offset(pixel)
-            index = (pixel[1] - offset[1], pixel[0] - offset[0])
+        for pixel in calculate_line(position, data.position):
+            if force_monitor is None:
+                current_monitor, offset = self._monitor_offset(pixel)
+                pixel = (pixel[1] - offset[1], pixel[0] - offset[0])
+            else:
+                current_monitor = force_monitor
 
-            self.mouse_track_maps[current_monitor][index] = self.mouse_move_count
+            data.time_arrays[current_monitor][pixel] = data.move_count
             if distance and moving:
-                self.mouse_speed_maps[current_monitor][index] = max(self.mouse_speed_maps[current_monitor][index], int(100 * distance))
+                data.speed_arrays[current_monitor][pixel] = max(data.speed_arrays[current_monitor][pixel], int(100 * distance))
 
         # Update the saved data
-        self.mouse_move_count += 1
-        self.mouse_position = message.position
-        self.mouse_move_tick = self.tick.current
+        data.position = position
+        data.move_count += 1
+        data.move_tick = self.tick.current
 
         # Check if array compression is required
         # This is important for the time maps
         # For speed, it just helps flatten out values that are too large
-        if self.mouse_move_count > COMPRESSION_THRESHOLD:
+        if data.move_count > COMPRESSION_THRESHOLD:
             print(f'[Processing] Tracking threshold reached, reducing values...')
-            for maps in (self.mouse_track_maps, self.mouse_speed_maps):
+            for maps in (data.time_arrays, data.speed_arrays):
                 for res, array in maps.items():
                     maps[res] = (array / COMPRESSION_FACTOR).astype(array.dtype)
             print(f'[Processing] Reduced all arrays')
@@ -323,21 +332,21 @@ class Processing:
         height = message.height
 
         # Choose the data to render
-        maps: dict[tuple[int, int], np.ndarray]
+        maps: dict[tuple[int, int], IntArrayHandler]
         match message.type:
             case ipc.RenderType.Time:
-                maps = self.mouse_track_maps
+                maps = self.cursor_map.time_arrays
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
                 maps = {}
-                for res, array in self.mouse_track_maps.items():
-                    partial_array = array.astype(np.int64) - self.pause_tick
+                for res, handler in self.cursor_map.time_arrays.items():
+                    partial_array = handler.array.astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
-                    maps[res] = partial_array
+                    maps[res] = IntArrayHandler(partial_array)
 
             case ipc.RenderType.Speed:
-                maps = self.mouse_speed_maps
+                maps = self.cursor_map.speed_arrays
 
             case ipc.RenderType.SingleClick:
                 maps = self.mouse_single_clicks
@@ -347,6 +356,18 @@ class Processing:
 
             case ipc.RenderType.HeldClick:
                 maps = self.mouse_held_clicks
+
+            case ipc.RenderType.Thumbstick_R:
+                maps = self.thumbstick_r_map.time_arrays
+
+            case ipc.RenderType.Thumbstick_L:
+                maps = self.thumbstick_l_map.time_arrays
+
+            case ipc.RenderType.Thumbstick_R_SPEED:
+                maps = self.thumbstick_r_map.speed_arrays
+
+            case ipc.RenderType.Thumbstick_L_SPEED:
+                maps = self.thumbstick_l_map.speed_arrays
 
             case _:
                 raise NotImplementedError(message.type)
@@ -384,7 +405,7 @@ class Processing:
         colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(message.colour_map))
         coloured_array = colour_lookup[array_to_uint8(final_array)]
 
-        self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling, self.mouse_move_tick))
+        self.q_send.put(ipc.Render(message.type, coloured_array, message.sampling))
         print('[Processing] Render request completed')
 
     def _process_message(self, message: ipc.Message) -> None:
@@ -399,7 +420,7 @@ class Processing:
 
             case ipc.MouseMove():
                 self.tick.set_active()
-                self._cursor_move(message)
+                self._record_move(self.cursor_map, message.position)
 
             case ipc.MouseHeld():
                 self.tick.set_active()
@@ -455,15 +476,30 @@ class Processing:
                 print(f'[Processing] Monitors changed.')
                 self.monitor_data = message.data
 
+            case ipc.ThumbstickMove():
+                self.tick.set_active()
+
+                x, y = message.position
+                remapped = (int(-y * 1024 + 1024), int(x * 1024 + 1024))
+                match message.thumbstick:
+                    case ipc.ThumbstickMove.Thumbstick.Left:
+                        self._record_move(self.thumbstick_l_map, remapped, (2048, 2048))
+                    case ipc.ThumbstickMove.Thumbstick.Right:
+                        self._record_move(self.thumbstick_r_map, remapped, (2048, 2048))
+                    case _:
+                        raise NotImplementedError(message.thumbstick)
+
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
             case ipc.TrackingState():
                 match message.state:
+                    case ipc.TrackingState.State.Start:
+                        self.cursor_map.position = cursor_position()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
                     case ipc.TrackingState.State.Pause:
-                        self.pause_tick = self.mouse_move_count
+                        self.pause_tick = self.cursor_map.move_count
                 self.state = message.state
 
             case _:
