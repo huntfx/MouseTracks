@@ -253,8 +253,8 @@ class Processing:
         self.mouse_held_clicks = ResolutionArray()
         self.key_held = IntArrayHandler(0xFF)
         self.key_presses = IntArrayHandler(0xFF)
-        self.button_held = IntArrayHandler(16)
-        self.button_presses = IntArrayHandler(16)
+        self.button_held = IntArrayHandler(20)
+        self.button_presses = IntArrayHandler(20)
 
         self.tick = Tick()
 

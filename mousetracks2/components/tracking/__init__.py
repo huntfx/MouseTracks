@@ -16,6 +16,9 @@ UPDATES_PER_SECOND = 60
 
 DOUBLE_CLICK_TIME = 500
 
+XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
+                  if isinstance(v, int) and k.split('_')[0] in ('BUTTON', 'STICK', 'TRIGGER')}
+
 
 @dataclass
 class DataState:
@@ -173,6 +176,9 @@ class Tracking:
                 trig_l, trig_r = XInput.get_trigger_values(state)
                 buttons = XInput.get_button_values(state)
 
+                buttons['TRIGGER_LEFT'] = trig_l * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
+                buttons['TRIGGER_RIGHT'] = trig_r * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
+
                 if not (thumb_l or thumb_r or trig_l or trig_r or buttons):
                     continue
                 last_activity = tick
@@ -180,7 +186,9 @@ class Tracking:
                 for button, state in buttons.items():
                     if not state:
                         continue
-                    opcode = getattr(XInput, f'BUTTON_{button}')
+                    if button not in XINPUT_OPCODES:
+                        button = f'BUTTON_{button}'
+                    opcode = XINPUT_OPCODES[button]
 
                     press_start, press_latest = data.button_presses.get(opcode, (0, 0))
                     if press_latest != tick - 1:
