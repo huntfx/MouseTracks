@@ -157,10 +157,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.trigger_data = MapData((0, 0))
 
         self.mouse_click_count = 0
+        self.mouse_held_count = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
+        self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -265,53 +267,72 @@ class MainWindow(QtWidgets.QMainWindow):
                 return ((x2 - x1, y2 - y1), (x1, y1))
         raise ValueError(f'coordinate {pixel} not in monitors')
 
-    def request_thumbnail(self, force: bool = False) -> None:
+    def request_thumbnail(self, force: bool = False) -> bool:
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
         # If already redrawing then prevent building up commands
         if self.pause_redraw and not force:
-            return
+            return False
         self.pause_redraw = True
         self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1.0))
+        return True
 
     def render(self) -> None:
         """Send a render request."""
         self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.sampling.value()))
+
+    def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
+        """Check if the thumbnail should be re-rendered."""
+        match self.render_type:
+            # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
+            case ipc.RenderType.Time:
+                count = self.cursor_data.move_count
+                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            # With speed it must be constant, doesn't work as well live
+            case (ipc.RenderType.Speed | ipc.RenderType.TimeSincePause
+                    | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
+                update_frequency = 50
+                count = self.cursor_data.move_count
+            case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
+                update_frequency = 1
+                count = self.mouse_click_count
+            case ipc.RenderType.HeldClick:
+                update_frequency = 50
+                count = self.mouse_held_count
+            case ipc.RenderType.Thumbstick_L:
+                count = self.thumbstick_l_data.move_count
+                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case ipc.RenderType.Thumbstick_R:
+                count = self.thumbstick_r_data.move_count
+                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case ipc.RenderType.Trigger:
+                count = self.trigger_data.move_count
+                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case _:
+                return
+
+        # Don't re-render if there's no data
+        if not count:
+            return
+
+        # Only render every `update_frequency` ticks
+        if count % math.ceil(update_frequency / update_smoothness):
+            return
+
+        # Skip repeat renders
+        if (self.render_type, count) == self.last_render:
+            return
+
+        if self.request_thumbnail():
+            self.last_render = (self.render_type, count)
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
         match message:
             case ipc.Tick():
                 self.tick_current = message.tick
-
-                update_smoothness = 4
-                match self.render_type:
-                    # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-                    case ipc.RenderType.Time:
-                        count = self.cursor_data.move_count
-                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-                    # With speed it must be constant, doesn't work as well live
-                    case (ipc.RenderType.Speed | ipc.RenderType.TimeSincePause
-                          | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
-                        update_frequency = 50
-                        count = self.cursor_data.move_count
-                    case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
-                        update_frequency = 1
-                        count = self.mouse_click_count
-                    case ipc.RenderType.Thumbstick_L:
-                        count = self.thumbstick_l_data.move_count
-                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-                    case ipc.RenderType.Thumbstick_R:
-                        count = self.thumbstick_r_data.move_count
-                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-                    case ipc.RenderType.Trigger:
-                        count = self.trigger_data.move_count
-                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-                    case _:
-                        update_frequency = 0
-                if update_frequency and not count % math.ceil(update_frequency / update_smoothness):
-                    self.request_thumbnail()
+                self.thumbnail_render_check()
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -363,8 +384,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         im.save(file_path)
                         os.startfile(file_path)
 
-            case ipc.MouseClick() | ipc.MouseHeld():
+            case ipc.MouseClick():
                 self.mouse_click_count += 1
+
+            case ipc.MouseHeld():
+                self.mouse_held_count += 1
 
             case ipc.MouseMove():
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):

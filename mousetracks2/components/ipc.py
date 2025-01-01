@@ -64,7 +64,7 @@ class MouseMove(Message):
 class MouseClick(Message):
     """Mouse has been clicked."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     button: int
     position: tuple[int, int]
 
@@ -73,7 +73,7 @@ class MouseClick(Message):
 class MouseHeld(Message):
     """Mouse button is being held."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     button: int
     position: tuple[int, int]
 
