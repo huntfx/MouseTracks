@@ -98,7 +98,7 @@ class IntArrayHandler:
 
     def __setitem__(self, item: any, value: int) -> None:
         """Set an array item, changing dtype if required."""
-        if value > self.max_value:
+        if value >= self.max_value:
             for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
                 if value < max_value:
                     self.max_value = max_value
