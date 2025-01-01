@@ -9,9 +9,9 @@ from __future__ import division
 from typing import Optional
 
 
-def calculate_distance(p1: tuple[int, int], p2: Optional[tuple[int, int]]) -> float:
+def calculate_distance(p1: Optional[tuple[int, int]], p2: Optional[tuple[int, int]]) -> float:
     """Find the distance between two (x, y) coordinates."""
-    if p2 is None or p1 == p2:
+    if p1 is None or p2 is None or p1 == p2:
         return 0.0
     return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
 

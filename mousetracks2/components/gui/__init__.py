@@ -3,6 +3,8 @@ import sys
 import queue
 import math
 import multiprocessing
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -42,6 +44,14 @@ class QueueWorker(QtCore.QObject):
     def stop(self) -> None:
         """Stop the worker."""
         self.running = False
+
+
+@dataclass
+class MapData:
+    position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
+    distance: float = field(default=0.0)
+    move_count: int = field(default=0)
+    move_tick: int = field(default=0)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -111,12 +121,6 @@ class MainWindow(QtWidgets.QMainWindow):
         horizontal.addWidget(self.distance)
         layout.addLayout(horizontal)
 
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Current Mouse Speed:'))
-        self.speed = QtWidgets.QLabel('0.0')
-        horizontal.addWidget(self.speed)
-        layout.addLayout(horizontal)
-
         self.render_type_input = QtWidgets.QComboBox()
         self.render_type_input.addItem('Time', ipc.RenderType.Time)
         self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
@@ -142,18 +146,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pixmap.fill(QtCore.Qt.GlobalColor.black)
         self.image_label.setPixmap(self.pixmap)
         self.image = self.pixmap.toImage()
-        self.update_pixel.connect(self.update_pixmap_pixel)
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(layout)
 
-        self.mouse_distance = 0.0
-        self.mouse_speed = 0.0
-        self.mouse_position = cursor_position()
-        self.mouse_move_tick = 0
-        self.mouse_move_count = 0
+        self.cursor_data = MapData(cursor_position())
+        self.thumbstick_l_data = MapData((0, 0))
+        self.thumbstick_r_data = MapData((0, 0))
+
         self.mouse_click_count = 0
-        self.gamepad_thumbstick_count = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -224,14 +225,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour_input.addItem('Default', 'BlackToRedToWhite')
         for data in colours.parse_colour_file()['Maps'].values():
             match render_type:
-                case ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed:
+                case (ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed
+                      | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R
+                      | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
                     if data['Type']['tracks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
                 case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                     if data['Type']['clicks']:
-                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
-                case ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R:
-                    if data['Type']['tracks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
 
         # Load previous colour if available, otherwise revert to default
@@ -287,18 +287,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 match self.render_type:
                     # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
                     case ipc.RenderType.Time:
-                        update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_count))))
-                        count = self.mouse_move_count
+                        count = self.cursor_data.move_count
+                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
                     # With speed it must be constant, doesn't work as well live
-                    case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause:
+                    case (ipc.RenderType.Speed | ipc.RenderType.TimeSincePause
+                          | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
                         update_frequency = 50
-                        count = self.mouse_move_count
+                        count = self.cursor_data.move_count
                     case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
                         update_frequency = 1
                         count = self.mouse_click_count
-                    case ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R:
-                        update_frequency = 50
-                        count = self.gamepad_thumbstick_count
+                    case ipc.RenderType.Thumbstick_L:
+                        count = self.thumbstick_l_data.move_count
+                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+                    case ipc.RenderType.Thumbstick_R:
+                        count = self.thumbstick_r_data.move_count
+                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
                     case _:
                         update_frequency = 0
                 if update_frequency and not count % math.ceil(update_frequency / update_smoothness):
@@ -357,79 +361,35 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.MouseClick() | ipc.MouseHeld():
                 self.mouse_click_count += 1
 
-                # Trigger a GUI update
-                if self.mouse_click_count:
-                    update_smoothness = 4
-                    match self.render_type:
-                        case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
-                            update_frequency = 1
-                        case _:
-                            update_frequency = 0
-                    if update_frequency and not self.mouse_click_count % math.ceil(update_frequency / update_smoothness):
-                        self.request_thumbnail()
-
-            # When the mouse moves, update stats and draw it
-            # The drawing is an approximation and not a render
             case ipc.MouseMove():
-                if self.mouse_position is not None and self.tick_current == self.mouse_move_tick + 1:
-                    # Calculate basic data
-                    distance_to_previous = calculate_distance(message.position, self.mouse_position)
-                    self.mouse_speed = distance_to_previous
-                    self.mouse_distance += distance_to_previous
-
-                seen = set()
-                for pixel in calculate_line(message.position, self.mouse_position):
-                    # Refresh data per pixel
-                    # This could be done only when the cursor changes
-                    # monitor, but it's not computationally heavy
-                    current_monitor, offset = self._monitor_offset(pixel)
-                    width_multiplier = self.image.width() / current_monitor[0]
-                    height_multiplier = self.image.height() / current_monitor[1]
-
-                    # Downscale the pixel to match the pixmap
-                    x = int((pixel[0] - offset[0]) * width_multiplier)
-                    y = int((pixel[1] - offset[1]) * height_multiplier)
-
-                    # Send (unique) pixels to be drawn
-                    if (x, y) not in seen:
-                        self.update_pixmap_pixel(int(x), int(y), self.pixel_colour)
-                        seen.add((x, y))
-
-                # Update the widgets
-                self.distance.setText(str(int(self.mouse_distance)))
-                self.speed.setText(str(int(self.mouse_speed)))
-
-                # Update the saved data
-                self.mouse_move_count += 1
-                self.mouse_position = message.position
-                self.mouse_move_tick = self.tick_current
-
-                # Check if array compression is required
-                if self.mouse_move_count > COMPRESSION_THRESHOLD:
-                    self.mouse_move_count = int(self.mouse_move_count / COMPRESSION_FACTOR)
-
-                # Trigger a GUI update
-                if self.mouse_move_count:
-                    update_smoothness = 4
-                    match self.render_type:
-                        # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-                        case ipc.RenderType.Time:
-                            update_frequency = min(20000, 10 ** int(math.log10(max(10, self.mouse_move_count))))
-                        # With speed it must be constant, doesn't work as well live
-                        case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause:
-                            update_frequency = 50
-                        case _:
-                            update_frequency = 0
-                    if update_frequency and not self.mouse_move_count % math.ceil(update_frequency / update_smoothness):
-                        self.request_thumbnail()
+                if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
+                    self.draw_pixmap_line(message.position, self.cursor_data.position)
+                self.update_track_data(self.cursor_data, message.position)
+                self.distance.setText(str(int(self.cursor_data.distance)))
 
             case ipc.ThumbstickMove():
-                self.gamepad_thumbstick_count += 1
+                draw = False
+                match message.thumbstick:
+                    case ipc.ThumbstickMove.Thumbstick.Left:
+                        data = self.thumbstick_l_data
+                        draw = self.render_type == ipc.RenderType.Thumbstick_L
+                    case ipc.ThumbstickMove.Thumbstick.Right:
+                        data = self.thumbstick_r_data
+                        draw = self.render_type == ipc.RenderType.Thumbstick_R
+                    case _:
+                        raise NotImplementedError(message.thumbstick)
+
+                x, y = message.position
+                remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
+                if draw:
+                    self.draw_pixmap_line(remapped, data.position, (2048, 2048))
+                self.update_track_data(data, remapped)
+
 
     @QtCore.Slot()
     def startTracking(self) -> None:
         """Start/unpause the script."""
-        self.mouse_position = cursor_position()  # Prevent erroneous line jumps
+        self.cursor_data.position = cursor_position()  # Prevent erroneous line jumps
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()
@@ -475,13 +435,53 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.wait()
         super().closeEvent(event)
 
+    def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
+        if data.position is not None and self.tick_current == data.move_tick + 1:
+            data.distance += calculate_distance(position, data.position)
+
+        # Update the saved data
+        data.move_count += 1
+        data.position = position
+        data.move_tick = self.tick_current
+
+        # Check if array compression has been done
+        if data.move_count > COMPRESSION_THRESHOLD:
+            data.move_count = int(data.move_count / COMPRESSION_FACTOR)
+
+    def draw_pixmap_line(self, old_position: Optional[tuple[int, int]], new_position: Optional[tuple[int, int]],
+                         force_monitor: Optional[tuple[int, int]] = None):
+        """When an object moves, draw it.
+        The drawing is an approximation and not a render, and will be
+        periodically replaced with an actual render.
+        """
+        seen = set()
+        for pixel in calculate_line(old_position, new_position):
+            # Refresh data per pixel
+            # This could be done only when the cursor changes
+            # monitor, but it's not computationally heavy
+            if force_monitor:
+                current_monitor = force_monitor
+                offset = (0, 0)
+            else:
+                current_monitor, offset = self._monitor_offset(pixel)
+            width_multiplier = self.image.width() / current_monitor[0]
+            height_multiplier = self.image.height() / current_monitor[1]
+
+            # Downscale the pixel to match the pixmap
+            x = int((pixel[0] - offset[0]) * width_multiplier)
+            y = int((pixel[1] - offset[1]) * height_multiplier)
+
+            # Send (unique) pixels to be drawn
+            if (x, y) not in seen:
+                self.update_pixmap_pixel(int(x), int(y), self.pixel_colour)
+                seen.add((x, y))
+
     @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
-        if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
-            self.image.setPixelColor(x, y, colour)
-            self.pixmap.convertFromImage(self.image)
-            self.image_label.setPixmap(self.pixmap)
+        self.image.setPixelColor(x, y, colour)
+        self.pixmap.convertFromImage(self.image)
+        self.image_label.setPixmap(self.pixmap)
 
         # Queue commands if redrawing is paused
         # This allows them to be resubmitted
