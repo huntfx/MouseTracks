@@ -132,6 +132,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
         self.render_type_input.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
         self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
+        self.render_type_input.addItem('Trigger (test)', ipc.RenderType.Trigger)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -153,6 +154,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
+        self.trigger_data = MapData((0, 0))
 
         self.mouse_click_count = 0
         self.monitor_data = monitor_locations()
@@ -303,6 +305,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     case ipc.RenderType.Thumbstick_R:
                         count = self.thumbstick_r_data.move_count
                         update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+                    case ipc.RenderType.Trigger:
+                        count = self.trigger_data.move_count
+                        update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
                     case _:
                         update_frequency = 0
                 if update_frequency and not count % math.ceil(update_frequency / update_smoothness):
@@ -385,6 +390,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(remapped, data.position, (2048, 2048))
                 self.update_track_data(data, remapped)
 
+            case ipc.TriggerMove():
+                position = 4 + int(message.right * 2040), 4 + int(message.left * 2040)
+                if self.render_type == ipc.RenderType.Trigger:
+                    self.draw_pixmap_line(self.trigger_data.position, position, (2048, 2048))
+                self.update_track_data(self.trigger_data, position)
 
     @QtCore.Slot()
     def startTracking(self) -> None:

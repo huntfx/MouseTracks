@@ -198,6 +198,7 @@ class Tracking:
                         self.send_data(ipc.ButtonHeld(gamepad, opcode))
                         data.button_presses[opcode] = (press_start, tick)
 
+                self.send_data(ipc.TriggerMove(gamepad, trig_l, trig_r))
                 self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, thumb_l))
                 self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, thumb_r))
 

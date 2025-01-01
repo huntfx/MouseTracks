@@ -247,6 +247,7 @@ class Processing:
         self.cursor_map = MapData()
         self.thumbstick_l_map = MapData()
         self.thumbstick_r_map = MapData()
+        self.trigger_map = MapData()
 
         self.mouse_single_clicks = ResolutionArray()
         self.mouse_double_clicks = ResolutionArray()
@@ -369,6 +370,9 @@ class Processing:
             case ipc.RenderType.Thumbstick_L_SPEED:
                 maps = self.thumbstick_l_map.speed_arrays
 
+            case ipc.RenderType.Trigger:
+                maps = self.trigger_map.time_arrays
+
             case _:
                 raise NotImplementedError(message.type)
 
@@ -488,6 +492,10 @@ class Processing:
                         self._record_move(self.thumbstick_r_map, remapped, (2048, 2048))
                     case _:
                         raise NotImplementedError(message.thumbstick)
+
+            case ipc.TriggerMove():
+                position = 4 + int(message.left * 2040), 4 + int(message.right * 2040)
+                self._record_move(self.trigger_map, position, (2048, 2048))
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
