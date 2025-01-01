@@ -130,11 +130,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
         self.render_type_input.addItem('Held Clicks', ipc.RenderType.HeldClick)
         self.render_type_input.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
-        self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
-        self.render_type_input.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
         self.render_type_input.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
+        self.render_type_input.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
+        self.render_type_input.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
+        self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
         self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
-        self.render_type_input.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
         self.render_type_input.addItem('Triggers', ipc.RenderType.Trigger)
         self.render_type_input.addItem('Triggers (heatmap)', ipc.RenderType.TriggerHeatmap)
         layout.addWidget(self.render_type_input)
@@ -238,7 +238,9 @@ class MainWindow(QtWidgets.QMainWindow):
                       | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
                     if data['Type']['tracks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
-                case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick:
+                case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                      | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
+                      | ipc.RenderType.TriggerHeatmap | ipc.RenderType.TimeHeatmap):
                     if data['Type']['clicks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
 
