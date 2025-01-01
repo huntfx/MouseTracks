@@ -8,6 +8,7 @@ Components:
 """
 
 import multiprocessing
+import queue
 
 from .. import ipc, tracking, processing, gui
 
@@ -44,8 +45,10 @@ class Hub:
 
         A stop signal is pushed to the queue, so that the processes can
         finish what they're doing then exit. Joining before the process
-        has already exited will cause a lock for some reason, so waiting
-        until they send a close notification back is required.
+        has already exited will cause a lock, so waiting until they
+        send a close notification back is required.
+        If one thread is doing something particularly heavy, an attempt
+        will be made to wait for it, but it will eventually terminate.
         """
         print('[Hub] Sending stop tracking signal...')
         self._process_message(ipc.TrackingState(ipc.TrackingState.State.Stop))
@@ -54,11 +57,20 @@ class Hub:
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
         while tracking_running or processing_running:
-            match self._q_main.get():
-                case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
-                    tracking_running = False
-                case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
-                    processing_running = False
+            try:
+                match self._q_main.get(timeout=20):
+                    case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
+                        tracking_running = False
+                    case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
+                        processing_running = False
+            except queue.Empty:
+                if tracking_running:
+                    print('[Hub] No notification received from tracking, terminating...')
+                    self._p_tracking.terminate()
+                if processing_running:
+                    print('[Hub] No notification received from processing, terminating...')
+                    self._p_processing.terminate()
+                break
 
         # Wait for processes to end
         print('[Hub] Joining processes...')
@@ -72,7 +84,7 @@ class Hub:
         while not self._q_processing.empty():
             self._q_processing.get()
 
-        print('[Hub] Processes safely shut down')
+        print('[Hub] Processes shut down')
 
     def _create_tracking_processes(self) -> None:
         """Setup the processes required for tracking.
