@@ -12,7 +12,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from mousetracks.image import colours
 from .. import ipc
-from ...utils.math import calculate_line, calculate_distance
+from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
 
 
@@ -121,6 +121,11 @@ class MainWindow(QtWidgets.QMainWindow):
         horizontal.addWidget(self.distance)
         layout.addLayout(horizontal)
 
+        self.application_input = QtWidgets.QComboBox()
+        self.application_input.addItem('Current Application')
+        self.application_input.addItem('Default')
+        layout.addWidget(self.application_input)
+
         self.render_type_input = QtWidgets.QComboBox()
         self.render_type_input.addItem('Time', ipc.RenderType.Time)
         self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
@@ -167,6 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
+        self.current_app: str = 'Default'
+        self.current_app_position: Optional[tuple[int, int, int, int]] = None
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -181,6 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
         crashp.clicked.connect(self.raiseProcessing)
         crashh.clicked.connect(self.raiseHub)
         render.clicked.connect(self.render)
+        self.application_input.currentIndexChanged.connect(self.application_changed)
         self.render_type_input.currentIndexChanged.connect(self.render_type_changed)
         self.render_colour_input.currentIndexChanged.connect(self.render_colour_changed)
         self.queue_worker.message_received.connect(self.process_message)
@@ -253,6 +261,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
 
     @QtCore.Slot(int)
+    def application_changed(self, idx: int) -> None:
+        """Change the render type and trigger a redraw."""
+        self.request_thumbnail(force=True)
+
+    @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
         self.render_type = self.render_type_input.itemData(idx)
@@ -266,12 +279,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = self.render_colour_input.itemData(idx)
         self.request_thumbnail(force=True)
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
+    def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
-        for x1, y1, x2, y2 in self.monitor_data:
-            if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
-                return ((x2 - x1, y2 - y1), (x1, y1))
-        raise ValueError(f'coordinate {pixel} not in monitors')
+        if self.current_app_position is not None:
+            monitor_data = [self.current_app_position]
+        else:
+            monitor_data = self.monitor_data
+
+        for x1, y1, x2, y2 in monitor_data:
+            result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
+            if result is not None:
+                return result
+        return None
 
     def request_thumbnail(self, force: bool = False) -> bool:
         """Send a request to draw a thumbnail.
@@ -281,12 +300,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return False
         self.pause_redraw = True
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1.0))
+        app = self.application_input.currentText() if self.application_input.currentIndex() else ''
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1.0, app))
         return True
 
     def render(self) -> None:
         """Send a render request."""
-        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.sampling.value()))
+        app = self.application_input.currentText() if self.application_input.currentIndex() else ''
+        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.sampling.value(), app))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -434,6 +455,19 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(self.trigger_data.position, position, (2048, 2048))
                 self.update_track_data(self.trigger_data, position)
 
+            case ipc.Application():
+                for idx in range(1, self.application_input.count()):
+                    if self.application_input.itemText(idx) == message.name:
+                        break
+                else:
+                    self.application_input.addItem(message.name)
+                self.current_app = message.name
+                self.current_app_position = message.position
+
+            case ipc.NoApplication():
+                self.current_app = 'Default'
+                self.current_app_position = None
+
     @QtCore.Slot()
     def startTracking(self) -> None:
         """Start/unpause the script."""
@@ -502,6 +536,9 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
+        if self.application_input.currentIndex() and self.application_input.currentText() != self.current_app:
+            return
+
         seen = set()
         for pixel in calculate_line(old_position, new_position):
             # Refresh data per pixel
@@ -509,15 +546,17 @@ class MainWindow(QtWidgets.QMainWindow):
             # monitor, but it's not computationally heavy
             if force_monitor:
                 current_monitor = force_monitor
-                offset = (0, 0)
             else:
-                current_monitor, offset = self._monitor_offset(pixel)
+                result = self._monitor_offset(pixel)
+                if result is None:
+                    continue
+                current_monitor, pixel = result
             width_multiplier = self.image.width() / current_monitor[0]
             height_multiplier = self.image.height() / current_monitor[1]
 
             # Downscale the pixel to match the pixmap
-            x = int((pixel[0] - offset[0]) * width_multiplier)
-            y = int((pixel[1] - offset[1]) * height_multiplier)
+            x = int(pixel[0] * width_multiplier)
+            y = int(pixel[1] * height_multiplier)
 
             # Send (unique) pixels to be drawn
             if (x, y) not in seen:

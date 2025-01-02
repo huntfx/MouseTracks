@@ -9,10 +9,11 @@ import numpy as np
 class Target:
     """System components that can send or receive messages."""
 
-    Hub = 0b1
-    Tracking = 0b10
-    Processing = 0b100
-    GUI = 0b1000
+    Hub = 2 ** 0
+    Tracking = 2 ** 1
+    Processing = 2 ** 2
+    GUI = 2 ** 3
+    AppDetection = 2 ** 4
 
 
 class RenderType(Enum):
@@ -167,7 +168,7 @@ class TrackingState(Message):
         Pause = auto()
         Stop = auto()
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection, init=False)
     state: State
 
 
@@ -189,6 +190,7 @@ class RenderRequest(Message):
     height: Optional[int]
     colour_map: str
     sampling: int
+    application: str = field(default='')
 
 
 @dataclass
@@ -199,6 +201,32 @@ class Render(Message):
     type: RenderType
     array: np.ndarray
     sampling: int
+
+
+
+@dataclass
+class CheckRunningApplication(Message):
+    """Check which applications are running."""
+
+    target: int = field(default=Target.AppDetection, init=False)
+
+
+@dataclass
+class Application(Message):
+    """Update data about an application."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    name: str
+    process_id: int
+    position: tuple[int, int]
+    resolution: Optional[tuple[int, int]]
+
+
+@dataclass
+class NoApplication(Message):
+    """Update data when no app is loaded."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
 
 
 @dataclass

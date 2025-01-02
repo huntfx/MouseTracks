@@ -140,3 +140,15 @@ def calculate_circle(radius, segments=(True, True, True, True)):
         x = x + 1
 
     return (outline, area)
+
+
+def calculate_pixel_offset(x: int, y: int, x1: int, y1: int, x2: int, y2: int) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
+    """Calculate the offset for a pixel within monitor rectangle coordinates.
+
+    Returns:
+        Tuple of resolution and relative coordinate.
+        None if not within bounds.
+    """
+    if x1 <= x < x2 and y1 <= y < y2:
+        return ((x2 - x1, y2 - y1), (x - x1, y - y1))
+    return None

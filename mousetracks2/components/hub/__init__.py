@@ -10,7 +10,7 @@ Components:
 import multiprocessing
 import queue
 
-from .. import ipc, tracking, processing, gui
+from .. import ipc, app_detection, tracking, processing, gui
 
 
 class ExitRequest(Exception):
@@ -27,6 +27,7 @@ class Hub:
         self._q_tracking = multiprocessing.Queue()
         self._q_processing = multiprocessing.Queue()
         self._q_gui = multiprocessing.Queue()
+        self._q_app_detection = multiprocessing.Queue()
 
         # Setup processes
         self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_gui))
@@ -56,13 +57,16 @@ class Hub:
         print('[Hub] Waiting for close notification from processes...')
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
-        while tracking_running or processing_running:
+        app_detection_running = self._p_app_detection.is_alive()
+        while tracking_running or processing_running or app_detection_running:
             try:
                 match self._q_main.get(timeout=20):
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
                         tracking_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
                         processing_running = False
+                    case ipc.ProcessShutDownNotification(source=ipc.Target.AppDetection):
+                        app_detection_running = False
             except queue.Empty:
                 if tracking_running:
                     print('[Hub] No notification received from tracking, terminating...')
@@ -70,12 +74,16 @@ class Hub:
                 if processing_running:
                     print('[Hub] No notification received from processing, terminating...')
                     self._p_processing.terminate()
+                if app_detection_running:
+                    print('[Hub] No notification received from application detection, terminating...')
+                    self._p_app_detection.terminate()
                 break
 
         # Wait for processes to end
         print('[Hub] Joining processes...')
         self._p_tracking.join()
         self._p_processing.join()
+        self._p_app_detection.join()
 
         # Flush process queues
         # This is only in case of restarting the tracking again
@@ -83,6 +91,8 @@ class Hub:
             self._q_tracking.get()
         while not self._q_processing.empty():
             self._q_processing.get()
+        while not self._q_app_detection.empty():
+            self._q_app_detection.get()
 
         print('[Hub] Processes shut down')
 
@@ -97,6 +107,9 @@ class Hub:
         self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
+        self._p_app_detection = multiprocessing.Process(target=app_detection.run, args=(self._q_main, self._q_app_detection))
+        self._p_app_detection.daemon = True
+        self._p_app_detection.start()
 
     def _startup_tracking_processes(self):
         """Ensure the tracking processes exist.
@@ -106,13 +119,15 @@ class Hub:
         print('[Hub] Checking tracking processes...')
         tracking_running = self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
+        app_detection_running = self._p_app_detection.is_alive()
         print(f'[Hub] Tracking process alive: {tracking_running}')
         print(f'[Hub] Processing process alive: {processing_running}')
-        if tracking_running and processing_running:
+        print(f'[Hub] Application Detection process alive: {app_detection_running}')
+        if tracking_running and processing_running and app_detection_running:
             return
 
         # Shut down any existing processes if only one is running
-        if tracking_running or processing_running:
+        if tracking_running or processing_running or app_detection_running:
             print('[Hub] Shutting down existing processes before starting new ones')
             self.stop_tracking()
 
@@ -148,6 +163,10 @@ class Hub:
         # Forward messages to the GUI process
         if message.target & ipc.Target.GUI:
             self._q_gui.put(message)
+
+        # Forward messages to the app detection process
+        if message.target & ipc.Target.AppDetection:
+            self._q_app_detection.put(message)
 
     def run(self, gui: bool = True) -> None:
         """Setup the tracking."""
