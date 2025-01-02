@@ -15,6 +15,9 @@ import win32gui
 import win32process
 
 
+MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
+
+
 def cursor_position() -> Optional[tuple[int, int]]:
     """Get the current mouse position.
 
@@ -55,12 +58,3 @@ def check_key_press(key: int) -> bool:
     return win32api.GetKeyState(key) < 0
 
 
-def get_mouse_click() -> dict[int, bool]:
-    """Check if one of the three main mouse buttons is being clicked.
-
-    Returns:
-        True/False if any clicks have been detected or not.
-    """
-    buttons = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON,
-               win32con.VK_XBUTTON1, win32con.VK_XBUTTON2)
-    return {button: win32api.GetKeyState(button) < 0 for button in buttons}
