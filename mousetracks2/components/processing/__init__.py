@@ -1,6 +1,9 @@
 import math
 import multiprocessing
+import os
+import pickle
 import traceback
+import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
@@ -11,7 +14,7 @@ from scipy import ndimage
 from mousetracks.image import colours
 from .. import ipc
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations
+from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS
 
 
 COMPRESSION_FACTOR = 1.1
@@ -30,6 +33,17 @@ INACTIVITY_MS = 300000
 """Time in ms before the user is classed as "inactive"."""
 
 INACTIVITY_MS = 2000
+
+EXPECTED_LEGACY_VERSION = 34
+"""Only mtk files of this version are allowed to be loaded.
+Any other versions must be upgraded with the mousetracks v1 script.
+"""
+
+
+class InvalidVersionError(Exception):
+    def __init__(self, filename: str, version: int, expected: int) -> None:
+        super().__init__(f'The {os.path.basename(filename)} version is invalid '
+                         f'(got: v{version}, expected: v{expected})')
 
 
 class IntArrayHandler:
@@ -263,6 +277,72 @@ class ApplicationData:
 
     button_presses: dict[int, IntArrayHandler] = field(default_factory=lambda: defaultdict(lambda: IntArrayHandler(20)))
     button_held: dict[int, IntArrayHandler] = field(default_factory=lambda: defaultdict(lambda: IntArrayHandler(20)))
+
+
+def load_legacy_data(path: str) -> ApplicationData:
+    """Load in data from the legacy tracking.
+
+    Mouse:
+        Time, speed and click arrays are imported.
+        There is no density data.
+
+    Keyboard:
+        Everything is imported.
+
+    Gamepad:
+        Mostly imported.
+        Trigger presses may be lost.
+        Thumbstick data is discarded as X and Y were recorded separately
+        and cannot be recombined.
+    """
+
+    result = ApplicationData()
+
+    with zipfile.ZipFile(path, 'r') as zf:
+        # Check the version
+        version = int(zf.read('metadata/file.txt'))
+        if version != EXPECTED_LEGACY_VERSION:
+            raise InvalidVersionError(path, version, EXPECTED_LEGACY_VERSION)
+
+        # Load in the data
+        with zf.open('data.pkl') as f:
+            data: dict[str, any] = pickle.load(f)
+
+        # Load in the metadata
+        # created: int = int(data['Time']['Created'])
+        # modified: int = int(data['Time']['Modified'])
+        # session_count: int = data['TimesLoaded']
+        # ticks_total: int = data['Ticks']['Total']
+        # ticks_recorded: int = data['Ticks']['Recorded']
+
+        result.cursor_map.distance = int(data['Distance']['Tracks'])
+        result.cursor_map.move_count = int(data['Ticks']['Tracks'])
+
+        # Process main tracking data
+        for resolution, values in data['Resolution'].items():
+            # Load tracking heatmap
+            for array_type, container in (('Tracks', result.cursor_map.time_arrays), ('Speed', result.cursor_map.speed_arrays)):
+                with zf.open(f'maps/{values[array_type]}.npy') as f:
+                    container[resolution].array = np.load(f)
+
+            # Load click heatmap
+            for array_type, container in (('Single', result.mouse_single_clicks), ('Double', result.mouse_double_clicks)):
+                for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                    with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
+                        container[MOUSE_BUTTONS[i]][resolution].array = np.load(f)
+
+        # Process key/button data
+        for opcode, count in data['Keys']['All']['Pressed'].items():
+            result.key_presses[opcode] = count
+        for opcode, count in data['Keys']['All']['Held'].items():
+            result.key_held[opcode] = count
+
+        for opcode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
+            result.button_presses[opcode] = count
+        for opcode, count in data['Gamepad']['All']['Buttons']['Held'].items():
+            result.button_held[opcode] = count
+
+        return result
 
 
 class Processing:
