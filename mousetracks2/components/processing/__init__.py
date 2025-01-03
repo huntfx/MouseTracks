@@ -232,10 +232,10 @@ class Tick:
 
 @dataclass
 class MapData:
+    position: Optional[tuple[int, int]] = field(default=None)
     time_arrays: ResolutionArray = field(default_factory=ResolutionArray)
     speed_arrays: ResolutionArray = field(default_factory=ResolutionArray)
     count_arrays: ResolutionArray = field(default_factory=ResolutionArray)
-    position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     distance: float = field(default=0.0)
     move_count: int = field(default=0)
     move_tick: int = field(default=0)
