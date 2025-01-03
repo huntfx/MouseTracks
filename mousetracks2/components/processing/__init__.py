@@ -323,13 +323,17 @@ def load_legacy_data(path: str) -> ApplicationData:
             # Load tracking heatmap
             for array_type, container in (('Tracks', result.cursor_map.time_arrays), ('Speed', result.cursor_map.speed_arrays)):
                 with zf.open(f'maps/{values[array_type]}.npy') as f:
-                    container[resolution].array = np.load(f)
+                    array = np.load(f)
+                    if np.any(array > 0):
+                        container[resolution].array = array
 
             # Load click heatmap
             for array_type, container in (('Single', result.mouse_single_clicks), ('Double', result.mouse_double_clicks)):
                 for i, mb in enumerate(('Left', 'Middle', 'Right')):
                     with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
-                        container[MOUSE_BUTTONS[i]][resolution].array = np.load(f)
+                        array = np.load(f)
+                        if np.any(array > 0):
+                            container[MOUSE_BUTTONS[i]][resolution].array = array
 
         # Process key/button data
         for opcode, count in data['Keys']['All']['Pressed'].items():
