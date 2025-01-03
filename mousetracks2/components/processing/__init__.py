@@ -441,6 +441,7 @@ class Processing:
             for maps in (data.time_arrays, data.speed_arrays):
                 for res, array in maps.items():
                     maps[res] = (array / COMPRESSION_FACTOR).astype(array.dtype)
+                data.move_count = int(data.move_count // COMPRESSION_FACTOR)
             print(f'[Processing] Reduced all arrays')
 
     def _render_array(self, message: ipc.RenderRequest):
