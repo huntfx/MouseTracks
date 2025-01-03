@@ -654,7 +654,7 @@ class Processing:
                 width = height = 2048
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
-                remapped = (height - y - 1, x)
+                remapped = (x, height - y - 1)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
                         self._record_move(self.app.thumbstick_l_map[message.gamepad], remapped, (width, height))
