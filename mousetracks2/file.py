@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
+from numpy.typing import DTypeLike
+
+from .utils.win import MOUSE_BUTTONS
 
 
 COMPRESSION_FACTOR = 1.1
@@ -25,7 +28,12 @@ class InvalidVersionError(Exception):
 
 
 class IntArrayHandler:
-    """Create an integer array and update the dtype when required."""
+    """Create an integer array and update the dtype when required.
+    This is for memory optimisation as the arrays are large.
+
+    Ideally this would inherit `np.ndarray`, but changing the dtype of
+    an array in-place isn't supported.
+    """
 
     DTYPES = [np.uint16, np.uint32, np.uint64]
     MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
@@ -36,6 +44,10 @@ class IntArrayHandler:
         else:
             self.array = np.zeros(shape, dtype=np.uint8)
         self.max_value = np.iinfo(np.uint8).max
+
+    def __array__(self) -> np.ndarray:
+        """For internal numpy usage."""
+        return self.array
 
     def __str__(self) -> str:
         return str(self.array)
@@ -66,11 +78,16 @@ class ResolutionArray(dict):
         self[key] = IntArrayHandler([key[1], key[0]])
         return self[key]
 
+    def __setitem__(self, key: tuple[int, int], array: np.ndarray | IntArrayHandler) -> None:
+        if isinstance(array, np.ndarray):
+            self[key].array = array
+        else:
+            super().__setitem__(key, array)
 
 
 @dataclass
 class MapData:
-    """Hold the data for tracking the movement of something."""
+    """Hold the data for tracking movement."""
 
     _MAX_VALUE = 2 ** 64 - 1
 
@@ -163,7 +180,7 @@ def load_legacy_data(path: str) -> ApplicationData:
                 with zf.open(f'maps/{values[array_type]}.npy') as f:
                     array = np.load(f)
                     if np.any(array > 0):
-                        container[resolution].array = array
+                        container[resolution] = array
 
             # Load click heatmap
             for array_type, container in (('Single', result.mouse_single_clicks), ('Double', result.mouse_double_clicks)):
@@ -171,7 +188,7 @@ def load_legacy_data(path: str) -> ApplicationData:
                     with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
                         array = np.load(f)
                         if np.any(array > 0):
-                            container[MOUSE_BUTTONS[i]][resolution].array = array
+                            container[MOUSE_BUTTONS[i]][resolution] = array
 
         # Process key/button data
         for opcode, count in data['Keys']['All']['Pressed'].items():

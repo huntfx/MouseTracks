@@ -10,9 +10,9 @@ from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc
-from ...file import IntArrayHandler, MapData, ApplicationData
+from ...file import IntArrayHandler, MapData, ApplicationData, load_legacy_data
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS
+from ...utils.win import cursor_position, monitor_locations
 
 
 UPDATES_PER_SECOND = 60
@@ -27,7 +27,7 @@ INACTIVITY_MS = 300000
 """Time in ms before the user is classed as "inactive"."""
 
 
-def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], IntArrayHandler]],
+def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], np.ndarray | IntArrayHandler]],
                             width: Optional[int] = None, height: Optional[int] = None) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
@@ -37,8 +37,8 @@ def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], IntAr
         return width, height
 
     popularity = defaultdict(int)
-    for res, handler in resolution_arrays:
-        popularity[res] += np.sum(handler.array > 0)
+    for res, array in resolution_arrays:
+        popularity[res] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9
     _width, _height = max(res for res, value in popularity.items() if value > threshold)
 
@@ -68,9 +68,9 @@ class ExitRequest(Exception):
     """Custom exception to raise and catch when an exit is requested."""
 
 
-def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+def array_rescale(array: np.ndarray | IntArrayHandler, target_width: int, target_height: int) -> np.ndarray:
     """Rescale the array with the correct filtering."""
-    input_height, input_width = array.shape
+    input_height, input_width = np.shape(array)
 
     # No rescaling required
     if target_height == input_height and target_width == input_width:
@@ -289,87 +289,87 @@ class Processing:
             app_data = self.app
 
         # Choose the data to render
-        maps: list[tuple[tuple[int, int], IntArrayHandler]]
+        maps: list[tuple[tuple[int, int], np.ndarray | IntArrayHandler]]
         match message.type:
             case ipc.RenderType.Time:
-                maps = [(res, handler) for res, handler in app_data.cursor_map.time_arrays.items()]
+                maps = [(res, array) for res, array in app_data.cursor_map.time_arrays.items()]
 
             case ipc.RenderType.TimeHeatmap:
-                maps = [(res, handler) for res, handler in app_data.cursor_map.count_arrays.items()]
+                maps = [(res, array) for res, array in app_data.cursor_map.count_arrays.items()]
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
                 maps = []
-                for res, handler in app_data.cursor_map.time_arrays.items():
-                    partial_array = handler.array.astype(np.int64) - self.pause_tick
+                for res, array in app_data.cursor_map.time_arrays.items():
+                    partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
-                    maps.append((res, IntArrayHandler(partial_array)))
+                    maps.append((res, partial_array))
 
             case ipc.RenderType.Speed:
-                maps = [(res, handler) for res, handler in app_data.cursor_map.speed_arrays.items()]
+                maps = [(res, array) for res, array in app_data.cursor_map.speed_arrays.items()]
 
             case ipc.RenderType.SingleClick:
                 maps = []
                 for map in app_data.mouse_single_clicks.values():
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.DoubleClick:
                 maps = []
                 for map in app_data.mouse_double_clicks.values():
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.HeldClick:
                 maps = []
                 for map in app_data.mouse_held_clicks.values():
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_R:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.time_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_L:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.time_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_R_SPEED:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_L_SPEED:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_R_Heatmap:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.count_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_L_Heatmap:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.count_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Trigger:
                 maps = []
                 for gamepad_maps in app_data.trigger_map.values():
                     map = gamepad_maps.time_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.TriggerHeatmap:
                 maps = []
                 for gamepad_maps in app_data.trigger_map.values():
                     map = gamepad_maps.count_arrays
-                    maps.extend((res, handler) for res, handler in map.items())
+                    maps.extend((res, array) for res, array in map.items())
 
             case _:
                 raise NotImplementedError(message.type)
@@ -383,7 +383,7 @@ class Processing:
 
         # Scale all arrays to the same size and combine
         if maps:
-            rescaled_arrays = [array_rescale(handler.array, scale_width, scale_height) for res, handler in maps]
+            rescaled_arrays = [array_rescale(array, scale_width, scale_height) for res, array in maps]
             final_array = np.maximum.reduce(rescaled_arrays)
         else:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
