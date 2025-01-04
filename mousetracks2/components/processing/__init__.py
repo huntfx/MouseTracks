@@ -388,10 +388,14 @@ class Processing:
         else:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
+        is_heatmap = message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
+                                      ipc.RenderType.TriggerHeatmap, ipc.RenderType.TimeHeatmap,
+                                      ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
+        is_speed = message.type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
+
         # Special case for heatmaps
-        if message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TriggerHeatmap,
-                            ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap):
-            # Convert the array to a linear array
+        if is_heatmap:
+            # Convert to a linear array
             unique_values, unique_indexes = np.unique(final_array, return_inverse=True)
 
             # Apply a gaussian blur
