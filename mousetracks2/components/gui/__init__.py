@@ -123,7 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.application_input = QtWidgets.QComboBox()
         self.application_input.addItem('Current Application')
-        self.application_input.addItem('Default')
+        self.application_input.addItem('Main')
         layout.addWidget(self.application_input)
 
         self.render_type_input = QtWidgets.QComboBox()
@@ -172,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.current_app: str = 'Default'
+        self.current_app: str = 'Main'
         self.current_app_position: Optional[tuple[int, int, int, int]] = None
 
         # Start queue worker
@@ -465,7 +465,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.current_app_position = message.position
 
             case ipc.NoApplication():
-                self.current_app = 'Default'
+                self.current_app = 'Main'
                 self.current_app_position = None
 
     @QtCore.Slot()

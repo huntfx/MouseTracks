@@ -368,7 +368,7 @@ class Processing:
     def app(self) -> ApplicationData:
         """Get the data for the current application."""
         if self._current_app is None:
-            return self._app_data['Default']
+            return self._app_data['Main']
         return self._app_data[self._current_app.name]
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
