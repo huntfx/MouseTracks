@@ -203,6 +203,9 @@ class Tracking:
                 self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, thumb_l))
                 self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, thumb_r))
 
+            #if tick and not tick % 600:
+            #    self.send_data(ipc.Save())
+
     def run(self) -> None:
         print('[Tracking] Loaded.')
 

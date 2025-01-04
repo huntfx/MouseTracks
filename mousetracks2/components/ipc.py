@@ -246,3 +246,15 @@ class ProcessShutDownNotification(Message):
     """Send a notification from a process that it has ended."""
     target: int = field(default=Target.Hub, init=False)
     source: int
+
+
+@dataclass
+class Save(Message):
+    target: int = field(default=Target.Processing, init=False)
+    application: Optional[str] = field(default=None)
+
+
+@dataclass
+class Load(Message):
+    target: int = field(default=Target.Processing, init=False)
+    application: Optional[str] = field(default=None)

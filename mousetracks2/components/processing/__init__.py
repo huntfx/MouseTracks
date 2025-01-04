@@ -10,7 +10,8 @@ from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc
-from ...file import IntArrayHandler, MapData, ApplicationData, load_legacy_data
+from ...file import MovementMaps, ApplicationData, load_legacy_data
+from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
 
@@ -27,7 +28,7 @@ INACTIVITY_MS = 300000
 """Time in ms before the user is classed as "inactive"."""
 
 
-def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], np.ndarray | IntArrayHandler]],
+def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], ArrayLike]],
                             width: Optional[int] = None, height: Optional[int] = None) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
@@ -68,7 +69,7 @@ class ExitRequest(Exception):
     """Custom exception to raise and catch when an exit is requested."""
 
 
-def array_rescale(array: np.ndarray | IntArrayHandler, target_width: int, target_height: int) -> np.ndarray:
+def array_rescale(array: ArrayLike, target_width: int, target_height: int) -> np.ndarray:
     """Rescale the array with the correct filtering."""
     input_height, input_width = np.shape(array)
 
@@ -224,7 +225,7 @@ class Processing:
                 return result
         return None
 
-    def _record_move(self, data: MapData, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> None:
+    def _record_move(self, data: MovementMaps, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> None:
         """Record a movement for time and speed.
 
         There are some caveats that are hard to handle. If a mouse is
@@ -244,12 +245,12 @@ class Processing:
         moving, and will always skip the first frame of movement.
         """
         # If the ticks match then overwrite the old data
-        if self.tick.current == data.move_tick:
+        if self.tick.current == data.tick:
             data.position = position
 
         distance = calculate_distance(position, data.position)
         data.distance += distance
-        moving = self.tick.current == data.move_tick + 1
+        moving = self.tick.current == data.tick + 1
 
         # Add the pixels to an array
         for pixel in calculate_line(position, data.position):
@@ -262,15 +263,16 @@ class Processing:
                 current_monitor = force_monitor
 
             index = (pixel[1], pixel[0])
-            data.time_arrays[current_monitor][index] = data.move_count
-            data.count_arrays[current_monitor][index] += 1
+            data.sequential_arrays[current_monitor][index] = data.counter
+            data.density_arrays[current_monitor][index] += 1
             if distance and moving:
                 data.speed_arrays[current_monitor][index] = max(data.speed_arrays[current_monitor][index], int(100 * distance))
 
         # Update the saved data
         data.position = position
-        data.move_count += 1
-        data.move_tick = self.tick.current
+        data.counter += 1
+        data.ticks += 1
+        data.tick = self.tick.current
 
         if data.requires_compression():
             print(f'[Processing] Tracking threshold reached, reducing values...')
@@ -289,18 +291,18 @@ class Processing:
             app_data = self.app
 
         # Choose the data to render
-        maps: list[tuple[tuple[int, int], np.ndarray | IntArrayHandler]]
+        maps: list[tuple[tuple[int, int], ArrayLike]]
         match message.type:
             case ipc.RenderType.Time:
-                maps = [(res, array) for res, array in app_data.cursor_map.time_arrays.items()]
+                maps = [(res, array) for res, array in app_data.cursor_map.sequential_arrays.items()]
 
             case ipc.RenderType.TimeHeatmap:
-                maps = [(res, array) for res, array in app_data.cursor_map.count_arrays.items()]
+                maps = [(res, array) for res, array in app_data.cursor_map.density_arrays.items()]
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
                 maps = []
-                for res, array in app_data.cursor_map.time_arrays.items():
+                for res, array in app_data.cursor_map.sequential_arrays.items():
                     partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
                     maps.append((res, partial_array))
@@ -326,13 +328,13 @@ class Processing:
             case ipc.RenderType.Thumbstick_R:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
-                    map = gamepad_maps.time_arrays
+                    map = gamepad_maps.sequential_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_L:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
-                    map = gamepad_maps.time_arrays
+                    map = gamepad_maps.sequential_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_R_SPEED:
@@ -350,25 +352,25 @@ class Processing:
             case ipc.RenderType.Thumbstick_R_Heatmap:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
-                    map = gamepad_maps.count_arrays
+                    map = gamepad_maps.density_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Thumbstick_L_Heatmap:
                 maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
-                    map = gamepad_maps.count_arrays
+                    map = gamepad_maps.density_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.Trigger:
                 maps = []
                 for gamepad_maps in app_data.trigger_map.values():
-                    map = gamepad_maps.time_arrays
+                    map = gamepad_maps.sequential_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case ipc.RenderType.TriggerHeatmap:
                 maps = []
                 for gamepad_maps in app_data.trigger_map.values():
-                    map = gamepad_maps.count_arrays
+                    map = gamepad_maps.density_arrays
                     maps.extend((res, array) for res, array in map.items())
 
             case _:
@@ -517,7 +519,7 @@ class Processing:
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
                     case ipc.TrackingState.State.Pause:
-                        self.pause_tick = self.app.cursor_map.move_count
+                        self.pause_tick = self.app.cursor_map.counter
                 self.state = message.state
 
             case ipc.NoApplication():
@@ -534,6 +536,29 @@ class Processing:
 
                 if changed:
                     self.app.cursor_map.position = cursor_position()
+
+            case ipc.Load():
+                if message.application is None:
+                    applications = self._app_data.keys()
+                else:
+                    applications = [message.application]
+
+                for application in applications:
+                    print(f'[Processing] Loading {application}...')
+                    self._app_data[application] = ApplicationData.load(f'R:/test/{application}.mtk2')
+                    print(f'[Processing] Loaded {application}')
+                print(self._app_data['Main'].cursor_map.counter)
+
+            case ipc.Save():
+                if message.application is None:
+                    applications = self._app_data.keys()
+                else:
+                    applications = [message.application]
+
+                for application in applications:
+                    print(f'[Processing] Saving {application}...')
+                    self._app_data[application].save(f'R:/test/{application}.mtk2')
+                    print(f'[Processing] Saved {application}')
 
             case _:
                 raise NotImplementedError(message)
