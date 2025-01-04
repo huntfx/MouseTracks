@@ -1,9 +1,6 @@
 import math
 import multiprocessing
-import os
-import pickle
 import traceback
-import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
@@ -13,13 +10,10 @@ from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc
+from ...file import IntArrayHandler, MapData, ApplicationData
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS
 
-
-COMPRESSION_FACTOR = 1.1
-
-COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 
 UPDATES_PER_SECOND = 60
 
@@ -31,54 +25,6 @@ DOUBLE_CLICK_TOL = 8
 
 INACTIVITY_MS = 300000
 """Time in ms before the user is classed as "inactive"."""
-
-INACTIVITY_MS = 2000
-
-EXPECTED_LEGACY_VERSION = 34
-"""Only mtk files of this version are allowed to be loaded.
-Any other versions must be upgraded with the mousetracks v1 script.
-"""
-
-
-class InvalidVersionError(Exception):
-    def __init__(self, filename: str, version: int, expected: int) -> None:
-        super().__init__(f'The {os.path.basename(filename)} version is invalid '
-                         f'(got: v{version}, expected: v{expected})')
-
-
-class IntArrayHandler:
-    """Create an integer array and update the dtype when required."""
-
-    DTYPES = [np.uint16, np.uint32, np.uint64]
-    MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
-
-    def __init__(self, shape: int | list[int] | np.ndarray) -> None:
-        if isinstance(shape, np.ndarray):
-            self.array = shape
-        else:
-            self.array = np.zeros(shape, dtype=np.uint8)
-        self.max_value = np.iinfo(np.uint8).max
-
-    def __str__(self) -> str:
-        return str(self.array)
-
-    def __repr__(self) -> str:
-        return repr(self.array)
-
-    def __getitem__(self, item: any) -> int:
-        """Get an array item."""
-        return self.array[item]
-
-    def __setitem__(self, item: any, value: int) -> None:
-        """Set an array item, changing dtype if required."""
-        if value >= self.max_value:
-            for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
-                if value < max_value:
-                    self.max_value = max_value
-                    self.array = self.array.astype(dtype)
-                    break
-
-        self.array[item] = value
 
 
 def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], IntArrayHandler]],
@@ -120,14 +66,6 @@ def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
 
 class ExitRequest(Exception):
     """Custom exception to raise and catch when an exit is requested."""
-
-
-class ResolutionArray(dict):
-    """Store multiple arrays for different resolutions."""
-
-    def __missing__(self, key: tuple[int, int]) -> IntArrayHandler:
-        self[key] = IntArrayHandler([key[1], key[0]])
-        return self[key]
 
 
 def array_rescale(array: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
@@ -244,109 +182,10 @@ class Tick:
 
 
 @dataclass
-class MapData:
-    position: Optional[tuple[int, int]] = field(default=None)
-    time_arrays: ResolutionArray = field(default_factory=ResolutionArray)
-    speed_arrays: ResolutionArray = field(default_factory=ResolutionArray)
-    count_arrays: ResolutionArray = field(default_factory=ResolutionArray)
-    distance: float = field(default=0.0)
-    move_count: int = field(default=0)
-    move_tick: int = field(default=0)
-
-
-@dataclass
 class Application:
     name: str
     position: Optional[tuple[int, int]]
     resolution: Optional[tuple[int, int]]
-
-
-@dataclass
-class ApplicationData:
-    cursor_map: MapData = field(default_factory=MapData)
-    thumbstick_l_map: dict[int, MapData] = field(default_factory=lambda: defaultdict(MapData))
-    thumbstick_r_map: dict[int, MapData] = field(default_factory=lambda: defaultdict(MapData))
-    trigger_map: dict[int, MapData] = field(default_factory=lambda: defaultdict(MapData))
-
-    mouse_single_clicks: dict[int, ResolutionArray] = field(default_factory=lambda: defaultdict(ResolutionArray))
-    mouse_double_clicks: dict[int, ResolutionArray] = field(default_factory=lambda: defaultdict(ResolutionArray))
-    mouse_held_clicks: dict[int, ResolutionArray] = field(default_factory=lambda: defaultdict(ResolutionArray))
-
-    key_presses: IntArrayHandler = field(default_factory=lambda: IntArrayHandler(0xFF))
-    key_held: IntArrayHandler = field(default_factory=lambda: IntArrayHandler(0xFF))
-
-    button_presses: dict[int, IntArrayHandler] = field(default_factory=lambda: defaultdict(lambda: IntArrayHandler(20)))
-    button_held: dict[int, IntArrayHandler] = field(default_factory=lambda: defaultdict(lambda: IntArrayHandler(20)))
-
-
-def load_legacy_data(path: str) -> ApplicationData:
-    """Load in data from the legacy tracking.
-
-    Mouse:
-        Time, speed and click arrays are imported.
-        There is no density data.
-
-    Keyboard:
-        Everything is imported.
-
-    Gamepad:
-        Mostly imported.
-        Trigger presses may be lost.
-        Thumbstick data is discarded as X and Y were recorded separately
-        and cannot be recombined.
-    """
-
-    result = ApplicationData()
-
-    with zipfile.ZipFile(path, 'r') as zf:
-        # Check the version
-        version = int(zf.read('metadata/file.txt'))
-        if version != EXPECTED_LEGACY_VERSION:
-            raise InvalidVersionError(path, version, EXPECTED_LEGACY_VERSION)
-
-        # Load in the data
-        with zf.open('data.pkl') as f:
-            data: dict[str, any] = pickle.load(f)
-
-        # Load in the metadata
-        # created: int = int(data['Time']['Created'])
-        # modified: int = int(data['Time']['Modified'])
-        # session_count: int = data['TimesLoaded']
-        # ticks_total: int = data['Ticks']['Total']
-        # ticks_recorded: int = data['Ticks']['Recorded']
-
-        result.cursor_map.distance = int(data['Distance']['Tracks'])
-        result.cursor_map.move_count = int(data['Ticks']['Tracks'])
-
-        # Process main tracking data
-        for resolution, values in data['Resolution'].items():
-            # Load tracking heatmap
-            for array_type, container in (('Tracks', result.cursor_map.time_arrays), ('Speed', result.cursor_map.speed_arrays)):
-                with zf.open(f'maps/{values[array_type]}.npy') as f:
-                    array = np.load(f)
-                    if np.any(array > 0):
-                        container[resolution].array = array
-
-            # Load click heatmap
-            for array_type, container in (('Single', result.mouse_single_clicks), ('Double', result.mouse_double_clicks)):
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
-                        array = np.load(f)
-                        if np.any(array > 0):
-                            container[MOUSE_BUTTONS[i]][resolution].array = array
-
-        # Process key/button data
-        for opcode, count in data['Keys']['All']['Pressed'].items():
-            result.key_presses[opcode] = count
-        for opcode, count in data['Keys']['All']['Held'].items():
-            result.key_held[opcode] = count
-
-        for opcode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
-            result.button_presses[opcode] = count
-        for opcode, count in data['Gamepad']['All']['Buttons']['Held'].items():
-            result.button_held[opcode] = count
-
-        return result
 
 
 class Processing:
@@ -433,15 +272,9 @@ class Processing:
         data.move_count += 1
         data.move_tick = self.tick.current
 
-        # Check if array compression is required
-        # This is important for the time maps
-        # For speed, it just helps flatten out values that are too large
-        if data.move_count > COMPRESSION_THRESHOLD:
+        if data.requires_compression():
             print(f'[Processing] Tracking threshold reached, reducing values...')
-            for maps in (data.time_arrays, data.speed_arrays):
-                for res, array in maps.items():
-                    maps[res] = (array / COMPRESSION_FACTOR).astype(array.dtype)
-                data.move_count = int(data.move_count // COMPRESSION_FACTOR)
+            data.compress()
             print(f'[Processing] Reduced all arrays')
 
     def _render_array(self, message: ipc.RenderRequest):
