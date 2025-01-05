@@ -102,11 +102,11 @@ class AppDetection:
 
                 if changed:
                     if current_app is None:
-                        self.q_send.put(ipc.Application(DEFAULT_APPLICATION_NAME, None, None, None))
+                        self.q_send.put(ipc.Application(DEFAULT_APPLICATION_NAME, None, None))
                     elif app_is_windowed:
-                        self.q_send.put(ipc.Application(current_app[0], process_id, app_position, app_resolution))
+                        self.q_send.put(ipc.Application(current_app[0], process_id, app_position))
                     else:
-                        self.q_send.put(ipc.Application(current_app[0], process_id, None, None))
+                        self.q_send.put(ipc.Application(current_app[0], process_id, None))
 
                 self.previous_app = current_app
 

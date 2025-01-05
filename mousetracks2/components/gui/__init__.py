@@ -457,7 +457,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.application_input.addItem(message.name)
                 self.current_app = message.name
-                self.current_app_position = message.position
+                self.current_app_position = message.rect
                 self.request_thumbnail()
 
             # Show the correct distance

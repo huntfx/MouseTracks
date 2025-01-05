@@ -206,8 +206,7 @@ class Application(Message):
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     process_id: int
-    position: tuple[int, int]
-    resolution: Optional[tuple[int, int]]
+    rect: tuple[int, int, int, int]
 
 
 @dataclass

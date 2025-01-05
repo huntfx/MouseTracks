@@ -129,8 +129,7 @@ class PreviousMouseClick:
 @dataclass
 class Application:
     name: str
-    position: Optional[tuple[int, int]]
-    resolution: Optional[tuple[int, int]]
+    rect: Optional[tuple[int, int, int, int]]
 
 
 class Processing:
@@ -148,8 +147,8 @@ class Processing:
 
         # Load in the default application
         self.all_application_data: dict[str, ApplicationData] = ApplicationDataLoader()
-        self.default_application = Application(DEFAULT_APPLICATION_NAME, None, None)
-        self._current_application = Application('', None, None)
+        self.default_application = Application(DEFAULT_APPLICATION_NAME, None)
+        self._current_application = Application('', None)
         self.current_application = self.default_application
 
     @property
@@ -194,9 +193,9 @@ class Processing:
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
-        use_app = self.current_application is not None and self.current_application.position is not None
+        use_app = self.current_application is not None and self.current_application.rect is not None
         if use_app:
-            monitor_data = [self.current_application.position]
+            monitor_data = [self.current_application.rect]
         else:
             monitor_data = self.monitor_data
 
@@ -485,7 +484,7 @@ class Processing:
                 self.state = message.state
 
             case ipc.Application():
-                self.current_application = Application(message.name, message.position, message.resolution)
+                self.current_application = Application(message.name, message.rect)
 
             case ipc.Save():
                 if message.application is None:
