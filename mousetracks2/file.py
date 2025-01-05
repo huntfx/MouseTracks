@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -21,6 +22,11 @@ Any other versions must be upgraded with the mousetracks v1 script.
 """
 
 CURRENT_FILE_VERSION = 1
+
+UPDATES_PER_SECOND = 60
+
+INACTIVITY_MS = 300000
+"""Time in ms before the user is classed as "inactive"."""
 
 
 class InvalidVersionError(Exception):
@@ -174,8 +180,58 @@ class MovementMaps:
 
 
 @dataclass
+class Tick:
+    """Store data related to ticks."""
+
+    current: int = field(default=0)
+    previous: int = field(default=0)
+    active: int = field(default=0)
+    inactive: int = field(default=0)
+
+    @property
+    def activity(self) -> int:
+        """Get the number of active ticks."""
+        amount = self.active
+        if self.is_active:
+            amount += self.since_active
+        return amount
+
+    @property
+    def inactivity(self) -> int:
+        """Get the number of inactive ticks."""
+        amount = self.inactive
+        if not self.is_active:
+            amount += self.since_active
+        return amount
+
+    @property
+    def is_active(self) -> bool:
+        """Determine if currently active."""
+        threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        return self.since_active <= threshold
+
+    @property
+    def since_active(self) -> int:
+        """Get the number of ticks since the last activity."""
+        return self.current - self.previous
+
+    def set_active(self) -> None:
+        """Update the last tick activity."""
+        if self.is_active:
+            self.active += self.since_active
+        else:
+            self.inactive += self.since_active
+        self.previous = self.current
+
+
+@dataclass
 class ApplicationData:
-    """The data stored per application."""
+    """The data stored per application.
+    Everything that gets saved to disk is contained in here.
+    """
+
+    created: int = field(default_factory=lambda: int(time.time()))
+    tick: Tick = field(default_factory=Tick)
 
     cursor_map: MovementMaps = field(default_factory=MovementMaps)
     thumbstick_l_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
@@ -196,6 +252,10 @@ class ApplicationData:
         with zipfile.ZipFile(path, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
 
             zf.writestr('version', str(CURRENT_FILE_VERSION))
+            zf.writestr('metadata/created', str(self.created))
+            zf.writestr('metadata/modified', str(int(time.time())))
+            zf.writestr('metadata/active', str(self.tick.activity))
+            zf.writestr('metadata/inactive', str(self.tick.inactivity))
 
             self.cursor_map._write_to_zip(zf, 'data/mouse/cursor')
             for i, array_resolution_map in self.mouse_single_clicks.items():
@@ -226,6 +286,10 @@ class ApplicationData:
                 raise RuntimeError(f'unexpected version: {version}')
 
             all_paths = zf.namelist()
+
+            new.created = int(zf.read('metadata/created'))
+            new.tick.active = int(zf.read('metadata/active'))
+            new.tick.inactive = int(zf.read('metadata/inactive'))
 
             new.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
             mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks')}
