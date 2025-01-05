@@ -46,8 +46,7 @@ class QueueWorker(QtCore.QObject):
 class MapData:
     position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
     distance: float = field(default=0.0)
-    move_count: int = field(default=0)
-    move_tick: int = field(default=0)
+    counter: int = field(default=0)
 
 
 def format_distance(pixels: float, ppi: float = 96.0) -> str:
@@ -207,6 +206,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Start the thread
         self.queue_thread.start()
 
+        self.request_thumbnail()
+
     @property
     def render_colour(self) -> str:
         """Get the render colour."""
@@ -323,12 +324,12 @@ class MainWindow(QtWidgets.QMainWindow):
         match self.render_type:
             # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
             case ipc.RenderType.Time:
-                count = self.cursor_data.move_count
+                count = self.cursor_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             # With speed it must be constant, doesn't work as well live
             case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause | ipc.RenderType.TimeHeatmap:
                 update_frequency = 50
-                count = self.cursor_data.move_count
+                count = self.cursor_data.counter
             case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
                 update_frequency = 1
                 count = self.mouse_click_count
@@ -336,22 +337,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 update_frequency = 50
                 count = self.mouse_held_count
             case ipc.RenderType.Thumbstick_L:
-                count = self.thumbstick_l_data.move_count
+                count = self.thumbstick_l_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             case ipc.RenderType.Thumbstick_R:
-                count = self.thumbstick_r_data.move_count
+                count = self.thumbstick_r_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             case ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_L_Heatmap:
-                count = self.thumbstick_l_data.move_count
+                count = self.thumbstick_l_data.counter
                 update_frequency = 50
             case ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_R_Heatmap:
-                count = self.thumbstick_r_data.move_count
+                count = self.thumbstick_r_data.counter
                 update_frequency = 50
             case ipc.RenderType.Trigger:
-                count = self.trigger_data.move_count
+                count = self.trigger_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             case ipc.RenderType.TriggerHeatmap:
-                count = self.trigger_data.move_count
+                count = self.trigger_data.counter
                 update_frequency = 50
             case _:
                 return
@@ -472,11 +473,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.application_input.addItem(message.name)
                 self.current_app = message.name
                 self.current_app_position = message.position
+                self.request_thumbnail()
 
             # Show the correct distance
             case ipc.ApplicationLoadedData():
                 self.cursor_data.distance = message.distance
                 self.distance.setText(format_distance(self.cursor_data.distance))
+                self.cursor_data.counter = message.cursor_counter
+                self.thumbstick_l_data.counter = message.thumb_l_counter
+                self.thumbstick_r_data.counter = message.thumb_r_counter
 
     @QtCore.Slot()
     def startTracking(self) -> None:
@@ -544,13 +549,12 @@ class MainWindow(QtWidgets.QMainWindow):
         data.distance += calculate_distance(position, data.position)
 
         # Update the saved data
-        data.move_count += 1
+        data.counter += 1
         data.position = position
-        data.move_tick = self.tick_current
 
         # Check if array compression has been done
-        if data.move_count > COMPRESSION_THRESHOLD:
-            data.move_count = int(data.move_count / COMPRESSION_FACTOR)
+        if data.counter > COMPRESSION_THRESHOLD:
+            data.counter = int(data.counter / COMPRESSION_FACTOR)
 
     def draw_pixmap_line(self, old_position: Optional[tuple[int, int]], new_position: Optional[tuple[int, int]],
                          force_monitor: Optional[tuple[int, int]] = None):

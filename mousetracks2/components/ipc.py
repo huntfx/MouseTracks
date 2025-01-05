@@ -260,3 +260,6 @@ class ApplicationLoadedData(Message):
     target: int = field(default=Target.GUI, init=False)
     application: Optional[str]
     distance: float
+    cursor_counter: int
+    thumb_l_counter: int
+    thumb_r_counter: int

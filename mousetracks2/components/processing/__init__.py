@@ -183,6 +183,9 @@ class Processing:
             self.q_send.put(ipc.ApplicationLoadedData(
                 application=self.current_application.name,
                 distance=self.application_data.cursor_map.distance,
+                cursor_counter=self.application_data.cursor_map.counter,
+                thumb_l_counter=self.application_data.thumbstick_l_map[0].counter if self.application_data.thumbstick_l_map else 0,
+                thumb_r_counter=self.application_data.thumbstick_r_map[0].counter if self.application_data.thumbstick_r_map else 0,
             ))
 
     def set_active(self):
