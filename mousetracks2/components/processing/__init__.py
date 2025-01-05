@@ -509,9 +509,6 @@ class Processing:
                         self.pause_tick = self.application_data.cursor_map.counter
                 self.state = message.state
 
-            case ipc.NoApplication():
-                self.current_application = self.default_application
-
             case ipc.Application():
                 self.current_application = Application(message.name, message.position, message.resolution)
 

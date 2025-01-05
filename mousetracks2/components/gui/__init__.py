@@ -477,10 +477,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.current_app = message.name
                 self.current_app_position = message.position
 
-            case ipc.NoApplication():
-                self.current_app = 'Main'
-                self.current_app_position = None
-
             # Show the correct distance
             case ipc.ApplicationLoadedData():
                 self.cursor_data.distance = message.distance

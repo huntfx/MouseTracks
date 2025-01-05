@@ -223,13 +223,6 @@ class Application(Message):
 
 
 @dataclass
-class NoApplication(Message):
-    """Update data when no app is loaded."""
-
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
-
-
-@dataclass
 class Exit(Message):
     """Quit the whole application."""
 

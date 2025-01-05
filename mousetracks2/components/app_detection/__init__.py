@@ -101,7 +101,7 @@ class AppDetection:
 
                 if changed:
                     if current_app is None:
-                        self.q_send.put(ipc.NoApplication())
+                        self.q_send.put(ipc.Application('Main', None, None, None))
                     elif app_is_windowed:
                         self.q_send.put(ipc.Application(current_app[0], process_id, app_position, app_resolution))
                     else:
