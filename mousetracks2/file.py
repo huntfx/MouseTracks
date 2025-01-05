@@ -138,8 +138,15 @@ class MovementMaps:
         speed values that are too large.
         """
         for maps in (self.sequential_arrays, self.speed_arrays):
-            for res, array in maps.items():
-                maps[res] = (array / factor).astype(array.dtype)
+            # Compress all arrays
+            for res, array in tuple(maps.items()):
+                maps[res] = (array.astype(np.float64) / factor).astype(array.dtype)
+
+                # Remove array if it no longer contains data
+                if not np.any(maps[res]):
+                    del maps[res]
+
+            # Compress the counter by the same amount
             self.counter = int(self.counter // factor)
 
     def _iter_array_types(self) -> Iterator[tuple[str, ArrayResolutionMap]]:
