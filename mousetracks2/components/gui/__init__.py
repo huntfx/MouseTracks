@@ -12,13 +12,9 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from mousetracks.image import colours
 from .. import ipc
+from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
-
-
-COMPRESSION_FACTOR = 1.1
-
-COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 
 
 class QueueWorker(QtCore.QObject):
@@ -136,7 +132,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.application_input = QtWidgets.QComboBox()
         self.application_input.addItem('Current Application')
-        self.application_input.addItem('Main')
+        self.application_input.addItem(DEFAULT_APPLICATION_NAME)
         layout.addWidget(self.application_input)
 
         self.render_type_input = QtWidgets.QComboBox()
@@ -185,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.current_app: str = 'Main'
+        self.current_app: str = DEFAULT_APPLICATION_NAME
         self.current_app_position: Optional[tuple[int, int, int, int]] = None
 
         # Start queue worker

@@ -10,12 +10,9 @@ from uuid import uuid4
 
 import numpy as np
 
+from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, UPDATES_PER_SECOND, INACTIVITY_MS
 from .utils.win import MOUSE_BUTTONS
 
-
-COMPRESSION_FACTOR = 1.1
-
-COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 
 EXPECTED_LEGACY_VERSION = 34
 """Only mtk files of this version are allowed to be loaded.
@@ -23,11 +20,6 @@ Any other versions must be upgraded with the mousetracks v1 script.
 """
 
 CURRENT_FILE_VERSION = 1
-
-UPDATES_PER_SECOND = 60
-
-INACTIVITY_MS = 300000
-"""Time in ms before the user is classed as "inactive"."""
 
 FILE_DIR = 'R:/test'
 

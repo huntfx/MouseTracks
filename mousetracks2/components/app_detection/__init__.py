@@ -4,6 +4,7 @@ from typing import Optional
 
 from mousetracks.applications import RunningApplications
 from .. import ipc
+from ...constants import DEFAULT_APPLICATION_NAME
 from ...utils.win import monitor_locations
 
 
@@ -101,7 +102,7 @@ class AppDetection:
 
                 if changed:
                     if current_app is None:
-                        self.q_send.put(ipc.Application('Main', None, None, None))
+                        self.q_send.put(ipc.Application(DEFAULT_APPLICATION_NAME, None, None, None))
                     elif app_is_windowed:
                         self.q_send.put(ipc.Application(current_app[0], process_id, app_position, app_resolution))
                     else:

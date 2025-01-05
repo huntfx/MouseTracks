@@ -14,15 +14,7 @@ from ...file import MovementMaps, ApplicationData, ApplicationDataLoader, get_fi
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
-
-
-UPDATES_PER_SECOND = 60
-
-DOUBLE_CLICK_MS = 500
-"""Maximum time in ms where a double click is valid."""
-
-DOUBLE_CLICK_TOL = 8
-"""Maximum pixels where a double click is valid."""
+from ...constants import DEFAULT_APPLICATION_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL
 
 
 def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], ArrayLike]],
@@ -156,7 +148,7 @@ class Processing:
 
         # Load in the default application
         self.all_application_data: dict[str, ApplicationData] = ApplicationDataLoader()
-        self.default_application = Application('Main', None, None)
+        self.default_application = Application(DEFAULT_APPLICATION_NAME, None, None)
         self._current_application = Application('', None, None)
         self.current_application = self.default_application
 

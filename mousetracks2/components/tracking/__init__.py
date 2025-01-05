@@ -9,12 +9,9 @@ import XInput
 
 from . import utils
 from .. import ipc
+from ...constants import UPDATES_PER_SECOND
 from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS
 
-
-UPDATES_PER_SECOND = 60
-
-DOUBLE_CLICK_TIME = 500
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
                   if isinstance(v, int) and k.split('_')[0] in ('BUTTON', 'STICK', 'TRIGGER')}
