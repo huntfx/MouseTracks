@@ -6,6 +6,7 @@ import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Iterator, Optional, Self
+from uuid import uuid4
 
 import numpy as np
 
@@ -256,36 +257,79 @@ class ApplicationData:
         """Determine if the data is modified."""
         return self.tick.current != self.tick.saved
 
+    def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
+        zf.writestr('version', str(CURRENT_FILE_VERSION))
+        zf.writestr('metadata/created', str(self.created))
+        zf.writestr('metadata/modified', str(int(time.time())))
+        zf.writestr('metadata/active', str(self.tick.activity))
+        zf.writestr('metadata/inactive', str(self.tick.inactivity))
+
+        self.cursor_map._write_to_zip(zf, 'data/mouse/cursor')
+        for i, array_resolution_map in self.mouse_single_clicks.items():
+            array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/single')
+        for i, array_resolution_map in self.mouse_double_clicks.items():
+            array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/double')
+        for i, array_resolution_map in self.mouse_held_clicks.items():
+            array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/held')
+
+        self.key_presses._write_to_zip(zf, 'data/keyboard/pressed.npy')
+        self.key_held._write_to_zip(zf, 'data/keyboard/held.npy')
+
+        for i, array in self.button_presses.items():
+            array._write_to_zip(zf, f'data/gamepad/{i}/pressed.npy')
+        for i, array in self.button_held.items():
+            array._write_to_zip(zf, f'data/gamepad/{i}/held.npy')
+        for i, array_map in self.thumbstick_l_map.items():
+            array_map._write_to_zip(zf, f'data/gamepad/{i}/left_stick')
+        for i, array_map in self.thumbstick_r_map.items():
+            array_map._write_to_zip(zf, f'data/gamepad/{i}/right_stick')
+
+    def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
+        all_paths = zf.namelist()
+
+        self.created = int(zf.read('metadata/created'))
+        self.tick.active = int(zf.read('metadata/active'))
+        self.tick.inactive = int(zf.read('metadata/inactive'))
+
+        self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
+        mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks')}
+        for i in mouse_buttons:
+            self.mouse_single_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/single')
+            self.mouse_double_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/double')
+            self.mouse_held_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/held')
+
+        self.key_presses._load_from_zip(zf, f'data/keyboard/pressed.npy')
+        self.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
+
+        gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad')}
+        for i in gamepad_indexes:
+            self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
+            self.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
+            self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
+            self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
+
     def save(self, path: str):
         self.tick.saved = self.tick.current
 
-        with zipfile.ZipFile(path, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        temp_file_base = os.path.join(os.path.dirname(path), uuid4().hex)
+        temp_file = f'{temp_file_base}.tmp'
+        del_file = f'{temp_file_base}.del'
 
-            zf.writestr('version', str(CURRENT_FILE_VERSION))
-            zf.writestr('metadata/created', str(self.created))
-            zf.writestr('metadata/modified', str(int(time.time())))
-            zf.writestr('metadata/active', str(self.tick.activity))
-            zf.writestr('metadata/inactive', str(self.tick.inactivity))
+        try:
+            with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+                self._write_to_zip(zf)
 
-            self.cursor_map._write_to_zip(zf, 'data/mouse/cursor')
-            for i, array_resolution_map in self.mouse_single_clicks.items():
-                array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/single')
-            for i, array_resolution_map in self.mouse_double_clicks.items():
-                array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/double')
-            for i, array_resolution_map in self.mouse_held_clicks.items():
-                array_resolution_map._write_to_zip(zf, f'data/mouse/clicks/{i}/held')
+            # Quickly swap over the files to reduce chances of a race condition
+            if os.path.exists(path):
+                os.rename(path, del_file)
+            os.rename(temp_file, path)
 
-            self.key_presses._write_to_zip(zf, 'data/keyboard/pressed.npy')
-            self.key_held._write_to_zip(zf, 'data/keyboard/held.npy')
-
-            for i, array in self.button_presses.items():
-                array._write_to_zip(zf, f'data/gamepad/{i}/pressed.npy')
-            for i, array in self.button_held.items():
-                array._write_to_zip(zf, f'data/gamepad/{i}/held.npy')
-            for i, array_map in self.thumbstick_l_map.items():
-                array_map._write_to_zip(zf, f'data/gamepad/{i}/left_stick')
-            for i, array_map in self.thumbstick_r_map.items():
-                array_map._write_to_zip(zf, f'data/gamepad/{i}/right_stick')
+        finally:
+            # Clean up files
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            if os.path.exists(del_file):
+                os.remove(del_file)
 
     @classmethod
     def load(cls, path: str):
@@ -294,30 +338,7 @@ class ApplicationData:
             version = int(zf.read('version'))
             if version != CURRENT_FILE_VERSION:
                 raise RuntimeError(f'unexpected version: {version}')
-
-            all_paths = zf.namelist()
-
-            new.created = int(zf.read('metadata/created'))
-            new.tick.active = int(zf.read('metadata/active'))
-            new.tick.inactive = int(zf.read('metadata/inactive'))
-
-            new.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
-            mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks')}
-            for i in mouse_buttons:
-                new.mouse_single_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/single')
-                new.mouse_double_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/double')
-                new.mouse_held_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/held')
-
-            new.key_presses._load_from_zip(zf, f'data/keyboard/pressed.npy')
-            new.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
-
-            gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad')}
-            for i in gamepad_indexes:
-                new.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
-                new.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
-                new.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
-                new.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
-
+            new._load_from_zip(zf)
         return new
 
 
