@@ -148,8 +148,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type_input.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
         self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
         self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
-        self.render_type_input.addItem('Triggers', ipc.RenderType.Trigger)
-        self.render_type_input.addItem('Triggers (heatmap)', ipc.RenderType.TriggerHeatmap)
         layout.addWidget(self.render_type_input)
 
         self.render_colour_input = QtWidgets.QComboBox()
@@ -171,7 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
-        self.trigger_data = MapData((0, 0))
 
         self.mouse_click_count = 0
         self.mouse_held_count = 0
@@ -258,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
                 case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
                       | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
-                      | ipc.RenderType.TriggerHeatmap | ipc.RenderType.TimeHeatmap):
+                      | ipc.RenderType.TimeHeatmap):
                     if data['Type']['clicks']:
                         self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
 
@@ -347,12 +344,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 update_frequency = 50
             case ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_R_Heatmap:
                 count = self.thumbstick_r_data.counter
-                update_frequency = 50
-            case ipc.RenderType.Trigger:
-                count = self.trigger_data.counter
-                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.TriggerHeatmap:
-                count = self.trigger_data.counter
                 update_frequency = 50
             case _:
                 return
@@ -458,12 +449,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if draw:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
-
-            case ipc.TriggerMove():
-                position = 4 + int(message.right * RADIAL_ARRAY_SIZE - 8), 4 + int(message.left * RADIAL_ARRAY_SIZE - 8)
-                if self.render_type == ipc.RenderType.Trigger:
-                    self.draw_pixmap_line(self.trigger_data.position, position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
-                self.update_track_data(self.trigger_data, position)
 
             case ipc.Application():
                 for idx in range(1, self.application_input.count()):

@@ -32,8 +32,6 @@ class RenderType(Enum):
     Thumbstick_L_SPEED = auto()
     Thumbstick_R_Heatmap = auto()
     Thumbstick_L_Heatmap = auto()
-    Trigger = auto()
-    TriggerHeatmap = auto()
 
 
 @dataclass
@@ -129,16 +127,6 @@ class ThumbstickMove(Message):
     gamepad: int
     thumbstick: Thumbstick
     position: tuple[float, float]
-
-
-@dataclass
-class TriggerMove(Message):
-    """Send data when a trigger moves."""
-
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
-    gamepad: int
-    left: float
-    right: float
 
 
 @dataclass

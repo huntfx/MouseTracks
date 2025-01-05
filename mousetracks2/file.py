@@ -239,7 +239,6 @@ class ApplicationData:
     cursor_map: MovementMaps = field(default_factory=MovementMaps)
     thumbstick_l_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
     thumbstick_r_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
-    trigger_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
 
     mouse_single_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
     mouse_double_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))

@@ -342,18 +342,6 @@ class Processing:
                     map = gamepad_maps.density_arrays
                     maps.extend((res, array) for res, array in map.items())
 
-            case ipc.RenderType.Trigger:
-                maps = []
-                for gamepad_maps in app_data.trigger_map.values():
-                    map = gamepad_maps.sequential_arrays
-                    maps.extend((res, array) for res, array in map.items())
-
-            case ipc.RenderType.TriggerHeatmap:
-                maps = []
-                for gamepad_maps in app_data.trigger_map.values():
-                    map = gamepad_maps.density_arrays
-                    maps.extend((res, array) for res, array in map.items())
-
             case _:
                 raise NotImplementedError(message.type)
 
@@ -371,8 +359,7 @@ class Processing:
         else:
             final_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
-        is_heatmap = message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
-                                      ipc.RenderType.TriggerHeatmap, ipc.RenderType.TimeHeatmap,
+        is_heatmap = message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
                                       ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
         is_speed = message.type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
 
@@ -483,13 +470,6 @@ class Processing:
                         self._record_move(self.application_data.thumbstick_r_map[message.gamepad], remapped, (width, height))
                     case _:
                         raise NotImplementedError(message.thumbstick)
-
-            case ipc.TriggerMove():
-                self.set_active()
-                width = height = RADIAL_ARRAY_SIZE
-                x = int(message.left * (width - 1))
-                y = int(message.right * (height - 1))
-                self._record_move(self.application_data.trigger_map[message.gamepad], (x, y), (width, height))
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
