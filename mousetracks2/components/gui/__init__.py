@@ -54,6 +54,19 @@ class MapData:
     move_tick: int = field(default=0)
 
 
+def format_distance(pixels: float, ppi: float = 96.0) -> str:
+    """Convert mouse distance to text"""
+    inches = pixels / ppi
+    cm = inches * 2.54
+    m = cm / 100
+    km = m / 1000
+    if km > 1:
+        return f'{round(km, 3)} km'
+    if m > 1:
+        return f'{round(m, 3)} m'
+    return f'{round(cm, 3)} cm'
+
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -429,7 +442,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
-                self.distance.setText(str(int(self.cursor_data.distance)))
+                self.distance.setText(format_distance(self.cursor_data.distance))
 
             case ipc.ThumbstickMove():
                 draw = False
@@ -467,6 +480,11 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.NoApplication():
                 self.current_app = 'Main'
                 self.current_app_position = None
+
+            # Show the correct distance
+            case ipc.ApplicationLoadedData():
+                self.cursor_data.distance = message.distance
+                self.distance.setText(format_distance(self.cursor_data.distance))
 
     @QtCore.Slot()
     def startTracking(self) -> None:
@@ -531,8 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
         event.accept()
 
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
-        if data.position is not None and self.tick_current == data.move_tick + 1:
-            data.distance += calculate_distance(position, data.position)
+        data.distance += calculate_distance(position, data.position)
 
         # Update the saved data
         data.move_count += 1

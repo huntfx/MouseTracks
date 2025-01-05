@@ -258,3 +258,12 @@ class Save(Message):
 class Load(Message):
     target: int = field(default=Target.Processing, init=False)
     application: Optional[str] = field(default=None)
+
+
+@dataclass
+class ApplicationLoadedData(Message):
+    """Data containing information about the loaded application."""
+
+    target: int = field(default=Target.GUI, init=False)
+    application: Optional[str]
+    distance: float

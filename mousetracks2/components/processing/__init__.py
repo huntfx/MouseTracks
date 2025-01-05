@@ -146,7 +146,6 @@ class Processing:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.application_data: dict[str, ApplicationData] = ApplicationDataLoader()
         self.tick = 0
 
         self.previous_mouse_click: Optional[PreviousMouseClick] = None
@@ -154,39 +153,49 @@ class Processing:
         self.previous_monitor = None
         self.pause_tick = 0
         self.state = ipc.TrackingState.State.Pause
-        self._current_application = self.current_application = None
+
+        # Load in the default application
+        self.all_application_data: dict[str, ApplicationData] = ApplicationDataLoader()
+        self.default_application = Application('Main', None, None)
+        self._current_application = Application('', None, None)
+        self.current_application = self.default_application
 
     @property
-    def current_application_data(self) -> ApplicationData:
+    def application_data(self) -> ApplicationData:
         """Get the data for the current application."""
-        if self.current_application is None:
-            return self.application_data['Main']
-        return self.application_data[self.current_application.name]
+        return self.all_application_data[self.current_application.name]
 
     @property
-    def current_application(self) -> Optional[Application]:
+    def current_application(self) -> Application:
         """Get the currently loaded application."""
         return self._current_application
 
     @current_application.setter
-    def current_application(self, application: Optional[Application]):
+    def current_application(self, application: Application):
         """Update the currently loaded application."""
-        previous_application_data = self.current_application_data
+        previous_data = self.application_data
         previous_app, self._current_application = self._current_application, application
 
         if application != previous_app:
             # Lock in the previous activity data
-            previous_application_data.tick.current = self.tick
-            previous_application_data.tick.set_active()
+            previous_data.tick.current = self.tick
+            previous_data.tick.set_active()
 
             # Start new activity data
-            self.current_application_data.tick.current = self.current_application_data.tick.previous = self.tick
+            self.application_data.tick.current = self.application_data.tick.previous = self.tick
 
-            self.current_application_data.cursor_map.position = None
+            # Reset the cursor position
+            self.application_data.cursor_map.position = None
+
+            # Send data back to the GUI
+            self.q_send.put(ipc.ApplicationLoadedData(
+                application=self.current_application.name,
+                distance=self.application_data.cursor_map.distance,
+            ))
 
     def set_active(self):
         """Set the current thread as active."""
-        self.current_application_data.tick.set_active()
+        self.application_data.tick.set_active()
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
@@ -263,9 +272,9 @@ class Processing:
         height = message.height
 
         if message.application:
-            app_data = self.application_data[message.application]
+            app_data = self.all_application_data[message.application]
         else:
-            app_data = self.current_application_data
+            app_data = self.application_data
 
         # Choose the data to render
         maps: list[tuple[tuple[int, int], ArrayLike]]
@@ -399,14 +408,14 @@ class Processing:
         match message:
             # Update the current tick
             case ipc.Tick():
-                self.tick = self.current_application_data.tick.current = message.tick
+                self.tick = self.application_data.tick.current = message.tick
 
             case ipc.RenderRequest():
                 self._render_array(message)
 
             case ipc.MouseMove():
                 self.set_active()
-                self._record_move(self.current_application_data.cursor_map, message.position)
+                self._record_move(self.application_data.cursor_map, message.position)
 
             case ipc.MouseHeld():
                 self.set_active()
@@ -415,7 +424,7 @@ class Processing:
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
-                    self.current_application_data.mouse_held_clicks[message.button][current_monitor][index] += 1
+                    self.application_data.mouse_held_clicks[message.button][current_monitor][index] += 1
 
             case ipc.MouseClick():
                 self.set_active()
@@ -430,10 +439,10 @@ class Processing:
                 )
 
                 if double_click:
-                    arrays = self.current_application_data.mouse_double_clicks[message.button]
+                    arrays = self.application_data.mouse_double_clicks[message.button]
                     print(f'[Processing] Mouse button {message.button} double clicked.')
                 else:
-                    arrays = self.current_application_data.mouse_single_clicks[message.button]
+                    arrays = self.application_data.mouse_single_clicks[message.button]
                     print(f'[Processing] Mouse button {message.button} clicked.')
 
                 result = self._monitor_offset(message.position)
@@ -447,20 +456,20 @@ class Processing:
             case ipc.KeyPress():
                 self.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
-                self.current_application_data.key_presses[message.opcode] += 1
+                self.application_data.key_presses[message.opcode] += 1
 
             case ipc.KeyHeld():
                 self.set_active()
-                self.current_application_data.key_held[message.opcode] += 1
+                self.application_data.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
                 self.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
-                self.current_application_data.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.application_data.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.ButtonHeld():
                 self.set_active()
-                self.current_application_data.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.application_data.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
@@ -474,9 +483,9 @@ class Processing:
                 remapped = (x, height - y - 1)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
-                        self._record_move(self.current_application_data.thumbstick_l_map[message.gamepad], remapped, (width, height))
+                        self._record_move(self.application_data.thumbstick_l_map[message.gamepad], remapped, (width, height))
                     case ipc.ThumbstickMove.Thumbstick.Right:
-                        self._record_move(self.current_application_data.thumbstick_r_map[message.gamepad], remapped, (width, height))
+                        self._record_move(self.application_data.thumbstick_r_map[message.gamepad], remapped, (width, height))
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
@@ -485,7 +494,7 @@ class Processing:
                 width = height = 2048
                 x = int(message.left * (width - 1))
                 y = int(message.right * (height - 1))
-                self._record_move(self.current_application_data.trigger_map[message.gamepad], (x, y), (width, height))
+                self._record_move(self.application_data.trigger_map[message.gamepad], (x, y), (width, height))
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
@@ -493,29 +502,29 @@ class Processing:
             case ipc.TrackingState():
                 match message.state:
                     case ipc.TrackingState.State.Start:
-                        self.current_application_data.cursor_map.position = cursor_position()
+                        self.application_data.cursor_map.position = cursor_position()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
                     case ipc.TrackingState.State.Pause:
-                        self.pause_tick = self.current_application_data.cursor_map.counter
+                        self.pause_tick = self.application_data.cursor_map.counter
                 self.state = message.state
 
             case ipc.NoApplication():
-                self.current_application = None
+                self.current_application = self.default_application
 
             case ipc.Application():
                 self.current_application = Application(message.name, message.position, message.resolution)
 
             case ipc.Save():
                 if message.application is None:
-                    applications = self.application_data.keys()
+                    applications = self.all_application_data.keys()
                 else:
                     applications = [message.application]
 
                 for application in applications:
                     print(f'[Processing] Saving {application}...')
-                    if self.application_data[application].modified:
-                        self.application_data[application].save(get_filename(application))
+                    if self.all_application_data[application].modified:
+                        self.all_application_data[application].save(get_filename(application))
                         print(f'[Processing] Saved {application}')
                     else:
                         print('[Processing] Skipping save, not modified')
