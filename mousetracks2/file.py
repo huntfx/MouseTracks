@@ -425,5 +425,5 @@ class ApplicationDataLoader(dict):
 
 def get_filename(application: str) -> str:
     """Get the filename for an application."""
-    sanitised = re.sub(r'[^a-zA-Z0-9]', '', application)
+    sanitised = re.sub(r'[^a-zA-Z0-9]', '', application.lower())
     return os.path.join(FILE_DIR, f'{sanitised}.mtk2')
