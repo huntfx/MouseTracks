@@ -512,11 +512,23 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Send a signal that the GUI has closed."""
         self.queue_worker.stop()
-        self.q_send.put(ipc.Save())
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setWindowTitle('Closing MouseTracks Application')
+        msg.setText('Do you want to save?')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+                               | QtWidgets.QMessageBox.StandardButton.Cancel)
+        match msg.exec_():
+            case QtWidgets.QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+            case QtWidgets.QMessageBox.StandardButton.Yes:
+                self.q_send.put(ipc.Save())
+
         self.q_send.put(ipc.Exit())
         self.queue_thread.quit()
         self.queue_thread.wait()
-        super().closeEvent(event)
+        event.accept()
 
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         if data.position is not None and self.tick_current == data.move_tick + 1:

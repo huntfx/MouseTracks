@@ -60,7 +60,7 @@ class Hub:
         app_detection_running = self._p_app_detection.is_alive()
         while tracking_running or processing_running or app_detection_running:
             try:
-                match self._q_main.get(timeout=20):
+                match self._q_main.get(timeout=30):
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
                         tracking_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
