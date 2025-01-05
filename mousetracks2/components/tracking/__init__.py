@@ -219,7 +219,7 @@ class Tracking:
 
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            print('[Tracking] Error shut down.')
+            print(f'[Tracking] Error shut down: {e}')
 
         self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Tracking))
         print('[Tracking] Sent process closed notification.')

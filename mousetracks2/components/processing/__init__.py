@@ -540,7 +540,7 @@ class Processing:
 
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            print('[Processing] Error shut down.')
+            print(f'[Processing] Error shut down: {e}')
 
         self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Processing))
         print('[Processing] Sent process closed notification.')

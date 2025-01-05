@@ -126,7 +126,7 @@ class AppDetection:
 
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            print('[Application Detection] Error shut down.')
+            print(f'[Application Detection] Error shut down: {e}')
 
         self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.AppDetection))
         print('[Application Detection] Sent process closed notification.')
