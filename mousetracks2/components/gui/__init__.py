@@ -12,7 +12,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from mousetracks.image import colours
 from .. import ipc
-from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME
+from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
 
@@ -456,13 +456,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 x, y = message.position
                 remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
                 if draw:
-                    self.draw_pixmap_line(remapped, data.position, (2048, 2048))
+                    self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
             case ipc.TriggerMove():
-                position = 4 + int(message.right * 2040), 4 + int(message.left * 2040)
+                position = 4 + int(message.right * RADIAL_ARRAY_SIZE - 8), 4 + int(message.left * RADIAL_ARRAY_SIZE - 8)
                 if self.render_type == ipc.RenderType.Trigger:
-                    self.draw_pixmap_line(self.trigger_data.position, position, (2048, 2048))
+                    self.draw_pixmap_line(self.trigger_data.position, position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(self.trigger_data, position)
 
             case ipc.Application():

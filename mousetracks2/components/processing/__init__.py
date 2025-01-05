@@ -14,7 +14,7 @@ from ...file import MovementMaps, ApplicationData, ApplicationDataLoader, get_fi
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
-from ...constants import DEFAULT_APPLICATION_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL
+from ...constants import DEFAULT_APPLICATION_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 
 
 def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], ArrayLike]],
@@ -472,7 +472,7 @@ class Processing:
 
             case ipc.ThumbstickMove():
                 self.set_active()
-                width = height = 2048
+                width = height = RADIAL_ARRAY_SIZE
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
                 remapped = (x, height - y - 1)
@@ -486,7 +486,7 @@ class Processing:
 
             case ipc.TriggerMove():
                 self.set_active()
-                width = height = 2048
+                width = height = RADIAL_ARRAY_SIZE
                 x = int(message.left * (width - 1))
                 y = int(message.right * (height - 1))
                 self._record_move(self.application_data.trigger_map[message.gamepad], (x, y), (width, height))
