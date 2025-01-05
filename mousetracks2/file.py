@@ -114,7 +114,7 @@ class ArrayResolutionMap(dict):
         relative_paths = [path[len(subfolder):].lstrip('/') for path in zf.namelist() if path.startswith(subfolder)]
 
         for relative_path in relative_paths:
-            match = re.match(r'(\d)+x(\d)+\.npy', relative_path)
+            match = re.match(r'(\d+)x(\d+)\.npy', relative_path)
             if not match:
                 raise RuntimeError(f'unexpected data in file: {subfolder}/{relative_path}')
             width, height = map(int, match.groups())
