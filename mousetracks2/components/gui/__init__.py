@@ -512,6 +512,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Send a signal that the GUI has closed."""
         self.queue_worker.stop()
+        self.q_send.put(ipc.Save())
         self.q_send.put(ipc.Exit())
         self.queue_thread.quit()
         self.queue_thread.wait()

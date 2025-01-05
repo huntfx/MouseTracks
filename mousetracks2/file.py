@@ -28,6 +28,8 @@ UPDATES_PER_SECOND = 60
 INACTIVITY_MS = 300000
 """Time in ms before the user is classed as "inactive"."""
 
+FILE_DIR = 'R:/test'
+
 
 class InvalidVersionError(Exception):
     def __init__(self, filename: str, version: int, expected: int) -> None:
@@ -187,6 +189,7 @@ class Tick:
     previous: int = field(default=0)
     active: int = field(default=0)
     inactive: int = field(default=0)
+    saved: int = field(default=0)
 
     @property
     def activity(self) -> int:
@@ -248,7 +251,14 @@ class ApplicationData:
     button_presses: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
     button_held: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
 
+    @property
+    def modified(self):
+        """Determine if the data is modified."""
+        return self.tick.current != self.tick.saved
+
     def save(self, path: str):
+        self.tick.saved = self.tick.current
+
         with zipfile.ZipFile(path, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
 
             zf.writestr('version', str(CURRENT_FILE_VERSION))
@@ -348,7 +358,7 @@ def load_legacy_data(path: str) -> ApplicationData:
         # ticks_recorded: int = data['Ticks']['Recorded']
 
         result.cursor_map.distance = int(data['Distance']['Tracks'])
-        result.cursor_map.sequence = int(data['Ticks']['Tracks'])
+        result.cursor_map.counter = int(data['Ticks']['Tracks'])
 
         # Process main tracking data
         for resolution, values in data['Resolution'].items():
@@ -379,3 +389,20 @@ def load_legacy_data(path: str) -> ApplicationData:
             result.button_held[opcode] = count
 
         return result
+
+
+class ApplicationDataLoader(dict):
+    """Act like a defaultdict to load data if available."""
+    def __missing__(self, application) -> ApplicationData:
+        filename = get_filename(application)
+        if os.path.exists(filename):
+            self[application] = ApplicationData.load(filename)
+        else:
+            self[application] = ApplicationData()
+        return self[application]
+
+
+def get_filename(application: str) -> str:
+    """Get the filename for an application."""
+    sanitised = re.sub(r'[^a-zA-Z0-9]', '', application)
+    return os.path.join(FILE_DIR, f'{sanitised}.mtk2')

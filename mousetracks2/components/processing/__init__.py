@@ -10,7 +10,7 @@ from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc
-from ...file import MovementMaps, ApplicationData, load_legacy_data
+from ...file import MovementMaps, ApplicationData, ApplicationDataLoader, get_filename
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
@@ -146,7 +146,7 @@ class Processing:
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.application_data: dict[str, ApplicationData] = defaultdict(ApplicationData)
+        self.application_data: dict[str, ApplicationData] = ApplicationDataLoader()
         self.tick = 0
 
         self.previous_mouse_click: Optional[PreviousMouseClick] = None
@@ -176,6 +176,7 @@ class Processing:
 
         if application != previous_app:
             # Lock in the previous activity data
+            previous_application_data.tick.current = self.tick
             previous_application_data.tick.set_active()
 
             # Start new activity data
@@ -505,17 +506,6 @@ class Processing:
             case ipc.Application():
                 self.current_application = Application(message.name, message.position, message.resolution)
 
-            case ipc.Load():
-                if message.application is None:
-                    applications = self.application_data.keys()
-                else:
-                    applications = [message.application]
-
-                for application in applications:
-                    print(f'[Processing] Loading {application}...')
-                    self.application_data[application] = ApplicationData.load(f'R:/test/{application}.mtk2')
-                    print(f'[Processing] Loaded {application}')
-
             case ipc.Save():
                 if message.application is None:
                     applications = self.application_data.keys()
@@ -524,8 +514,11 @@ class Processing:
 
                 for application in applications:
                     print(f'[Processing] Saving {application}...')
-                    self.application_data[application].save(f'R:/test/{application}.mtk2')
-                    print(f'[Processing] Saved {application}')
+                    if self.application_data[application].modified:
+                        self.application_data[application].save(get_filename(application))
+                        print(f'[Processing] Saved {application}')
+                    else:
+                        print('[Processing] Skipping save, not modified')
 
             case _:
                 raise NotImplementedError(message)
