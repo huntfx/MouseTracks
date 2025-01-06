@@ -300,10 +300,14 @@ class ApplicationData:
 
         gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad')}
         for i in gamepad_indexes:
-            self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
-            self.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
-            self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
-            self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
+            if f'data/gamepad/{i}/left_stick' in all_paths:
+                self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
+            if f'data/gamepad/{i}/right_stick' in all_paths:
+                self.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
+            if f'data/gamepad/{i}/pressed.npy' in all_paths:
+                self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
+            if f'data/gamepad/{i}/held.npy' in all_paths:
+                self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
 
     def save(self, path: str):
         self.tick.saved = self.tick.current
