@@ -110,7 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         render = QtWidgets.QPushButton('Render')
         horizontal.addWidget(render)
         horizontal.addWidget(QtWidgets.QLabel('Sampling'))
-        self.sampling = QtWidgets.QDoubleSpinBox()
+        self.sampling = QtWidgets.QSpinBox()
         self.sampling.setMinimum(1)
         self.sampling.setValue(4)
         self.sampling.setMaximum(8)
@@ -358,7 +358,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         self.pause_redraw = True
         app = self.application_input.currentText() if self.application_input.currentIndex() else ''
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1.0, app))
+        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1, app))
         return True
 
     def render(self) -> None:
