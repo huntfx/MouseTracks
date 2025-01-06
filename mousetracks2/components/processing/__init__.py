@@ -195,10 +195,6 @@ class Processing:
                 buttons_pressed=sum(np.sum(array) for array in self.application_data.button_presses.values()),
             ))
 
-    def set_active(self):
-        """Set the current thread as active."""
-        self.application_data.tick.set_active()
-
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
         use_app = self.current_application is not None and self.current_application.rect is not None
@@ -403,11 +399,11 @@ class Processing:
                 self._render_array(message)
 
             case ipc.MouseMove():
-                self.set_active()
+                self.application_data.tick.set_active()
                 self._record_move(self.application_data.cursor_map, message.position)
 
             case ipc.MouseHeld():
-                self.set_active()
+                self.application_data.tick.set_active()
 
                 result = self._monitor_offset(message.position)
                 if result is not None:
@@ -416,7 +412,7 @@ class Processing:
                     self.application_data.mouse_held_clicks[message.button][current_monitor][index] += 1
 
             case ipc.MouseClick():
-                self.set_active()
+                self.application_data.tick.set_active()
 
                 previous = self.previous_mouse_click
                 double_click = (
@@ -443,21 +439,21 @@ class Processing:
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
             case ipc.KeyPress():
-                self.set_active()
+                self.application_data.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
                 self.application_data.key_presses[message.opcode] += 1
 
             case ipc.KeyHeld():
-                self.set_active()
+                self.application_data.tick.set_active()
                 self.application_data.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
-                self.set_active()
+                self.application_data.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
                 self.application_data.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.ButtonHeld():
-                self.set_active()
+                self.application_data.tick.set_active()
                 self.application_data.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.MonitorsChanged():
@@ -465,7 +461,7 @@ class Processing:
                 self.monitor_data = message.data
 
             case ipc.ThumbstickMove():
-                self.set_active()
+                self.application_data.tick.set_active()
                 width = height = RADIAL_ARRAY_SIZE
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
