@@ -12,6 +12,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from mousetracks.image import colours
 from .. import ipc
+from ...ui.main import Ui_MainWindow
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
@@ -90,99 +91,35 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
 
-        # Setup layout
-        # This is a design meant for debugging purposes
-        layout = QtWidgets.QVBoxLayout()
-        start = QtWidgets.QPushButton('Start')
-        layout.addWidget(start)
-        stop = QtWidgets.QPushButton('Stop')
-        layout.addWidget(stop)
-        pause = QtWidgets.QPushButton('Pause')
-        layout.addWidget(pause)
-        crasht = QtWidgets.QPushButton('Raise Exception (tracking)')
-        layout.addWidget(crasht)
-        crashp = QtWidgets.QPushButton('Raise Exception (processing)')
-        layout.addWidget(crashp)
-        crashh = QtWidgets.QPushButton('Raise Exception (hub)')
-        layout.addWidget(crashh)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        self.ui.output_logs.setVisible(False)
 
-        horizontal = QtWidgets.QHBoxLayout()
-        render = QtWidgets.QPushButton('Render')
-        horizontal.addWidget(render)
-        horizontal.addWidget(QtWidgets.QLabel('Sampling'))
-        self.sampling = QtWidgets.QSpinBox()
-        self.sampling.setMinimum(1)
-        self.sampling.setValue(4)
-        self.sampling.setMaximum(8)
-        horizontal.addWidget(self.sampling)
-        layout.addLayout(horizontal)
+        # Set up profiles
+        self.ui.current_profile.clear()
+        self.ui.current_profile.addItem('Current Application')
+        self.ui.current_profile.addItem(DEFAULT_APPLICATION_NAME, DEFAULT_APPLICATION_NAME)
 
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Current Status:'))
-        self.status = QtWidgets.QLabel()
-        horizontal.addWidget(self.status)
-        layout.addLayout(horizontal)
+        # self.ui.map_type = QtWidgets.QComboBox()
+        self.ui.map_type.addItem('Time', ipc.RenderType.Time)
+        self.ui.map_type.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.ui.map_type.addItem('Time (heatmap)', ipc.RenderType.TimeHeatmap)
+        self.ui.map_type.addItem('Speed', ipc.RenderType.Speed)
+        self.ui.map_type.addItem('Clicks', ipc.RenderType.SingleClick)
+        self.ui.map_type.addItem('Double Clicks', ipc.RenderType.DoubleClick)
+        self.ui.map_type.addItem('Held Clicks', ipc.RenderType.HeldClick)
+        self.ui.map_type.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
+        self.ui.map_type.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
+        self.ui.map_type.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
+        self.ui.map_type.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
+        self.ui.map_type.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
+        self.ui.map_type.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
 
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Mouse Distance:'))
-        self.distance = QtWidgets.QLabel('0.0')
-        horizontal.addWidget(self.distance)
-        layout.addLayout(horizontal)
-
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Mouse Clicks:'))
-        self.count_clicks = QtWidgets.QLabel('0')
-        horizontal.addWidget(self.count_clicks)
-        layout.addLayout(horizontal)
-
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Key Presses:'))
-        self.count_keys = QtWidgets.QLabel('0')
-        horizontal.addWidget(self.count_keys)
-        layout.addLayout(horizontal)
-
-        horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Gamepad Button Presses:'))
-        self.count_buttons = QtWidgets.QLabel('0')
-        horizontal.addWidget(self.count_buttons)
-        layout.addLayout(horizontal)
-
-        self.application_input = QtWidgets.QComboBox()
-        self.application_input.addItem('Current Application')
-        self.application_input.addItem(DEFAULT_APPLICATION_NAME)
-        layout.addWidget(self.application_input)
-
-        self.render_type_input = QtWidgets.QComboBox()
-        self.render_type_input.addItem('Time', ipc.RenderType.Time)
-        self.render_type_input.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
-        self.render_type_input.addItem('Time (heatmap)', ipc.RenderType.TimeHeatmap)
-        self.render_type_input.addItem('Speed', ipc.RenderType.Speed)
-        self.render_type_input.addItem('Clicks', ipc.RenderType.SingleClick)
-        self.render_type_input.addItem('Double Clicks', ipc.RenderType.DoubleClick)
-        self.render_type_input.addItem('Held Clicks', ipc.RenderType.HeldClick)
-        self.render_type_input.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
-        self.render_type_input.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
-        self.render_type_input.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
-        self.render_type_input.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
-        self.render_type_input.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
-        self.render_type_input.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
-        layout.addWidget(self.render_type_input)
-
-        self.render_colour_input = QtWidgets.QComboBox()
-        layout.addWidget(self.render_colour_input)
-
-        # Create a label to display the pixmap
-        self.image_label = QtWidgets.QLabel()
-        #self.image_label.setFixedSize(width, height)
-        layout.addWidget(self.image_label)
-        # Create a QPixmap and QImage
+        # Thumbnail pixmap
         self.pixmap = QtGui.QPixmap(360, 240)
         self.pixmap.fill(QtCore.Qt.GlobalColor.black)
-        self.image_label.setPixmap(self.pixmap)
+        self.ui.thumbnail.setPixmap(self.pixmap)
         self.image = self.pixmap.toImage()
-
-        self.setCentralWidget(QtWidgets.QWidget())
-        self.centralWidget().setLayout(layout)
 
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
@@ -203,23 +140,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker.moveToThread(self.queue_thread)
 
         # Connect signals and slots
-        start.clicked.connect(self.startTracking)
-        stop.clicked.connect(self.stopTracking)
-        pause.clicked.connect(self.pauseTracking)
-        crasht.clicked.connect(self.raiseTracking)
-        crashp.clicked.connect(self.raiseProcessing)
-        crashh.clicked.connect(self.raiseHub)
-        render.clicked.connect(self.render)
-        self.application_input.currentIndexChanged.connect(self.application_changed)
-        self.render_type_input.currentIndexChanged.connect(self.render_type_changed)
-        self.render_colour_input.currentIndexChanged.connect(self.render_colour_changed)
+        self.ui.file_tracking_start.triggered.connect(self.start_tracking)
+        self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
+        self.ui.save_render.clicked.connect(self.render)
+        self.ui.current_profile.currentIndexChanged.connect(self.application_changed)
+        self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
+        self.ui.colour_option.currentIndexChanged.connect(self.render_colour_changed)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
 
+        self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
+        self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
+        self.ui.debug_tracking_stop.triggered.connect(self.stop_tracking)
+        self.ui.debug_raise_app.triggered.connect(self.raise_app_detection)
+        self.ui.debug_raise_tracking.triggered.connect(self.raise_tracking)
+        self.ui.debug_raise_processing.triggered.connect(self.raise_processing)
+        self.ui.debug_raise_gui.triggered.connect(self.raise_gui)
+        self.ui.debug_raise_hub.triggered.connect(self.raise_hub)
+
         # Start the thread
         self.queue_thread.start()
 
+        self.start_tracking()
         self.request_thumbnail()
 
     @property
@@ -259,28 +202,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Add items to render colour input
         self.pause_colour_change = True
-        previous_text = self.render_colour_input.currentData()
+        previous_text = self.ui.colour_option.currentData()
 
-        self.render_colour_input.clear()
-        self.render_colour_input.addItem('Default', 'BlackToRedToWhite')
+        self.ui.colour_option.clear()
+        self.ui.colour_option.addItem('Default', 'BlackToRedToWhite')
         for data in colours.parse_colour_file()['Maps'].values():
             match render_type:
                 case (ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed
                       | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R
                       | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
                     if data['Type']['tracks']:
-                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+                        self.ui.colour_option.addItem(data['UpperCase'], data['UpperCase'])
                 case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
                       | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
                       | ipc.RenderType.TimeHeatmap):
                     if data['Type']['clicks']:
-                        self.render_colour_input.addItem(data['UpperCase'], data['UpperCase'])
+                        self.ui.colour_option.addItem(data['UpperCase'], data['UpperCase'])
 
         # Load previous colour if available, otherwise revert to default
-        if previous_text and previous_text != self.render_colour_input.currentData():
-            if idx := self.render_colour_input.findData(previous_text) < -1:
-                self.render_colour_input.setCurrentIndex(idx)
-            self.render_colour = self.render_colour_input.currentData()
+        if previous_text and previous_text != self.ui.colour_option.currentData():
+            if idx := self.ui.colour_option.findData(previous_text) < -1:
+                self.ui.colour_option.setCurrentIndex(idx)
+            self.render_colour = self.ui.colour_option.currentData()
 
         self.pause_colour_change = False
 
@@ -293,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def mouse_click_count(self, count: int) -> None:
         """Set the current mouse click count."""
         self._mouse_click_count = count
-        self.count_clicks.setText(str(count))
+        self.ui.stat_clicks.setText(str(count))
 
     @property
     def key_press_count(self) -> int:
@@ -304,7 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def key_press_count(self, count: int) -> None:
         """Set the current key press count."""
         self._key_press_count = count
-        self.count_keys.setText(str(count))
+        self.ui.stat_keys.setText(str(count))
 
     @property
     def button_press_count(self) -> int:
@@ -315,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def button_press_count(self, count: int) -> None:
         """Set the current button press count."""
         self._button_press_count = count
-        self.count_buttons.setText(str(count))
+        self.ui.stat_buttons.setText(str(count))
 
     @QtCore.Slot(int)
     def application_changed(self, idx: int) -> None:
@@ -325,7 +268,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
-        self.render_type = self.render_type_input.itemData(idx)
+        self.render_type = self.ui.map_type.itemData(idx)
         self.request_thumbnail(force=True)
 
     @QtCore.Slot(int)
@@ -333,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Change the render colour and trigger a redraw."""
         if self.pause_colour_change:
             return
-        self.render_colour = self.render_colour_input.itemData(idx)
+        self.render_colour = self.ui.colour_option.itemData(idx)
         self.request_thumbnail(force=True)
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
@@ -357,14 +300,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw and not force:
             return False
         self.pause_redraw = True
-        app = self.application_input.currentText() if self.application_input.currentIndex() else ''
+        app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
         self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1, app))
         return True
 
     def render(self) -> None:
         """Send a render request."""
-        app = self.application_input.currentText() if self.application_input.currentIndex() else ''
-        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.sampling.value(), app))
+        app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
+        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.ui.render_samples.value(), app))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -451,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     painter = QtGui.QPainter(self.pixmap)
                     painter.drawImage(0, 0, scaled_image)
                     painter.end()
-                    self.image_label.setPixmap(self.pixmap)
+                    self.ui.thumbnail.setPixmap(self.pixmap)
                     self.image = self.pixmap.toImage()
 
                     self.pause_redraw = False
@@ -480,7 +423,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
-                self.distance.setText(format_distance(self.cursor_data.distance))
+                self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
 
             case ipc.ThumbstickMove():
                 draw = False
@@ -507,11 +450,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.button_press_count += 1
 
             case ipc.Application():
-                for idx in range(1, self.application_input.count()):
-                    if self.application_input.itemText(idx) == message.name:
+                for idx in range(1, self.ui.current_profile.count()):
+                    if self.ui.current_profile.itemText(idx) == message.name:
                         break
                 else:
-                    self.application_input.addItem(message.name)
+                    self.ui.current_profile.addItem(message.name, message.name)
                 self.current_app = message.name
                 self.current_app_position = message.rect
                 self.request_thumbnail()
@@ -519,7 +462,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Show the correct distance
             case ipc.ApplicationLoadedData():
                 self.cursor_data.distance = message.distance
-                self.distance.setText(format_distance(self.cursor_data.distance))
+                self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
                 self.cursor_data.counter = message.cursor_counter
                 self.thumbstick_l_data.counter = message.thumb_l_counter
                 self.thumbstick_r_data.counter = message.thumb_r_counter
@@ -528,46 +471,63 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.key_press_count = message.keys_pressed
                 self.button_press_count = message.buttons_pressed
 
+            case ipc.DebugRaiseError():
+                raise RuntimeError('[GUI] Test Exception')
+
     @QtCore.Slot()
-    def startTracking(self) -> None:
+    def start_tracking(self) -> None:
         """Start/unpause the script."""
         self.cursor_data.position = cursor_position()  # Prevent erroneous line jumps
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()
-    def pauseTracking(self) -> None:
+    def pause_tracking(self) -> None:
         """Pause/unpause the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         # Special case to redraw thumbnail
-        if self.render_type_input.currentData() == ipc.RenderType.TimeSincePause:
+        if self.ui.map_type.currentData() == ipc.RenderType.TimeSincePause:
             self.request_thumbnail()
 
     @QtCore.Slot()
-    def stopTracking(self) -> None:
+    def stop_tracking(self) -> None:
         """Stop the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
     @QtCore.Slot()
-    def raiseTracking(self) -> None:
+    def raise_tracking(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.Tracking))
 
     @QtCore.Slot()
-    def raiseProcessing(self) -> None:
+    def raise_processing(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.Processing))
 
     @QtCore.Slot()
-    def raiseHub(self) -> None:
+    def raise_hub(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.Hub))
+
+    @QtCore.Slot()
+    def raise_app_detection(self) -> None:
+        """Send a command to raise an exception.
+        For testing purposes only.
+        """
+        self.q_send.put(ipc.DebugRaiseError(ipc.Target.AppDetection))
+
+    @QtCore.Slot()
+    def raise_gui(self) -> None:
+        """Send a command to raise an exception.
+        For testing purposes only.
+        """
+        self.q_send.put(ipc.DebugRaiseError(ipc.Target.GUI))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Send a signal that the GUI has closed."""
@@ -607,7 +567,7 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if self.application_input.currentIndex() and self.application_input.currentText() != self.current_app:
+        if self.ui.current_profile.currentIndex() and self.ui.current_profile.currentData() != self.current_app:
             return
 
         seen = set()
@@ -639,7 +599,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update a specific pixel in the QImage and refresh the display."""
         self.image.setPixelColor(x, y, colour)
         self.pixmap.convertFromImage(self.image)
-        self.image_label.setPixmap(self.pixmap)
+        self.ui.thumbnail.setPixmap(self.pixmap)
 
         # Queue commands if redrawing is paused
         # This allows them to be resubmitted
