@@ -9,8 +9,8 @@ from mousetracks.image import colours
 from .typing import ArrayLike
 
 
-def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], ArrayLike]],
-                            width: Optional[int] = None, height: Optional[int] = None) -> tuple[int, int]:
+def array_target_resolution(arrays: list[ArrayLike], width: Optional[int] = None,
+                            height: Optional[int] = None) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
     The aspect ratio is taken into consideration.
@@ -19,8 +19,9 @@ def array_target_resolution(resolution_arrays: list[tuple[tuple[int, int], Array
         return width, height
 
     popularity = defaultdict(int)
-    for res, array in resolution_arrays:
-        popularity[res] += np.sum(np.greater(array, 0))
+    for array in arrays:
+        res_y, res_x = array.shape
+        popularity[(res_x, res_y)] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9
     _width, _height = max(res for res, value in popularity.items() if value > threshold)
 
@@ -96,7 +97,7 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     return lookup
 
 
-def render(colour_map: str, maps: list[tuple[tuple[int, int], ArrayLike]], width: Optional[int] = None,
+def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None,
            height: Optional[int] = None, sampling: int = 1,
            linear: bool = False, blur: bool = False) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
@@ -118,32 +119,38 @@ def render(colour_map: str, maps: list[tuple[tuple[int, int], ArrayLike]], width
             This will ensure a smooth gradient.
         blur: Blur the array, for example for a heatmap.
     """
-    width, height = array_target_resolution(maps, width, height)
+    if arrays:
+        width, height = array_target_resolution(arrays, width, height)
+    elif width is None or height is None:
+        raise ValueError('input arrays cannot be empty if size not defined')
+
     scale_width = width * sampling
     scale_height = height * sampling
 
     # Scale all arrays to the same size and combine
-    if maps:
-        rescaled_arrays = [array_rescale(array, scale_width, scale_height) for res, array in maps]
+    if arrays:
+        rescaled_arrays = [array_rescale(array, scale_width, scale_height) for array in arrays]
         combined_array = np.maximum.reduce(rescaled_arrays)
+
+        # Convert to a linear array
+        if linear:
+            unique_values, unique_indexes = np.unique(combined_array, return_inverse=True)
+            combined_array = unique_indexes
+
+        if blur:
+            # Apply a gaussian blur
+            blur_amount = gaussian_size(scale_width, scale_height)
+            combined_array = ndimage.gaussian_filter(combined_array.astype(np.float64), sigma=blur_amount)
+
+            # TODO: Reimplement the heatmap range clipping
+            # It will be easier to test once saving works and a heavier heatmap can be used
+            # min_value = np.min(heatmap)
+            # all_values = np.sort(heatmap.ravel(), unique=True)
+            # max_value = all_values[int(round(len(unique_values) * 0.005))]
+
+    # Make an empty array if no data is present
     else:
         combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
-
-    # Convert to a linear array
-    if linear:
-        unique_values, unique_indexes = np.unique(combined_array, return_inverse=True)
-        combined_array = unique_indexes
-
-    if blur:
-        # Apply a gaussian blur
-        blur_amount = gaussian_size(scale_width, scale_height)
-        combined_array = ndimage.gaussian_filter(combined_array.astype(np.float64), sigma=blur_amount)
-
-        # TODO: Reimplement the heatmap range clipping
-        # It will be easier to test once saving works and a heavier heatmap can be used
-        # min_value = np.min(heatmap)
-        # all_values = np.sort(heatmap.ravel(), unique=True)
-        # max_value = all_values[int(round(len(unique_values) * 0.005))]
 
     # Convert the array to 0-255 and map to a colour lookup table
     colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(colour_map))

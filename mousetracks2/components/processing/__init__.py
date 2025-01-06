@@ -190,75 +190,65 @@ class Processing:
             app_data = self.application_data
 
         # Choose the data to render
-        maps: list[tuple[tuple[int, int], ArrayLike]]
+        arrays: list[ArrayLike] = []
         match message.type:
             case ipc.RenderType.Time:
-                maps = [(res, array) for res, array in app_data.cursor_map.sequential_arrays.items()]
+                arrays.extend(app_data.cursor_map.sequential_arrays.values())
 
             case ipc.RenderType.TimeHeatmap:
-                maps = [(res, array) for res, array in app_data.cursor_map.density_arrays.items()]
+                arrays.extend(app_data.cursor_map.density_arrays.values())
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
-                maps = []
-                for res, array in app_data.cursor_map.sequential_arrays.items():
+                for array in app_data.cursor_map.sequential_arrays.values():
                     partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
-                    maps.append((res, partial_array))
+                    arrays.append(partial_array)
 
             case ipc.RenderType.Speed:
-                maps = [(res, array) for res, array in app_data.cursor_map.speed_arrays.items()]
+                arrays.extend(app_data.cursor_map.speed_arrays.values())
 
             case ipc.RenderType.SingleClick:
-                maps = []
                 for map in app_data.mouse_single_clicks.values():
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.DoubleClick:
-                maps = []
                 for map in app_data.mouse_double_clicks.values():
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.HeldClick:
-                maps = []
                 for map in app_data.mouse_held_clicks.values():
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.sequential_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.sequential_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_SPEED:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_SPEED:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_Heatmap:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_r_map.values():
                     map = gamepad_maps.density_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_Heatmap:
-                maps = []
                 for gamepad_maps in app_data.thumbstick_l_map.values():
                     map = gamepad_maps.density_arrays
-                    maps.extend((res, array) for res, array in map.items())
+                    arrays.extend(map.values())
 
             case _:
                 raise NotImplementedError(message.type)
@@ -267,7 +257,7 @@ class Processing:
                                       ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
         is_speed = message.type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
 
-        rendered_array = render(message.colour_map, maps, width, height, message.sampling, linear=is_heatmap, blur=is_heatmap)
+        rendered_array = render(message.colour_map, arrays, width, height, message.sampling, linear=is_heatmap, blur=is_heatmap)
         self.q_send.put(ipc.Render(message.type, rendered_array, message.sampling))
         print('[Processing] Render request completed')
 
