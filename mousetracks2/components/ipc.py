@@ -253,3 +253,5 @@ class ApplicationLoadedData(Message):
     clicks: int
     keys_pressed: int
     buttons_pressed: int
+    active_time: int
+    inactive_time: int

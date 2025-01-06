@@ -143,7 +143,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 553, 404))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -165, 541, 404))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -203,7 +203,6 @@ class Ui_MainWindow(object):
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.label_23 = QLabel(self.groupBox_9)
         self.label_23.setObjectName(u"label_23")
-        self.label_23.setEnabled(False)
         self.label_23.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.gridLayout_3.addWidget(self.label_23, 5, 0, 1, 1)
@@ -216,14 +215,12 @@ class Ui_MainWindow(object):
 
         self.label_22 = QLabel(self.groupBox_9)
         self.label_22.setObjectName(u"label_22")
-        self.label_22.setEnabled(False)
         self.label_22.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.gridLayout_3.addWidget(self.label_22, 4, 0, 1, 1)
 
         self.stat_active = QLabel(self.groupBox_9)
         self.stat_active.setObjectName(u"stat_active")
-        self.stat_active.setEnabled(False)
 
         self.gridLayout_3.addWidget(self.stat_active, 4, 1, 1, 1)
 
@@ -251,7 +248,6 @@ class Ui_MainWindow(object):
 
         self.stat_inactive = QLabel(self.groupBox_9)
         self.stat_inactive.setObjectName(u"stat_inactive")
-        self.stat_inactive.setEnabled(False)
 
         self.gridLayout_3.addWidget(self.stat_inactive, 5, 1, 1, 1)
 
@@ -307,7 +303,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 570, 263))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 558, 271))
         self.verticalLayout_7 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_7.setObjectName(u"verticalLayout_7")
         self.custom_resolution = QGroupBox(self.scrollAreaWidgetContents_4)
@@ -414,7 +410,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 553, 494))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 541, 494))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)

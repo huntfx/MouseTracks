@@ -108,6 +108,8 @@ class Processing:
                 clicks=clicks,
                 keys_pressed=np.sum(self.application_data.key_presses),
                 buttons_pressed=sum(np.sum(array) for array in self.application_data.button_presses.values()),
+                active_time=self.application_data.tick.activity,
+                inactive_time=self.application_data.tick.inactivity,
             ))
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:

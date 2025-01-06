@@ -13,7 +13,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from mousetracks.image import colours
 from .. import ipc
 from ...ui.main import Ui_MainWindow
-from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE
+from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
 
@@ -61,6 +61,21 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
     if m > 1:
         return f'{round(m, 3)} m'
     return f'{round(cm, 3)} cm'
+
+
+def format_ticks(ticks: int) -> str:
+    """Convert ticks to text."""
+    seconds = ticks / UPDATES_PER_SECOND
+    minutes = seconds / 60
+    hours = minutes / 60
+    days = hours / 24
+    if days > 1:
+        return f'{round(days, 2)} days'
+    if hours > 1:
+        return f'{round(hours, 2)} hours'
+    if minutes > 1:
+        return f'{round(minutes, 2)} minutes'
+    return f'{round(seconds, 2)} seconds'
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -125,7 +140,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
 
-        self.mouse_click_count = self.mouse_held_count = self.button_press_count = self.key_press_count = 0
+        self.mouse_click_count = self.mouse_held_count = 0
+        self.button_press_count = self.key_press_count = 0
+        self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -260,6 +277,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self._button_press_count = count
         self.ui.stat_buttons.setText(str(count))
 
+    @property
+    def active_time(self) -> int:
+        """Get the current active time."""
+        return self._active_time
+
+    @active_time.setter
+    def active_time(self, ticks: int) -> None:
+        """Set the current active time."""
+        self._active_time = ticks
+        if not ticks % 60:
+            self.ui.stat_active.setText(format_ticks(ticks))
+
+    @property
+    def inactive_time(self) -> int:
+        """Get the current inactive time."""
+        return self._inactive_time
+
+    @inactive_time.setter
+    def inactive_time(self, ticks: int) -> None:
+        """Set the current inactive time."""
+        self._inactive_time = ticks
+        if not ticks % 60:
+            self.ui.stat_inactive.setText(format_ticks(ticks))
+
     @QtCore.Slot(int)
     def application_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
@@ -361,6 +402,7 @@ class MainWindow(QtWidgets.QMainWindow):
         match message:
             case ipc.Tick():
                 self.tick_current = message.tick
+                self.active_time += 1
                 self.thumbnail_render_check()
 
             # When monitors change, store the new data
@@ -470,6 +512,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_click_count = message.clicks
                 self.key_press_count = message.keys_pressed
                 self.button_press_count = message.buttons_pressed
+                self.active_time = message.active_time
+                self.inactive_time = message.inactive_time
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
