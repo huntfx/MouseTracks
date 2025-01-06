@@ -75,11 +75,11 @@ class TrackingArray:
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         with zf.open(path, 'w') as f:
-            np.save(f, self)
+            np.save(f, self, allow_pickle=False)
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         with zf.open(path, 'r') as f:
-            self.array = np.load(f)
+            self.array = np.load(f, allow_pickle=False)
 
 
 class ArrayResolutionMap(dict):
