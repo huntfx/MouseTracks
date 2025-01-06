@@ -64,18 +64,13 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
 
 
 def format_ticks(ticks: int) -> str:
-    """Convert ticks to text."""
-    seconds = ticks / UPDATES_PER_SECOND
-    minutes = seconds / 60
-    hours = minutes / 60
-    days = hours / 24
-    if days > 1:
-        return f'{round(days, 2)} days'
-    if hours > 1:
-        return f'{round(hours, 2)} hours'
-    if minutes > 1:
-        return f'{round(minutes, 2)} minutes'
-    return f'{round(seconds, 2)} seconds'
+    """Convert ticks to a formatted time string."""
+    seconds = ticks // UPDATES_PER_SECOND
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+
+    return f'{days:02}:{hours:02}:{minutes:02}:{seconds:02}'
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -156,6 +151,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker = QueueWorker(q_receive)
         self.queue_worker.moveToThread(self.queue_thread)
 
+        self.timer_activity = QtCore.QTimer(self)
+
         # Connect signals and slots
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
@@ -166,6 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
+        self.timer_activity.timeout.connect(self.update_activity_preview)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
         self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
@@ -178,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start the thread
         self.queue_thread.start()
+        self.timer_activity.start(200)
 
         self.start_tracking()
         self.request_thumbnail()
@@ -286,8 +285,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def active_time(self, ticks: int) -> None:
         """Set the current active time."""
         self._active_time = ticks
-        if not ticks % 60:
-            self.ui.stat_active.setText(format_ticks(ticks))
 
     @property
     def inactive_time(self) -> int:
@@ -298,8 +295,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def inactive_time(self, ticks: int) -> None:
         """Set the current inactive time."""
         self._inactive_time = ticks
-        if not ticks % 60:
-            self.ui.stat_inactive.setText(format_ticks(ticks))
+
+    def update_activity_preview(self) -> None:
+        """Update the activity preview periodically."""
+        self.ui.stat_active.setText(format_ticks(self.active_time))
+        self.ui.stat_inactive.setText(format_ticks(self.inactive_time))
 
     @QtCore.Slot(int)
     def application_changed(self, idx: int) -> None:
