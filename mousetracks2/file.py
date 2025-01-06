@@ -5,7 +5,7 @@ import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterator, Optional, Self
+from typing import Iterator, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -77,10 +77,9 @@ class TrackingArray:
         with zf.open(path, 'w') as f:
             np.save(f, self)
 
-    @classmethod
-    def _load_from_zip(cls, zf: zipfile.ZipFile, path: str) -> Self:
+    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         with zf.open(path, 'r') as f:
-            return cls(np.load(f))
+            self.array = np.load(f)
 
 
 class ArrayResolutionMap(dict):
@@ -102,7 +101,7 @@ class ArrayResolutionMap(dict):
         for (width, height), array in self.items():
             array._write_to_zip(zf, f'{subfolder}/{width}x{height}.npy')
 
-    def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str):
+    def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str) -> None:
         relative_paths = [path[len(subfolder):].lstrip('/') for path in zf.namelist() if path.startswith(subfolder)]
 
         for relative_path in relative_paths:
@@ -110,7 +109,7 @@ class ArrayResolutionMap(dict):
             if not match:
                 raise RuntimeError(f'unexpected data in file: {subfolder}/{relative_path}')
             width, height = map(int, match.groups())
-            self[(width, height)] = TrackingArray._load_from_zip(zf, f'{subfolder}/{relative_path}')
+            self[(width, height)]._load_from_zip(zf, f'{subfolder}/{relative_path}')
 
 
 @dataclass
@@ -161,7 +160,7 @@ class MovementMaps:
         zf.writestr(f'{subfolder}/counter', str(self.counter))
         zf.writestr(f'{subfolder}/ticks', str(self.counter))
 
-    def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str):
+    def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str) -> None:
         folders = {path[len(subfolder):].lstrip('/').split('/', 1)[0]
                    for path in zf.namelist() if path.startswith(subfolder)}
 
