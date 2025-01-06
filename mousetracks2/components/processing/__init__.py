@@ -178,6 +178,11 @@ class Processing:
             # Reset the cursor position
             self.application_data.cursor_map.position = None
 
+            clicks = 0
+            for resolution_maps in self.application_data.mouse_single_clicks.values():
+                for array in resolution_maps.values():
+                    clicks += np.sum(array)
+
             # Send data back to the GUI
             self.q_send.put(ipc.ApplicationLoadedData(
                 application=self.current_application.name,
@@ -185,6 +190,9 @@ class Processing:
                 cursor_counter=self.application_data.cursor_map.counter,
                 thumb_l_counter=self.application_data.thumbstick_l_map[0].counter if self.application_data.thumbstick_l_map else 0,
                 thumb_r_counter=self.application_data.thumbstick_r_map[0].counter if self.application_data.thumbstick_r_map else 0,
+                clicks=clicks,
+                keys_pressed=np.sum(self.application_data.key_presses),
+                buttons_pressed=sum(np.sum(array) for array in self.application_data.button_presses.values()),
             ))
 
     def set_active(self):

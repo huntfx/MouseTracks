@@ -124,9 +124,27 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addLayout(horizontal)
 
         horizontal = QtWidgets.QHBoxLayout()
-        horizontal.addWidget(QtWidgets.QLabel('Total Mouse Distance:'))
+        horizontal.addWidget(QtWidgets.QLabel('Mouse Distance:'))
         self.distance = QtWidgets.QLabel('0.0')
         horizontal.addWidget(self.distance)
+        layout.addLayout(horizontal)
+
+        horizontal = QtWidgets.QHBoxLayout()
+        horizontal.addWidget(QtWidgets.QLabel('Mouse Clicks:'))
+        self.count_clicks = QtWidgets.QLabel('0')
+        horizontal.addWidget(self.count_clicks)
+        layout.addLayout(horizontal)
+
+        horizontal = QtWidgets.QHBoxLayout()
+        horizontal.addWidget(QtWidgets.QLabel('Key Presses:'))
+        self.count_keys = QtWidgets.QLabel('0')
+        horizontal.addWidget(self.count_keys)
+        layout.addLayout(horizontal)
+
+        horizontal = QtWidgets.QHBoxLayout()
+        horizontal.addWidget(QtWidgets.QLabel('Gamepad Button Presses:'))
+        self.count_buttons = QtWidgets.QLabel('0')
+        horizontal.addWidget(self.count_buttons)
         layout.addLayout(horizontal)
 
         self.application_input = QtWidgets.QComboBox()
@@ -170,8 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
 
-        self.mouse_click_count = 0
-        self.mouse_held_count = 0
+        self.mouse_click_count = self.mouse_held_count = self.button_press_count = self.key_press_count = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -266,6 +283,39 @@ class MainWindow(QtWidgets.QMainWindow):
             self.render_colour = self.render_colour_input.currentData()
 
         self.pause_colour_change = False
+
+    @property
+    def mouse_click_count(self) -> int:
+        """Get the current mouse click count."""
+        return self._mouse_click_count
+
+    @mouse_click_count.setter
+    def mouse_click_count(self, count: int) -> None:
+        """Set the current mouse click count."""
+        self._mouse_click_count = count
+        self.count_clicks.setText(str(count))
+
+    @property
+    def key_press_count(self) -> int:
+        """Get the current key press count."""
+        return self._key_press_count
+
+    @key_press_count.setter
+    def key_press_count(self, count: int) -> None:
+        """Set the current key press count."""
+        self._key_press_count = count
+        self.count_keys.setText(str(count))
+
+    @property
+    def button_press_count(self) -> int:
+        """Get the current button press count."""
+        return self._button_press_count
+
+    @button_press_count.setter
+    def button_press_count(self, count: int) -> None:
+        """Set the current button press count."""
+        self._button_press_count = count
+        self.count_buttons.setText(str(count))
 
     @QtCore.Slot(int)
     def application_changed(self, idx: int) -> None:
@@ -450,6 +500,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
+            case ipc.KeyPress():
+                self.key_press_count += 1
+
+            case ipc.ButtonPress():
+                self.button_press_count += 1
+
             case ipc.Application():
                 for idx in range(1, self.application_input.count()):
                     if self.application_input.itemText(idx) == message.name:
@@ -467,6 +523,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.cursor_data.counter = message.cursor_counter
                 self.thumbstick_l_data.counter = message.thumb_l_counter
                 self.thumbstick_r_data.counter = message.thumb_r_counter
+
+                self.mouse_click_count = message.clicks
+                self.key_press_count = message.keys_pressed
+                self.button_press_count = message.buttons_pressed
 
     @QtCore.Slot()
     def startTracking(self) -> None:

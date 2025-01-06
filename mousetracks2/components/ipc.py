@@ -85,7 +85,7 @@ class MouseHeld(Message):
 class KeyPress(Message):
     """Key has been pressed."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     opcode: int
 
 
@@ -101,7 +101,7 @@ class KeyHeld(Message):
 class ButtonPress(Message):
     """Gamepad button has been pressed."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     gamepad: int
     opcode: int
 
@@ -250,3 +250,6 @@ class ApplicationLoadedData(Message):
     cursor_counter: int
     thumb_l_counter: int
     thumb_r_counter: int
+    clicks: int
+    keys_pressed: int
+    buttons_pressed: int
