@@ -99,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q_send = q_send
         self.q_receive = q_receive
 
-        self.pause_redraw = False
+        self.pause_redraw = 0
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
 
@@ -145,6 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
         self.current_app: str = DEFAULT_APPLICATION_NAME
         self.current_app_position: Optional[tuple[int, int, int, int]] = None
+        self.last_click: Optional[int] = None
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -152,6 +153,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_worker.moveToThread(self.queue_thread)
 
         self.timer_activity = QtCore.QTimer(self)
+        self.timer_resize = QtCore.QTimer(self)
+        self.timer_resize.setSingleShot(True)
 
         # Connect signals and slots
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
@@ -164,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
         self.timer_activity.timeout.connect(self.update_activity_preview)
+        self.timer_resize.timeout.connect(self.update_thumbnail_size)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
         self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
@@ -179,7 +183,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.start(200)
 
         self.start_tracking()
-        self.request_thumbnail()
 
     @property
     def render_colour(self) -> str:
@@ -340,16 +343,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # If already redrawing then prevent building up commands
         if self.pause_redraw and not force:
             return False
-        self.pause_redraw = True
+        self.pause_redraw += 1
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
         size = self.ui.thumbnail.pixmapSize()
-        self.q_send.put(ipc.RenderRequest(self.render_type, size.width(), size.height(), self.render_colour, 1, app))
+        self.q_send.put(ipc.RenderRequest(self.render_type, size.width(), size.height(),
+                                          self.render_colour, 1, app, True))
         return True
 
     def render(self) -> None:
         """Send a render request."""
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
-        self.q_send.put(ipc.RenderRequest(self.render_type, None, None, self.render_colour, self.ui.render_samples.value(), app))
+        self.q_send.put(ipc.RenderRequest(self.render_type, None, None,
+                                          self.render_colour, self.ui.render_samples.value(), app, False))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -417,7 +422,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 target_width = int(width / message.sampling)
 
                 # Draw the new pixmap
-                if QtCore.QSize(target_width, target_height) == self.ui.thumbnail.pixmapSize():
+                if message.thumbnail:
                     match channels:
                         case 1:
                             image_format = QtGui.QImage.Format.Format_Grayscale8
@@ -432,7 +437,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     # Scale the QImage to fit the pixmap size
                     scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
                     self.ui.thumbnail.setImage(scaled_image)
-                    self.pause_redraw = False
+                    self.pause_redraw -= 1
 
                 # Save a render
                 else:
@@ -450,9 +455,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.MouseClick():
                 self.mouse_click_count += 1
+                self.last_click = self.tick_current
 
             case ipc.MouseHeld():
                 self.mouse_held_count += 1
+                self.last_click = self.tick_current
 
             case ipc.MouseMove():
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
@@ -641,6 +648,16 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.redraw_queue:
             redraw_queue, self.redraw_queue = self.redraw_queue, []
             self.ui.thumbnail.updatePixels(*redraw_queue)
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """Start a timer to trigger after resizing has finished."""
+        self.timer_resize.start(100)
+        super().resizeEvent(event)
+
+    def update_thumbnail_size(self) -> None:
+        """Set a new thumbnail size after the window has finished resizing."""
+        self.ui.thumbnail.freezeScale()
+        self.request_thumbnail()
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:

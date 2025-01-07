@@ -178,7 +178,8 @@ class RenderRequest(Message):
     height: Optional[int]
     colour_map: str
     sampling: int
-    application: str = field(default='')
+    application: Optional[str]
+    thumbnail: bool = field(default=False)
 
 
 @dataclass
@@ -186,9 +187,9 @@ class Render(Message):
     """A render has been completed."""
 
     target: int = field(default=Target.GUI, init=False)
-    type: RenderType
     array: np.ndarray
     sampling: int
+    thumbnail: bool = field(default=False)
 
 
 

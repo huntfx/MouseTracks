@@ -180,88 +180,81 @@ class Processing:
             data.run_compression()
             print(f'[Processing] Reduced all arrays')
 
-    def _render_array(self, message: ipc.RenderRequest) -> None:
-        """Render an array (tracks / heatmaps)."""
-        print('[Processing] Render request received...')
-        width = message.width
-        height = message.height
-
-        if message.application:
-            app_data = self.all_application_data[message.application]
-        else:
-            app_data = self.application_data
-
-        # Choose the data to render
+    def _arrays_for_rendering(self, profile: ApplicationData, render_type: ipc.RenderType) -> list[ArrayLike]:
+        """Get a list of arrays to use for a render."""
         arrays: list[ArrayLike] = []
-        match message.type:
+        match render_type:
             case ipc.RenderType.Time:
-                arrays.extend(app_data.cursor_map.sequential_arrays.values())
+                arrays.extend(profile.cursor_map.sequential_arrays.values())
 
             case ipc.RenderType.TimeHeatmap:
-                arrays.extend(app_data.cursor_map.density_arrays.values())
+                arrays.extend(profile.cursor_map.density_arrays.values())
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
-                for array in app_data.cursor_map.sequential_arrays.values():
+                for array in profile.cursor_map.sequential_arrays.values():
                     partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
                     arrays.append(partial_array)
 
             case ipc.RenderType.Speed:
-                arrays.extend(app_data.cursor_map.speed_arrays.values())
+                arrays.extend(profile.cursor_map.speed_arrays.values())
 
             case ipc.RenderType.SingleClick:
-                for map in app_data.mouse_single_clicks.values():
+                for map in profile.mouse_single_clicks.values():
                     arrays.extend(map.values())
 
             case ipc.RenderType.DoubleClick:
-                for map in app_data.mouse_double_clicks.values():
+                for map in profile.mouse_double_clicks.values():
                     arrays.extend(map.values())
 
             case ipc.RenderType.HeldClick:
-                for map in app_data.mouse_held_clicks.values():
+                for map in profile.mouse_held_clicks.values():
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R:
-                for gamepad_maps in app_data.thumbstick_r_map.values():
+                for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.sequential_arrays
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L:
-                for gamepad_maps in app_data.thumbstick_l_map.values():
+                for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.sequential_arrays
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_SPEED:
-                for gamepad_maps in app_data.thumbstick_r_map.values():
+                for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_SPEED:
-                for gamepad_maps in app_data.thumbstick_l_map.values():
+                for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_Heatmap:
-                for gamepad_maps in app_data.thumbstick_r_map.values():
+                for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.density_arrays
                     arrays.extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_Heatmap:
-                for gamepad_maps in app_data.thumbstick_l_map.values():
+                for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.density_arrays
                     arrays.extend(map.values())
 
             case _:
-                raise NotImplementedError(message.type)
+                raise NotImplementedError(render_type)
 
-        is_heatmap = message.type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
-                                      ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
-        is_speed = message.type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
+        return arrays
 
-        rendered_array = render(message.colour_map, arrays, width, height, message.sampling, linear=is_heatmap, blur=is_heatmap)
-        self.q_send.put(ipc.Render(message.type, rendered_array, message.sampling))
-        print('[Processing] Render request completed')
+    def _render_array(self, profile: ApplicationData, render_type: ipc.RenderType, width: Optional[int], height: Optional[int],
+                      colour_map: str, sampling: int = 1) -> np.ndarray:
+        """Render an array (tracks / heatmaps)."""
+        is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
+                                     ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
+        arrays = self._arrays_for_rendering(profile, render_type)
+        image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
+        return image
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
@@ -271,7 +264,16 @@ class Processing:
                 self.tick = self.application_data.tick.current = message.tick
 
             case ipc.RenderRequest():
-                self._render_array(message)
+                print('[Processing] Render request received...')
+                if message.application:
+                    profile = self.all_application_data[message.application]
+                else:
+                    profile = self.application_data
+
+                image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
+                self.q_send.put(ipc.Render(image, message.sampling, message.thumbnail))
+
+                print('[Processing] Render request completed')
 
             case ipc.MouseMove():
                 self.application_data.tick.set_active()
