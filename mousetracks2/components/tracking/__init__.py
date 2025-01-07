@@ -26,6 +26,8 @@ class DataState:
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepad_force_recheck: bool = field(default=False)
+    gamepad_stick_l_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
+    gamepad_stick_r_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
     key_presses: dict[int, int] = field(default_factory=dict)
     button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
 
@@ -170,20 +172,17 @@ class Tracking:
                     data.gamepad_force_recheck = True
                     continue
 
-                thumb_l, thumb_r = XInput.get_thumb_values(state)
+                stick_l, stick_r = XInput.get_thumb_values(state)
                 trig_l, trig_r = XInput.get_trigger_values(state)
                 buttons = XInput.get_button_values(state)
 
                 buttons['TRIGGER_LEFT'] = trig_l * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
                 buttons['TRIGGER_RIGHT'] = trig_r * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
 
-                if not (thumb_l or thumb_r or trig_l or trig_r or buttons):
-                    continue
-                last_activity = tick
-
                 for button, state in buttons.items():
                     if not state:
                         continue
+                    last_activity = tick
                     if button not in XINPUT_OPCODES:
                         button = f'BUTTON_{button}'
                     opcode = XINPUT_OPCODES[button]
@@ -196,8 +195,15 @@ class Tracking:
                         self.send_data(ipc.ButtonHeld(gamepad, opcode))
                         data.button_presses[opcode] = (press_start, tick)
 
-                self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, thumb_l))
-                self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, thumb_r))
+                if stick_l != data.gamepad_stick_l_position[gamepad]:
+                    last_activity = tick
+                    data.gamepad_stick_l_position[gamepad] = stick_l
+                    self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, stick_l))
+
+                if stick_r != data.gamepad_stick_r_position[gamepad]:
+                    last_activity = tick
+                    data.gamepad_stick_r_position[gamepad] = stick_r
+                    self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
             if tick and not tick % 3000:
                 self.send_data(ipc.Save())
