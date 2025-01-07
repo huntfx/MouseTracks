@@ -19,7 +19,7 @@ def array_target_resolution(arrays: list[ArrayLike], width: Optional[int] = None
         return width, height
 
     popularity = defaultdict(int)
-    for array in arrays:
+    for array in map(np.asarray, arrays):
         res_y, res_x = array.shape
         popularity[(res_x, res_y)] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9

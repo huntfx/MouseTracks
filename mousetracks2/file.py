@@ -139,6 +139,7 @@ class MovementMaps:
         for maps in (self.sequential_arrays, self.speed_arrays):
             # Compress all arrays
             for res, array in tuple(maps.items()):
+                array = np.asarray(array)
                 maps[res] = (array.astype(np.float64) / factor).astype(array.dtype)
 
                 # Remove array if it no longer contains data
