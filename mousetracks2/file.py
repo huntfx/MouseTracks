@@ -424,10 +424,14 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
 
     # Load in the metadata
     profile.created = int(data['Time']['Created'])
-    profile.tick.active = data['Ticks']['Recorded']
-    profile.tick.inactive = data['Ticks']['Total'] - data['Ticks']['Recorded']
     profile.cursor_map.distance = int(data['Distance']['Tracks'])
     profile.cursor_map.counter = int(data['Ticks']['Tracks'])
+
+    # Calculate the active / inactive time
+    # This was not recorded properly in the legacy code, so a very
+    # rough formula is used to estimate based on the data available
+    profile.tick.active = int(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+    profile.tick.inactive = data['Ticks']['Total'] - profile.tick.active
 
     # Process main tracking data
     for resolution, values in data['Resolution'].items():
