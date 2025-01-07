@@ -194,14 +194,14 @@ class Render(Message):
 
 
 @dataclass
-class CheckRunningApplication(Message):
+class RequestRunningAppCheck(Message):
     """Check which applications are running."""
 
     target: int = field(default=Target.AppDetection, init=False)
 
 
 @dataclass
-class Application(Message):
+class ApplicationDetected(Message):
     """Update data about an application."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
@@ -242,8 +242,8 @@ class Load(Message):
 
 
 @dataclass
-class ApplicationLoadedData(Message):
-    """Data containing information about the loaded application."""
+class ProfileLoaded(Message):
+    """Data containing information about the loaded profile."""
 
     target: int = field(default=Target.GUI, init=False)
     application: Optional[str]

@@ -13,7 +13,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from mousetracks.image import colours
 from .. import ipc
 from ...ui.main import Ui_MainWindow
-from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
+from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
 from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set up profiles
         self.ui.current_profile.clear()
-        self.ui.current_profile.addItem('Current Application')
+        self.ui.current_profile.addItem('Current Profile')
         for profile in get_profile_names():
             self.ui.current_profile.addItem(profile, profile)
 
@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.current_app: str = DEFAULT_APPLICATION_NAME
+        self.current_app: str = DEFAULT_PROFILE_NAME
         self.current_app_position: Optional[tuple[int, int, int, int]] = None
         self.last_click: Optional[int] = None
 
@@ -160,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
         self.ui.save_render.clicked.connect(self.render)
-        self.ui.current_profile.currentIndexChanged.connect(self.application_changed)
+        self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentIndexChanged.connect(self.render_colour_changed)
         self.queue_worker.message_received.connect(self.process_message)
@@ -305,8 +305,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stat_inactive.setText(format_ticks(self.inactive_time))
 
     @QtCore.Slot(int)
-    def application_changed(self, idx: int) -> None:
-        """Change the render type and trigger a redraw."""
+    def profile_changed(self, idx: int) -> None:
+        """Change the profile and trigger a redraw."""
         self.request_thumbnail(force=True)
 
     @QtCore.Slot(int)
@@ -491,7 +491,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.ButtonPress():
                 self.button_press_count += 1
 
-            case ipc.Application():
+            case ipc.ApplicationDetected():
                 for idx in range(1, self.ui.current_profile.count()):
                     if self.ui.current_profile.itemText(idx) == message.name:
                         break
@@ -502,7 +502,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.request_thumbnail()
 
             # Show the correct distance
-            case ipc.ApplicationLoadedData():
+            case ipc.ProfileLoaded():
                 self.cursor_data.distance = message.distance
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
                 self.cursor_data.counter = message.cursor_counter

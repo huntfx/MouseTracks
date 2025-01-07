@@ -119,7 +119,7 @@ class Tracking:
             # Check resolution and update if required
             if tick and not tick % 60:
                 self._refresh_monitor_data(data)
-                self.send_data(ipc.CheckRunningApplication())
+                self.send_data(ipc.RequestRunningAppCheck())
 
             # Update mouse movement
             if mouse_position != data.mouse_position:

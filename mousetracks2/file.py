@@ -1,11 +1,13 @@
 import os
 import pickle
 import re
+import sys
 import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterator, Optional
+from pathlib import Path
+from typing import Iterator, Optional, Self
 from uuid import uuid4
 
 import numpy as np
@@ -14,20 +16,39 @@ from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, UPDATES_PER_SE
 from .utils.win import MOUSE_BUTTONS
 
 
+ALLOW_LEGACY_IMPORT = True
+"""Legacy imports require unpickling data, so is unsafe.
+TODO: Default to False, and only enable when using File > Import.
+"""
+
 EXPECTED_LEGACY_VERSION = 34
-"""Only mtk files of this version are allowed to be loaded.
+"""Only legacy files of this version are allowed to be loaded.
 Any other versions must be upgraded with the mousetracks v1 script.
 """
 
 CURRENT_FILE_VERSION = 1
 
-FILE_DIR = 'R:/test'
+EXTENSION = 'mtk'
+"""Extension to use for the profile data."""
 
 
-class InvalidVersionError(Exception):
-    def __init__(self, filename: str, version: int, expected: int) -> None:
-        super().__init__(f'The {os.path.basename(filename)} version is invalid '
-                         f'(got: v{version}, expected: v{expected})')
+# Get the appdata folder
+# Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
+match sys.platform:
+    case "win32":
+        APPDATA = Path(os.path.expandvars('%APPDATA%'))
+    case 'darwin':
+        APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
+    case _:
+        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser("~/.local/share")))
+
+BASE_DIR = APPDATA / 'MouseTracks'
+
+PROFILE_DIR = BASE_DIR / 'Profiles'
+
+
+class UnsupportedVersionError(Exception):
+    """When a file can't be loaded due to an unsupported version"""
 
 
 class TrackingArray:
@@ -38,15 +59,26 @@ class TrackingArray:
     an array in-place isn't supported.
     """
 
-    DTYPES = [np.uint16, np.uint32, np.uint64]
+    DTYPES = [np.uint8, np.uint16, np.uint32, np.uint64]
     MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
 
     def __init__(self, shape: int | list[int] | np.ndarray) -> None:
+        # Choose the best dtype to use
+        max_int = 0
         if isinstance(shape, np.ndarray):
-            self.array = shape
+            max_int = np.max(shape)
+        for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
+            if max_int < max_value:
+                break
         else:
-            self.array = np.zeros(shape, dtype=np.uint8)
-        self.max_value = np.iinfo(np.uint8).max
+            raise ValueError('int too high')
+
+        # Create the array
+        if isinstance(shape, np.ndarray):
+            self.array = shape.astype(dtype)
+        else:
+            self.array = np.zeros(shape, dtype=dtype)
+        self.max_value = np.iinfo(dtype).max
 
     def __array__(self) -> np.ndarray:
         """For internal numpy usage."""
@@ -106,8 +138,8 @@ class ArrayResolutionMap(dict):
 
         for relative_path in relative_paths:
             match = re.match(r'(\d+)x(\d+)\.npy', relative_path)
-            if not match:
-                raise RuntimeError(f'unexpected data in file: {subfolder}/{relative_path}')
+            if match is None:
+                raise RuntimeError(f'unexpected data in filename: {subfolder}/{relative_path}')
             width, height = map(int, match.groups())
             self[(width, height)]._load_from_zip(zf, f'{subfolder}/{relative_path}')
 
@@ -228,7 +260,7 @@ class Tick:
 
 
 @dataclass
-class ApplicationData:
+class TrackingProfile:
     """The data stored per application.
     Everything that gets saved to disk is contained in here.
     """
@@ -344,17 +376,28 @@ class ApplicationData:
                 os.remove(del_file)
 
     @classmethod
-    def load(cls, path: str):
-        new = cls('')
+    def load(cls, path: str, allow_legacy: bool = ALLOW_LEGACY_IMPORT) -> Self:
+        profile = cls('')
         with zipfile.ZipFile(path, mode='r') as zf:
-            version = int(zf.read('version'))
-            if version != CURRENT_FILE_VERSION:
-                raise RuntimeError(f'unexpected version: {version}')
-            new._load_from_zip(zf)
-        return new
+            version = _get_profile_version(zf)
+
+            # Special case to load legacy profiles
+            if version is None:
+                if allow_legacy and _get_profile_legacy_version(zf) is not None:
+                    _load_legacy_data(zf, profile)
+                else:
+                    raise UnsupportedVersionError('invalid file')
+
+            # Load the data
+            else:
+                if not 1 <= version <= CURRENT_FILE_VERSION:
+                    raise UnsupportedVersionError(str(version))
+                profile._load_from_zip(zf)
+
+        return profile
 
 
-def load_legacy_data(path: str) -> ApplicationData:
+def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
     """Load in data from the legacy tracking.
 
     Mouse:
@@ -370,86 +413,96 @@ def load_legacy_data(path: str) -> ApplicationData:
         Thumbstick data is discarded as X and Y were recorded separately
         and cannot be recombined.
     """
+    # Check the version
+    version = _get_profile_legacy_version(zf)
+    if version != EXPECTED_LEGACY_VERSION:
+        raise UnsupportedVersionError(f'legacy profile cannot be imported as it does not have the most recent update')
 
-    result = ApplicationData()
+    # Load in the data
+    with zf.open('data.pkl') as f:
+        data: dict[str, any] = pickle.load(f)
 
-    with zipfile.ZipFile(path, 'r') as zf:
-        # Check the version
-        version = int(zf.read('metadata/file.txt'))
-        if version != EXPECTED_LEGACY_VERSION:
-            raise InvalidVersionError(path, version, EXPECTED_LEGACY_VERSION)
+    # Load in the metadata
+    profile.created = int(data['Time']['Created'])
+    profile.tick.active = data['Ticks']['Recorded']
+    profile.tick.inactive = data['Ticks']['Total'] - data['Ticks']['Recorded']
+    profile.cursor_map.distance = int(data['Distance']['Tracks'])
+    profile.cursor_map.counter = int(data['Ticks']['Tracks'])
 
-        # Load in the data
-        with zf.open('data.pkl') as f:
-            data: dict[str, any] = pickle.load(f)
+    # Process main tracking data
+    for resolution, values in data['Resolution'].items():
+        # Load tracking heatmap
+        for array_type, container in (('Tracks', profile.cursor_map.sequential_arrays), ('Speed', profile.cursor_map.speed_arrays)):
+            with zf.open(f'maps/{values[array_type]}.npy') as f:
+                array = np.load(f)
+                if np.any(array > 0):
+                    container[resolution] = TrackingArray(array)
 
-        # Load in the metadata
-        # created: int = int(data['Time']['Created'])
-        # modified: int = int(data['Time']['Modified'])
-        # session_count: int = data['TimesLoaded']
-        # ticks_total: int = data['Ticks']['Total']
-        # ticks_recorded: int = data['Ticks']['Recorded']
-
-        result.cursor_map.distance = int(data['Distance']['Tracks'])
-        result.cursor_map.counter = int(data['Ticks']['Tracks'])
-
-        # Process main tracking data
-        for resolution, values in data['Resolution'].items():
-            # Load tracking heatmap
-            for array_type, container in (('Tracks', result.cursor_map.sequential_arrays), ('Speed', result.cursor_map.speed_arrays)):
-                with zf.open(f'maps/{values[array_type]}.npy') as f:
+        # Load click heatmap
+        for array_type, container in (('Single', profile.mouse_single_clicks), ('Double', profile.mouse_double_clicks)):
+            for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
                     array = np.load(f)
                     if np.any(array > 0):
-                        container[resolution] = array
+                        container[MOUSE_BUTTONS[i]][resolution] = TrackingArray(array)
 
-            # Load click heatmap
-            for array_type, container in (('Single', result.mouse_single_clicks), ('Double', result.mouse_double_clicks)):
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
-                        array = np.load(f)
-                        if np.any(array > 0):
-                            container[MOUSE_BUTTONS[i]][resolution] = array
+    # Process key/button data
+    for opcode, count in data['Keys']['All']['Pressed'].items():
+        profile.key_presses[opcode] = count
+    for opcode, count in data['Keys']['All']['Held'].items():
+        profile.key_held[opcode] = count
 
-        # Process key/button data
-        for opcode, count in data['Keys']['All']['Pressed'].items():
-            result.key_presses[opcode] = count
-        for opcode, count in data['Keys']['All']['Held'].items():
-            result.key_held[opcode] = count
-
-        for opcode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
-            result.button_presses[opcode] = count
-        for opcode, count in data['Gamepad']['All']['Buttons']['Held'].items():
-            result.button_held[opcode] = count
-
-        return result
+    for opcode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
+        profile.button_presses[0][opcode] = count
+    for opcode, count in data['Gamepad']['All']['Buttons']['Held'].items():
+        profile.button_held[0][opcode] = count
 
 
-class ApplicationDataLoader(dict):
+def _get_profile_version(zf: zipfile.ZipFile) -> Optional[bool]:
+    try:
+        return int(zf.read('version'))
+    except KeyError:
+        return None
+
+
+def _get_profile_legacy_version(zf: zipfile.ZipFile) -> Optional[bool]:
+    try:
+        return int(zf.read('metadata/file.txt'))
+    except KeyError:
+        return None
+
+
+class TrackingProfileLoader(dict):
     """Act like a defaultdict to load data if available."""
-    def __missing__(self, application) -> ApplicationData:
+    def __missing__(self, application) -> TrackingProfile:
         filename = get_filename(application)
         if os.path.exists(filename):
-            self[application] = ApplicationData.load(filename)
+            self[application] = TrackingProfile.load(filename)
         else:
-            self[application] = ApplicationData(application)
+            self[application] = TrackingProfile(application)
         return self[application]
 
 
 def get_filename(application: str) -> str:
     """Get the filename for an application."""
     sanitised = re.sub(r'[^a-zA-Z0-9]', '', application.lower())
-    return os.path.join(FILE_DIR, f'{sanitised}.mtk2')
+    return os.path.join(PROFILE_DIR, f'{sanitised}.{EXTENSION}')
 
 
 def get_profile_names() -> list[str]:
     """Get all the profile_names, ordered by modified time."""
-    if not os.path.exists(FILE_DIR):
+    if not os.path.exists(PROFILE_DIR):
         return []
     files = []
-    for file in os.scandir(FILE_DIR):
-        if os.path.splitext(file.name)[1] != '.mtk2':
+    for file in os.scandir(PROFILE_DIR):
+        if os.path.splitext(file.name)[1] != f'.{EXTENSION}':
             continue
         with zipfile.ZipFile(file, 'r') as zf:
-            name = zf.read('metadata/name').decode('utf-8')
+            if _get_profile_version(zf) is None:
+                if _get_profile_legacy_version(zf) != EXPECTED_LEGACY_VERSION:
+                    continue
+                name = os.path.splitext(file.name)[0]
+            else:
+                name = zf.read('metadata/name').decode('utf-8')
         files.append((file.stat().st_mtime, name))
     return [name for modified, name in sorted(files, reverse=True)]

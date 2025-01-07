@@ -4,7 +4,7 @@ from typing import Optional
 
 from mousetracks.applications import RunningApplications
 from .. import ipc
-from ...constants import DEFAULT_APPLICATION_NAME
+from ...constants import DEFAULT_PROFILE_NAME
 from ...utils.win import monitor_locations
 
 
@@ -38,7 +38,7 @@ class AppDetection:
                     raise ExitRequest
 
             # This is using the legacy app detection for the time being
-            case ipc.CheckRunningApplication():
+            case ipc.RequestRunningAppCheck():
                 self.running_apps.refresh()
 
                 current_app: Optional[tuple[str, str]] = None
@@ -102,11 +102,11 @@ class AppDetection:
 
                 if changed:
                     if current_app is None:
-                        self.q_send.put(ipc.Application(DEFAULT_APPLICATION_NAME, None, None))
+                        self.q_send.put(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
                     elif app_is_windowed:
-                        self.q_send.put(ipc.Application(current_app[0], process_id, app_position))
+                        self.q_send.put(ipc.ApplicationDetected(current_app[0], process_id, app_position))
                     else:
-                        self.q_send.put(ipc.Application(current_app[0], process_id, None))
+                        self.q_send.put(ipc.ApplicationDetected(current_app[0], process_id, None))
 
                 self.previous_app = current_app
 

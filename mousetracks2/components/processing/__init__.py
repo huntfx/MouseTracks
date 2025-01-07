@@ -10,11 +10,11 @@ from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc
-from ...file import MovementMaps, ApplicationData, ApplicationDataLoader, get_filename
+from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
-from ...constants import DEFAULT_APPLICATION_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
+from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 from ...render import render
 
 
@@ -60,16 +60,15 @@ class Processing:
         self.pause_tick = 0
         self.state = ipc.TrackingState.State.Pause
 
-        # Load in the default application
-        self.all_application_data: dict[str, ApplicationData] = ApplicationDataLoader()
-        self.default_application = Application(DEFAULT_APPLICATION_NAME, None)
+        # Load in the default profile
+        self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
         self._current_application = Application('', None)
-        self.current_application = self.default_application
+        self.current_application = Application(DEFAULT_PROFILE_NAME, None)
 
     @property
-    def application_data(self) -> ApplicationData:
+    def profile(self) -> TrackingProfile:
         """Get the data for the current application."""
-        return self.all_application_data[self.current_application.name]
+        return self.all_profiles[self.current_application.name]
 
     @property
     def current_application(self) -> Application:
@@ -79,7 +78,7 @@ class Processing:
     @current_application.setter
     def current_application(self, application: Application):
         """Update the currently loaded application."""
-        previous_data = self.application_data
+        previous_data = self.profile
         previous_app, self._current_application = self._current_application, application
 
         if application != previous_app:
@@ -88,28 +87,28 @@ class Processing:
             previous_data.tick.set_active()
 
             # Start new activity data
-            self.application_data.tick.current = self.application_data.tick.previous = self.tick
+            self.profile.tick.current = self.profile.tick.previous = self.tick
 
             # Reset the cursor position
-            self.application_data.cursor_map.position = None
+            self.profile.cursor_map.position = None
 
             clicks = 0
-            for resolution_maps in self.application_data.mouse_single_clicks.values():
+            for resolution_maps in self.profile.mouse_single_clicks.values():
                 for array in resolution_maps.values():
                     clicks += np.sum(array)
 
             # Send data back to the GUI
-            self.q_send.put(ipc.ApplicationLoadedData(
+            self.q_send.put(ipc.ProfileLoaded(
                 application=self.current_application.name,
-                distance=self.application_data.cursor_map.distance,
-                cursor_counter=self.application_data.cursor_map.counter,
-                thumb_l_counter=self.application_data.thumbstick_l_map[0].counter if self.application_data.thumbstick_l_map else 0,
-                thumb_r_counter=self.application_data.thumbstick_r_map[0].counter if self.application_data.thumbstick_r_map else 0,
+                distance=self.profile.cursor_map.distance,
+                cursor_counter=self.profile.cursor_map.counter,
+                thumb_l_counter=self.profile.thumbstick_l_map[0].counter if self.profile.thumbstick_l_map else 0,
+                thumb_r_counter=self.profile.thumbstick_r_map[0].counter if self.profile.thumbstick_r_map else 0,
                 clicks=clicks,
-                keys_pressed=np.sum(self.application_data.key_presses),
-                buttons_pressed=sum(np.sum(array) for array in self.application_data.button_presses.values()),
-                active_time=self.application_data.tick.activity,
-                inactive_time=self.application_data.tick.inactivity,
+                keys_pressed=np.sum(self.profile.key_presses),
+                buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
+                active_time=self.profile.tick.activity,
+                inactive_time=self.profile.tick.inactivity,
             ))
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
@@ -180,7 +179,7 @@ class Processing:
             data.run_compression()
             print(f'[Processing] Reduced all arrays')
 
-    def _arrays_for_rendering(self, profile: ApplicationData, render_type: ipc.RenderType) -> list[ArrayLike]:
+    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType) -> list[ArrayLike]:
         """Get a list of arrays to use for a render."""
         arrays: list[ArrayLike] = []
         match render_type:
@@ -247,7 +246,7 @@ class Processing:
 
         return arrays
 
-    def _render_array(self, profile: ApplicationData, render_type: ipc.RenderType, width: Optional[int], height: Optional[int],
+    def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType, width: Optional[int], height: Optional[int],
                       colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
@@ -261,14 +260,14 @@ class Processing:
         match message:
             # Update the current tick
             case ipc.Tick():
-                self.tick = self.application_data.tick.current = message.tick
+                self.tick = self.profile.tick.current = message.tick
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
                 if message.application:
-                    profile = self.all_application_data[message.application]
+                    profile = self.all_profiles[message.application]
                 else:
-                    profile = self.application_data
+                    profile = self.profile
 
                 image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
                 self.q_send.put(ipc.Render(image, message.sampling, message.thumbnail))
@@ -276,20 +275,20 @@ class Processing:
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
-                self.application_data.tick.set_active()
-                self._record_move(self.application_data.cursor_map, message.position)
+                self.profile.tick.set_active()
+                self._record_move(self.profile.cursor_map, message.position)
 
             case ipc.MouseHeld():
-                self.application_data.tick.set_active()
+                self.profile.tick.set_active()
 
                 result = self._monitor_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
-                    self.application_data.mouse_held_clicks[message.button][current_monitor][index] += 1
+                    self.profile.mouse_held_clicks[message.button][current_monitor][index] += 1
 
             case ipc.MouseClick():
-                self.application_data.tick.set_active()
+                self.profile.tick.set_active()
 
                 previous = self.previous_mouse_click
                 double_click = (
@@ -301,10 +300,10 @@ class Processing:
                 )
 
                 if double_click:
-                    arrays = self.application_data.mouse_double_clicks[message.button]
+                    arrays = self.profile.mouse_double_clicks[message.button]
                     print(f'[Processing] Mouse button {message.button} double clicked.')
                 else:
-                    arrays = self.application_data.mouse_single_clicks[message.button]
+                    arrays = self.profile.mouse_single_clicks[message.button]
                     print(f'[Processing] Mouse button {message.button} clicked.')
 
                 result = self._monitor_offset(message.position)
@@ -316,38 +315,38 @@ class Processing:
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
             case ipc.KeyPress():
-                self.application_data.tick.set_active()
+                self.profile.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
-                self.application_data.key_presses[message.opcode] += 1
+                self.profile.key_presses[message.opcode] += 1
 
             case ipc.KeyHeld():
-                self.application_data.tick.set_active()
-                self.application_data.key_held[message.opcode] += 1
+                self.profile.tick.set_active()
+                self.profile.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
-                self.application_data.tick.set_active()
+                self.profile.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
-                self.application_data.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.profile.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.ButtonHeld():
-                self.application_data.tick.set_active()
-                self.application_data.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.profile.tick.set_active()
+                self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
                 self.monitor_data = message.data
 
             case ipc.ThumbstickMove():
-                self.application_data.tick.set_active()
+                self.profile.tick.set_active()
                 width = height = RADIAL_ARRAY_SIZE
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
                 remapped = (x, height - y - 1)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
-                        self._record_move(self.application_data.thumbstick_l_map[message.gamepad], remapped, (width, height))
+                        self._record_move(self.profile.thumbstick_l_map[message.gamepad], remapped, (width, height))
                     case ipc.ThumbstickMove.Thumbstick.Right:
-                        self._record_move(self.application_data.thumbstick_r_map[message.gamepad], remapped, (width, height))
+                        self._record_move(self.profile.thumbstick_r_map[message.gamepad], remapped, (width, height))
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
@@ -357,26 +356,26 @@ class Processing:
             case ipc.TrackingState():
                 match message.state:
                     case ipc.TrackingState.State.Start:
-                        self.application_data.cursor_map.position = cursor_position()
+                        self.profile.cursor_map.position = cursor_position()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
                     case ipc.TrackingState.State.Pause:
-                        self.pause_tick = self.application_data.cursor_map.counter
+                        self.pause_tick = self.profile.cursor_map.counter
                 self.state = message.state
 
-            case ipc.Application():
+            case ipc.ApplicationDetected():
                 self.current_application = Application(message.name, message.rect)
 
             case ipc.Save():
                 if message.application is None:
-                    applications = self.all_application_data.keys()
+                    applications = self.all_profiles.keys()
                 else:
                     applications = [message.application]
 
                 for application in applications:
                     print(f'[Processing] Saving {application}...')
-                    if self.all_application_data[application].modified:
-                        self.all_application_data[application].save(get_filename(application))
+                    if self.all_profiles[application].modified:
+                        self.all_profiles[application].save(get_filename(application))
                         print(f'[Processing] Saved {application}')
                     else:
                         print('[Processing] Skipping save, not modified')
@@ -401,6 +400,7 @@ class Processing:
 
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            traceback.print_exc()
             print(f'[Processing] Error shut down: {e}')
 
         self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Processing))
