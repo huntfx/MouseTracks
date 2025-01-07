@@ -313,7 +313,13 @@ class ApplicationData:
     def save(self, path: str):
         self.tick.saved = self.tick.current
 
-        temp_file_base = os.path.join(os.path.dirname(path), uuid4().hex)
+        # Ensure the folder exists
+        base_dir = os.path.dirname(path)
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+
+        # Setup filenames
+        temp_file_base = os.path.join(base_dir, uuid4().hex)
         temp_file = f'{temp_file_base}.tmp'
         del_file = f'{temp_file_base}.del'
 
