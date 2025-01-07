@@ -233,6 +233,8 @@ class ApplicationData:
     Everything that gets saved to disk is contained in here.
     """
 
+    name: str
+
     created: int = field(default_factory=lambda: int(time.time()))
     tick: Tick = field(default_factory=Tick)
 
@@ -257,6 +259,7 @@ class ApplicationData:
 
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
+        zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/created', str(self.created))
         zf.writestr('metadata/modified', str(int(time.time())))
         zf.writestr('metadata/active', str(self.tick.activity))
@@ -285,6 +288,7 @@ class ApplicationData:
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
 
+        self.name = zf.read('metadata/name').decode('utf-8')
         self.created = int(zf.read('metadata/created'))
         self.tick.active = int(zf.read('metadata/active'))
         self.tick.inactive = int(zf.read('metadata/inactive'))
@@ -341,7 +345,7 @@ class ApplicationData:
 
     @classmethod
     def load(cls, path: str):
-        new = cls()
+        new = cls('')
         with zipfile.ZipFile(path, mode='r') as zf:
             version = int(zf.read('version'))
             if version != CURRENT_FILE_VERSION:
@@ -427,7 +431,7 @@ class ApplicationDataLoader(dict):
         if os.path.exists(filename):
             self[application] = ApplicationData.load(filename)
         else:
-            self[application] = ApplicationData()
+            self[application] = ApplicationData(application)
         return self[application]
 
 
@@ -435,3 +439,17 @@ def get_filename(application: str) -> str:
     """Get the filename for an application."""
     sanitised = re.sub(r'[^a-zA-Z0-9]', '', application.lower())
     return os.path.join(FILE_DIR, f'{sanitised}.mtk2')
+
+
+def get_profile_names() -> list[str]:
+    """Get all the profile_names, ordered by modified time."""
+    if not os.path.exists(FILE_DIR):
+        return []
+    files = []
+    for file in os.scandir(FILE_DIR):
+        if os.path.splitext(file.name)[1] != '.mtk2':
+            continue
+        with zipfile.ZipFile(file, 'r') as zf:
+            name = zf.read('metadata/name').decode('utf-8')
+        files.append((file.stat().st_mtime, name))
+    return [name for modified, name in sorted(files, reverse=True)]

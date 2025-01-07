@@ -14,6 +14,7 @@ from mousetracks.image import colours
 from .. import ipc
 from ...ui.main import Ui_MainWindow
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPLICATION_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
+from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
 
@@ -108,7 +109,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set up profiles
         self.ui.current_profile.clear()
         self.ui.current_profile.addItem('Current Application')
-        self.ui.current_profile.addItem(DEFAULT_APPLICATION_NAME, DEFAULT_APPLICATION_NAME)
+        for profile in get_profile_names():
+            self.ui.current_profile.addItem(profile, profile)
 
         # self.ui.map_type = QtWidgets.QComboBox()
         self.ui.map_type.addItem('Time', ipc.RenderType.Time)
