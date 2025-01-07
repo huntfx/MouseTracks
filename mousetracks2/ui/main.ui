@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>764</width>
-    <height>552</height>
+    <width>736</width>
+    <height>468</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,10 +24,16 @@
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="verticalLayoutWidget">
-        <layout class="QVBoxLayout" name="verticalLayout_11">
+       <widget class="QWidget" name="widget" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>2</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QLabel" name="thumbnail">
+          <widget class="ResizableImage" name="thumbnail">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -55,6 +61,18 @@
         </layout>
        </widget>
        <widget class="QTabWidget" name="tabWidget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="currentIndex">
          <number>0</number>
         </property>
@@ -72,8 +90,8 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-165</y>
-               <width>541</width>
+               <y>0</y>
+               <width>298</width>
                <height>404</height>
               </rect>
              </property>
@@ -328,7 +346,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>298</width>
                <height>235</height>
               </rect>
              </property>
@@ -507,7 +525,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>231</width>
+               <width>298</width>
                <height>494</height>
               </rect>
              </property>
@@ -911,7 +929,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>764</width>
+     <width>736</width>
      <height>22</height>
     </rect>
    </property>
@@ -1157,6 +1175,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ResizableImage</class>
+   <extends>QLabel</extends>
+   <header>mousetracks2.ui.widgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

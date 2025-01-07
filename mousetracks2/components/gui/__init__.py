@@ -17,6 +17,7 @@ from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_APPL
 from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations
+from ...ui.widgets import Pixel
 
 
 class QueueWorker(QtCore.QObject):
@@ -128,10 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
 
         # Thumbnail pixmap
-        self.pixmap = QtGui.QPixmap(360, 240)
-        self.pixmap.fill(QtCore.Qt.GlobalColor.black)
-        self.ui.thumbnail.setPixmap(self.pixmap)
-        self.image = self.pixmap.toImage()
+        self.ui.thumbnail.setPixmap(QtGui.QPixmap(640, 400))
 
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
@@ -344,7 +342,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         self.pause_redraw = True
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
-        self.q_send.put(ipc.RenderRequest(self.render_type, self.pixmap.width(), self.pixmap.height(), self.render_colour, 1, app))
+        size = self.ui.thumbnail.pixmapSize()
+        self.q_send.put(ipc.RenderRequest(self.render_type, size.width(), size.height(), self.render_colour, 1, app))
         return True
 
     def render(self) -> None:
@@ -418,7 +417,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 target_width = int(width / message.sampling)
 
                 # Draw the new pixmap
-                if (target_width, target_height) == (360, 240):
+                if QtCore.QSize(target_width, target_height) == self.ui.thumbnail.pixmapSize():
                     match channels:
                         case 1:
                             image_format = QtGui.QImage.Format.Format_Grayscale8
@@ -426,21 +425,13 @@ class MainWindow(QtWidgets.QMainWindow):
                             image_format = QtGui.QImage.Format.Format_RGB888
                         case 4:
                             image_format = QtGui.QImage.Format.Format_RGBA8888
-                            self.pixmap.fill(QtCore.Qt.GlobalColor.transparent)
                         case _:
                             raise NotImplementedError(channels)
                     image = QtGui.QImage(message.array.data, width, height, image_format)
 
                     # Scale the QImage to fit the pixmap size
                     scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-
-                    # Draw the QImage onto the QPixmap
-                    painter = QtGui.QPainter(self.pixmap)
-                    painter.drawImage(0, 0, scaled_image)
-                    painter.end()
-                    self.ui.thumbnail.setPixmap(self.pixmap)
-                    self.image = self.pixmap.toImage()
-
+                    self.ui.thumbnail.setImage(scaled_image)
                     self.pause_redraw = False
 
                 # Save a render
@@ -616,11 +607,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.current_profile.currentIndex() and self.ui.current_profile.currentData() != self.current_app:
             return
 
-        seen = set()
+        unique_pixels = set()
+        size = self.ui.thumbnail.pixmapSize()
         for pixel in calculate_line(old_position, new_position):
             # Refresh data per pixel
-            # This could be done only when the cursor changes
-            # monitor, but it's not computationally heavy
             if force_monitor:
                 current_monitor = force_monitor
             else:
@@ -628,33 +618,29 @@ class MainWindow(QtWidgets.QMainWindow):
                 if result is None:
                     continue
                 current_monitor, pixel = result
-            width_multiplier = self.image.width() / current_monitor[0]
-            height_multiplier = self.image.height() / current_monitor[1]
+            width_multiplier = size.width() / current_monitor[0]
+            height_multiplier = size.height() / current_monitor[1]
 
             # Downscale the pixel to match the pixmap
             x = int(pixel[0] * width_multiplier)
             y = int(pixel[1] * height_multiplier)
+            unique_pixels.add((x, y))
 
-            # Send (unique) pixels to be drawn
-            if (x, y) not in seen:
-                self.update_pixmap_pixel(int(x), int(y), self.pixel_colour)
-                seen.add((x, y))
+        # Send unique pixels to be drawn
+        self.update_pixmap_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
 
     @QtCore.Slot(int, int, QtGui.QColor)
-    def update_pixmap_pixel(self, x: int, y: int, colour: QtGui.QColor) -> None:
+    def update_pixmap_pixels(self, *pixels: Pixel) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
-        self.image.setPixelColor(x, y, colour)
-        self.pixmap.convertFromImage(self.image)
-        self.ui.thumbnail.setPixmap(self.pixmap)
+        self.ui.thumbnail.updatePixels(*pixels)
 
         # Queue commands if redrawing is paused
-        # This allows them to be resubmitted
+        # This allows them to be resubmitted after an update
         if self.pause_redraw:
-            self.redraw_queue.append((x, y, colour))
+            self.redraw_queue.extend(pixels)
         elif self.redraw_queue:
             redraw_queue, self.redraw_queue = self.redraw_queue, []
-            for x, y, colour in redraw_queue:
-                self.update_pixmap_pixel(x, y, colour)
+            self.ui.thumbnail.updatePixels(*redraw_queue)
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
