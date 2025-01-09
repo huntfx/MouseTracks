@@ -1,6 +1,6 @@
-# Mouse Tracks
+# MouseTracks
 
-<i>Current Status: I've got a full time job, so development on this has slowed. My plan is to start fresh with a much cleaner code base, where it'll be a lot more stable and modular than the current version.</i>
+<i>Current Status: I'm actively working on MouseTracks 2.0. It's using the same backbone, but is being rewritten from the ground up with a shiny new interface.</i>
 
 Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
