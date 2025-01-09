@@ -24,13 +24,13 @@ XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
 def get_mac_addresses() -> dict[str, Optional[str]]:
     """Fetch MAC addresses for all network interfaces."""
     mac_addresses: dict[str, str] = {}
-    for interface, addrs in psutil.net_if_addrs().items():
+    for interface_name, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
             if addr.family == psutil.AF_LINK:  # Identifies MAC address family
-                mac_addresses[interface] = addr.address
+                mac_addresses[interface_name] = addr.address
                 break
         else:
-            mac_addresses[interface] = None
+            mac_addresses[interface_name] = None
     return mac_addresses
 
 
@@ -48,8 +48,8 @@ class DataState:
     gamepad_stick_r_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
     key_presses: dict[int, int] = field(default_factory=dict)
     button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
-    bytes_sent_previous: dict[str, int] = field(default_factory=dict)
-    bytes_recv_previous: dict[str, int] = field(default_factory=dict)
+    bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
     bytes_recv: dict[str, int] = field(default_factory=dict)
 

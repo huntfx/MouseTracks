@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
 
+import psutil
 import numpy as np
 from scipy import ndimage
 
@@ -17,6 +18,15 @@ from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, SCRO
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 from ...render import render
 
+
+def get_interface_name_by_mac(mac_address: str) -> Optional[str]:
+    """Get the name of the network interface by MAC address."""
+    for interface_name, addresses in psutil.net_if_addrs().items():
+        for addr in addresses:
+            if addr.family == psutil.AF_LINK:
+                if addr.address == mac_address:
+                    return interface_name
+    return None
 
 
 class ExitRequest(Exception):
@@ -116,13 +126,6 @@ class Processing:
             for opcode in SCROLL_EVENTS:
                 scrolls += self.profile.key_held[opcode]
 
-            # Count total data transfer
-            bytes_sent = bytes_recv = 0
-            for array in self.profile.data_transfer.values():
-                _bytes_sent, _bytes_recv = np.sum(array, axis=0)
-                bytes_sent += _bytes_sent
-                bytes_recv += _bytes_recv
-
             # Send data back to the GUI
             self.q_send.put(ipc.ProfileLoaded(
                 application=self.current_application.name,
@@ -136,8 +139,8 @@ class Processing:
                 buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
                 active_time=self.profile.tick.activity,
                 inactive_time=self.profile.tick.inactivity,
-                bytes_sent=bytes_sent,
-                bytes_recv=bytes_recv,
+                bytes_sent=sum(self.profile.data_upload.values()),
+                bytes_recv=sum(self.profile.data_download.values()),
             ))
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
@@ -416,12 +419,11 @@ class Processing:
                         print('[Processing] Skipping save, not modified')
 
             case ipc.DataTransfer():
-                creation_day = self.profile.created // 86400
-                current_day = self.timestamp // 86400
-                days_since_creation = current_day - creation_day
+                self.profile.data_upload[message.mac_address] += message.bytes_sent
+                self.profile.data_download[message.mac_address] += message.bytes_recv
 
-                self.profile.data_transfer[message.mac_address][days_since_creation, 0] += message.bytes_sent
-                self.profile.data_transfer[message.mac_address][days_since_creation, 1] += message.bytes_recv
+                if message.mac_address not in self.profile.data_interfaces:
+                    self.profile.data_interfaces[message.mac_address] = get_interface_name_by_mac(message.mac_address)
 
             case _:
                 raise NotImplementedError(message)

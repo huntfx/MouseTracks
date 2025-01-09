@@ -337,7 +337,9 @@ class TrackingProfile:
     button_presses: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
     button_held: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
 
-    data_transfer: dict[str, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray([1, 2], auto_pad=[True, False])))
+    data_interfaces: dict[str, Optional[str]] = field(default_factory=lambda: defaultdict(str))
+    data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     @property
     def modified(self):
@@ -372,8 +374,12 @@ class TrackingProfile:
         for i, array_map in self.thumbstick_r_map.items():
             array_map._write_to_zip(zf, f'data/gamepad/{i}/right_stick')
 
-        for mac_address, array in self.data_transfer.items():
-            array._write_to_zip(zf, f'data/network/{mac_address}.npy')
+        for mac_address, amount in self.data_upload.items():
+            zf.writestr(f'data/network/upload/{mac_address}', str(amount))
+        for mac_address, amount in self.data_download.items():
+            zf.writestr(f'data/network/download/{mac_address}', str(amount))
+        for mac_address, name in self.data_interfaces.items():
+            zf.writestr(f'data/network/interfaces/{mac_address}', name or '')
 
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
@@ -404,10 +410,17 @@ class TrackingProfile:
             if f'data/gamepad/{i}/held.npy' in all_paths:
                 self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
 
-        mac_addresses = (os.path.splitext(path.split('/')[2])[0]
-                         for path in all_paths if path.startswith('data/network/'))
-        for mac_address in mac_addresses:
-            self.data_transfer[mac_address]._load_from_zip(zf, f'data/network/{mac_address}.npy')
+        for path in all_paths:
+            if path.startswith('data/network/upload/'):
+                mac_address = path.split('/')[3]
+                self.data_upload[mac_address] = int(zf.read(path))
+            elif path.startswith('data/network/download/'):
+                mac_address = path.split('/')[3]
+                self.data_download[mac_address] = int(zf.read(path))
+            elif path.startswith('data/network/interfaces/'):
+                self.data_interfaces[mac_address] = zf.read(path).decode('utf-8')
+                if not self.data_interfaces[mac_address]:
+                    self.data_interfaces[mac_address] = None
 
     def save(self, path: str):
         self.tick.saved = self.tick.current
