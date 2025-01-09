@@ -92,9 +92,11 @@ class KeyPress(Message):
 
 @dataclass
 class KeyHeld(Message):
-    """Key is being held."""
+    """Key is being held.
+    This does not trigger on the first press.
+    """
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     opcode: int
 
 
@@ -253,6 +255,7 @@ class ProfileLoaded(Message):
     thumb_l_counter: int
     thumb_r_counter: int
     clicks: int
+    scrolls: int
     keys_pressed: int
     buttons_pressed: int
     active_time: int

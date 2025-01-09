@@ -16,7 +16,7 @@ from ...ui.main import Ui_MainWindow
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
 from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations
+from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS
 from ...ui.widgets import Pixel
 
 
@@ -145,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
 
-        self.mouse_click_count = self.mouse_held_count = 0
+        self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
         self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
@@ -268,6 +268,17 @@ class MainWindow(QtWidgets.QMainWindow):
         """Set the current mouse click count."""
         self._mouse_click_count = count
         self.ui.stat_clicks.setText(str(count))
+
+    @property
+    def mouse_scroll_count(self) -> int:
+        """Get the current mouse scroll count."""
+        return self._mouse_scroll_count
+
+    @mouse_scroll_count.setter
+    def mouse_scroll_count(self, count: int) -> None:
+        """Set the current mouse scroll count."""
+        self._mouse_scroll_count = count
+        self.ui.stat_scroll.setText(str(count))
 
     @property
     def key_press_count(self) -> int:
@@ -524,6 +535,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.KeyPress():
                 self.key_press_count += 1
 
+            case ipc.KeyHeld():
+                if message.opcode in SCROLL_EVENTS:
+                    self.mouse_scroll_count += 1
+
             case ipc.ButtonPress():
                 self.button_press_count += 1
 
@@ -546,6 +561,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.thumbstick_r_data.counter = message.thumb_r_counter
 
                 self.mouse_click_count = message.clicks
+                self.mouse_scroll_count = message.scrolls
                 self.key_press_count = message.keys_pressed
                 self.button_press_count = message.buttons_pressed
                 self.active_time = message.active_time

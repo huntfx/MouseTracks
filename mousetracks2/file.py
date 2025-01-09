@@ -331,8 +331,8 @@ class TrackingProfile:
     mouse_double_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
     mouse_held_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
 
-    key_presses: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF))
-    key_held: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF))
+    key_presses: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF, auto_pad=[True]))
+    key_held: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF, auto_pad=[True]))
 
     button_presses: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
     button_held: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))

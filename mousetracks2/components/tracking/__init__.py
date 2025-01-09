@@ -3,16 +3,18 @@ import time
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Iterator, Optional
 from uuid import getnode
 
 import psutil
+import pynput
 import XInput
 
 from . import utils
 from .. import ipc
 from ...constants import UPDATES_PER_SECOND
-from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS
+from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS, SCROLL_EVENTS
+from ...utils.win import SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT
 
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
@@ -34,6 +36,7 @@ def get_mac_addresses() -> dict[str, Optional[str]]:
 
 @dataclass
 class DataState:
+    tick: int = field(default=0)
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
@@ -64,6 +67,14 @@ class Tracking:
 
         self._interface_mac_addresses = get_mac_addresses()
 
+        # Setup pynput listeners
+        # TODO: link up the other callbacks
+        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None, on_click=None, on_scroll=self._pynput_mouse_scroll)
+        self._pynput_keyboard_listener = pynput.keyboard.Listener(on_press=None, on_release=None)
+
+        self._pynput_mouse_listener.start()
+        self._pynput_keyboard_listener.start()
+
     def send_data(self, message: ipc.Message):
         self.q_send.put(message)
 
@@ -78,7 +89,7 @@ class Tracking:
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
 
-    def _run_with_state(self):
+    def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
         for tick in utils.ticks(UPDATES_PER_SECOND):
             self._receive_data()
@@ -91,8 +102,9 @@ class Tracking:
                 case ipc.TrackingState.State.Start:
                     if state_changed:
                         print('[Tracking] Started.')
-                        data = DataState()
-                    yield tick, data
+                        self.data = DataState()
+                    self.data.tick = tick
+                    yield tick, self.data
 
                 # When tracking is paused then stop here
                 case ipc.TrackingState.State.Pause:
@@ -104,25 +116,73 @@ class Tracking:
                     print('[Tracking] Shut down.')
                     return
 
-    def _check_monitor_data(self, data: DataState, pixel: tuple[int, int]) -> None:
+    def _check_monitor_data(self, pixel: tuple[int, int]) -> None:
         """Check if the monitor data is valid for the pixel.
         If not, recalculate it and update the other components.
         """
-        for x1, y1, x2, y2 in data.monitors:
+        for x1, y1, x2, y2 in self.data.monitors:
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 break
         else:
             print('[Tracking] Error with mouse position, refreshing monitor data...')
-            self._refresh_monitor_data(data)
+            self._refresh_monitor_data()
 
-    def _refresh_monitor_data(self, data: DataState) -> None:
+    def _refresh_monitor_data(self) -> None:
         """Check the monitor data is up to date.
         If not, then send a signal with the updated data.
         """
-        data.monitors, old_data = monitor_locations(), data.monitors
-        if old_data != data.monitors:
+        self.data.monitors, old_data = monitor_locations(), self.data.monitors
+        if old_data != self.data.monitors:
             print('[Tracking] Monitor change detected')
-            self.send_data(ipc.MonitorsChanged(data.monitors))
+            self.send_data(ipc.MonitorsChanged(self.data.monitors))
+
+    def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
+        """Triggers on mouse scroll.
+        The scroll vector is mostly -1, 0 or 1, but support has been
+        added in case it can go outside this range.
+        """
+        if dx > 0:
+            for _ in range(dx):
+                self._key_press(SCROLL_WHEEL_RIGHT)
+        elif dx < 0:
+            for _ in range(-dx):
+                self._key_press(SCROLL_WHEEL_LEFT)
+        if dy > 0:
+            for _ in range(dy):
+                self._key_press(SCROLL_WHEEL_UP)
+        elif dy < 0:
+            for _ in range(-dy):
+                self._key_press(SCROLL_WHEEL_DOWN)
+
+    def _key_press(self, opcode: int) -> None:
+        """Handle key presses."""
+        press_start, press_latest = self.data.key_presses.get(opcode, (self.data.tick, 0))
+
+        # Handle all standard keypresses
+        if opcode <= 0xFF:
+            # First press
+            if press_latest != self.data.tick - 1:
+                if opcode in MOUSE_BUTTONS:
+                    self.send_data(ipc.MouseClick(opcode, self.data.mouse_position))
+                self.send_data(ipc.KeyPress(opcode))
+
+            # Being held
+            else:
+                if opcode in MOUSE_BUTTONS:
+                    self.send_data(ipc.MouseHeld(opcode, self.data.mouse_position))
+                self.send_data(ipc.KeyHeld(opcode))
+
+        # Special case for scroll events
+        # It is being sent to the "held" array instead of "pressed"
+        # since the events will vastly outnumber individual key presses
+        # Also note that multiple events may be sent per tick
+        elif opcode in SCROLL_EVENTS:
+            self.send_data(ipc.KeyHeld(opcode))
+
+        else:
+            raise RuntimeError(f'unexpected opcode: {opcode}')
+
+        self.data.key_presses[opcode] = (press_start, self.data.tick)
 
     def _run(self):
         print('[Tracking] Loaded.')
@@ -146,37 +206,20 @@ class Tracking:
 
             # Check resolution and update if required
             if tick and not tick % 60:
-                self._refresh_monitor_data(data)
+                self._refresh_monitor_data()
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Update mouse movement
             if mouse_position != data.mouse_position:
-                data.mouse_position = mouse_position
+                self.data.mouse_position = mouse_position
                 last_activity = tick
-                self._check_monitor_data(data, mouse_position)
+                self._check_monitor_data(mouse_position)
                 self.send_data(ipc.MouseMove(mouse_position))
 
             # Record key presses / mouse clicks
             for opcode in filter(check_key_press, range(0x01, 0xFF)):
                 last_activity = tick
-
-                press_start, press_latest = data.key_presses.get(opcode, (0, 0))
-
-                # First press
-                if press_latest != tick - 1:
-                    if opcode in MOUSE_BUTTONS:
-                        self.send_data(ipc.MouseClick(opcode, mouse_position))
-                    else:
-                        self.send_data(ipc.KeyPress(opcode))
-                    data.key_presses[opcode] = (tick, tick)
-
-                # Being held
-                else:
-                    if opcode in MOUSE_BUTTONS:
-                        self.send_data(ipc.MouseHeld(opcode, mouse_position))
-                    else:
-                        self.send_data(ipc.KeyHeld(opcode))
-                    data.key_presses[opcode] = (press_start, tick)
+                self._key_press(opcode)
 
             # Determine which gamepads are connected
             if not tick % 60 or data.gamepad_force_recheck:
@@ -265,6 +308,10 @@ class Tracking:
         except Exception as e:
             self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
             print(f'[Tracking] Error shut down: {e}')
+
+        finally:
+            self._pynput_mouse_listener.stop()
+            self._pynput_keyboard_listener.stop()
 
         self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Tracking))
         print('[Tracking] Sent process closed notification.')

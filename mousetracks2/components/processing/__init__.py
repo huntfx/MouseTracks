@@ -13,7 +13,7 @@ from .. import ipc
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations
+from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, SCROLL_EVENTS
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 from ...render import render
 
@@ -111,6 +111,11 @@ class Processing:
                 for array in resolution_maps.values():
                     clicks += np.sum(array)
 
+            # Count scrolls
+            scrolls = 0
+            for opcode in SCROLL_EVENTS:
+                scrolls += self.profile.key_held[opcode]
+
             # Count total data transfer
             bytes_sent = bytes_recv = 0
             for array in self.profile.data_transfer.values():
@@ -126,6 +131,7 @@ class Processing:
                 thumb_l_counter=self.profile.thumbstick_l_map[0].counter if self.profile.thumbstick_l_map else 0,
                 thumb_r_counter=self.profile.thumbstick_r_map[0].counter if self.profile.thumbstick_r_map else 0,
                 clicks=clicks,
+                scrolls=scrolls,
                 keys_pressed=np.sum(self.profile.key_presses),
                 buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
                 active_time=self.profile.tick.activity,
@@ -340,17 +346,22 @@ class Processing:
 
             case ipc.KeyPress():
                 self.profile.tick.set_active()
-                print(f'[Processing] Key {message.opcode} pressed.')
+                if message.opcode not in MOUSE_BUTTONS:
+                    print(f'[Processing] Key {message.opcode} pressed.')
                 self.profile.key_presses[message.opcode] += 1
+                self.profile.key_held[message.opcode] += 1
 
             case ipc.KeyHeld():
                 self.profile.tick.set_active()
+                if message.opcode in SCROLL_EVENTS:
+                    print(f'[Processing] Scroll {message.opcode} triggered.')
                 self.profile.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
                 self.profile.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.ButtonHeld():
                 self.profile.tick.set_active()

@@ -3,6 +3,7 @@ psutil
 scipy
 pillow
 flask
+pynput==1.16
 
 pywin32; platform_system=='Windows'
 XInput-Python==0.4; platform_system=='Windows'

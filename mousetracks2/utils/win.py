@@ -4,6 +4,7 @@ This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
+import ctypes
 from contextlib import contextmanager
 from typing import Optional
 
@@ -16,6 +17,16 @@ import win32process
 
 
 MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
+
+SCROLL_WHEEL_UP = 0xFF + 1
+
+SCROLL_WHEEL_DOWN = 0xFF + 2
+
+SCROLL_WHEEL_LEFT = 0xFF + 3
+
+SCROLL_WHEEL_RIGHT = 0xFF + 4
+
+SCROLL_EVENTS = (SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT)
 
 
 def cursor_position() -> Optional[tuple[int, int]]:
@@ -57,4 +68,8 @@ def check_key_press(key: int) -> bool:
     """
     return win32api.GetKeyState(key) < 0
 
+
+def get_scroll_lines() -> int:
+    """Get the number of lines to scroll with one notch of the mouse wheel."""
+    return win32gui.SystemParametersInfo(win32con.SPI_GETWHEELSCROLLLINES)
 
