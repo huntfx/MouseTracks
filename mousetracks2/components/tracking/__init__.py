@@ -4,7 +4,9 @@ import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
+from uuid import getnode
 
+import psutil
 import XInput
 
 from . import utils
@@ -15,6 +17,19 @@ from ...utils.win import cursor_position, monitor_locations, check_key_press, MO
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
                   if isinstance(v, int) and k.split('_')[0] in ('BUTTON', 'STICK', 'TRIGGER')}
+
+
+def get_mac_addresses() -> dict[str, Optional[str]]:
+    """Fetch MAC addresses for all network interfaces."""
+    mac_addresses: dict[str, str] = {}
+    for interface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if addr.family == psutil.AF_LINK:  # Identifies MAC address family
+                mac_addresses[interface] = addr.address
+                break
+        else:
+            mac_addresses[interface] = None
+    return mac_addresses
 
 
 @dataclass
@@ -30,6 +45,15 @@ class DataState:
     gamepad_stick_r_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
     key_presses: dict[int, int] = field(default_factory=dict)
     button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
+    bytes_sent_previous: dict[str, int] = field(default_factory=dict)
+    bytes_recv_previous: dict[str, int] = field(default_factory=dict)
+    bytes_sent: dict[str, int] = field(default_factory=dict)
+    bytes_recv: dict[str, int] = field(default_factory=dict)
+
+    def __post_init__(self):
+        for connection_name, data in psutil.net_io_counters(pernic=True).items():
+            self.bytes_sent_previous[connection_name] = data.bytes_sent
+            self.bytes_recv_previous[connection_name] = data.bytes_recv
 
 
 class Tracking:
@@ -37,6 +61,8 @@ class Tracking:
         self.q_send = q_send
         self.q_receive = q_receive
         self.state = ipc.TrackingState.State.Pause
+
+        self._interface_mac_addresses = get_mac_addresses()
 
     def send_data(self, message: ipc.Message):
         self.q_send.put(message)
@@ -104,7 +130,7 @@ class Tracking:
         last_activity = 0
 
         for tick, data in self._run_with_state():
-            self.send_data(ipc.Tick(tick))
+            self.send_data(ipc.Tick(tick, int(time.time())))
 
             mouse_position = cursor_position()
 
@@ -204,6 +230,23 @@ class Tracking:
                     last_activity = tick
                     data.gamepad_stick_r_position[gamepad] = stick_r
                     self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
+
+            if not tick % 60:
+                for interface_name, counters in psutil.net_io_counters(pernic=True).items():
+                    bytes_sent = counters.bytes_sent - data.bytes_sent_previous.get(interface_name, 0)
+                    bytes_recv = counters.bytes_recv - data.bytes_recv_previous.get(interface_name, 0)
+                    data.bytes_sent_previous[interface_name] += bytes_sent
+                    data.bytes_recv_previous[interface_name] += bytes_recv
+
+                    if bytes_sent or bytes_recv:
+                        try:
+                            mac_addr = self._interface_mac_addresses[interface_name]
+                        except KeyError:
+                            self._interface_mac_addresses.update(get_mac_addresses())
+                            mac_addr = self._interface_mac_addresses[interface_name]
+
+                        if mac_addr is not None:
+                            self.send_data(ipc.DataTransfer(mac_addr, bytes_sent, bytes_recv))
 
             if tick and not tick % 3000:
                 self.send_data(ipc.Save())

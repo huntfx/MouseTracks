@@ -90,9 +90,9 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>0</y>
-               <width>298</width>
-               <height>404</height>
+               <y>-217</y>
+               <width>257</width>
+               <height>448</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -189,43 +189,6 @@
                  <string>Stats</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_3">
-                 <item row="5" column="0">
-                  <widget class="QLabel" name="label_23">
-                   <property name="text">
-                    <string>Inactive Time:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_21">
-                   <property name="text">
-                    <string>Mouse Clicks: </string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="label_22">
-                   <property name="text">
-                    <string>Active Time:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_active">
-                   <property name="text">
-                    <string>45.20 hours</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="1" column="0">
                   <widget class="QLabel" name="label_20">
                    <property name="text">
@@ -236,17 +199,51 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="1">
-                  <widget class="QLabel" name="stat_distance">
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="label_4">
                    <property name="text">
-                    <string>32.54km</string>
+                    <string>Total Download:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="stat_inactive">
+                   <property name="text">
+                    <string>5.31 hours</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_23">
+                   <property name="text">
+                    <string>Inactive Time:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="stat_keys">
+                   <property name="text">
+                    <string>42544</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLabel" name="stat_download_total">
+                   <property name="text">
+                    <string>1.32 TB</string>
                    </property>
                   </widget>
                  </item>
                  <item row="3" column="0">
                   <widget class="QLabel" name="label_19">
                    <property name="text">
-                    <string>Distance Moved:</string>
+                    <string>Cursor Distance:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -260,17 +257,44 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="5" column="1">
-                  <widget class="QLabel" name="stat_inactive">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_21">
                    <property name="text">
-                    <string>5.31 hours</string>
+                    <string>Mouse Clicks: </string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_keys">
+                 <item row="3" column="1">
+                  <widget class="QLabel" name="stat_distance">
                    <property name="text">
-                    <string>42544</string>
+                    <string>32.54km</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="stat_buttons">
+                   <property name="text">
+                    <string>264</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="7" column="1">
+                  <widget class="QLabel" name="stat_upload_total">
+                   <property name="text">
+                    <string>643.16 MB</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="label_22">
+                   <property name="text">
+                    <string>Active Time:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                    </property>
                   </widget>
                  </item>
@@ -284,10 +308,20 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_buttons">
+                 <item row="7" column="0">
+                  <widget class="QLabel" name="label_8">
                    <property name="text">
-                    <string>264</string>
+                    <string>Total Upload:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="stat_active">
+                   <property name="text">
+                    <string>45.20 hours</string>
                    </property>
                   </widget>
                  </item>
@@ -346,7 +380,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>298</width>
+               <width>261</width>
                <height>235</height>
               </rect>
              </property>
@@ -525,7 +559,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>298</width>
+               <width>257</width>
                <height>494</height>
               </rect>
              </property>

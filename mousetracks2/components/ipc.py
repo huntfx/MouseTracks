@@ -53,6 +53,7 @@ class Tick(Message):
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     tick: int
+    timestamp: int
 
 
 @dataclass
@@ -256,3 +257,15 @@ class ProfileLoaded(Message):
     buttons_pressed: int
     active_time: int
     inactive_time: int
+    bytes_sent: int
+    bytes_recv: int
+
+
+@dataclass
+class DataTransfer(Message):
+    """Upload and download data since the previous message."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    mac_address: str
+    bytes_sent: int
+    bytes_recv: int

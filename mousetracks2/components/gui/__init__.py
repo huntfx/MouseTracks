@@ -75,6 +75,16 @@ def format_ticks(ticks: int) -> str:
     return f'{days:02}:{hours:02}:{minutes:02}:{seconds:02}'
 
 
+def format_bytes(b: int) -> str:
+    """Convert bytes to a formatted string."""
+    if b < 1024:
+        return f'{round(b)} B'
+    power = min(7, int(math.log(b) / math.log(1024)))
+    adjusted = round(b / 1024 ** power, 2)
+    sign = 'KMGTPEZY'[power - 1]
+    return f'{adjusted} {sign}B'
+
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -146,6 +156,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.current_app: str = DEFAULT_PROFILE_NAME
         self.current_app_position: Optional[tuple[int, int, int, int]] = None
         self.last_click: Optional[int] = None
+        self._bytes_sent = self.bytes_sent = 0
+        self._bytes_recv = self.bytes_recv = 0
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
@@ -300,9 +312,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self._inactive_time = ticks
 
     def update_activity_preview(self) -> None:
-        """Update the activity preview periodically."""
+        """Update the activity preview periodically.
+        The updates are too frequent to do per tick.
+        """
         self.ui.stat_active.setText(format_ticks(self.active_time))
         self.ui.stat_inactive.setText(format_ticks(self.inactive_time))
+
+    @property
+    def bytes_sent(self) -> int:
+        """Get the current bytes sent."""
+        return self._bytes_sent
+
+    @bytes_sent.setter
+    def bytes_sent(self, amount: int) -> None:
+        """Add a delta to the current bytes sent."""
+        self._bytes_sent = amount
+        self.ui.stat_upload_total.setText(format_bytes(amount))
+
+    @property
+    def bytes_recv(self) -> int:
+        """Get the current bytes received."""
+        return self._bytes_recv
+
+    @bytes_recv.setter
+    def bytes_recv(self, amount: int) -> None:
+        """Add a delta to the current bytes received."""
+        self._bytes_recv = amount
+        self.ui.stat_download_total.setText(format_bytes(amount))
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
@@ -514,6 +550,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.button_press_count = message.buttons_pressed
                 self.active_time = message.active_time
                 self.inactive_time = message.inactive_time
+                self.bytes_sent = message.bytes_sent
+                self.bytes_recv = message.bytes_recv
+
+            case ipc.DataTransfer():
+                self.bytes_sent += message.bytes_sent
+                self.bytes_recv += message.bytes_recv
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')

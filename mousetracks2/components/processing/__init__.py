@@ -53,6 +53,7 @@ class Processing:
         self.q_receive = q_receive
 
         self.tick = 0
+        self._timestamp = None
 
         self.previous_mouse_click: Optional[PreviousMouseClick] = None
         self.monitor_data = monitor_locations()
@@ -64,6 +65,18 @@ class Processing:
         self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
         self._current_application = Application('', None)
         self.current_application = Application(DEFAULT_PROFILE_NAME, None)
+
+    @property
+    def timestamp(self) -> int:
+        """Get the timestamp."""
+        if self._timestamp is None:
+            raise RuntimeError('no tick data received')
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, timestamp: int) -> None:
+        """Set the timestamp."""
+        self._timestamp = timestamp
 
     @property
     def profile(self) -> TrackingProfile:
@@ -92,10 +105,18 @@ class Processing:
             # Reset the cursor position
             self.profile.cursor_map.position = None
 
+            # Count total clicks
             clicks = 0
             for resolution_maps in self.profile.mouse_single_clicks.values():
                 for array in resolution_maps.values():
                     clicks += np.sum(array)
+
+            # Count total data transfer
+            bytes_sent = bytes_recv = 0
+            for array in self.profile.data_transfer.values():
+                _bytes_sent, _bytes_recv = np.sum(array, axis=0)
+                bytes_sent += _bytes_sent
+                bytes_recv += _bytes_recv
 
             # Send data back to the GUI
             self.q_send.put(ipc.ProfileLoaded(
@@ -109,6 +130,8 @@ class Processing:
                 buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
                 active_time=self.profile.tick.activity,
                 inactive_time=self.profile.tick.inactivity,
+                bytes_sent=bytes_sent,
+                bytes_recv=bytes_recv,
             ))
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
@@ -261,6 +284,7 @@ class Processing:
             # Update the current tick
             case ipc.Tick():
                 self.tick = self.profile.tick.current = message.tick
+                self.timestamp = message.timestamp
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
@@ -379,6 +403,14 @@ class Processing:
                         print(f'[Processing] Saved {application}')
                     else:
                         print('[Processing] Skipping save, not modified')
+
+            case ipc.DataTransfer():
+                creation_day = self.profile.created // 86400
+                current_day = self.timestamp // 86400
+                days_since_creation = current_day - creation_day
+
+                self.profile.data_transfer[message.mac_address][days_since_creation, 0] += message.bytes_sent
+                self.profile.data_transfer[message.mac_address][days_since_creation, 1] += message.bytes_recv
 
             case _:
                 raise NotImplementedError(message)

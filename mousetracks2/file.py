@@ -62,7 +62,14 @@ class TrackingArray:
     DTYPES = [np.uint8, np.uint16, np.uint32, np.uint64]
     MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
 
-    def __init__(self, shape: int | list[int] | np.ndarray) -> None:
+    def __init__(self, shape: int | list[int] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+        """Set up the tracking array..
+
+        Parameters:
+            shape: Set the shape of the new array.
+                An existing array may be passed in here.
+            auto_pad: If the array can increase in size.
+        """
         # Choose the best dtype to use
         max_int = 0
         if isinstance(shape, np.ndarray):
@@ -80,6 +87,14 @@ class TrackingArray:
             self.array = np.zeros(shape, dtype=dtype)
         self.max_value = np.iinfo(dtype).max
 
+        # Set auto padding settings
+        if isinstance(auto_pad, bool):
+            self.auto_pad = [auto_pad] * self.array.ndim
+        elif len(auto_pad) != self.array.ndim:
+            raise ValueError('length of auto_pad must match number of array dimensions')
+        else:
+            self.auto_pad = auto_pad
+
     def __array__(self) -> np.ndarray:
         """For internal numpy usage."""
         return self.array
@@ -90,11 +105,44 @@ class TrackingArray:
     def __repr__(self) -> str:
         return repr(self.array)
 
+    def _check_padding(self, index: int | list[int]) -> bool:
+        """Check if padding needs to be added.
+        The index must be of the same dimensions of the array.
+        """
+        if isinstance(index, int):
+            if self.array.ndim == 1 and self.auto_pad[0]:
+                self.array = np.pad(self.array, (0, max(0, 1 + index - self.array.shape[0])))
+                return True
+            return False
+
+        if len(index) != self.array.ndim:
+            return False
+
+        diff = []
+        padding_required = False
+        for idx, size, pad in zip(index, self.array.shape, self.auto_pad):
+            if pad and idx >= size:
+                diff.append((0, idx - size + 1))
+                padding_required = True
+            else:
+                diff.append((0, 0))
+
+        if not padding_required:
+            return False
+
+        self.array = np.pad(self.array, diff)
+        return True
+
     def __getitem__(self, item: any) -> int:
         """Get an array item."""
-        return self.array[item]
+        try:
+            return int(self.array[item])
+        except IndexError as e:
+            if self._check_padding(item):
+                return 0
+            raise
 
-    def __setitem__(self, item: any, value: int) -> None:
+    def __setitem__(self, item: int | tuple[int], value: int) -> None:
         """Set an array item, changing dtype if required."""
         if value >= self.max_value:
             for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
@@ -103,7 +151,12 @@ class TrackingArray:
                     self.array = self.array.astype(dtype)
                     break
 
-        self.array[item] = value
+        try:
+            self.array[item] = value
+        except IndexError:
+            if not self._check_padding(item):
+                raise
+            self.array[item] = value
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         with zf.open(path, 'w') as f:
@@ -284,6 +337,8 @@ class TrackingProfile:
     button_presses: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
     button_held: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
 
+    data_transfer: dict[str, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray([1, 2], auto_pad=[True, False])))
+
     @property
     def modified(self):
         """Determine if the data is modified."""
@@ -292,10 +347,10 @@ class TrackingProfile:
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
-        zf.writestr('metadata/created', str(self.created))
-        zf.writestr('metadata/modified', str(int(time.time())))
-        zf.writestr('metadata/active', str(self.tick.activity))
-        zf.writestr('metadata/inactive', str(self.tick.inactivity))
+        zf.writestr('metadata/time/created', str(self.created))
+        zf.writestr('metadata/time/modified', str(int(time.time())))
+        zf.writestr('metadata/ticks/active', str(self.tick.activity))
+        zf.writestr('metadata/ticks/inactive', str(self.tick.inactivity))
 
         self.cursor_map._write_to_zip(zf, 'data/mouse/cursor')
         for i, array_resolution_map in self.mouse_single_clicks.items():
@@ -317,16 +372,19 @@ class TrackingProfile:
         for i, array_map in self.thumbstick_r_map.items():
             array_map._write_to_zip(zf, f'data/gamepad/{i}/right_stick')
 
+        for mac_address, array in self.data_transfer.items():
+            array._write_to_zip(zf, f'data/network/{mac_address}.npy')
+
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
 
         self.name = zf.read('metadata/name').decode('utf-8')
-        self.created = int(zf.read('metadata/created'))
-        self.tick.active = int(zf.read('metadata/active'))
-        self.tick.inactive = int(zf.read('metadata/inactive'))
+        self.created = int(zf.read('metadata/time/created'))
+        self.tick.active = int(zf.read('metadata/ticks/active'))
+        self.tick.inactive = int(zf.read('metadata/ticks/inactive'))
 
         self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
-        mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks')}
+        mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks/')}
         for i in mouse_buttons:
             self.mouse_single_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/single')
             self.mouse_double_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/double')
@@ -335,7 +393,7 @@ class TrackingProfile:
         self.key_presses._load_from_zip(zf, f'data/keyboard/pressed.npy')
         self.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
 
-        gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad')}
+        gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad/')}
         for i in gamepad_indexes:
             if f'data/gamepad/{i}/left_stick' in all_paths:
                 self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
@@ -345,6 +403,11 @@ class TrackingProfile:
                 self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
             if f'data/gamepad/{i}/held.npy' in all_paths:
                 self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
+
+        mac_addresses = (os.path.splitext(path.split('/')[2])[0]
+                         for path in all_paths if path.startswith('data/network/'))
+        for mac_address in mac_addresses:
+            self.data_transfer[mac_address]._load_from_zip(zf, f'data/network/{mac_address}.npy')
 
     def save(self, path: str):
         self.tick.saved = self.tick.current
