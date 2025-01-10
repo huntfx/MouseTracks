@@ -505,7 +505,6 @@ class MainWindow(QtWidgets.QMainWindow):
                         os.startfile(file_path)
 
             case ipc.MouseClick():
-                self.mouse_click_count += 1
                 self.last_click = self.tick_current
 
             case ipc.MouseHeld():
