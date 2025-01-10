@@ -440,14 +440,14 @@ class TrackingProfile:
         for mac_address, name in self.data_interfaces.items():
             zf.writestr(f'data/network/interfaces/{mac_address}', name or '')
 
-        self.daily_ticks._write_to_zip(zf, 'data/stats/ticks.npy')
-        self.daily_distance._write_to_zip(zf, 'data/stats/mouse/distance.npy')
-        self.daily_clicks._write_to_zip(zf, 'data/stats/mouse/clicks.npy')
-        self.daily_scrolls._write_to_zip(zf, 'data/stats/mouse/scrolls.npy')
-        self.daily_keys._write_to_zip(zf, 'data/stats/keyboard/keys.npy')
-        self.daily_buttons._write_to_zip(zf, 'data/stats/gamepad/buttons.npy')
-        self.daily_upload._write_to_zip(zf, 'data/stats/network/upload.npy')
-        self.daily_download._write_to_zip(zf, 'data/stats/network/download.npy')
+        self.daily_ticks._write_to_zip(zf, 'stats/ticks.npy')
+        self.daily_distance._write_to_zip(zf, 'stats/mouse/distance.npy')
+        self.daily_clicks._write_to_zip(zf, 'stats/mouse/clicks.npy')
+        self.daily_scrolls._write_to_zip(zf, 'stats/mouse/scrolls.npy')
+        self.daily_keys._write_to_zip(zf, 'stats/keyboard/keys.npy')
+        self.daily_buttons._write_to_zip(zf, 'stats/gamepad/buttons.npy')
+        self.daily_upload._write_to_zip(zf, 'stats/network/upload.npy')
+        self.daily_download._write_to_zip(zf, 'stats/network/download.npy')
 
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
@@ -490,14 +490,14 @@ class TrackingProfile:
                 if not self.data_interfaces[mac_address]:
                     self.data_interfaces[mac_address] = None
 
-        self.daily_ticks._load_from_zip(zf, 'data/stats/ticks.npy')
-        self.daily_distance._load_from_zip(zf, 'data/stats/mouse/distance.npy')
-        self.daily_clicks._load_from_zip(zf, 'data/stats/mouse/clicks.npy')
-        self.daily_scrolls._load_from_zip(zf, 'data/stats/mouse/scrolls.npy')
-        self.daily_keys._load_from_zip(zf, 'data/stats/keyboard/keys.npy')
-        self.daily_buttons._load_from_zip(zf, 'data/stats/gamepad/buttons.npy')
-        self.daily_upload._load_from_zip(zf, 'data/stats/network/upload.npy')
-        self.daily_download._load_from_zip(zf, 'data/stats/network/download.npy')
+        self.daily_ticks._load_from_zip(zf, 'stats/ticks.npy')
+        self.daily_distance._load_from_zip(zf, 'stats/mouse/distance.npy')
+        self.daily_clicks._load_from_zip(zf, 'stats/mouse/clicks.npy')
+        self.daily_scrolls._load_from_zip(zf, 'stats/mouse/scrolls.npy')
+        self.daily_keys._load_from_zip(zf, 'stats/keyboard/keys.npy')
+        self.daily_buttons._load_from_zip(zf, 'stats/gamepad/buttons.npy')
+        self.daily_upload._load_from_zip(zf, 'stats/network/upload.npy')
+        self.daily_download._load_from_zip(zf, 'stats/network/download.npy')
 
     def save(self, path: str):
         self.tick.saved = self.tick.current
