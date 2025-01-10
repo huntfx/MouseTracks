@@ -8,6 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator, Optional, Self
+from typing import List, Callable, TypeVar, Generic
 from uuid import uuid4
 
 import numpy as np
@@ -15,6 +16,8 @@ import numpy as np
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, UPDATES_PER_SECOND, INACTIVITY_MS
 from .utils.win import MOUSE_BUTTONS
 
+
+T = TypeVar('T')
 
 ALLOW_LEGACY_IMPORT = True
 """Legacy imports require unpickling data, so is unsafe.
@@ -47,22 +50,36 @@ BASE_DIR = APPDATA / 'MouseTracks'
 PROFILE_DIR = BASE_DIR / 'Profiles'
 
 
+class DefaultList(list[T], Generic[T]):
+    """Implementation of a default list."""
+
+    def __init__(self, default_factory: Callable[[], T], *args):
+        self.default_factory = default_factory
+        super().__init__(*args)
+
+    def __getitem__(self, index: int) -> T:
+        try:
+            return super().__getitem__(index)
+        except IndexError:
+            while len(self) <= index:
+                self.append(self.default_factory())
+            return super().__getitem__(index)
+
+    def __setitem__(self, index: int, value: T) -> None:
+        try:
+            super().__setitem__(index, value)
+        except IndexError:
+            while len(self) <= index:
+                self.append(self.default_factory())
+            super().__setitem__(index, value)
+
+
 class UnsupportedVersionError(Exception):
     """When a file can't be loaded due to an unsupported version"""
 
 
 class TrackingArray:
-    """Create an integer array and update the dtype when required.
-    This is for memory optimisation as the arrays are large.
-
-    Ideally this would inherit `np.ndarray`, but changing the dtype of
-    an array in-place isn't supported.
-    """
-
-    DTYPES = [np.uint8, np.uint16, np.uint32, np.uint64]
-    MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
-
-    def __init__(self, shape: int | list[int] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+    def __init__(self, shape: int | list[int] | np.ndarray, dtype, auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -70,22 +87,11 @@ class TrackingArray:
                 An existing array may be passed in here.
             auto_pad: If the array can increase in size.
         """
-        # Choose the best dtype to use
-        max_int = 0
-        if isinstance(shape, np.ndarray):
-            max_int = np.max(shape)
-        for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
-            if max_int < max_value:
-                break
-        else:
-            raise ValueError('int too high')
-
         # Create the array
         if isinstance(shape, np.ndarray):
             self.array = shape.astype(dtype)
         else:
             self.array = np.zeros(shape, dtype=dtype)
-        self.max_value = np.iinfo(dtype).max
 
         # Set auto padding settings
         if isinstance(auto_pad, bool):
@@ -133,11 +139,59 @@ class TrackingArray:
         self.array = np.pad(self.array, diff)
         return True
 
+    def __getitem__(self, item):
+        return self.array[item]
+
+    def __setitem__(self, item, value):
+        self.array[item] = value
+
+    def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
+        with zf.open(path, 'w') as f:
+            np.save(f, self, allow_pickle=False)
+
+    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
+        with zf.open(path, 'r') as f:
+            self.array = np.load(f, allow_pickle=False)
+
+
+class TrackingIntArray(TrackingArray):
+    """Create an integer array and update the dtype when required.
+    This is for memory optimisation as the arrays are large.
+
+    Ideally this would inherit `np.ndarray`, but changing the dtype of
+    an array in-place isn't supported.
+    """
+
+    DTYPES = [np.uint8, np.uint16, np.uint32, np.uint64]
+
+    MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
+
+    def __init__(self, shape: int | list[int] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+        """Set up the tracking array..
+
+        Parameters:
+            shape: Set the shape of the new array.
+                An existing array may be passed in here.
+            auto_pad: If the array can increase in size.
+        """
+        # Choose the best dtype to use
+        max_int = 0
+        if isinstance(shape, np.ndarray):
+            max_int = np.max(shape)
+        for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
+            if max_int < max_value:
+                break
+        else:
+            raise ValueError('int too high')
+        self.max_value = np.iinfo(dtype).max
+
+        super().__init__(shape, dtype, auto_pad=auto_pad)
+
     def __getitem__(self, item: any) -> int:
         """Get an array item."""
         try:
-            return int(self.array[item])
-        except IndexError as e:
+            return int(super().__getitem__(item))
+        except IndexError:
             if self._check_padding(item):
                 return 0
             raise
@@ -152,19 +206,11 @@ class TrackingArray:
                     break
 
         try:
-            self.array[item] = value
+            super().__setitem__(item, value)
         except IndexError:
             if not self._check_padding(item):
                 raise
             self.array[item] = value
-
-    def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'w') as f:
-            np.save(f, self, allow_pickle=False)
-
-    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'r') as f:
-            self.array = np.load(f, allow_pickle=False)
 
 
 class ArrayResolutionMap(dict):
@@ -172,11 +218,11 @@ class ArrayResolutionMap(dict):
     New arrays will be created on demand.
     """
 
-    def __missing__(self, key: tuple[int, int]) -> TrackingArray:
-        self[key] = TrackingArray([key[1], key[0]])
+    def __missing__(self, key: tuple[int, int]) -> TrackingIntArray:
+        self[key] = TrackingIntArray([key[1], key[0]])
         return self[key]
 
-    def __setitem__(self, key: tuple[int, int], array: np.ndarray | TrackingArray) -> None:
+    def __setitem__(self, key: tuple[int, int], array: np.ndarray | TrackingIntArray) -> None:
         if isinstance(array, np.ndarray):
             self[key].array = array
         else:
@@ -211,6 +257,7 @@ class MovementMaps:
     counter: int = field(default=0)
     ticks: int = field(default=0)
     tick: int = field(default=0)  # TODO: Don't store here
+
 
     def requires_compression(self, threshold: int = COMPRESSION_THRESHOLD) -> bool:
         """Check if compression is required."""
@@ -303,13 +350,16 @@ class Tick:
         """Get the number of ticks since the last activity."""
         return self.current - self.previous
 
-    def set_active(self) -> None:
+    def set_active(self) -> tuple[bool, int]:
         """Update the last tick activity."""
-        if self.is_active:
-            self.active += self.since_active
-        else:
-            self.inactive += self.since_active
+        since_active = self.since_active
         self.previous = self.current
+        is_active = self.is_active
+        if self.is_active:
+            self.active += since_active
+        else:
+            self.inactive += since_active
+        return is_active, since_active
 
 
 @dataclass
@@ -331,15 +381,24 @@ class TrackingProfile:
     mouse_double_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
     mouse_held_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
 
-    key_presses: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF, auto_pad=[True]))
-    key_held: TrackingArray = field(default_factory=lambda: TrackingArray(0xFF, auto_pad=[True]))
+    key_presses: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]))
+    key_held: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]))
 
-    button_presses: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
-    button_held: dict[int, TrackingArray] = field(default_factory=lambda: defaultdict(lambda: TrackingArray(20)))
+    button_presses: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
+    button_held: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
 
     data_interfaces: dict[str, Optional[str]] = field(default_factory=lambda: defaultdict(str))
     data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+
+    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_distance: TrackingArray = field(default_factory=lambda: TrackingArray(1, np.float32, auto_pad=True))
+    daily_clicks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_scrolls: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_keys: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_buttons: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
 
     @property
     def modified(self):
@@ -381,6 +440,15 @@ class TrackingProfile:
         for mac_address, name in self.data_interfaces.items():
             zf.writestr(f'data/network/interfaces/{mac_address}', name or '')
 
+        self.daily_ticks._write_to_zip(zf, 'data/stats/ticks.npy')
+        self.daily_distance._write_to_zip(zf, 'data/stats/mouse/distance.npy')
+        self.daily_clicks._write_to_zip(zf, 'data/stats/mouse/clicks.npy')
+        self.daily_scrolls._write_to_zip(zf, 'data/stats/mouse/scrolls.npy')
+        self.daily_keys._write_to_zip(zf, 'data/stats/keyboard/keys.npy')
+        self.daily_buttons._write_to_zip(zf, 'data/stats/gamepad/buttons.npy')
+        self.daily_upload._write_to_zip(zf, 'data/stats/network/upload.npy')
+        self.daily_download._write_to_zip(zf, 'data/stats/network/download.npy')
+
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
 
@@ -421,6 +489,15 @@ class TrackingProfile:
                 self.data_interfaces[mac_address] = zf.read(path).decode('utf-8')
                 if not self.data_interfaces[mac_address]:
                     self.data_interfaces[mac_address] = None
+
+        self.daily_ticks._load_from_zip(zf, 'data/stats/ticks.npy')
+        self.daily_distance._load_from_zip(zf, 'data/stats/mouse/distance.npy')
+        self.daily_clicks._load_from_zip(zf, 'data/stats/mouse/clicks.npy')
+        self.daily_scrolls._load_from_zip(zf, 'data/stats/mouse/scrolls.npy')
+        self.daily_keys._load_from_zip(zf, 'data/stats/keyboard/keys.npy')
+        self.daily_buttons._load_from_zip(zf, 'data/stats/gamepad/buttons.npy')
+        self.daily_upload._load_from_zip(zf, 'data/stats/network/upload.npy')
+        self.daily_download._load_from_zip(zf, 'data/stats/network/download.npy')
 
     def save(self, path: str):
         self.tick.saved = self.tick.current
@@ -516,7 +593,7 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
             with zf.open(f'maps/{values[array_type]}.npy') as f:
                 array = np.load(f)
                 if np.any(array > 0):
-                    container[resolution] = TrackingArray(array)
+                    container[resolution] = TrackingIntArray(array)
 
         # Load click heatmap
         for array_type, container in (('Single', profile.mouse_single_clicks), ('Double', profile.mouse_double_clicks)):
@@ -524,7 +601,7 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
                 with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
                     array = np.load(f)
                     if np.any(array > 0):
-                        container[MOUSE_BUTTONS[i]][resolution] = TrackingArray(array)
+                        container[MOUSE_BUTTONS[i]][resolution] = TrackingIntArray(array)
 
     # Process key/button data
     for opcode, count in data['Keys']['All']['Pressed'].items():

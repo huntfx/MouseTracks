@@ -14,7 +14,7 @@ from .. import ipc
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, SCROLL_EVENTS
+from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, SCROLL_EVENTS
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 from ...render import render
 
@@ -143,6 +143,15 @@ class Processing:
                 bytes_recv=sum(self.profile.data_download.values()),
             ))
 
+    @property
+    def profile_age_days(self) -> int:
+        """Get the number of days since the profile was created.
+        This is for use with the daily stats.
+        """
+        creation_day = self.profile.created // 86400
+        current_day = self.timestamp // 86400
+        return current_day - creation_day
+
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
         use_app = self.current_application is not None and self.current_application.rect is not None
@@ -157,7 +166,7 @@ class Processing:
                 return result
         return None
 
-    def _record_move(self, data: MovementMaps, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> None:
+    def _record_move(self, data: MovementMaps, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> float:
         """Record a movement for time and speed.
 
         There are some caveats that are hard to handle. If a mouse is
@@ -210,6 +219,8 @@ class Processing:
             print(f'[Processing] Tracking threshold reached, reducing values...')
             data.run_compression()
             print(f'[Processing] Reduced all arrays')
+
+        return distance
 
     def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType) -> list[ArrayLike]:
         """Get a list of arrays to use for a render."""
@@ -294,6 +305,7 @@ class Processing:
             case ipc.Tick():
                 self.tick = self.profile.tick.current = message.tick
                 self.timestamp = message.timestamp
+                self.profile.daily_ticks[self.profile_age_days] += 1
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
@@ -309,7 +321,8 @@ class Processing:
 
             case ipc.MouseMove():
                 self.profile.tick.set_active()
-                self._record_move(self.profile.cursor_map, message.position)
+                distance = self._record_move(self.profile.cursor_map, message.position)
+                self.profile.daily_distance[self.profile_age_days] += distance
 
             case ipc.MouseHeld():
                 self.profile.tick.set_active()
@@ -354,10 +367,16 @@ class Processing:
                 self.profile.key_presses[message.opcode] += 1
                 self.profile.key_held[message.opcode] += 1
 
+                if message.opcode in MOUSE_OPCODES:
+                    self.profile.daily_clicks[self.profile_age_days] += 1
+                else:
+                    self.profile.daily_keys[self.profile_age_days] += 1
+
             case ipc.KeyHeld():
                 self.profile.tick.set_active()
                 if message.opcode in SCROLL_EVENTS:
                     print(f'[Processing] Scroll {message.opcode} triggered.')
+                    self.profile.daily_scrolls[self.profile_age_days] += 1
                 self.profile.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
@@ -365,6 +384,7 @@ class Processing:
                 print(f'[Processing] Key {message.opcode} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
                 self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.profile.daily_buttons[self.profile_age_days] += 1
 
             case ipc.ButtonHeld():
                 self.profile.tick.set_active()
@@ -421,6 +441,8 @@ class Processing:
             case ipc.DataTransfer():
                 self.profile.data_upload[message.mac_address] += message.bytes_sent
                 self.profile.data_download[message.mac_address] += message.bytes_recv
+                self.profile.daily_upload[self.profile_age_days] += message.bytes_sent
+                self.profile.daily_download[self.profile_age_days] += message.bytes_recv
 
                 if message.mac_address not in self.profile.data_interfaces:
                     self.profile.data_interfaces[message.mac_address] = get_interface_name_by_mac(message.mac_address)

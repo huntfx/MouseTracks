@@ -16,7 +16,7 @@ from ...ui.main import Ui_MainWindow
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
 from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS
+from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS, MOUSE_OPCODES
 from ...ui.widgets import Pixel
 
 
@@ -537,7 +537,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_track_data(data, remapped)
 
             case ipc.KeyPress():
-                self.key_press_count += 1
+                if message.opcode in MOUSE_OPCODES:
+                    self.mouse_click_count += 1
+                else:
+                    self.key_press_count += 1
 
             case ipc.KeyHeld():
                 if message.opcode in SCROLL_EVENTS:
