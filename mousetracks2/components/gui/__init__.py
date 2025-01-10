@@ -20,6 +20,9 @@ from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS
 from ...ui.widgets import Pixel
 
 
+ICON_PATH = 'resources/images/icon.png'
+
+
 class QueueWorker(QtCore.QObject):
     """Worker for polling the queue in a background thread."""
     message_received = QtCore.Signal(ipc.Message)
@@ -106,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         super().__init__()
+        self.setWindowIcon(QtGui.QIcon(ICON_PATH))
         self.q_send = q_send
         self.q_receive = q_receive
 
@@ -720,6 +724,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
     app = QtWidgets.QApplication(sys.argv)
+
+    # Register app so that setting an icon is possible
+    if os.name == "nt":
+        import ctypes
+        myappid = "uk.huntfx.mousetracks"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
     m = MainWindow(q_send, q_receive)
     m.show()
+    icon = QtGui.QIcon(ICON_PATH)
+    app.setWindowIcon(icon)
     app.exec()

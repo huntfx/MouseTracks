@@ -107,3 +107,11 @@ These are the requirements for 1.0. This section will be removed later in favour
 
 #### Mac (WIP)
  - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
+
+## Icon
+I didn't have any plan of what it might look like, so I gave a vague prompt to Copilot to see what would happen.
+
+> Can you generate me an icon for my mousetracks app? It records clicks, cursor movement, keyboard presses, gamepad data, etc.
+<img src="media/icon.png">
+
+This was the first result, my partner loved it and I think it captures the essence of the application really well.
