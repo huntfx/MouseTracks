@@ -149,7 +149,9 @@ class Tracking:
         """Send the activity or inactivity ticks.
 
         It took a few iterations but this stays completely in sync with
-        the elapsed time.
+        the elapsed time if `force_update` is set on saving. This is
+        required or inactivity will cause a desync.
+
         TODO: Testing needed on tracking pause/stop
         """
         if self.data.tick_modified is None:
@@ -163,6 +165,8 @@ class Tracking:
             self.send_data(ipc.Active(self.profile_name, diff))
         self.data.tick_previous = self.data.tick_modified
         self.data.tick_modified = None
+
+        return diff
 
     def _check_monitor_data(self, pixel: tuple[int, int]) -> None:
         """Check if the monitor data is valid for the pixel.
@@ -338,15 +342,16 @@ class Tracking:
                         if mac_addr is not None:
                             self.send_data(ipc.DataTransfer(mac_addr, bytes_sent, bytes_recv))
 
-            self._calculate_inactivity()
-
-            if tick and not tick % 30000:
+            # Save every 5 mins
+            if tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
                 self._save()
+            else:
+                self._calculate_inactivity()
 
     def _save(self, profile: Optional[str] = None):
         """When saving, recalculate inactivity before sending the signal."""
         self._calculate_inactivity()
-        self.send_data(ipc.SaveReady(profile))
+        self.send_data(ipc.SaveReady(profile, inactivity=self.data.tick_current - self.data.tick_previous))
 
     def run(self) -> None:
         print('[Tracking] Loaded.')

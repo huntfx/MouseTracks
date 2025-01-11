@@ -292,6 +292,30 @@ class Processing:
         image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
         return image
 
+    def _record_active_tick(self, profile_name: str, ticks: int) -> None:
+        profile = self.all_profiles[profile_name]
+        profile.active += ticks
+        profile.daily_ticks[self.profile_age_days, 1] += ticks
+
+    def _record_inactive_tick(self, profile_name: str, ticks: int) -> None:
+        profile = self.all_profiles[profile_name]
+        profile.inactive += ticks
+        profile.daily_ticks[self.profile_age_days, 2] += ticks
+
+    def _save(self, profile_name: str, inactivity: int = 0):
+        """Save a profile to disk.
+        See `ipc.SaveReady` for information on why the `inactivity`
+        parameter is required.
+        """
+        print(f'[Processing] Saving {profile_name}...')
+        if self.all_profiles[profile_name].modified:
+            self._record_inactive_tick(profile_name, inactivity)
+            self.all_profiles[profile_name].save(get_filename(profile_name))
+            self._record_inactive_tick(profile_name, -inactivity)
+            print(f'[Processing] Saved {profile_name}')
+        else:
+            print('[Processing] Skipping save, not modified')
+
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
@@ -308,14 +332,10 @@ class Processing:
                 self.profile.modified = True
 
             case ipc.Active():
-                profile = self.all_profiles[message.profile_name]
-                profile.active += message.ticks
-                profile.daily_ticks[self.profile_age_days, 1] += message.ticks
+                self._record_active_tick(message.profile_name, message.ticks)
 
             case ipc.Inactive():
-                profile = self.all_profiles[message.profile_name]
-                profile.inactive += message.ticks
-                profile.daily_ticks[self.profile_age_days, 2] += message.ticks
+                self._record_inactive_tick(message.profile_name, message.ticks)
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
@@ -429,14 +449,8 @@ class Processing:
                     profiles = self.all_profiles.keys()
                 else:
                     profiles = [message.profile]
-
-                for application in profiles:
-                    print(f'[Processing] Saving {application}...')
-                    if self.all_profiles[application].modified:
-                        self.all_profiles[application].save(get_filename(application))
-                        print(f'[Processing] Saved {application}')
-                    else:
-                        print('[Processing] Skipping save, not modified')
+                for profile in profiles:
+                    self._save(profile, message.inactivity)
 
             case ipc.DataTransfer():
                 self.profile.data_upload[message.mac_address] += message.bytes_sent

@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import numpy as np
 
-from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, UPDATES_PER_SECOND, INACTIVITY_MS
+from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
 from .utils.win import MOUSE_BUTTONS
 
 
@@ -355,6 +355,9 @@ class TrackingProfile:
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
 
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
+        if DEBUG:
+            assert (self.active + self.inactive) == self.elapsed
+
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/time/created', str(self.created))
@@ -449,6 +452,9 @@ class TrackingProfile:
         self.daily_buttons._load_from_zip(zf, 'stats/gamepad/buttons.npy')
         self.daily_upload._load_from_zip(zf, 'stats/network/upload.npy')
         self.daily_download._load_from_zip(zf, 'stats/network/download.npy')
+
+        if DEBUG:
+            assert (self.active + self.inactive) == self.elapsed
 
     def save(self, path: str):
         self.modified = False
