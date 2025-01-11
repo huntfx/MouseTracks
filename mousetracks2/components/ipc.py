@@ -233,27 +233,10 @@ class ProcessShutDownNotification(Message):
 
 
 @dataclass
-class SaveReady(Message):
-    """Once a save is ready to be done.
-    This should be sent via tracking only.
-
-    The inactivity is to solve an issue with a desync with total elapsed
-    ticks and activity + inactivity ticks. If a save is done while the
-    user is inactive, then that data won't yet be sent to processing.
-    With the data here, it can be temporarily set upon saving, and unset
-    afterwards to not cause any other issues.
-    """
+class Save(Message):
+    """Once a save is ready to be done."""
 
     target: int = field(default=Target.Processing, init=False)
-    profile: Optional[str] = field(default=None)
-    inactivity: int = field(default=0)
-
-
-@dataclass
-class Save(Message):
-    """Request a save."""
-
-    target: int = field(default=Target.Tracking, init=False)
     profile: Optional[str] = field(default=None)
 
 

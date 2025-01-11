@@ -100,9 +100,6 @@ class Tracking:
                         self._calculate_inactivity()
                     self.profile_name = message.name
 
-                case ipc.Save():
-                    self._save(message.profile)
-
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
         for tick in utils.ticks(UPDATES_PER_SECOND):
@@ -342,16 +339,11 @@ class Tracking:
                         if mac_addr is not None:
                             self.send_data(ipc.DataTransfer(mac_addr, bytes_sent, bytes_recv))
 
+            self._calculate_inactivity()
+
             # Save every 5 mins
             if tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
-                self._save()
-            else:
-                self._calculate_inactivity()
-
-    def _save(self, profile: Optional[str] = None):
-        """When saving, recalculate inactivity before sending the signal."""
-        self._calculate_inactivity()
-        self.send_data(ipc.SaveReady(profile, inactivity=self.data.tick_current - self.data.tick_previous))
+                self.send_data(ipc.Save())
 
     def run(self) -> None:
         print('[Tracking] Loaded.')

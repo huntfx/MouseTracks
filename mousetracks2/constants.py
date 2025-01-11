@@ -14,7 +14,7 @@ COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 COMPRESSION_FACTOR = 1.1
 """How much to compress tracks by."""
 
-INACTIVITY_MS = 1000 * 60 * 10  # 10 mins
+INACTIVITY_MS = 1000 * 60 * 5  # 5 mins
 """Time in ms before inactive."""
 
 RADIAL_ARRAY_SIZE = 2048
