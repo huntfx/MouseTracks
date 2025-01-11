@@ -101,47 +101,41 @@ class Processing:
     @current_application.setter
     def current_application(self, application: Application):
         """Update the currently loaded application."""
-        previous_data = self.profile
-        previous_app, self._current_application = self._current_application, application
+        if application == self._current_application:
+            return
+        self._current_application = application
 
-        if application != previous_app:
-            # Lock in the previous activity data
-            previous_data.tick.current = self.tick
-            previous_data.tick.set_active()
+        # Reset the cursor position
+        self.profile.cursor_map.position = None
 
-            # Start new activity data
-            self.profile.tick.current = self.profile.tick.previous = self.tick
+        # Count total clicks
+        clicks = 0
+        for resolution_maps in self.profile.mouse_single_clicks.values():
+            for array in resolution_maps.values():
+                clicks += np.sum(array)
 
-            # Reset the cursor position
-            self.profile.cursor_map.position = None
+        # Count scrolls
+        scrolls = 0
+        for opcode in SCROLL_EVENTS:
+            scrolls += self.profile.key_held[opcode]
 
-            # Count total clicks
-            clicks = 0
-            for resolution_maps in self.profile.mouse_single_clicks.values():
-                for array in resolution_maps.values():
-                    clicks += np.sum(array)
-
-            # Count scrolls
-            scrolls = 0
-            for opcode in SCROLL_EVENTS:
-                scrolls += self.profile.key_held[opcode]
-
-            # Send data back to the GUI
-            self.q_send.put(ipc.ProfileLoaded(
-                application=self.current_application.name,
-                distance=self.profile.cursor_map.distance,
-                cursor_counter=self.profile.cursor_map.counter,
-                thumb_l_counter=self.profile.thumbstick_l_map[0].counter if self.profile.thumbstick_l_map else 0,
-                thumb_r_counter=self.profile.thumbstick_r_map[0].counter if self.profile.thumbstick_r_map else 0,
-                clicks=clicks,
-                scrolls=scrolls,
-                keys_pressed=np.sum(self.profile.key_presses),
-                buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
-                active_time=self.profile.tick.activity,
-                inactive_time=self.profile.tick.inactivity,
-                bytes_sent=sum(self.profile.data_upload.values()),
-                bytes_recv=sum(self.profile.data_download.values()),
-            ))
+        # Send data back to the GUI
+        self.q_send.put(ipc.ProfileLoaded(
+            application=self.current_application.name,
+            distance=self.profile.cursor_map.distance,
+            cursor_counter=self.profile.cursor_map.counter,
+            thumb_l_counter=self.profile.thumbstick_l_map[0].counter if self.profile.thumbstick_l_map else 0,
+            thumb_r_counter=self.profile.thumbstick_r_map[0].counter if self.profile.thumbstick_r_map else 0,
+            clicks=clicks,
+            scrolls=scrolls,
+            keys_pressed=np.sum(self.profile.key_presses),
+            buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
+            elapsed_ticks=self.profile.elapsed,
+            active_ticks=self.profile.active,
+            inactive_ticks=self.profile.inactive,
+            bytes_sent=sum(self.profile.data_upload.values()),
+            bytes_recv=sum(self.profile.data_download.values()),
+        ))
 
     @property
     def profile_age_days(self) -> int:
@@ -301,11 +295,27 @@ class Processing:
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
-            # Update the current tick
             case ipc.Tick():
-                self.tick = self.profile.tick.current = message.tick
+                # Set variables
+                self.tick = message.tick
                 self.timestamp = message.timestamp
-                self.profile.daily_ticks[self.profile_age_days] += 1
+
+                # Update profile data
+                self.profile.elapsed += 1
+                self.profile.daily_ticks[self.profile_age_days, 0] += 1
+
+                # This message triggers once per tick, so the current profile is always "modified"
+                self.profile.modified = True
+
+            case ipc.Active():
+                profile = self.all_profiles[message.profile_name]
+                profile.active += message.ticks
+                profile.daily_ticks[self.profile_age_days, 1] += message.ticks
+
+            case ipc.Inactive():
+                profile = self.all_profiles[message.profile_name]
+                profile.inactive += message.ticks
+                profile.daily_ticks[self.profile_age_days, 2] += message.ticks
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
@@ -320,13 +330,10 @@ class Processing:
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
-                self.profile.tick.set_active()
                 distance = self._record_move(self.profile.cursor_map, message.position)
                 self.profile.daily_distance[self.profile_age_days] += distance
 
             case ipc.MouseHeld():
-                self.profile.tick.set_active()
-
                 result = self._monitor_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
@@ -334,8 +341,6 @@ class Processing:
                     self.profile.mouse_held_clicks[message.button][current_monitor][index] += 1
 
             case ipc.MouseClick():
-                self.profile.tick.set_active()
-
                 previous = self.previous_mouse_click
                 double_click = (
                     previous is not None
@@ -361,7 +366,6 @@ class Processing:
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
             case ipc.KeyPress():
-                self.profile.tick.set_active()
                 if message.opcode not in MOUSE_BUTTONS:
                     print(f'[Processing] Key {message.opcode} pressed.')
                 self.profile.key_presses[message.opcode] += 1
@@ -373,21 +377,18 @@ class Processing:
                     self.profile.daily_keys[self.profile_age_days] += 1
 
             case ipc.KeyHeld():
-                self.profile.tick.set_active()
                 if message.opcode in SCROLL_EVENTS:
                     print(f'[Processing] Scroll {message.opcode} triggered.')
                     self.profile.daily_scrolls[self.profile_age_days] += 1
                 self.profile.key_held[message.opcode] += 1
 
             case ipc.ButtonPress():
-                self.profile.tick.set_active()
                 print(f'[Processing] Key {message.opcode} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
                 self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
                 self.profile.daily_buttons[self.profile_age_days] += 1
 
             case ipc.ButtonHeld():
-                self.profile.tick.set_active()
                 self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
 
             case ipc.MonitorsChanged():
@@ -395,7 +396,6 @@ class Processing:
                 self.monitor_data = message.data
 
             case ipc.ThumbstickMove():
-                self.profile.tick.set_active()
                 width = height = RADIAL_ARRAY_SIZE
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
@@ -424,13 +424,13 @@ class Processing:
             case ipc.ApplicationDetected():
                 self.current_application = Application(message.name, message.rect)
 
-            case ipc.Save():
-                if message.application is None:
-                    applications = self.all_profiles.keys()
+            case ipc.SaveReady():
+                if message.profile is None:
+                    profiles = self.all_profiles.keys()
                 else:
-                    applications = [message.application]
+                    profiles = [message.profile]
 
-                for application in applications:
+                for application in profiles:
                     print(f'[Processing] Saving {application}...')
                     if self.all_profiles[application].modified:
                         self.all_profiles[application].save(get_filename(application))

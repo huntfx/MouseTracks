@@ -140,10 +140,20 @@ class TrackingArray:
         return True
 
     def __getitem__(self, item):
-        return self.array[item]
+        try:
+            return self.array[item]
+        except IndexError:
+            if not self._check_padding(item):
+                raise
+            return self.array[item]
 
     def __setitem__(self, item, value):
-        self.array[item] = value
+        try:
+            self.array[item] = value
+        except IndexError:
+            if not self._check_padding(item):
+                raise
+            self.array[item] = value
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         with zf.open(path, 'w') as f:
@@ -189,12 +199,7 @@ class TrackingIntArray(TrackingArray):
 
     def __getitem__(self, item: any) -> int:
         """Get an array item."""
-        try:
-            return int(super().__getitem__(item))
-        except IndexError:
-            if self._check_padding(item):
-                return 0
-            raise
+        return int(super().__getitem__(item))
 
     def __setitem__(self, item: int | tuple[int], value: int) -> None:
         """Set an array item, changing dtype if required."""
@@ -205,12 +210,7 @@ class TrackingIntArray(TrackingArray):
                     self.array = self.array.astype(dtype)
                     break
 
-        try:
-            super().__setitem__(item, value)
-        except IndexError:
-            if not self._check_padding(item):
-                raise
-            self.array[item] = value
+        super().__setitem__(item, value)
 
 
 class ArrayResolutionMap(dict):
@@ -314,55 +314,6 @@ class MovementMaps:
 
 
 @dataclass
-class Tick:
-    """Store data related to ticks."""
-
-    current: int = field(default=0)
-    previous: int = field(default=0)
-    active: int = field(default=0)
-    inactive: int = field(default=0)
-    saved: int = field(default=0)
-
-    @property
-    def activity(self) -> int:
-        """Get the number of active ticks."""
-        amount = self.active
-        if self.is_active:
-            amount += self.since_active
-        return amount
-
-    @property
-    def inactivity(self) -> int:
-        """Get the number of inactive ticks."""
-        amount = self.inactive
-        if not self.is_active:
-            amount += self.since_active
-        return amount
-
-    @property
-    def is_active(self) -> bool:
-        """Determine if currently active."""
-        threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
-        return self.since_active <= threshold
-
-    @property
-    def since_active(self) -> int:
-        """Get the number of ticks since the last activity."""
-        return self.current - self.previous
-
-    def set_active(self) -> tuple[bool, int]:
-        """Update the last tick activity."""
-        since_active = self.since_active
-        self.previous = self.current
-        is_active = self.is_active
-        if self.is_active:
-            self.active += since_active
-        else:
-            self.inactive += since_active
-        return is_active, since_active
-
-
-@dataclass
 class TrackingProfile:
     """The data stored per application.
     Everything that gets saved to disk is contained in here.
@@ -371,7 +322,10 @@ class TrackingProfile:
     name: str
 
     created: int = field(default_factory=lambda: int(time.time()))
-    tick: Tick = field(default_factory=Tick)
+    modified: bool = field(default=False)
+    elapsed: int = field(default=0)
+    active: int = field(default=0)
+    inactive: int = field(default=0)
 
     cursor_map: MovementMaps = field(default_factory=MovementMaps)
     thumbstick_l_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
@@ -391,7 +345,7 @@ class TrackingProfile:
     data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
-    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray([1, 3], auto_pad=[True, False]))
     daily_distance: TrackingArray = field(default_factory=lambda: TrackingArray(1, np.float32, auto_pad=True))
     daily_clicks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
     daily_scrolls: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
@@ -400,18 +354,14 @@ class TrackingProfile:
     daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
 
-    @property
-    def modified(self):
-        """Determine if the data is modified."""
-        return self.tick.current != self.tick.saved
-
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/time/created', str(self.created))
         zf.writestr('metadata/time/modified', str(int(time.time())))
-        zf.writestr('metadata/ticks/active', str(self.tick.activity))
-        zf.writestr('metadata/ticks/inactive', str(self.tick.inactivity))
+        zf.writestr('metadata/ticks/elapsed', str(self.elapsed))
+        zf.writestr('metadata/ticks/active', str(self.active))
+        zf.writestr('metadata/ticks/inactive', str(self.inactive))
 
         self.cursor_map._write_to_zip(zf, 'data/mouse/cursor')
         for i, array_resolution_map in self.mouse_single_clicks.items():
@@ -454,8 +404,9 @@ class TrackingProfile:
 
         self.name = zf.read('metadata/name').decode('utf-8')
         self.created = int(zf.read('metadata/time/created'))
-        self.tick.active = int(zf.read('metadata/ticks/active'))
-        self.tick.inactive = int(zf.read('metadata/ticks/inactive'))
+        self.elapsed = int(zf.read('metadata/ticks/elapsed'))
+        self.active = int(zf.read('metadata/ticks/active'))
+        self.inactive = int(zf.read('metadata/ticks/inactive'))
 
         self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
         mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks/')}
@@ -500,7 +451,7 @@ class TrackingProfile:
         self.daily_download._load_from_zip(zf, 'stats/network/download.npy')
 
     def save(self, path: str):
-        self.tick.saved = self.tick.current
+        self.modified = False
 
         # Ensure the folder exists
         base_dir = os.path.dirname(path)

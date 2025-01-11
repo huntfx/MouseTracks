@@ -207,7 +207,7 @@ class RequestRunningAppCheck(Message):
 class ApplicationDetected(Message):
     """Update data about an application."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
     process_id: int
     rect: tuple[int, int, int, int]
@@ -233,9 +233,21 @@ class ProcessShutDownNotification(Message):
 
 
 @dataclass
-class Save(Message):
+class SaveReady(Message):
+    """Once a save is ready to be done.
+    This should be sent via tracking only.
+    """
+
     target: int = field(default=Target.Processing, init=False)
-    application: Optional[str] = field(default=None)
+    profile: Optional[str] = field(default=None)
+
+
+@dataclass
+class Save(Message):
+    """Request a save."""
+
+    target: int = field(default=Target.Tracking, init=False)
+    profile: Optional[str] = field(default=None)
 
 
 @dataclass
@@ -258,8 +270,9 @@ class ProfileLoaded(Message):
     scrolls: int
     keys_pressed: int
     buttons_pressed: int
-    active_time: int
-    inactive_time: int
+    elapsed_ticks: int
+    active_ticks: int
+    inactive_ticks: int
     bytes_sent: int
     bytes_recv: int
 
@@ -272,3 +285,20 @@ class DataTransfer(Message):
     mac_address: str
     bytes_sent: int
     bytes_recv: int
+
+
+@dataclass
+class Active(Message):
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    ticks: int
+
+
+@dataclass
+class Inactive(Message):
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    ticks: int
+

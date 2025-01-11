@@ -12,7 +12,7 @@ import XInput
 
 from . import utils
 from .. import ipc
-from ...constants import UPDATES_PER_SECOND
+from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS, SCROLL_EVENTS
 from ...utils.win import SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT
 
@@ -36,7 +36,9 @@ def get_mac_addresses() -> dict[str, Optional[str]]:
 
 @dataclass
 class DataState:
-    tick: int = field(default=0)
+    tick_current: int = field()
+    tick_previous: int = field(default=-1)
+    tick_modified: Optional[bool] = field(default=None)
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
@@ -54,6 +56,8 @@ class DataState:
     bytes_recv: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
+        self.tick_previous = self.tick_current - 1
+
         for connection_name, data in psutil.net_io_counters(pernic=True).items():
             self.bytes_sent_previous[connection_name] = data.bytes_sent
             self.bytes_recv_previous[connection_name] = data.bytes_recv
@@ -64,6 +68,7 @@ class Tracking:
         self.q_send = q_send
         self.q_receive = q_receive
         self.state = ipc.TrackingState.State.Pause
+        self.profile_name = DEFAULT_PROFILE_NAME
 
         self._interface_mac_addresses = get_mac_addresses()
 
@@ -89,6 +94,15 @@ class Tracking:
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
 
+                case ipc.ApplicationDetected():
+                    if message.name != self.profile_name:
+                        self.data.tick_modified = self.data.tick_current
+                        self._calculate_inactivity()
+                    self.profile_name = message.name
+
+                case ipc.Save():
+                    self._save(message.profile)
+
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
         for tick in utils.ticks(UPDATES_PER_SECOND):
@@ -102,19 +116,53 @@ class Tracking:
                 case ipc.TrackingState.State.Start:
                     if state_changed:
                         print('[Tracking] Started.')
-                        self.data = DataState()
-                    self.data.tick = tick
+                        self.data = DataState(tick)
+                    self.data.tick_current = tick
+
+                    # If pynput gets an event, the it may not be in sync
+                    # with polling, and causes the processing component
+                    # to be 1 tick off, where `active + inactive` is 1
+                    # tick less than `elapsed`.
+                    # It's not a permanent desync, but it could possibly
+                    # have a race condition on save, so this fix will
+                    # prevent that from happening.
+                    if self.data.tick_modified == tick - 1:
+                        self.data.tick_modified += 1
+
                     yield tick, self.data
 
                 # When tracking is paused then stop here
                 case ipc.TrackingState.State.Pause:
                     if state_changed:
+                        self.data.tick_modified = self.data.tick_current
+                        self._calculate_inactivity()
                         print('[Tracking] Paused.')
 
                 # Exit the loop when tracking is stopped
                 case ipc.TrackingState.State.Stop:
+                    self.data.tick_modified = self.data.tick_current
+                    self._calculate_inactivity()
                     print('[Tracking] Shut down.')
                     return
+
+    def _calculate_inactivity(self) -> None:
+        """Send the activity or inactivity ticks.
+
+        It took a few iterations but this stays completely in sync with
+        the elapsed time.
+        TODO: Testing needed on tracking pause/stop
+        """
+        if self.data.tick_modified is None:
+            return
+
+        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        diff = self.data.tick_modified - self.data.tick_previous
+        if diff > inactivity_threshold:
+            self.send_data(ipc.Inactive(self.profile_name, diff))
+        elif diff:
+            self.send_data(ipc.Active(self.profile_name, diff))
+        self.data.tick_previous = self.data.tick_modified
+        self.data.tick_modified = None
 
     def _check_monitor_data(self, pixel: tuple[int, int]) -> None:
         """Check if the monitor data is valid for the pixel.
@@ -156,12 +204,14 @@ class Tracking:
 
     def _key_press(self, opcode: int) -> None:
         """Handle key presses."""
-        press_start, press_latest = self.data.key_presses.get(opcode, (self.data.tick, 0))
+        self.data.tick_modified = self.data.tick_current
+
+        press_start, press_latest = self.data.key_presses.get(opcode, (self.data.tick_current, 0))
 
         # Handle all standard keypresses
         if opcode <= 0xFF:
             # First press
-            if press_latest != self.data.tick - 1:
+            if press_latest != self.data.tick_current - 1:
                 if opcode in MOUSE_BUTTONS:
                     self.send_data(ipc.MouseClick(opcode, self.data.mouse_position))
                 self.send_data(ipc.KeyPress(opcode))
@@ -182,12 +232,10 @@ class Tracking:
         else:
             raise RuntimeError(f'unexpected opcode: {opcode}')
 
-        self.data.key_presses[opcode] = (press_start, self.data.tick)
+        self.data.key_presses[opcode] = (press_start, self.data.tick_current)
 
     def _run(self):
         print('[Tracking] Loaded.')
-
-        last_activity = 0
 
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
@@ -211,14 +259,13 @@ class Tracking:
 
             # Update mouse movement
             if mouse_position != data.mouse_position:
+                self.data.tick_modified = self.data.tick_current
                 self.data.mouse_position = mouse_position
-                last_activity = tick
                 self._check_monitor_data(mouse_position)
                 self.send_data(ipc.MouseMove(mouse_position))
 
             # Record key presses / mouse clicks
             for opcode in filter(check_key_press, range(0x01, 0xFF)):
-                last_activity = tick
                 self._key_press(opcode)
 
             # Determine which gamepads are connected
@@ -251,7 +298,7 @@ class Tracking:
                 for button, state in buttons.items():
                     if not state:
                         continue
-                    last_activity = tick
+                    self.data.tick_modified = self.data.tick_current
                     if button not in XINPUT_OPCODES:
                         button = f'BUTTON_{button}'
                     opcode = XINPUT_OPCODES[button]
@@ -265,12 +312,12 @@ class Tracking:
                         data.button_presses[opcode] = (press_start, tick)
 
                 if stick_l != data.gamepad_stick_l_position[gamepad]:
-                    last_activity = tick
+                    self.data.tick_modified = self.data.tick_current
                     data.gamepad_stick_l_position[gamepad] = stick_l
                     self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, stick_l))
 
                 if stick_r != data.gamepad_stick_r_position[gamepad]:
-                    last_activity = tick
+                    self.data.tick_modified = self.data.tick_current
                     data.gamepad_stick_r_position[gamepad] = stick_r
                     self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
@@ -291,8 +338,15 @@ class Tracking:
                         if mac_addr is not None:
                             self.send_data(ipc.DataTransfer(mac_addr, bytes_sent, bytes_recv))
 
-            if tick and not tick % 3000:
-                self.send_data(ipc.Save())
+            self._calculate_inactivity()
+
+            if tick and not tick % 30000:
+                self._save()
+
+    def _save(self, profile: Optional[str] = None):
+        """When saving, recalculate inactivity before sending the signal."""
+        self._calculate_inactivity()
+        self.send_data(ipc.SaveReady(profile))
 
     def run(self) -> None:
         print('[Tracking] Loaded.')

@@ -7,10 +7,12 @@ Components:
     - cli
 """
 
+import time
 import multiprocessing
 import queue
 
 from .. import ipc, app_detection, tracking, processing, gui
+from ...constants import UPDATES_PER_SECOND
 
 
 class ExitRequest(Exception):
@@ -175,15 +177,19 @@ class Hub:
         else:
             self.start_tracking()
 
-        print('[Hub] Queue handler started.')
         running = True
+        print('[Hub] Queue handler started.')
         try:
             while running or not self._q_main.empty():
                 try:
                     self._process_message(self._q_main.get())
                 except ExitRequest:
-                    print('[Hub] Exit requested, triggring shut down...')
+                    print('[Hub] Exit requested, triggering shut down...')
                     running = False
+
+                    # Avoid shutting down before tracking can respond
+                    # Without this, the save on exit feature won't work
+                    time.sleep(1 / UPDATES_PER_SECOND)
 
         # Ensure threads are safely shut down
         finally:

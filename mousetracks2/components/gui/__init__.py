@@ -13,7 +13,8 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from mousetracks.image import colours
 from .. import ipc
 from ...ui.main import Ui_MainWindow
-from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE, UPDATES_PER_SECOND
+from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
+from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
 from ...file import get_profile_names
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS, MOUSE_OPCODES
@@ -70,12 +71,12 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
 
 def format_ticks(ticks: int) -> str:
     """Convert ticks to a formatted time string."""
-    seconds = ticks // UPDATES_PER_SECOND
+    seconds = ticks / UPDATES_PER_SECOND
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
 
-    return f'{days:02}:{hours:02}:{minutes:02}:{seconds:02}'
+    return f'{int(days):02}:{int(hours):02}:{int(minutes):02}:{seconds:04.1f}'
 
 
 def format_bytes(b: int) -> str:
@@ -151,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
-        self.active_time = self.inactive_time = 0
+        self.elapsed_time = self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
         self.render_type = ipc.RenderType.Time
         self.render_colour = 'BlackToRedToWhite'
@@ -196,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start the thread
         self.queue_thread.start()
-        self.timer_activity.start(200)
+        self.timer_activity.start(100)
 
         self.start_tracking()
 
@@ -307,14 +308,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stat_buttons.setText(str(count))
 
     @property
-    def active_time(self) -> int:
+    def elapsed_time(self) -> int:
         """Get the current active time."""
-        return self._active_time
+        return self._elapsed_time
 
-    @active_time.setter
-    def active_time(self, ticks: int) -> None:
+    @elapsed_time.setter
+    def elapsed_time(self, ticks: int) -> None:
         """Set the current active time."""
-        self._active_time = ticks
+        self._elapsed_time = ticks
 
     @property
     def inactive_time(self) -> int:
@@ -330,8 +331,21 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the activity preview periodically.
         The updates are too frequent to do per tick.
         """
-        self.ui.stat_active.setText(format_ticks(self.active_time))
-        self.ui.stat_inactive.setText(format_ticks(self.inactive_time))
+        active_time = self.active_time
+        inactive_time = self.inactive_time
+
+        # The active and inactive time don't update every tick
+        # Add the difference to keep the GUI in sync
+        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        tick_diff = self.elapsed_time - (self.active_time + self.inactive_time)
+        if tick_diff > inactivity_threshold:
+            inactive_time += tick_diff
+        else:
+            active_time += tick_diff
+
+        self.ui.stat_elapsed.setText(format_ticks(self.elapsed_time))
+        self.ui.stat_active.setText(format_ticks(active_time))
+        self.ui.stat_inactive.setText(format_ticks(inactive_time))
 
     @property
     def bytes_sent(self) -> int:
@@ -459,8 +473,14 @@ class MainWindow(QtWidgets.QMainWindow):
         match message:
             case ipc.Tick():
                 self.tick_current = message.tick
-                self.active_time += 1
+                self.elapsed_time += 1
                 self.thumbnail_render_check()
+
+            case ipc.Active():
+                self.active_time += message.ticks
+
+            case ipc.Inactive():
+                self.inactive_time += message.ticks
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -570,8 +590,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_scroll_count = message.scrolls
                 self.key_press_count = message.keys_pressed
                 self.button_press_count = message.buttons_pressed
-                self.active_time = message.active_time
-                self.inactive_time = message.inactive_time
+                self.elapsed_time = message.elapsed_ticks
+                self.active_time = message.active_ticks
+                self.inactive_time = message.inactive_ticks
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
 
