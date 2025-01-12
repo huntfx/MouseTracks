@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from mousetracks.misc import get_script_path
 from mousetracks.image import colours
 from .. import ipc
 from ...ui.main import Ui_MainWindow
@@ -21,7 +22,7 @@ from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS, MOUS
 from ...ui.widgets import Pixel
 
 
-ICON_PATH = 'resources/images/icon.png'
+ICON_PATH = os.path.join(get_script_path(), 'resources/images/icon.png')
 
 
 class QueueWorker(QtCore.QObject):
