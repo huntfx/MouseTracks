@@ -59,6 +59,8 @@ def format_file_path(path):
     
     
 def get_script_path():
+    if hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
     return os.getcwd()
 
     #This has support for running from another folder, but may not always be correct
