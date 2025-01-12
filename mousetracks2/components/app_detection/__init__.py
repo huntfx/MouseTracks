@@ -22,7 +22,7 @@ class AppDetection:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         self.q_send = q_send
         self.q_receive = q_receive
-        self.running_apps = RunningApplications(queue=q_send)
+        self.running_apps = RunningApplications()
         self.previous_app = None
         self.last_coordinates = None
         self.last_resolution = None
