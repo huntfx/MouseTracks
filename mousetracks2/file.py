@@ -422,17 +422,17 @@ class TrackingProfile:
         self.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
 
         gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad/')}
-        for i in gamepad_indexes:
-            if f'data/gamepad/{i}/left_stick' in all_paths:
-                self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
-            if f'data/gamepad/{i}/right_stick' in all_paths:
-                self.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
-            if f'data/gamepad/{i}/pressed.npy' in all_paths:
-                self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
-            if f'data/gamepad/{i}/held.npy' in all_paths:
-                self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
-
         for path in all_paths:
+            for i in gamepad_indexes:
+                if path.startswith(f'data/gamepad/{i}/left_stick'):
+                    self.thumbstick_l_map[i]._load_from_zip(zf, f'data/gamepad/{i}/left_stick')
+                if path.startswith(f'data/gamepad/{i}/right_stick'):
+                    self.thumbstick_r_map[i]._load_from_zip(zf, f'data/gamepad/{i}/right_stick')
+                if path == f'data/gamepad/{i}/pressed.npy':
+                    self.button_presses[i]._load_from_zip(zf, f'data/gamepad/{i}/pressed.npy')
+                if path == f'data/gamepad/{i}/held.npy':
+                    self.button_held[i]._load_from_zip(zf, f'data/gamepad/{i}/held.npy')
+
             if path.startswith('data/network/upload/'):
                 mac_address = path.split('/')[3]
                 self.data_upload[mac_address] = int(zf.read(path))
