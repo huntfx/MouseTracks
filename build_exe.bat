@@ -1,0 +1,1 @@
+pyinstaller --onefile --name MouseTracks --icon resources/images/icon.ico --add-data mousetracks2/**;mousetracks2 --add-data config/colours.txt;config start_hub.py

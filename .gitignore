@@ -120,5 +120,4 @@ env*/
 .vs/
 .vscode/
 *.lnk
-*.bat
 *.code-workspace
