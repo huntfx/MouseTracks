@@ -456,7 +456,7 @@ class TrackingProfile:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
 
-    def save(self, path: str):
+    def save(self, path: str) -> bool:
         self.modified = False
 
         # Ensure the folder exists
@@ -475,7 +475,23 @@ class TrackingProfile:
 
             # Quickly swap over the files to reduce chances of a race condition
             if os.path.exists(path):
-                os.rename(path, del_file)
+
+                # Rename the existing file
+                # If it has a permission error, then keep retrying
+                # If it never unlocks then skip the save
+                for _ in range(5):
+                    try:
+                        os.rename(path, del_file)
+                    except PermissionError:
+                        print(f'[File] Permission error when renaming {path}, trying again...')
+                        time.sleep(2)
+                    else:
+                        break
+                else:
+                    print(f'[File] Unable to overwrite {path}, saving failed!')
+                    self.modified = True
+                    return False
+
             os.rename(temp_file, path)
 
         finally:
@@ -484,6 +500,8 @@ class TrackingProfile:
                 os.remove(temp_file)
             if os.path.exists(del_file):
                 os.remove(del_file)
+
+        return True
 
     @classmethod
     def load(cls, path: str, allow_legacy: bool = ALLOW_LEGACY_IMPORT) -> Self:

@@ -321,7 +321,7 @@ class Processing:
             elif tick_diff:
                 self._record_active_tick(profile_name, tick_diff)
 
-            profile.save(get_filename(profile_name))
+            result = profile.save(get_filename(profile_name))
 
             # Undo the temporary sync
             if tick_diff > inactivity_threshold:
@@ -329,7 +329,10 @@ class Processing:
             elif tick_diff:
                 self._record_active_tick(profile_name, -tick_diff)
 
-            print(f'[Processing] Saved {profile_name}')
+            if result:
+                print(f'[Processing] Saved {profile_name}')
+            else:
+                print(f'[Processing] Failed to save {profile_name}!')
         else:
             print('[Processing] Skipping save, not modified')
 
