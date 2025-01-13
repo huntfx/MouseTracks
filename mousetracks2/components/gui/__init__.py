@@ -180,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.save_render.clicked.connect(self.render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
-        self.ui.colour_option.currentIndexChanged.connect(self.render_colour_changed)
+        self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
@@ -213,7 +213,11 @@ class MainWindow(QtWidgets.QMainWindow):
         This will update the current pixel colour too.
         """
         self._render_colour = colour
-        self.pixel_colour = colours.calculate_colour_map(colour)[-1]
+        try:
+            self.pixel_colour = colours.calculate_colour_map(colour)[-1]
+        except Exception:  # Old code - just fallback to tranparent
+            self._render_colour = 'TransparentBlack'
+            self.pixel_colour = (0, 0, 0, 0)
 
     @property
     def pixel_colour(self) -> tuple[int, int, int, int]:
@@ -239,28 +243,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Add items to render colour input
         self.pause_colour_change = True
-        previous_text = self.ui.colour_option.currentData()
+        previous_text = self.ui.colour_option.currentText()
 
         self.ui.colour_option.clear()
-        self.ui.colour_option.addItem('Default', 'BlackToRedToWhite')
+        self.ui.colour_option.addItem('BlackToRedToWhite')
         for data in colours.parse_colour_file()['Maps'].values():
             match render_type:
                 case (ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed
                       | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R
                       | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
                     if data['Type']['tracks']:
-                        self.ui.colour_option.addItem(data['UpperCase'], data['UpperCase'])
+                        self.ui.colour_option.addItem(data['UpperCase'])
                 case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
                       | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
                       | ipc.RenderType.TimeHeatmap):
                     if data['Type']['clicks']:
-                        self.ui.colour_option.addItem(data['UpperCase'], data['UpperCase'])
+                        self.ui.colour_option.addItem(data['UpperCase'])
 
         # Load previous colour if available, otherwise revert to default
-        if previous_text and previous_text != self.ui.colour_option.currentData():
-            if idx := self.ui.colour_option.findData(previous_text) < -1:
+        if previous_text and previous_text != self.ui.colour_option.currentText():
+            if idx := self.ui.colour_option.findText(previous_text) < -1:
                 self.ui.colour_option.setCurrentIndex(idx)
-            self.render_colour = self.ui.colour_option.currentData()
+            self.render_colour = self.ui.colour_option.currentText()
 
         self.pause_colour_change = False
 
@@ -381,12 +385,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type = self.ui.map_type.itemData(idx)
         self.request_thumbnail(force=True)
 
-    @QtCore.Slot(int)
-    def render_colour_changed(self, idx: int) -> None:
+    @QtCore.Slot(str)
+    def render_colour_changed(self, colour: str) -> None:
         """Change the render colour and trigger a redraw."""
         if self.pause_colour_change:
             return
-        self.render_colour = self.ui.colour_option.itemData(idx)
+        self.render_colour = colour
         self.request_thumbnail(force=True)
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:

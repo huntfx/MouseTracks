@@ -74,6 +74,10 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     """Generate a color lookup table transitioning smoothly between given colors."""
     lookup = np.zeros((steps, 4), dtype=np.uint8)
 
+    # Fix for single inputs
+    if len(colours) == 1:
+        colours = (colours[0], colours[0])
+
     num_transitions = len(colours) - 1
     steps_per_transition = steps // num_transitions
     remaining_steps = steps % num_transitions  # Distribute extra steps evenly
@@ -153,5 +157,10 @@ def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None
         combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
 
     # Convert the array to 0-255 and map to a colour lookup table
-    colour_lookup = generate_colour_lookup(*colours.calculate_colour_map(colour_map))
+    try:
+        colour_map_data = colours.calculate_colour_map(colour_map)
+    except Exception:  # Old code - just fallback to tranparent
+        colour_map_data = [(0, 0, 0, 0)]
+
+    colour_lookup = generate_colour_lookup(*colour_map_data)
     return colour_lookup[array_to_uint8(combined_array)]
