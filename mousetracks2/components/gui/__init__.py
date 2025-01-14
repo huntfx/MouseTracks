@@ -495,8 +495,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        if not self._redrawing_profiles:
-            self.request_thumbnail(force=True)
+        if self._redrawing_profiles:
+            return
+
+        self.request_thumbnail(force=True)
         if idx:
             self.ui.auto_switch_profile.setChecked(False)
 
