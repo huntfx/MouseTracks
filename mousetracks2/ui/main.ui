@@ -1008,7 +1008,7 @@
     <addaction name="file_tracking_start"/>
     <addaction name="file_tracking_pause"/>
     <addaction name="separator"/>
-    <addaction name="actionSave"/>
+    <addaction name="file_save"/>
     <addaction name="actionImport"/>
     <addaction name="actionExport"/>
     <addaction name="separator"/>
@@ -1088,12 +1088,12 @@
     <string>Display Output Log</string>
    </property>
   </action>
-  <action name="actionSave">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="file_save">
    <property name="text">
     <string>Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionExport">

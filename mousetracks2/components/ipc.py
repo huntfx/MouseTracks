@@ -236,8 +236,17 @@ class ProcessShutDownNotification(Message):
 class Save(Message):
     """Once a save is ready to be done."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing, init=False)
     profile: Optional[str] = field(default=None)
+
+
+@dataclass
+class SaveComplete(Message):
+    """After a profile has been saved."""
+
+    target: int = field(default=Target.GUI, init=False)
+    succeeded: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
 
 
 @dataclass

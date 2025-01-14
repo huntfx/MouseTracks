@@ -128,6 +128,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
         self.shutting_down = False
+        self.save_request_sent = False
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -207,6 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
+        self.ui.file_save.triggered.connect(self.manual_save)
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
         self.ui.tray_exit.triggered.connect(self.shut_down)
@@ -361,6 +363,19 @@ class MainWindow(QtWidgets.QMainWindow):
         """Set the current inactive time."""
         self._inactive_time = ticks
 
+    @property
+    def save_request_sent(self) -> bool:
+        """If waiting on a save request."""
+        return self._save_request_sent
+
+    @save_request_sent.setter
+    def save_request_sent(self, value: bool) -> None:
+        """Set when waiting on a save request.
+        This blocks the save action from triggering.
+        """
+        self._save_request_sent = value
+        self.ui.file_save.setEnabled(not value)
+
     def update_activity_preview(self) -> None:
         """Update the activity preview periodically.
         The updates are too frequent to do per tick.
@@ -451,6 +466,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Resume signals
         self._redrawing_profiles = False
+
+    @QtCore.Slot()
+    def manual_save(self) -> None:
+        """Trigger a manual save request."""
+        if self.save_request_sent:
+            return
+        self.save_request_sent = True
+        self.q_send.put(ipc.Save())
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
@@ -709,9 +732,30 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent += message.bytes_sent
                 self.bytes_recv += message.bytes_recv
 
-            case ipc.Save():
-                self._unsaved_profiles.clear()
+            case ipc.SaveComplete():
+                self._unsaved_profiles -= set(message.succeeded)
+                self._unsaved_profiles.add(self.current_profile.name)
                 self._redraw_profile_combobox()
+
+                # Notify when complete
+                if self.save_request_sent:
+                    self.save_request_sent = False
+
+                    msg = QtWidgets.QMessageBox(self)
+                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+                    if message.failed:
+                        msg.setWindowTitle('Save Failed')
+                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                        msg.setText('Not all profiles were saved.\n'
+                                    f'  Successful: {", ".join(message.succeeded)}\n'
+                                    f'  Failed: {", ".join(message.failed)}\n')
+                    else:
+                        msg.setWindowTitle('Successful')
+                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                        msg.setText('All profiles have been saved.')
+
+                    msg.exec_()
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')

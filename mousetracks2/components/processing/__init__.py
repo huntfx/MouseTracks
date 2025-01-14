@@ -305,39 +305,41 @@ class Processing:
         profile.inactive += ticks
         profile.daily_ticks[self.profile_age_days, 2] += ticks
 
-    def _save(self, profile_name: str) -> None:
+    def _save(self, profile_name: str) -> bool:
         """Save a profile to disk.
         See `ipc.SaveReady` for information on why the `inactivity`
         parameter is required.
         """
         print(f'[Processing] Saving {profile_name}...')
         profile = self.all_profiles[profile_name]
-        if profile.modified:
-
-            # To keep the active/inactive time in sync with elapsed,
-            # temporarily add the current data to the profile
-            # This is the same logic in the GUI
-            inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
-            tick_diff = profile.elapsed - (profile.active + profile.inactive)
-            if tick_diff > inactivity_threshold:
-                self._record_inactive_tick(profile_name, tick_diff)
-            elif tick_diff:
-                self._record_active_tick(profile_name, tick_diff)
-
-            result = profile.save(get_filename(profile_name))
-
-            # Undo the temporary sync
-            if tick_diff > inactivity_threshold:
-                self._record_inactive_tick(profile_name, -tick_diff)
-            elif tick_diff:
-                self._record_active_tick(profile_name, -tick_diff)
-
-            if result:
-                print(f'[Processing] Saved {profile_name}')
-            else:
-                print(f'[Processing] Failed to save {profile_name}!')
-        else:
+        if not profile.modified:
             print('[Processing] Skipping save, not modified')
+            return False
+
+        # To keep the active/inactive time in sync with elapsed,
+        # temporarily add the current data to the profile
+        # This is the same logic in the GUI
+        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        tick_diff = profile.elapsed - (profile.active + profile.inactive)
+        if tick_diff > inactivity_threshold:
+            self._record_inactive_tick(profile_name, tick_diff)
+        elif tick_diff:
+            self._record_active_tick(profile_name, tick_diff)
+
+        result = profile.save(get_filename(profile_name))
+
+        # Undo the temporary sync
+        if tick_diff > inactivity_threshold:
+            self._record_inactive_tick(profile_name, -tick_diff)
+        elif tick_diff:
+            self._record_active_tick(profile_name, -tick_diff)
+
+        if result:
+            print(f'[Processing] Saved {profile_name}')
+            return True
+
+        print(f'[Processing] Failed to save {profile_name}')
+        return False
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
@@ -472,8 +474,15 @@ class Processing:
                     profiles = self.all_profiles.keys()
                 else:
                     profiles = [message.profile]
+
+                succeeded = []
+                failed = []
                 for profile in profiles:
-                    self._save(profile)
+                    if self._save(profile):
+                        succeeded.append(profile)
+                    else:
+                        failed.append(profile)
+                self.q_send.put(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
                 self.profile.data_upload[message.mac_address] += message.bytes_sent
