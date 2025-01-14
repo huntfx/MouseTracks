@@ -107,6 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
         will instantly execute the command. This uses instances of
         `ThreadEvent`.
     """
+
     update_pixel = QtCore.Signal(int, int, QtGui.QColor)
 
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
@@ -118,10 +119,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_redraw = 0
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
+        self.shutting_down = False
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.output_logs.setVisible(False)
+
+        # Set up the tray icon
+        if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray = QtWidgets.QSystemTrayIcon(self)
+            self.tray.setIcon(QtGui.QIcon(ICON_PATH))
+
+            context_menu = QtWidgets.QMenu(self)
+            self.tray.setContextMenu(context_menu)
+
+            tray_exit = QtGui.QAction('Exit', self)
+            context_menu.addAction(tray_exit)
+
+            self.tray.activated.connect(self.tray_activated)
+            tray_exit.triggered.connect(self.shut_down)
+        else:
+            self.tray = None
+            self.ui.menu_allow_minimise.setChecked(False)
+            self.ui.menu_allow_minimise.setEnabled(False)
+
+        self.tray_force_visible = True
+        if self.tray_force_visible:
+            self.tray.show()
 
         # Set up profiles
         self.ui.current_profile.clear()
@@ -175,6 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_resize.setSingleShot(True)
 
         # Connect signals and slots
+        self.ui.menu_exit.triggered.connect(self.shut_down)
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
         self.ui.save_render.clicked.connect(self.render)
@@ -410,10 +435,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
+        # Pause when minimised
+        if not self.isVisible():
+            return False
         # If already redrawing then prevent building up commands
         if self.pause_redraw and not force:
             return False
         self.pause_redraw += 1
+
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
         size = self.ui.thumbnail.pixmapSize()
         self.q_send.put(ipc.RenderRequest(self.render_type, size.width(), size.height(),
@@ -663,26 +692,78 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.q_send.put(ipc.DebugRaiseError(ipc.Target.GUI))
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        """Send a signal that the GUI has closed."""
-        self.queue_worker.stop()
+    @QtCore.Slot()
+    def shut_down(self) -> None:
+        """Trigger a shutdown of the application."""
+        self.shutting_down = True
+        self.close()
+
+    @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
+    def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
+        """What to do when the tray icon is double clicked."""
+        if reason == QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+            self.maximise()
+
+    @QtCore.Slot()
+    def maximise(self):
+        """Maximise the window."""
+        if self.isVisible():
+            return
+
+        self.request_thumbnail()
+        self.show()
+
+    @QtCore.Slot()
+    def minimise(self) -> None:
+        """Minimise the window."""
+        if not self.isVisible():
+            return
+
+        self.hide()
+        self.tray.showMessage(
+            self.windowTitle(),
+            f'{self.windowTitle()} is now running in the background.',
+            self.tray.icon(),
+            2000,
+        )
+
+    def ask_to_save(self) -> bool:
+        """Ask the user to save.
+        Returns False if the save was cancelled.
+        """
+        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         msg = QtWidgets.QMessageBox(self)
-        msg.setWindowTitle('Closing MouseTracks Application')
+        msg.setWindowTitle(f'Closing {self.windowTitle()}')
         msg.setText('Do you want to save?')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                event.ignore()
-                return
+                self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
+                self.shutting_down = False
+                return False
+
             case QtWidgets.QMessageBox.StandardButton.Yes:
                 self.q_send.put(ipc.Save())
+        return True
 
-        self.q_send.put(ipc.Exit())
-        self.queue_thread.quit()
-        self.queue_thread.wait()
-        event.accept()
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Handle what to do when the GUI is closed."""
+        if self.tray is not None and not self.shutting_down and self.ui.menu_allow_minimise.isChecked():
+            self.minimise()
+            event.ignore()
+            return
+
+        if self.ask_to_save():
+            self.q_send.put(ipc.Exit())
+            self.queue_thread.quit()
+            self.queue_thread.wait()
+            self.queue_worker.stop()
+            event.accept()
+
+        else:
+            event.ignore()
 
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         data.distance += calculate_distance(position, data.position)

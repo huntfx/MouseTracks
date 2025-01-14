@@ -90,7 +90,7 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-295</y>
+               <y>0</y>
                <width>257</width>
                <height>492</height>
               </rect>
@@ -1013,7 +1013,7 @@
     <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionRestart"/>
-    <addaction name="actionClose"/>
+    <addaction name="menu_exit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1030,7 +1030,7 @@
     <property name="title">
      <string>Preferences</string>
     </property>
-    <addaction name="actionMinimise_to_Tray_on_Close"/>
+    <addaction name="menu_allow_minimise"/>
     <addaction name="actionShow_Log"/>
    </widget>
    <widget class="QMenu" name="menu_debug">
@@ -1118,26 +1118,20 @@
     <string>Documentation</string>
    </property>
   </action>
-  <action name="actionClose">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="menu_exit">
    <property name="text">
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionMinimise_to_Tray_on_Close">
+  <action name="menu_allow_minimise">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="checked">
     <bool>true</bool>
    </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
-    <string>Minimise On Close</string>
+    <string>Minimise to Tray</string>
    </property>
   </action>
   <action name="file_tracking_start">
