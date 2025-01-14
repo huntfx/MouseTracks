@@ -210,7 +210,7 @@ class ApplicationDetected(Message):
     target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
     process_id: int
-    rect: tuple[int, int, int, int]
+    rect: Optional[tuple[int, int, int, int]]
 
 
 @dataclass
@@ -236,7 +236,7 @@ class ProcessShutDownNotification(Message):
 class Save(Message):
     """Once a save is ready to be done."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     profile: Optional[str] = field(default=None)
 
 

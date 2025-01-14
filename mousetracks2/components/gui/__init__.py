@@ -57,6 +57,14 @@ class MapData:
     counter: int = field(default=0)
 
 
+@dataclass
+class Profile:
+    """Hold data related to the currently running profile."""
+
+    name: str
+    rect: Optional[tuple[int, int, int, int]] = field(default=None)
+
+
 def format_distance(pixels: float, ppi: float = 96.0) -> str:
     """Convert mouse distance to text"""
     inches = pixels / ppi
@@ -141,11 +149,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.tray_force_visible:
             self.tray.show()
 
-        # Set up profiles
-        self.ui.current_profile.clear()
-        self.ui.current_profile.addItem('Current Profile')
-        for profile in get_profile_names():
-            self.ui.current_profile.addItem(profile, profile)
+        self._profile_names = get_profile_names()
+        self._unsaved_profiles = set()
+        self._redrawing_profiles = False
+        self.current_profile = Profile(DEFAULT_PROFILE_NAME)
+        #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
 
         # self.ui.map_type = QtWidgets.QComboBox()
         self.ui.map_type.addItem('Time', ipc.RenderType.Time)
@@ -177,8 +185,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.current_app: str = DEFAULT_PROFILE_NAME
-        self.current_app_position: Optional[tuple[int, int, int, int]] = None
         self.last_click: Optional[int] = None
         self._bytes_sent = self.bytes_sent = 0
         self._bytes_recv = self.bytes_recv = 0
@@ -200,6 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
+        self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
         self.ui.tray_exit.triggered.connect(self.shut_down)
@@ -396,10 +403,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self._bytes_recv = amount
         self.ui.stat_download_total.setText(format_bytes(amount))
 
+    @property
+    def current_profile(self) -> Profile:
+        """Get the currently running profile."""
+        return self._current_profile
+
+    @current_profile.setter
+    def current_profile(self, profile: Profile) -> None:
+        """Set the currently running profile.
+
+        This will automatically update the combobox, but will not
+        trigger a thumbnail update.
+        """
+        self._current_profile = profile
+
+        # Update the profile order
+        idx = self._profile_names.index(profile.name)
+        if idx != -1:
+            del self._profile_names[idx]
+        self._profile_names.insert(0, profile.name)
+        self._unsaved_profiles.add(profile.name)
+        self._redraw_profile_combobox()
+
+    def _redraw_profile_combobox(self) -> None:
+        """Redraw the profile combobox.
+        Any "modified" profiles will have an asterix in front.
+        """
+        # Pause the signals
+        self._redrawing_profiles = True
+
+        # Grab the currently selected profile
+        current = self.ui.current_profile.currentData()
+
+        # Add the profiles
+        self.ui.current_profile.clear()
+        for profile in self._profile_names:
+            if profile in self._unsaved_profiles:
+                self.ui.current_profile.addItem(f'*{profile}', profile)
+            else:
+                self.ui.current_profile.addItem(profile, profile)
+
+        # Change back to the previously selected profile
+        if not self.ui.auto_switch_profile.isChecked():
+            idx = self.ui.current_profile.findData(current)
+            if idx != -1:
+                self.ui.current_profile.setCurrentIndex(idx)
+
+        # Resume signals
+        self._redrawing_profiles = False
+
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        self.request_thumbnail(force=True)
+        if not self._redrawing_profiles:
+            self.request_thumbnail(force=True)
+        if idx:
+            self.ui.auto_switch_profile.setChecked(False)
 
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
@@ -415,10 +474,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = colour
         self.request_thumbnail(force=True)
 
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
+        """Switch to the current profile when auto switch is checked."""
+        if state == QtCore.Qt.CheckState.Checked.value:
+            self.ui.current_profile.setCurrentIndex(0)
+
     def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
         """Detect which monitor the pixel is on."""
-        if self.current_app_position is not None:
-            monitor_data = [self.current_app_position]
+        if self.current_profile.rect is not None:
+            monitor_data = [self.current_profile.rect]
         else:
             monitor_data = self.monitor_data
 
@@ -619,13 +684,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.button_press_count += 1
 
             case ipc.ApplicationDetected():
-                for idx in range(1, self.ui.current_profile.count()):
-                    if self.ui.current_profile.itemText(idx) == message.name:
-                        break
-                else:
-                    self.ui.current_profile.addItem(message.name, message.name)
-                self.current_app = message.name
-                self.current_app_position = message.rect
+                self.current_profile = Profile(message.name, message.rect)
                 self.request_thumbnail()
 
             # Show the correct distance
@@ -649,6 +708,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.DataTransfer():
                 self.bytes_sent += message.bytes_sent
                 self.bytes_recv += message.bytes_recv
+
+            case ipc.Save():
+                self._unsaved_profiles.clear()
+                self._redraw_profile_combobox()
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
@@ -797,7 +860,7 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if self.ui.current_profile.currentIndex() and self.ui.current_profile.currentData() != self.current_app:
+        if self.ui.current_profile.currentIndex() and self.ui.current_profile.currentData() != self.current_profile.name:
             return
 
         unique_pixels = set()
