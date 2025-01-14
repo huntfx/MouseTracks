@@ -445,7 +445,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
         size = self.ui.thumbnail.pixmapSize()
-        self.q_send.put(ipc.RenderRequest(self.render_type, size.width(), size.height(),
+
+        # Request size at the current height of the field, since it's likely width > height
+        self.q_send.put(ipc.RenderRequest(self.render_type, None, size.height(),
                                           self.render_colour, 1, app, True))
         return True
 
@@ -522,6 +524,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.Render():
                 height, width, channels = message.array.shape
+                failed = width == height == 0
 
                 target_height = int(height / message.sampling)
                 target_width = int(width / message.sampling)
@@ -537,14 +540,29 @@ class MainWindow(QtWidgets.QMainWindow):
                             image_format = QtGui.QImage.Format.Format_RGBA8888
                         case _:
                             raise NotImplementedError(channels)
-                    image = QtGui.QImage(message.array.data, width, height, image_format)
 
-                    # Scale the QImage to fit the pixmap size
-                    scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-                    self.ui.thumbnail.setImage(scaled_image)
-                    self.pause_redraw -= 1
+                    if failed:
+                        pixmap = self.ui.thumbnail.pixmap()
+                        pixmap.fill(QtCore.Qt.transparent)
+                        self.ui.thumbnail.setPixmap(pixmap)
+
+                    else:
+                        image = QtGui.QImage(message.array.data, width, height, image_format)
+
+                        # Scale the QImage to fit the pixmap size
+                        scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+                        self.ui.thumbnail.setImage(scaled_image)
+                        self.pause_redraw -= 1
 
                 # Save a render
+                elif failed:
+                    msg = QtWidgets.QMessageBox(self)
+                    msg.setWindowTitle('Render Failed')
+                    msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+                    msg.setText('No data is available for this render.')
+                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+                    msg.exec_()
+
                 else:
                     dialog = QtWidgets.QFileDialog()
                     dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)

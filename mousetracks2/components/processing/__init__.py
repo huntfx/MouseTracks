@@ -16,7 +16,7 @@ from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, SCROLL_EVENTS
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
-from ...render import render
+from ...render import render, EmptyRenderError
 
 
 def get_interface_name_by_mac(mac_address: str) -> Optional[str]:
@@ -289,7 +289,10 @@ class Processing:
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
                                      ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
         arrays = self._arrays_for_rendering(profile, render_type)
-        image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
+        try:
+            image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
+        except EmptyRenderError:
+            image = np.ndarray([0, 0, 3])
         return image
 
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:

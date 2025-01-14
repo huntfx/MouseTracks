@@ -9,6 +9,17 @@ from mousetracks.image import colours
 from .typing import ArrayLike
 
 
+class EmptyRenderError(ValueError):
+    """Raise when a render is requested with not enough data.
+
+    For example if only height is given with no arrays, then it's not
+    possible to calculate the correct width and render an empty image.
+    """
+
+    def __init__(self) -> None:
+        super().__init__('input arrays cannot be empty if size not defined')
+
+
 def array_target_resolution(arrays: list[ArrayLike], width: Optional[int] = None,
                             height: Optional[int] = None) -> tuple[int, int]:
     """Calculate a target resolution.
@@ -126,7 +137,7 @@ def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None
     if arrays:
         width, height = array_target_resolution(arrays, width, height)
     elif width is None or height is None:
-        raise ValueError('input arrays cannot be empty if size not defined')
+        raise EmptyRenderError
 
     scale_width = width * sampling
     scale_height = height * sampling
