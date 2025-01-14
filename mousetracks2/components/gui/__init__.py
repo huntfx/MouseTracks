@@ -549,7 +549,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         # Scale the QImage to fit the pixmap size
                         scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
                         self.ui.thumbnail.setImage(scaled_image)
-                        self.pause_redraw -= 1
+
+                    self.pause_redraw -= 1
 
                 # Save a render
                 elif failed:
