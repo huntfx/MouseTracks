@@ -35,9 +35,8 @@ class Ui_MainWindow(object):
         self.actionShow_Log.setCheckable(True)
         self.actionShow_Log.setChecked(True)
         self.actionShow_Log.setEnabled(False)
-        self.actionSave = QAction(MainWindow)
-        self.actionSave.setObjectName(u"actionSave")
-        self.actionSave.setEnabled(False)
+        self.file_save = QAction(MainWindow)
+        self.file_save.setObjectName(u"file_save")
         self.actionExport = QAction(MainWindow)
         self.actionExport.setObjectName(u"actionExport")
         self.actionExport.setEnabled(False)
@@ -470,7 +469,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 257, 494))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -84, 257, 494))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -513,7 +512,6 @@ class Ui_MainWindow(object):
 
         self.groupBox_10 = QGroupBox(self.scrollAreaWidgetContents_3)
         self.groupBox_10.setObjectName(u"groupBox_10")
-        self.groupBox_10.setEnabled(False)
         self.gridLayout_4 = QGridLayout(self.groupBox_10)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.save = QPushButton(self.groupBox_10)
@@ -523,21 +521,25 @@ class Ui_MainWindow(object):
 
         self.pushButton = QPushButton(self.groupBox_10)
         self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.pushButton, 2, 0, 1, 1)
 
         self.thumbnail_refresh = QPushButton(self.groupBox_10)
         self.thumbnail_refresh.setObjectName(u"thumbnail_refresh")
+        self.thumbnail_refresh.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.thumbnail_refresh, 1, 0, 1, 1)
 
         self.time_since_thumbnail = QLabel(self.groupBox_10)
         self.time_since_thumbnail.setObjectName(u"time_since_thumbnail")
+        self.time_since_thumbnail.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.time_since_thumbnail, 1, 1, 1, 1)
 
         self.label_3 = QLabel(self.groupBox_10)
         self.label_3.setObjectName(u"label_3")
+        self.label_3.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.label_3, 2, 1, 1, 1)
 
@@ -727,7 +729,7 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.file_tracking_start)
         self.menuFile.addAction(self.file_tracking_pause)
         self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionSave)
+        self.menuFile.addAction(self.file_save)
         self.menuFile.addAction(self.actionImport)
         self.menuFile.addAction(self.actionExport)
         self.menuFile.addSeparator()
@@ -758,6 +760,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.render_samples.valueChanged.connect(self.label_2.setNum)
+        self.save.clicked.connect(self.file_save.trigger)
 
         self.tabWidget.setCurrentIndex(0)
         self.output_logs.setCurrentIndex(1)
@@ -769,7 +772,10 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MouseTracks", None))
         self.actionShow_Log.setText(QCoreApplication.translate("MainWindow", u"Display Output Log", None))
-        self.actionSave.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.file_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+#if QT_CONFIG(shortcut)
+        self.file_save.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+S", None))
+#endif // QT_CONFIG(shortcut)
         self.actionExport.setText(QCoreApplication.translate("MainWindow", u"Export", None))
         self.actionImport.setText(QCoreApplication.translate("MainWindow", u"Import", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))

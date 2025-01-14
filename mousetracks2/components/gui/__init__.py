@@ -3,6 +3,7 @@ import sys
 import queue
 import math
 import multiprocessing
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -128,6 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
         self.shutting_down = False
+        self._last_save_time: float = time.time()
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -216,6 +218,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
         self.timer_activity.timeout.connect(self.update_activity_preview)
+        self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
@@ -374,8 +377,10 @@ class MainWindow(QtWidgets.QMainWindow):
         This blocks the save action from triggering.
         """
         self._save_request_sent = value
+        self.ui.save.setEnabled(not value)
         self.ui.file_save.setEnabled(not value)
 
+    @QtCore.Slot()
     def update_activity_preview(self) -> None:
         """Update the activity preview periodically.
         The updates are too frequent to do per tick.
@@ -395,6 +400,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stat_elapsed.setText(format_ticks(self.elapsed_time))
         self.ui.stat_active.setText(format_ticks(active_time))
         self.ui.stat_inactive.setText(format_ticks(inactive_time))
+
+    @QtCore.Slot()
+    def update_time_since_save(self) -> None:
+        """Set how long it has been since the last save."""
+        self.ui.time_since_save.setText(f'{round(time.time() - self._last_save_time, 1)} s')
 
     @property
     def bytes_sent(self) -> int:
@@ -733,6 +743,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_recv += message.bytes_recv
 
             case ipc.SaveComplete():
+                self._last_save_time = time.time()
                 self._unsaved_profiles -= set(message.succeeded)
                 self._unsaved_profiles.add(self.current_profile.name)
                 self._redraw_profile_combobox()
