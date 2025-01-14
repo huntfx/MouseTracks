@@ -1058,10 +1058,20 @@
     <addaction name="menu_debug_tracking"/>
     <addaction name="menu_debug_exception"/>
    </widget>
+   <widget class="QMenu" name="tray_context_menu">
+    <property name="title">
+     <string>_Tray_</string>
+    </property>
+    <addaction name="tray_show"/>
+    <addaction name="tray_hide"/>
+    <addaction name="separator"/>
+    <addaction name="tray_exit"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPreferences"/>
    <addaction name="menuHelp"/>
    <addaction name="menu_debug"/>
+   <addaction name="tray_context_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionShow_Log">
@@ -1234,6 +1244,21 @@
    </property>
    <property name="text">
     <string>Facebook</string>
+   </property>
+  </action>
+  <action name="tray_exit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="tray_show">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="tray_hide">
+   <property name="text">
+    <string>Minimise to Tray</string>
    </property>
   </action>
  </widget>

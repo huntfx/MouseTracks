@@ -124,20 +124,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.output_logs.setVisible(False)
+        self.ui.tray_context_menu.menuAction().setVisible(False)
 
         # Set up the tray icon
         if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
-
-            context_menu = QtWidgets.QMenu(self)
-            self.tray.setContextMenu(context_menu)
-
-            tray_exit = QtGui.QAction('Exit', self)
-            context_menu.addAction(tray_exit)
-
+            self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
-            tray_exit.triggered.connect(self.shut_down)
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
@@ -206,6 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
+        self.ui.tray_show.triggered.connect(self.maximise)
+        self.ui.tray_hide.triggered.connect(self.minimise)
+        self.ui.tray_exit.triggered.connect(self.shut_down)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
@@ -725,11 +722,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def maximise(self):
         """Maximise the window."""
-        if self.isVisible():
-            return
-
-        self.request_thumbnail()
-        self.show()
+        if not self.isVisible():
+            self.request_thumbnail()
+            self.show()
+        self.raise_()
 
     @QtCore.Slot()
     def minimise(self) -> None:
