@@ -128,7 +128,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
         self.shutting_down = False
-        self.save_request_sent = False
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -187,6 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
         self.last_click: Optional[int] = None
+        self.save_request_sent = False
         self._bytes_sent = self.bytes_sent = 0
         self._bytes_recv = self.bytes_recv = 0
 

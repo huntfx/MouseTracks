@@ -470,18 +470,20 @@ class Processing:
                 self.current_application = Application(message.name, message.rect)
 
             case ipc.Save():
-                if message.profile is None:
-                    profiles = self.all_profiles.keys()
-                else:
-                    profiles = [message.profile]
-
+                # Keep track of what saved and what didn't
                 succeeded = []
                 failed = []
-                for profile in profiles:
-                    if self._save(profile):
-                        succeeded.append(profile)
+                for name, profile in tuple(self.all_profiles.items()):
+                    # If not modified since last time, unload it from memory
+                    if not profile.modified:
+                        print(f'[Processing] Unloading profile: {name}')
+                        del self.all_profiles[name]
+
+                    # Attempt the save
+                    elif self._save(name):
+                        succeeded.append(name)
                     else:
-                        failed.append(profile)
+                        failed.append(name)
                 self.q_send.put(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
