@@ -129,7 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
         self.shutting_down = False
-        self._last_save_time: float = time.time()
+        self._last_save_time = self._last_thumbnail_time = time.time()
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -210,6 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
+        self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
         self.ui.file_save.triggered.connect(self.manual_save)
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
@@ -219,6 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
+        self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
@@ -405,6 +407,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_time_since_save(self) -> None:
         """Set how long it has been since the last save."""
         self.ui.time_since_save.setText(f'{round(time.time() - self._last_save_time, 1)} s')
+
+    @QtCore.Slot()
+    def update_time_since_thumbnail(self) -> None:
+        """Set how long it has been since the last thumbnail render."""
+        self.ui.time_since_thumbnail.setText(f'{round(time.time() - self._last_thumbnail_time, 1)} s')
 
     @property
     def bytes_sent(self) -> int:
@@ -626,6 +633,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Draw the new pixmap
                 if message.thumbnail:
+                    self._last_thumbnail_time = time.time()
                     match channels:
                         case 1:
                             image_format = QtGui.QImage.Format.Format_Grayscale8

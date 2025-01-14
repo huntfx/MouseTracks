@@ -527,13 +527,11 @@ class Ui_MainWindow(object):
 
         self.thumbnail_refresh = QPushButton(self.groupBox_10)
         self.thumbnail_refresh.setObjectName(u"thumbnail_refresh")
-        self.thumbnail_refresh.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.thumbnail_refresh, 1, 0, 1, 1)
 
         self.time_since_thumbnail = QLabel(self.groupBox_10)
         self.time_since_thumbnail.setObjectName(u"time_since_thumbnail")
-        self.time_since_thumbnail.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.time_since_thumbnail, 1, 1, 1, 1)
 
