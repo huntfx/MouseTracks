@@ -167,10 +167,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('Held Clicks', ipc.RenderType.HeldClick)
         self.ui.map_type.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
         self.ui.map_type.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
+        self.ui.map_type.addItem('Twin Thumbsticks', ipc.RenderType.Thumbstick_C)
         self.ui.map_type.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
         self.ui.map_type.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
+        self.ui.map_type.addItem('Twin Thumbstick (heatmap)', ipc.RenderType.Thumbstick_C_Heatmap)
         self.ui.map_type.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
         self.ui.map_type.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
+        self.ui.map_type.addItem('Twin Thumbstick (speed)', ipc.RenderType.Thumbstick_C_SPEED)
 
         # Thumbnail pixmap
         self.ui.thumbnail.setPixmap(QtGui.QPixmap(640, 400))
@@ -286,13 +289,13 @@ class MainWindow(QtWidgets.QMainWindow):
         for data in colours.parse_colour_file()['Maps'].values():
             match render_type:
                 case (ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed
-                      | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R
-                      | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED):
+                      | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R | ipc.RenderType.Thumbstick_C
+                      | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_C_SPEED):
                     if data['Type']['tracks']:
                         self.ui.colour_option.addItem(data['UpperCase'])
                 case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
                       | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
-                      | ipc.RenderType.TimeHeatmap):
+                      | ipc.RenderType.Thumbstick_C_Heatmap | ipc.RenderType.TimeHeatmap):
                     if data['Type']['clicks']:
                         self.ui.colour_option.addItem(data['UpperCase'])
 
@@ -584,11 +587,17 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.Thumbstick_R:
                 count = self.thumbstick_r_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
+            case ipc.RenderType.Thumbstick_C:
+                count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
+                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             case ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_L_Heatmap:
                 count = self.thumbstick_l_data.counter
                 update_frequency = 50
             case ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_R_Heatmap:
                 count = self.thumbstick_r_data.counter
+                update_frequency = 50
+            case ipc.RenderType.Thumbstick_C_SPEED | ipc.RenderType.Thumbstick_C_Heatmap:
+                count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = 50
             case _:
                 return

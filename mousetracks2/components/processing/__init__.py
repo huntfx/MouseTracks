@@ -258,6 +258,36 @@ class Processing:
                     map = gamepad_maps.sequential_arrays
                     arrays.extend(map.values())
 
+            case ipc.RenderType.Thumbstick_C:
+                left_arrays = []
+                right_arrays = []
+                left_max = right_max = 0
+                for gamepad_maps in profile.thumbstick_l_map.values():
+                    map = gamepad_maps.sequential_arrays
+                    for array in map.values():
+                        left_max = max(left_max, np.max(array))
+                        padding = ((0, 0), (0, np.shape(array)[1]))
+                        left_arrays.append(np.pad(array, padding))
+                for gamepad_maps in profile.thumbstick_r_map.values():
+                    map = gamepad_maps.sequential_arrays
+                    for array in map.values():
+                        right_max = max(right_max, np.max(array))
+                        padding = ((0, 0), (np.shape(array)[1], 0))
+                        right_arrays.append(np.pad(array, padding))
+
+                # Adjust max values to the same
+                if left_max > right_max:
+                    amount = left_max / right_max
+                    for i, array in enumerate(right_arrays):
+                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
+                elif right_max > left_max:
+                    amount = right_max / left_max
+                    for i, array in enumerate(left_arrays):
+                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
+
+                arrays.extend(left_arrays)
+                arrays.extend(right_arrays)
+
             case ipc.RenderType.Thumbstick_R_SPEED:
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
@@ -267,6 +297,36 @@ class Processing:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
                     arrays.extend(map.values())
+
+            case ipc.RenderType.Thumbstick_C_SPEED:
+                left_arrays = []
+                right_arrays = []
+                left_max = right_max = 0
+                for gamepad_maps in profile.thumbstick_l_map.values():
+                    map = gamepad_maps.speed_arrays
+                    for array in map.values():
+                        left_max = max(left_max, np.max(array))
+                        padding = ((0, 0), (0, np.shape(array)[1]))
+                        left_arrays.append(np.pad(array, padding))
+                for gamepad_maps in profile.thumbstick_r_map.values():
+                    map = gamepad_maps.speed_arrays
+                    for array in map.values():
+                        right_max = max(right_max, np.max(array))
+                        padding = ((0, 0), (np.shape(array)[1], 0))
+                        right_arrays.append(np.pad(array, padding))
+
+                # Adjust max values to the same
+                if left_max > right_max:
+                    amount = left_max / right_max
+                    for i, array in enumerate(right_arrays):
+                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
+                elif right_max > left_max:
+                    amount = right_max / left_max
+                    for i, array in enumerate(left_arrays):
+                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
+
+                arrays.extend(left_arrays)
+                arrays.extend(right_arrays)
 
             case ipc.RenderType.Thumbstick_R_Heatmap:
                 for gamepad_maps in profile.thumbstick_r_map.values():
@@ -278,6 +338,36 @@ class Processing:
                     map = gamepad_maps.density_arrays
                     arrays.extend(map.values())
 
+            case ipc.RenderType.Thumbstick_C_Heatmap:
+                left_arrays = []
+                right_arrays = []
+                left_max = right_max = 0
+                for gamepad_maps in profile.thumbstick_l_map.values():
+                    map = gamepad_maps.density_arrays
+                    for array in map.values():
+                        left_max = max(left_max, np.max(array))
+                        padding = ((0, 0), (0, np.shape(array)[1]))
+                        left_arrays.append(np.pad(array, padding))
+                for gamepad_maps in profile.thumbstick_r_map.values():
+                    map = gamepad_maps.density_arrays
+                    for array in map.values():
+                        right_max = max(right_max, np.max(array))
+                        padding = ((0, 0), (np.shape(array)[1], 0))
+                        right_arrays.append(np.pad(array, padding))
+
+                # Adjust max values to the same
+                if left_max > right_max:
+                    amount = left_max / right_max
+                    for i, array in enumerate(right_arrays):
+                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
+                elif right_max > left_max:
+                    amount = right_max / left_max
+                    for i, array in enumerate(left_arrays):
+                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
+
+                arrays.extend(left_arrays)
+                arrays.extend(right_arrays)
+
             case _:
                 raise NotImplementedError(render_type)
 
@@ -286,8 +376,8 @@ class Processing:
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType, width: Optional[int], height: Optional[int],
                       colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
-        is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
-                                     ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap)
+        is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
+                                     ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap, ipc.RenderType.Thumbstick_C_Heatmap)
         arrays = self._arrays_for_rendering(profile, render_type)
         try:
             image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
