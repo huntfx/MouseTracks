@@ -7,7 +7,6 @@ from typing import Optional
 
 import psutil
 import numpy as np
-from scipy import ndimage
 
 from mousetracks.image import colours
 from .. import ipc

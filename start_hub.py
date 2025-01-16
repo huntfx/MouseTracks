@@ -1,4 +1,11 @@
+import sys
+from pathlib import Path
 from multiprocessing import freeze_support
+
+# Source DLL files when running as an executable
+if hasattr(sys, '_MEIPASS'):
+    sys.path.append(str(Path(__file__).parent / 'resources' / 'build'))
+
 from mousetracks2.components.hub import Hub
 
 
