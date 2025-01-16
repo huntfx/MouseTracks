@@ -112,15 +112,17 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     return lookup
 
 
-def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None,
-           height: Optional[int] = None, sampling: int = 1,
+def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayLike]],
+           width: Optional[int] = None, height: Optional[int] = None, sampling: int = 1,
            linear: bool = False, blur: bool = False) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
         colour_map: Must be either a predefined or manually defined map.
             See `config/colours.txt` for examples.
-        maps: List of tuples containing resolution and arrays.
+        positional_arrays: Dict of draw position and list of arrays.
+            For now it only supports (0, 0) and (0, 1) for left and
+            right.
         width: Force a particular width.
             If not set, the aspect ratio will be used to calculate it.
         height: Force a particular height.
@@ -134,38 +136,50 @@ def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None
             This will ensure a smooth gradient.
         blur: Blur the array, for example for a heatmap.
     """
-    if arrays:
-        width, height = array_target_resolution(arrays, width, height)
+    # Calculate width / height
+    all_arrays = []
+    for arrays in positional_arrays.values():
+        all_arrays.extend(arrays)
+    if all_arrays:
+        width, height = array_target_resolution(all_arrays, width, height)
     elif width is None or height is None:
         raise EmptyRenderError
 
     scale_width = width * sampling
     scale_height = height * sampling
+    blur_amount = gaussian_size(scale_width, scale_height)
 
-    # Scale all arrays to the same size and combine
-    if arrays:
-        rescaled_arrays = [array_rescale(array, scale_width, scale_height) for array in arrays]
-        combined_array = np.maximum.reduce(rescaled_arrays)
+    # Rescale the arrays to the target size and combine them
+    combined_arrays: dict[tuple[int, int], np.ndarray] = {}
+    for pos, arrays in positional_arrays.items():
+        rescaled = [array_rescale(array, scale_width, scale_height) for array in arrays]
+        combined_arrays[pos] = np.maximum.reduce(rescaled)
 
-        # Convert to a linear array
-        if linear:
-            unique_values, unique_indexes = np.unique(combined_array, return_inverse=True)
-            combined_array = unique_indexes
+    # Convert to linear arrays
+    if linear:
+        combined_arrays = {pos: np.unique(array, return_inverse=True)[1]
+                           for pos, array in combined_arrays.items()}
 
-        if blur:
-            # Apply a gaussian blur
-            blur_amount = gaussian_size(scale_width, scale_height)
-            combined_array = ndimage.gaussian_filter(combined_array.astype(np.float64), sigma=blur_amount)
+    # Apply gaussian blur
+    if blur:
+        combined_arrays = {pos: ndimage.gaussian_filter(array.astype(np.float64), sigma=blur_amount)
+                           for pos, array in combined_arrays.items()}
 
-            # TODO: Reimplement the heatmap range clipping
-            # It will be easier to test once saving works and a heavier heatmap can be used
-            # min_value = np.min(heatmap)
-            # all_values = np.sort(heatmap.ravel(), unique=True)
-            # max_value = all_values[int(round(len(unique_values) * 0.005))]
+        # TODO: Reimplement the heatmap range clipping
+        # It will be easier to test once saving works and a heavier heatmap can be used
+        # min_value = np.min(heatmap)
+        # all_values = np.sort(heatmap.ravel(), unique=True)
+        # max_value = all_values[int(round(len(unique_values) * 0.005))]
 
-    # Make an empty array if no data is present
-    else:
-        combined_array = np.zeros((scale_height, scale_width), dtype=np.int8)
+    # Equalise the max values
+    if len(combined_arrays) > 1:
+        max_values = {pos: np.max(array) for pos, array in combined_arrays.items()}
+        max_value = max(max_values.values())
+        combined_arrays = {pos: combined_arrays[pos].astype(np.float64) * (max_value / value)
+                           for pos, value in max_values.items()}
+
+    # Combine all positional arrays into one big array
+    combined_array = combine_array_grid(combined_arrays, scale_width, scale_height)
 
     # Convert the array to 0-255 and map to a colour lookup table
     try:
@@ -175,3 +189,30 @@ def render(colour_map: str, arrays: list[ArrayLike], width: Optional[int] = None
 
     colour_lookup = generate_colour_lookup(*colour_map_data)
     return colour_lookup[array_to_uint8(combined_array)]
+
+
+def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
+                       scale_width: float, scale_height: float) -> np.ndarray:
+    """Combine arrays based on their positions and offsets."""
+    if not positional_arrays:
+        return np.zeros((scale_height, scale_width), dtype=np.int8)
+
+    if len(set(array.shape for array in positional_arrays.values())) != 1:
+        raise ValueError('all arrays must be the same size')
+
+    # Determine the total required size
+    min_col = min(pos[0] for pos in positional_arrays)
+    max_col = max(pos[0] for pos in positional_arrays)
+    min_row = min(pos[1] for pos in positional_arrays)
+    max_row = max(pos[1] for pos in positional_arrays)
+    total_width = scale_width * (max_col - min_col + 1)
+    total_height = scale_height * (max_row - min_row + 1)
+
+    # Create the combined array
+    combined_array = np.zeros((total_height, total_width), dtype=np.float64)
+    for (col, row), array in positional_arrays.items():
+        x = col * scale_width
+        y = row * scale_height
+        combined_array[y: y + scale_height, x:x + scale_width] = array
+
+    return combined_array

@@ -216,157 +216,91 @@ class Processing:
 
         return distance
 
-    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType) -> list[ArrayLike]:
+    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType) -> dict[tuple[int, int], list[ArrayLike]]:
         """Get a list of arrays to use for a render."""
-        arrays: list[ArrayLike] = []
+        arrays: dict[tuple[int, int], list[ArrayLike]] = defaultdict(list)
         match render_type:
             case ipc.RenderType.Time:
-                arrays.extend(profile.cursor_map.sequential_arrays.values())
+                arrays[0, 0].extend(profile.cursor_map.sequential_arrays.values())
 
             case ipc.RenderType.TimeHeatmap:
-                arrays.extend(profile.cursor_map.density_arrays.values())
+                arrays[0, 0].extend(profile.cursor_map.density_arrays.values())
 
             # Subtract a value from each array and ensure it doesn't go below 0
             case ipc.RenderType.TimeSincePause:
                 for array in profile.cursor_map.sequential_arrays.values():
                     partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
                     partial_array[partial_array < 0] = 0
-                    arrays.append(partial_array)
+                    arrays[0, 0].append(partial_array)
 
             case ipc.RenderType.Speed:
-                arrays.extend(profile.cursor_map.speed_arrays.values())
+                arrays[0, 0].extend(profile.cursor_map.speed_arrays.values())
 
             case ipc.RenderType.SingleClick:
                 for map in profile.mouse_single_clicks.values():
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.DoubleClick:
                 for map in profile.mouse_double_clicks.values():
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.HeldClick:
                 for map in profile.mouse_held_clicks.values():
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_R:
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.sequential_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_L:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.sequential_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_C:
-                left_arrays = []
-                right_arrays = []
-                left_max = right_max = 0
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.sequential_arrays
-                    for array in map.values():
-                        left_max = max(left_max, np.max(array))
-                        padding = ((0, 0), (0, np.shape(array)[1]))
-                        left_arrays.append(np.pad(array, padding))
+                    arrays[0, 0].extend(map.values())
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.sequential_arrays
-                    for array in map.values():
-                        right_max = max(right_max, np.max(array))
-                        padding = ((0, 0), (np.shape(array)[1], 0))
-                        right_arrays.append(np.pad(array, padding))
-
-                # Adjust max values to the same
-                if left_max > right_max:
-                    amount = left_max / right_max
-                    for i, array in enumerate(right_arrays):
-                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
-                elif right_max > left_max:
-                    amount = right_max / left_max
-                    for i, array in enumerate(left_arrays):
-                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
-
-                arrays.extend(left_arrays)
-                arrays.extend(right_arrays)
+                    arrays[1, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_SPEED:
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_SPEED:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_C_SPEED:
-                left_arrays = []
-                right_arrays = []
-                left_max = right_max = 0
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
-                    for array in map.values():
-                        left_max = max(left_max, np.max(array))
-                        padding = ((0, 0), (0, np.shape(array)[1]))
-                        left_arrays.append(np.pad(array, padding))
+                    arrays[0, 0].extend(map.values())
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.speed_arrays
-                    for array in map.values():
-                        right_max = max(right_max, np.max(array))
-                        padding = ((0, 0), (np.shape(array)[1], 0))
-                        right_arrays.append(np.pad(array, padding))
-
-                # Adjust max values to the same
-                if left_max > right_max:
-                    amount = left_max / right_max
-                    for i, array in enumerate(right_arrays):
-                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
-                elif right_max > left_max:
-                    amount = right_max / left_max
-                    for i, array in enumerate(left_arrays):
-                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
-
-                arrays.extend(left_arrays)
-                arrays.extend(right_arrays)
+                    arrays[1, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_R_Heatmap:
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.density_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_L_Heatmap:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.density_arrays
-                    arrays.extend(map.values())
+                    arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_C_Heatmap:
-                left_arrays = []
-                right_arrays = []
-                left_max = right_max = 0
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.density_arrays
-                    for array in map.values():
-                        left_max = max(left_max, np.max(array))
-                        padding = ((0, 0), (0, np.shape(array)[1]))
-                        left_arrays.append(np.pad(array, padding))
+                    arrays[0, 0].extend(map.values())
                 for gamepad_maps in profile.thumbstick_r_map.values():
                     map = gamepad_maps.density_arrays
-                    for array in map.values():
-                        right_max = max(right_max, np.max(array))
-                        padding = ((0, 0), (np.shape(array)[1], 0))
-                        right_arrays.append(np.pad(array, padding))
-
-                # Adjust max values to the same
-                if left_max > right_max:
-                    amount = left_max / right_max
-                    for i, array in enumerate(right_arrays):
-                        right_arrays[i] = np.asarray(array).astype(np.float64) * amount
-                elif right_max > left_max:
-                    amount = right_max / left_max
-                    for i, array in enumerate(left_arrays):
-                        left_arrays[i] = np.asarray(array).astype(np.float64) * amount
-
-                arrays.extend(left_arrays)
-                arrays.extend(right_arrays)
+                    arrays[1, 0].extend(map.values())
 
             case _:
                 raise NotImplementedError(render_type)
@@ -378,9 +312,9 @@ class Processing:
         """Render an array (tracks / heatmaps)."""
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
                                      ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap, ipc.RenderType.Thumbstick_C_Heatmap)
-        arrays = self._arrays_for_rendering(profile, render_type)
+        positional_arrays = self._arrays_for_rendering(profile, render_type)
         try:
-            image = render(colour_map, arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
+            image = render(colour_map, positional_arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
         return image
