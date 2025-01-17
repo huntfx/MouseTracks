@@ -4,6 +4,7 @@ import queue
 import math
 import multiprocessing
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -984,16 +985,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-    app = QtWidgets.QApplication(sys.argv)
+    try:
+        app = QtWidgets.QApplication(sys.argv)
+        # Register app so that setting an icon is possible
+        if os.name == "nt":
+            import ctypes
+            myappid = "uk.huntfx.mousetracks"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-    # Register app so that setting an icon is possible
-    if os.name == "nt":
-        import ctypes
-        myappid = "uk.huntfx.mousetracks"
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        m = MainWindow(q_send, q_receive)
+        m.show()
+        icon = QtGui.QIcon(ICON_PATH)
+        app.setWindowIcon(icon)
+        app.exec()
 
-    m = MainWindow(q_send, q_receive)
-    m.show()
-    icon = QtGui.QIcon(ICON_PATH)
-    app.setWindowIcon(icon)
-    app.exec()
+    except Exception as e:
+        q_send.put(ipc.Traceback(e, traceback.format_exc()))
+        print(f'[GUI] Error shut down: {e}')
