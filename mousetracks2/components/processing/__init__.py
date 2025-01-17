@@ -8,28 +8,15 @@ from typing import Optional
 import psutil
 import numpy as np
 
-from mousetracks.image import colours
 from .. import ipc
+from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
+from ...utils.network import Interfaces
 from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, SCROLL_EVENTS
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
 from ...render import render, EmptyRenderError
-
-
-def get_interface_name_by_mac(mac_address: str) -> Optional[str]:
-    """Get the name of the network interface by MAC address."""
-    for interface_name, addresses in psutil.net_if_addrs().items():
-        for addr in addresses:
-            if addr.family == psutil.AF_LINK:
-                if addr.address == mac_address:
-                    return interface_name
-    return None
-
-
-class ExitRequest(Exception):
-    """Custom exception to raise and catch when an exit is requested."""
 
 
 @dataclass
@@ -516,7 +503,7 @@ class Processing:
                 self.profile.daily_download[self.profile_age_days] += message.bytes_recv
 
                 if message.mac_address not in self.profile.data_interfaces:
-                    self.profile.data_interfaces[message.mac_address] = get_interface_name_by_mac(message.mac_address)
+                    self.profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
 
             case _:
                 raise NotImplementedError(message)

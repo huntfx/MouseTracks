@@ -4,7 +4,6 @@ import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Iterator, Optional
-from uuid import getnode
 
 import psutil
 import pynput
@@ -13,6 +12,7 @@ import XInput
 from . import utils
 from .. import ipc
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ...utils.network import Interfaces
 from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS, SCROLL_EVENTS
 from ...utils.win import SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT
 
@@ -21,21 +21,12 @@ XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
                   if isinstance(v, int) and k.split('_')[0] in ('BUTTON', 'STICK', 'TRIGGER')}
 
 
-def get_mac_addresses() -> dict[str, Optional[str]]:
-    """Fetch MAC addresses for all network interfaces."""
-    mac_addresses: dict[str, str] = {}
-    for interface_name, addrs in psutil.net_if_addrs().items():
-        for addr in addrs:
-            if addr.family == psutil.AF_LINK:  # Identifies MAC address family
-                mac_addresses[interface_name] = addr.address
-                break
-        else:
-            mac_addresses[interface_name] = None
-    return mac_addresses
-
-
 @dataclass
 class DataState:
+    """Store the current state of the data.
+    This will all be reset whenever tracking restarts.
+    """
+
     tick_current: int = field()
     tick_previous: int = field(default=-1)
     tick_modified: Optional[bool] = field(default=None)
@@ -69,8 +60,6 @@ class Tracking:
         self.q_receive = q_receive
         self.state = ipc.TrackingState.State.Pause
         self.profile_name = DEFAULT_PROFILE_NAME
-
-        self._interface_mac_addresses = get_mac_addresses()
 
         # Setup pynput listeners
         # TODO: link up the other callbacks
@@ -330,14 +319,9 @@ class Tracking:
                     data.bytes_recv_previous[interface_name] += bytes_recv
 
                     if bytes_sent or bytes_recv:
-                        try:
-                            mac_addr = self._interface_mac_addresses[interface_name]
-                        except KeyError:
-                            self._interface_mac_addresses.update(get_mac_addresses())
-                            mac_addr = self._interface_mac_addresses[interface_name]
-
-                        if mac_addr is not None:
-                            self.send_data(ipc.DataTransfer(mac_addr, bytes_sent, bytes_recv))
+                        mac_address = Interfaces.get_from_name(interface_name).mac
+                        if mac_address is not None:
+                            self.send_data(ipc.DataTransfer(mac_address, bytes_sent, bytes_recv))
 
             self._calculate_inactivity()
 

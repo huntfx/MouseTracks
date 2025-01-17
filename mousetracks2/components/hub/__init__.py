@@ -15,11 +15,8 @@ import queue
 
 from .. import ipc, app_detection, tracking, processing, gui
 from ...constants import UPDATES_PER_SECOND
+from ...exceptions import ExitRequest
 from mousetracks.utils.os.windows.ctypes import WindowHandle
-
-
-class ExitRequest(Exception):
-    """Custom exception to raise and catch when an exit is requested."""
 
 
 class Hub:

@@ -5,11 +5,8 @@ from typing import Optional
 from mousetracks.applications import RunningApplications
 from .. import ipc
 from ...constants import DEFAULT_PROFILE_NAME
+from ...exceptions import ExitRequest
 from ...utils.win import monitor_locations
-
-
-class ExitRequest(Exception):
-    """Custom exception to raise and catch when an exit is requested."""
 
 
 class AppDetection:
