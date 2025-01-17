@@ -682,17 +682,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.ThumbstickMove():
                 draw = False
+
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
                         data = self.thumbstick_l_data
-                        draw = self.render_type == ipc.RenderType.Thumbstick_L
+                        draw = self.render_type in (ipc.RenderType.Thumbstick_L, ipc.RenderType.Thumbstick_C)
+                        offset = -0.5
                     case ipc.ThumbstickMove.Thumbstick.Right:
                         data = self.thumbstick_r_data
-                        draw = self.render_type == ipc.RenderType.Thumbstick_R
+                        draw = self.render_type in (ipc.RenderType.Thumbstick_R, ipc.RenderType.Thumbstick_C)
+                        offset = 0.5
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
                 x, y = message.position
+                if self.render_type == ipc.RenderType.Thumbstick_C:
+                    x = x * 0.5 + offset
+
                 remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
                 if draw:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
