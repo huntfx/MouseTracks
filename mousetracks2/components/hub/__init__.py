@@ -7,12 +7,15 @@ Components:
     - cli
 """
 
+import sys
 import time
+import traceback
 import multiprocessing
 import queue
 
 from .. import ipc, app_detection, tracking, processing, gui
 from ...constants import UPDATES_PER_SECOND
+from mousetracks.utils.os.windows.ctypes import WindowHandle
 
 
 class ExitRequest(Exception):
@@ -24,6 +27,8 @@ class Hub:
 
     def __init__(self):
         """Initialise the hub with queues and processes."""
+        self._hwnd = None
+
         # Setup queues
         self._q_main = multiprocessing.Queue()
         self._q_tracking = multiprocessing.Queue()
@@ -174,15 +179,23 @@ class Hub:
         """Setup the tracking."""
         if gui:
             self._p_gui.start()
+
+            # Hide the console window if running as an executable
+            if sys.argv[0].endswith('.exe') and '--console' not in sys.argv:
+                self._hwnd = WindowHandle(parent=False, console=True)
+                self._hwnd.hide()
+
         else:
             self.start_tracking()
 
         running = True
+        error_occurred = False
         print('[Hub] Queue handler started.')
         try:
             while running or not self._q_main.empty():
                 try:
                     self._process_message(self._q_main.get())
+
                 except ExitRequest:
                     print('[Hub] Exit requested, triggering shut down...')
                     running = False
@@ -191,8 +204,25 @@ class Hub:
                     # Without this, the save on exit feature won't work
                     time.sleep(1 / UPDATES_PER_SECOND)
 
-        # Ensure threads are safely shut down
-        finally:
-            self.stop_tracking()
+        except Exception:
+            traceback.print_exc()
+            # Show console if hidden
+            if self._hwnd is not None:
+                self._hwnd.restore()
+            error_occurred = True
 
-        print('[Hub] Queue handler shut down.')
+        finally:
+            # Ensure threads are safely shut down
+            self.stop_tracking()
+            print('[Hub] Queue handler shut down.')
+
+            # Force shut down the GUI
+            if self._p_gui.is_alive():
+                print('[Hub] Terminating GUI...')
+                self._p_gui.terminate()
+                self._p_gui.join()
+                print('[Hub] GUI shut down')
+
+        if error_occurred:
+            print('The above traceback has caused the application to shut down, please consider reporting it.')
+            input('Press enter to exit...')

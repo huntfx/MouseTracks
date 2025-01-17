@@ -162,7 +162,7 @@ class TrackingState(Message):
         Pause = auto()
         Stop = auto()
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
     state: State
 
 

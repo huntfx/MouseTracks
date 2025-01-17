@@ -620,6 +620,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(ipc.Message)
     def process_message(self, message: ipc.Message) -> None:
+        """Process messages and handle any errors.
+        This is done to match the other components, which will trigger a
+        shutdown if an error occurs.
+        """
+        try:
+            self._process_message(message)
+        except Exception as e:
+            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            print(f'[GUI] Error shut down: {e}')
+
+    def _process_message(self, message: ipc.Message) -> None:
+        """Process messages."""
         match message:
             case ipc.Tick():
                 self.tick_current = message.tick
