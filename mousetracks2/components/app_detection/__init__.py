@@ -110,6 +110,9 @@ class AppDetection:
 
                 self.previous_app = current_app
 
+            case ipc.DebugRaiseError():
+                raise RuntimeError('[Application Detection] Test Exception')
+
     def run(self) -> None:
         print('[Application Detection] Loaded.')
 
