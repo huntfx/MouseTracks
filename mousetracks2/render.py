@@ -207,8 +207,8 @@ def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
     max_col = max(pos[0] for pos in positional_arrays)
     min_row = min(pos[1] for pos in positional_arrays)
     max_row = max(pos[1] for pos in positional_arrays)
-    total_width = scale_width * (max_col - min_col + 1)
-    total_height = scale_height * (max_row - min_row + 1)
+    total_width = scale_width * (max(0, max_col) - min(0, min_col) + 1)
+    total_height = scale_height * (max(0, max_row) - min(0, min_row) + 1)
 
     # Create the combined array
     combined_array = np.zeros((total_height, total_width), dtype=np.float64)
