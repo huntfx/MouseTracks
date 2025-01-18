@@ -5,6 +5,7 @@ import math
 import multiprocessing
 import time
 import traceback
+from contextlib import suppress
 from dataclasses import dataclass, field
 
 from PIL import Image
@@ -416,9 +417,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._current_profile = profile
 
         # Update the profile order
-        idx = self._profile_names.index(profile.name)
-        if idx != -1:
-            del self._profile_names[idx]
+        with suppress(ValueError):
+            del self._profile_names[self._profile_names.index(profile.name)]
         self._profile_names.insert(0, profile.name)
         self._unsaved_profiles.add(profile.name)
         self._redraw_profile_combobox()
