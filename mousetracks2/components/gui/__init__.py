@@ -974,6 +974,7 @@ def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None
             myappid = "uk.huntfx.mousetracks"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+        app.setStyle('Fusion')
         m = MainWindow(q_send, q_receive)
         m.show()
         icon = QtGui.QIcon(ICON_PATH)
