@@ -659,7 +659,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
                     dialog.setNameFilters(['PNG Files (*.png)"'])
                     dialog.setDefaultSuffix('png')
-                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', '')
+                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', '', 'Image Files (*.png)')
 
                     if accept:
                         im = Image.fromarray(message.array)
