@@ -1,5 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import glob
+import os
+from scipy import __file__ as scipy_path
+
 
 a = Analysis(
     ['launch.py'],
@@ -45,6 +49,10 @@ binaries = [
         )
     )
 ]
+
+# Add scipy ndimage binaries
+binaries.extend((f'resources/build/scipy/ndimage/{os.path.basename(filepath)}', filepath, 'BINARY')
+                for filepath in glob.glob(os.path.join(os.path.dirname(scipy_path), 'ndimage', '_nd_image.*')))
 
 # Remove unused data files
 datas = [
