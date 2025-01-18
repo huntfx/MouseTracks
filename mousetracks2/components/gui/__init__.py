@@ -506,12 +506,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
-        # Pause when minimised
-        if not self.isVisible():
-            return False
-        # If already redrawing then prevent building up commands
-        if self.pause_redraw and not force:
-            return False
+        if not force:
+            # If already redrawing then prevent building up commands
+            if self.pause_redraw:
+                return False
+            # Pause when minimised
+            if not self.isVisible():
+                return False
         self.pause_redraw += 1
 
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
@@ -843,7 +844,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def maximise(self):
         """Maximise the window."""
         if not self.isVisible():
-            self.request_thumbnail()
+            self.request_thumbnail(force=True)
             self.show()
         self.raise_()
 
