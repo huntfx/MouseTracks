@@ -47,7 +47,7 @@ I'm actively working on 2.0 now, and will make a release on Github once it's rea
 #### Spiderman
 <img src="http://i.imgur.com/CwGlzfa.jpg">
 
-#### Sketch
+#### Graffiti
 <img src="http://i.imgur.com/z1s0iTg.jpg">
 
 #### Lightning
