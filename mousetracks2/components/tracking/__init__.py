@@ -3,7 +3,7 @@ import time
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterator, Optional
+from typing import Iterator
 
 import psutil
 import pynput
@@ -29,16 +29,16 @@ class DataState:
 
     tick_current: int = field()
     tick_previous: int = field(default=-1)
-    tick_modified: Optional[bool] = field(default=None)
+    tick_modified: bool | None = field(default=None)
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
-    mouse_position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
+    mouse_position: tuple[int, int] | None = field(default_factory=cursor_position)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepad_force_recheck: bool = field(default=False)
-    gamepad_stick_l_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
-    gamepad_stick_r_position: dict[int, Optional[tuple[int, int]]] = field(default_factory=lambda: defaultdict(int))
+    gamepad_stick_l_position: dict[int, tuple[int, int] | None] = field(default_factory=lambda: defaultdict(int))
+    gamepad_stick_r_position: dict[int, tuple[int, int] | None] = field(default_factory=lambda: defaultdict(int))
     key_presses: dict[int, int] = field(default_factory=dict)
     button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
     bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))

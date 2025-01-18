@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -20,7 +19,7 @@ class ResizableImage(QtWidgets.QLabel):
     clicked = QtCore.Signal()
     doubleClicked = QtCore.Signal()
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)

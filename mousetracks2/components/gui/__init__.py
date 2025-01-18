@@ -6,7 +6,6 @@ import multiprocessing
 import time
 import traceback
 from dataclasses import dataclass, field
-from typing import Optional
 
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -50,7 +49,7 @@ class QueueWorker(QtCore.QObject):
 
 @dataclass
 class MapData:
-    position: Optional[tuple[int, int]] = field(default_factory=cursor_position)
+    position: tuple[int, int] | None = field(default_factory=cursor_position)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
 
@@ -60,7 +59,7 @@ class Profile:
     """Hold data related to the currently running profile."""
 
     name: str
-    rect: Optional[tuple[int, int, int, int]] = field(default=None)
+    rect: tuple[int, int, int, int] | None = field(default=None)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -154,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.last_click: Optional[int] = None
+        self.last_click: int | None = None
         self.save_request_sent = False
         self._bytes_sent = self.bytes_sent = 0
         self._bytes_recv = self.bytes_recv = 0
@@ -489,7 +488,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if state == QtCore.Qt.CheckState.Checked.value:
             self.ui.current_profile.setCurrentIndex(0)
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
+    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         if self.current_profile.rect is not None:
             monitor_data = [self.current_profile.rect]
@@ -911,8 +910,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if data.counter > COMPRESSION_THRESHOLD:
             data.counter = int(data.counter / COMPRESSION_FACTOR)
 
-    def draw_pixmap_line(self, old_position: Optional[tuple[int, int]], new_position: Optional[tuple[int, int]],
-                         force_monitor: Optional[tuple[int, int]] = None):
+    def draw_pixmap_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
+                         force_monitor: tuple[int, int] | None = None):
         """When an object moves, draw it.
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.

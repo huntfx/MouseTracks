@@ -7,8 +7,8 @@ import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator, Optional, Self
-from typing import List, Callable, TypeVar, Generic
+from typing import Iterator, Self
+from typing import Callable, TypeVar, Generic
 from uuid import uuid4
 
 import numpy as np
@@ -249,7 +249,7 @@ class MovementMaps:
 
     _MAX_VALUE = 2 ** 64 - 1
 
-    position: Optional[tuple[int, int]] = field(default=None)  # TODO: Don't store here
+    position: tuple[int, int] | None = field(default=None)  # TODO: Don't store here
     sequential_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     density_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     speed_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
@@ -341,7 +341,7 @@ class TrackingProfile:
     button_presses: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
     button_held: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
 
-    data_interfaces: dict[str, Optional[str]] = field(default_factory=lambda: defaultdict(str))
+    data_interfaces: dict[str, str | None] = field(default_factory=lambda: defaultdict(str))
     data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
@@ -590,14 +590,14 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
         profile.button_held[0][opcode] = count
 
 
-def _get_profile_version(zf: zipfile.ZipFile) -> Optional[bool]:
+def _get_profile_version(zf: zipfile.ZipFile) -> bool | None:
     try:
         return int(zf.read('version'))
     except KeyError:
         return None
 
 
-def _get_profile_legacy_version(zf: zipfile.ZipFile) -> Optional[bool]:
+def _get_profile_legacy_version(zf: zipfile.ZipFile) -> bool | None:
     try:
         return int(zf.read('metadata/file.txt'))
     except KeyError:

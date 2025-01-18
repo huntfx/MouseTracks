@@ -6,7 +6,6 @@ Source: https://github.com/Peter92/MouseTracks
 
 import ctypes
 from contextlib import contextmanager
-from typing import Optional
 
 import pywintypes
 import win32api
@@ -31,7 +30,7 @@ SCROLL_WHEEL_RIGHT = 0xFF + 4
 SCROLL_EVENTS = (SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT)
 
 
-def cursor_position() -> Optional[tuple[int, int]]:
+def cursor_position() -> tuple[int, int] | None:
     """Get the current mouse position.
 
     Returns:
@@ -75,3 +74,143 @@ def get_scroll_lines() -> int:
     """Get the number of lines to scroll with one notch of the mouse wheel."""
     return win32gui.SystemParametersInfo(win32con.SPI_GETWHEELSCROLLLINES)
 
+
+class WindowHandle(object):
+    def __init__(self, hwnd):
+        self.hwnd = hwnd
+        self.pid = win32process.GetWindowThreadProcessId(self.hwnd)[1]
+        self.proc = psutil.Process(self.pid)
+        # 'as_dict', 'children', 'cmdline', 'connections', 'cpu_affinity', 'cpu_percent',
+        # 'cpu_times', 'create_time', 'cwd', 'environ', 'exe', 'io_counters', 'ionice',
+        # 'is_running', 'kill', 'memory_full_info', 'memory_info', 'memory_info_ex',
+        # 'memory_maps', 'memory_percent', 'name', 'nice', 'num_ctx_switches', 'num_handles',
+        # 'num_threads', 'oneshot', 'open_files', 'parent', 'parents', 'pid', 'ppid', 'resume',
+        # 'send_signal', 'status', 'suspend', 'terminate', 'threads', 'username', 'wait']
+
+    def __repr__(self):
+        return f'{type(self).__name__}({self.hwnd!r})'
+
+    def __eq__(self, hwnd):
+        if isinstance(hwnd, type(self)):
+            return hwnd.hwnd == self.hwnd
+        return hwnd in (self.hwnd, self.pid)
+
+    @classmethod
+    def from_title(cls, name):
+        """Get a window handle from its title.
+        If multiple windows have the title, then it will find the most
+        recently loaded.
+        """
+        hwnd = win32gui.FindWindow(None, name)
+        if hwnd is not None:
+            return cls(hwnd)
+        return cls(0)
+
+    @contextmanager
+    def _open_handle(self, permission=win32con.PROCESS_QUERY_INFORMATION):
+        handle = win32api.OpenProcess(permission, pywintypes.FALSE, self.pid)
+        yield handle
+        win32api.CloseHandle(handle)
+
+    @property
+    def modules(self):
+        """Get all the modules for the process."""
+        with self._open_handle(win32con.PROCESS_TERMINATE) as handle:
+            for module_id in win32process.EnumProcessModules(handle):
+                yield win32process.GetModuleFileNameEx(handle, module_id)
+
+    @property
+    def executable(self):
+        """Get the path to the executable."""
+        return next(self.modules)
+        # return psutil.Process(self.pid).exe()
+
+    def kill(self):
+        with self._open_handle() as handle:
+            win32api.TermindateProcess(handle, 0)
+
+    @property
+    def rect(self):
+        """Get the coordinates of a window."""
+        try:
+            return win32gui.GetWindowRect(self.hwnd)
+        except win32api.error:
+            return (0, 0, 0, 0)
+
+    @property
+    def title(self):
+        """Get the window title."""
+        return win32gui.GetWindowText(self.hwnd)
+
+    @title.setter
+    def title(self, title):
+        """Set a new window title."""
+        return win32gui.SetWindowText(self.hwnd, title)
+
+    @property
+    def minimised(self):
+        """Find if window is minimised."""
+        return win32gui.IsIconic(self.hwnd)
+
+    @property
+    def top_most(self):
+        """Find if a window is top most."""
+        ex_style = win32api.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE)
+        return bool(ex_style & win32con.WS_EX_TOPMOST)
+
+    @top_most.setter
+    def top_most(self, top_most):
+        """Set if a window is top most."""
+        x1, y1, x2, y2 = self.rect
+        flag = win32con.HWND_TOPMOST if top_most else win32con.HWND_NOTOPMOST
+        win32gui.SetWindowPos(self.hwnd, flag, x1, y1, x2-x1, y2-y1, 0)
+
+    def restore(self):
+        """Restore a window from being minimised."""
+        win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
+
+    def minimise(self):
+        """Minimise a window."""
+        win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
+
+
+def get_pid_from_hwnd(hwnd):
+    global _top_window_mapping
+    try:
+        _top_window_mapping
+    except NameError:
+        _top_window_mapping = {}
+        def enumeration_handler(hwnd, top_windows):
+            top_windows[win32process.GetWindowThreadProcessId(hwnd)[1]] = hwnd
+        win32gui.EnumWindows(enumeration_handler, top_windows)
+    return _top_window_mapping.get(str(hwnd), 0)
+
+
+
+if __name__ == '__main__':
+    '''
+    wh = WindowHandle.from_title('Untitled - Notepad')
+    print(list(wh.modules))
+    print(wh.executable)
+    '''
+
+    hwnd = win32gui.FindWindow('Notepad', None)
+    win32con.WS_EX_TOPMOST
+
+    #top_most(hwnd)
+    print(win32gui.GetWindowText(hwnd))
+
+    top_windows = {}
+    def window_enumeration_handler(hwnd, top_windows):
+        """Add window title and ID to array."""
+        top_windows[win32process.GetWindowThreadProcessId(hwnd)[1]] = hwnd
+        #top_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+    win32gui.EnumWindows(window_enumeration_handler, top_windows)
+    for i in top_windows:
+        print(i)
+
+
+    '''
+    from win32gui import GetWindowText, GetForegroundWindow
+    print GetWindowText(GetForegroundWindow())
+    '''

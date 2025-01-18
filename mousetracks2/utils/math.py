@@ -4,23 +4,19 @@ This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
-from __future__ import division
 
-from typing import Optional
-
-
-def calculate_distance(p1: Optional[tuple[int, int]], p2: Optional[tuple[int, int]]) -> float:
+def calculate_distance(p1: tuple[int, int] | None, p2: tuple[int, int] | None) -> float:
     """Find the distance between two (x, y) coordinates."""
     if p1 is None or p2 is None or p1 == p2:
         return 0.0
     return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
 
 
-def calculate_line(start: tuple[int, int], end: Optional[tuple[int, int]]) -> list[tuple[int, int]]:
+def calculate_line(start: tuple[int, int] | None, end: tuple[int, int] | None) -> list[tuple[int, int]]:
     """Calculates path in terms of pixels between two points.
     Uses Bresenham's Line Algorithm.
     """
-    if end is None or start == end:
+    if start is None or end is None or start == end:
         return []
 
     x1, y1 = start
@@ -142,7 +138,8 @@ def calculate_circle(radius, segments=(True, True, True, True)):
     return (outline, area)
 
 
-def calculate_pixel_offset(x: int, y: int, x1: int, y1: int, x2: int, y2: int) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
+def calculate_pixel_offset(x: int, y: int, x1: int, y1: int, x2: int, y2: int
+                           ) -> tuple[tuple[int, int], tuple[int, int]] | None:
     """Calculate the offset for a pixel within monitor rectangle coordinates.
 
     Returns:

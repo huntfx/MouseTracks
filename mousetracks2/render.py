@@ -1,6 +1,5 @@
 import math
 from collections import defaultdict
-from typing import Optional
 
 import numpy as np
 from scipy import ndimage
@@ -20,8 +19,8 @@ class EmptyRenderError(ValueError):
         super().__init__('input arrays cannot be empty if size not defined')
 
 
-def array_target_resolution(arrays: list[ArrayLike], width: Optional[int] = None,
-                            height: Optional[int] = None) -> tuple[int, int]:
+def array_target_resolution(arrays: list[ArrayLike], width: int | None = None,
+                            height: int | None = None) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
     The aspect ratio is taken into consideration.
@@ -113,7 +112,7 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
 
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayLike]],
-           width: Optional[int] = None, height: Optional[int] = None, sampling: int = 1,
+           width: int | None = None, height: int | None = None, sampling: int = 1,
            linear: bool = False, blur: bool = False) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 

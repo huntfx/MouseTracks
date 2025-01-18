@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Optional
 import numpy as np
 
 
@@ -180,11 +179,11 @@ class RenderRequest(Message):
 
     target: int = field(default=Target.Processing, init=False)
     type: RenderType
-    width: Optional[int]
-    height: Optional[int]
+    width: int | None
+    height: int | None
     colour_map: str
     sampling: int
-    application: Optional[str]
+    application: str | None
     thumbnail: bool = field(default=False)
 
 
@@ -213,7 +212,7 @@ class ApplicationDetected(Message):
     target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
     process_id: int
-    rect: Optional[tuple[int, int, int, int]]
+    rect: tuple[int, int, int, int] | None
 
 
 @dataclass
@@ -254,7 +253,7 @@ class SaveComplete(Message):
 @dataclass
 class Load(Message):
     target: int = field(default=Target.Processing, init=False)
-    application: Optional[str] = field(default=None)
+    application: str | None = field(default=None)
 
 
 @dataclass
@@ -262,7 +261,7 @@ class ProfileLoaded(Message):
     """Data containing information about the loaded profile."""
 
     target: int = field(default=Target.GUI, init=False)
-    application: Optional[str]
+    application: str | None
     distance: float
     cursor_counter: int
     thumb_l_counter: int

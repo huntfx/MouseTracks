@@ -2,10 +2,8 @@ import math
 import multiprocessing
 import traceback
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
-import psutil
 import numpy as np
 
 from .. import ipc
@@ -40,7 +38,7 @@ class PreviousMouseClick:
 @dataclass
 class Application:
     name: str
-    rect: Optional[tuple[int, int, int, int]]
+    rect: tuple[int, int, int, int] | None
 
 
 class Processing:
@@ -51,7 +49,7 @@ class Processing:
         self.tick = 0
         self._timestamp = None
 
-        self.previous_mouse_click: Optional[PreviousMouseClick] = None
+        self.previous_mouse_click: PreviousMouseClick | None = None
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
         self.pause_tick = 0
@@ -132,7 +130,7 @@ class Processing:
         current_day = self.timestamp // 86400
         return current_day - creation_day
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> Optional[tuple[tuple[int, int], tuple[int, int]]]:
+    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         use_app = self.current_application is not None and self.current_application.rect is not None
         if use_app:
@@ -146,7 +144,8 @@ class Processing:
                 return result
         return None
 
-    def _record_move(self, data: MovementMaps, position: tuple[int, int], force_monitor: Optional[tuple[int, int]] = None) -> float:
+    def _record_move(self, data: MovementMaps, position: tuple[int, int],
+                     force_monitor: tuple[int, int] | None = None) -> float:
         """Record a movement for time and speed.
 
         There are some caveats that are hard to handle. If a mouse is
@@ -293,7 +292,8 @@ class Processing:
 
         return arrays
 
-    def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType, width: Optional[int], height: Optional[int],
+    def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
+                      width: int | None, height: int | None,
                       colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,

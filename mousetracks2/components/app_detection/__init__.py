@@ -1,6 +1,5 @@
 import multiprocessing
 import traceback
-from typing import Optional
 
 from mousetracks.applications import RunningApplications
 from .. import ipc
@@ -38,15 +37,15 @@ class AppDetection:
             case ipc.RequestRunningAppCheck():
                 self.running_apps.refresh()
 
-                current_app: Optional[tuple[str, str]] = None
+                current_app: tuple[str, str] | None = None
                 focused = self.running_apps.focus
 
                 app_position = app_resolution = None
-                process_id: Optional[int] = None
+                process_id: int | None = None
                 app_is_windowed = False
                 changed = False
                 if focused is not None:
-                    current_app: Optional[tuple[str, str]] = self.running_apps.check()  # (name, exe)
+                    current_app: tuple[str, str] | None = self.running_apps.check()  # (name, exe)
                     process_id = focused.pid
 
                     if current_app is not None:
