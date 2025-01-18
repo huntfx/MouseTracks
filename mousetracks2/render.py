@@ -1,8 +1,13 @@
 import math
+import sys
 from collections import defaultdict
 
 import numpy as np
-from scipy import ndimage
+try:
+    from scipy import ndimage
+except ModuleNotFoundError:
+    sys.path.append('resources/build')
+    from scipy import ndimage
 
 from mousetracks.image import colours
 from .typing import ArrayLike

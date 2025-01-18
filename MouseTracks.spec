@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['start_hub.py'],
+    ['launch.py'],
     pathex=[],
     binaries=[],
     datas=[

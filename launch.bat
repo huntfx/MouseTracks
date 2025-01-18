@@ -10,11 +10,16 @@ if not exist ".venv" (
 :: Enter the virtual environment
 call .venv\Scripts\activate
 
-:: Ensure pyinstaller is installed
-python -m pip install --upgrade pyinstaller
+:: Ensure all modules are installed
+python -m pip install --upgrade pip
+python -m pip install --upgrade -r requirements.txt
+if errorlevel 1 (
+    echo Failed to install or update modules. Exiting.
+    exit /b 1
+)
 
-:: Buiild the executable
-pyinstaller MouseTracks.spec
+:: Run the application entry point
+python launch.py
 
 :: Exit the virtual environment
 call deactivate

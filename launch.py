@@ -1,3 +1,5 @@
+"""Entry point for MouseTracks 2."""
+
 import os
 import sys
 from multiprocessing import freeze_support

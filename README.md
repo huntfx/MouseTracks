@@ -1,25 +1,97 @@
 # MouseTracks
-Track and display mouse movements/clicks over time. Old movements will get faded so it can be left running indefinitely.
 
-This was made with the intention of recording mouse movements over multiple resolutions then merging them together. It is used by loading (and forgetting about) `start_tracking.py`, and using `generate_images.py` to create the images. All the calculations are done in a background process, so that the tracking part will be able to run constantly without any CPU heavy calculations interfering with it.
+MouseTracks is an application designed to track and visualize mouse movements, clicks, keyboard activity, and gamepad inputs over time. It's designed to be unobtrusive, allowing you to leave it running indefinitely - even for years - and return later to render high-quality, colorful visualisations of the data.
 
-By default, the tracking area is limited to the application window, but with no application detected, all monitors will be used, and merged over each other.
+## Features
 
-## Current Status
-I'm actively working on 2.0 now, and will make a release on Github once it's ready.
+- ### Live Tracking:
+  Continuously monitors mouse movements and clicks, with older movements gradually fading out to maintain a clear view of recent activity.
 
-## Current Features
- - Track position, clicks, key presses and gamepad usage over multiple resolutions and monitors
- - Generate colourful mouse tracks and a heatmap of clicks or key presses (for everything or just the latest session)
- - Generate an image sequence of the last few hours of use
- - Fade old mouse tracks to keep recent tracks more visible
- - Record and adjust resolution based on the currently focused window
- - Automatically keep separate tracks for different applications (defined in "AppList.txt")
- - Perodically update AppList.txt from the internet, keeping and sorting all the old values, and adding any new ones
- - Edit settings with a config file, or by using the web based API
- - Full Windows support
- - Some Linux support (WIP)
- - Some Mac support (WIP)
+  Keyboard heatmaps and gamepad inputs are also supported.
+
+- ### Live Preview
+  The GUI includes a real-time preview of tracking data, combining thumbnail renders with live input.
+
+- ### High-Quality Rendering:
+  Renders are generated at full quality, regardless of resolution changes. Each input type is tracked independently and merged during the render process.
+
+  - Mouse and gamepad thumbsticks: Track maps and position heatmaps.
+
+  - Mouse clicks: Heatmaps.
+
+  - Key presses: Heatmap overlaid on a keyboard image.
+
+  - _(Gamepad button rendering is not yet supported.)_
+
+- ### Colourful Customisation:
+  Includes predefined and customizable color maps for all render types.
+
+- ### Application Tracking:
+  Use separate tracking profiles when different applications (as defined in `AppList.txt`) are detected.
+
+  _(Manual updates required for new applications.)_
+
+- ### Multi-Monitor Support:
+  Tracks activity across multiple monitors. If linked to a specific application, the rendering bounds will automatically adjust to the application's window geometry.
+
+- ### Unobtrusive:
+  Designed to run silently in the background. Closing the GUI will minimise it to the System Tray.
+
+- ### Modular Design:
+  The application was designed with multiple components that communicate but run independenantly of each other, ensuring the live tracking remains fully stable, even during resource-intensive tasks like rendering or waiting on GUI operations.
+
+---
+
+## Installation (v2.0)
+
+_Currently, only Windows is supported. Contributions for Linux or macOS support are welcome!_
+
+### Prebuilt Executable
+
+Launch `MouseTracks.exe` from anywhere. Recommended for ease of use.
+
+Build it using [`build.bat`](build.bat), or download it from the releases (available with v2.0).
+
+### Virtual Environment
+
+Recommended if running the code locally.
+
+1. Run `python -m venv .venv` to create the virtual environment with Python 3.11 or above.
+2. Run `launch.bat`.
+
+
+### Without a Virtual Environment
+
+Run `launch.py`.
+
+Ensure all modules in [requirements.txt](requirements.txt) are installed.
+
+---
+
+## Installation (v1.0 - Deprecated)
+
+_The 1.0 version is no longer supported. However it may receive minor updates to the launch process to bring it in line with v2.0._
+
+
+- `start_tracking.py`: Run this to start recording data.
+- `generate_images.py`: Script for rendering visualisations from the saved data.
+
+### Requirements for v1.0
+- #### Core Modules:
+  Python 2.7+, [Numpy](https://pypi.python.org/pypi/numpy), [psutil](https://pypi.python.org/pypi/psutil), [scipy](https://pypi.python.org/pypi/scipy), [Pillow](https://pypi.python.org/pypi/Pillow), [Flask](http://flask.pocoo.org/) ([optional](# "Used for the API")), [PyCrypto](https://pypi.python.org/pypi/pycrypto) ([optional](# "Used to encrypt API messages")), [pyglet](https://pypi.python.org/pypi/pyglet/1.3.0) (included)
+
+
+- #### Windows Extras:
+  [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) ([optional](# "Used for the tray icon")), [xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (included)
+
+
+- ##### Linux Extras (WIP):
+  [xlib](https://pypi.python.org/pypi/python-xlib), [pyxhook](https://pypi.org/project/pyxhook/)
+
+- ##### Mac Extras (WIP):
+  [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
+
+---
 
 ## Example Output
 <img src="http://i.imgur.com/UJgf0up.jpg">
@@ -85,28 +157,6 @@ I'm actively working on 2.0 now, and will make a release on Github once it's rea
 #### MOBA
 <img src="http://i.imgur.com/X34ZrwQ.jpg">
 <img src="http://i.imgur.com/Y5tttVN.jpg">
-
-## Requirements
-These are the requirements for 1.0. This section will be removed later in favour of using [requirements.txt](requirements.txt).
- - Python 2.7 or 3.6 (written and tested in 2.7, but support for 3.6)
- - [Numpy](https://pypi.python.org/pypi/numpy)
- - [psutil](https://pypi.python.org/pypi/psutil)
- - [scipy](https://pypi.python.org/pypi/scipy) (required to generate images)
- - [Pillow](https://pypi.python.org/pypi/Pillow) (required to generate images)
- - [Flask](http://flask.pocoo.org/) (optional - used for the API)
- - [PyCrypto](https://pypi.python.org/pypi/pycrypto) (optional - encrypt API messages)
- - ~~[pyglet](https://pypi.python.org/pypi/pyglet/1.3.0)~~ - included in code
-
-#### Windows
- - [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) (optional - used for the tray icon)
- - ~~[xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (required for gamepad tracking in Windows)~~ - included in code
-
-#### Linux (WIP)
- - [xlib](https://pypi.python.org/pypi/python-xlib)
- - [pyxhook](https://pypi.org/project/pyxhook/)
-
-#### Mac (WIP)
- - [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
 
 ## Icon
 I didn't have any plan of what it might look like, so I gave a vague prompt to Copilot to see what would happen.
