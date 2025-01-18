@@ -931,8 +931,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 if result is None:
                     continue
                 current_monitor, pixel = result
-            width_multiplier = size.width() / current_monitor[0]
-            height_multiplier = size.height() / current_monitor[1]
+            width_multiplier = (size.width() - 1) / current_monitor[0]
+            height_multiplier = (size.height() - 1) / current_monitor[1]
 
             # Downscale the pixel to match the pixmap
             x = int(pixel[0] * width_multiplier)
