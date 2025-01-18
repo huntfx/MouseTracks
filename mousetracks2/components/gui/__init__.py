@@ -844,8 +844,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """Maximise the window."""
         if not self.isVisible():
             self.request_thumbnail(force=True)
+            self.setWindowState(self.windowState() & ~QtCore.Qt.WindowState.WindowMinimized)
             self.show()
         self.raise_()
+        self.activateWindow()
 
     @QtCore.Slot()
     def minimise(self) -> None:
@@ -882,13 +884,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.q_send.put(ipc.Save())
         return True
 
+    def changeEvent(self, event: QtCore.QEvent) -> None:
+        if event.type() == QtCore.QEvent.Type.WindowStateChange:
+            if self.isMinimized() and self.ui.menu_allow_minimise.isChecked():
+                self.minimise()
+        super().changeEvent(event)
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle what to do when the GUI is closed."""
-        if self.tray is not None and not self.shutting_down and self.ui.menu_allow_minimise.isChecked():
-            self.minimise()
-            event.ignore()
-            return
-
         if self.ask_to_save():
             self.q_send.put(ipc.Exit())
             self.queue_thread.quit()
