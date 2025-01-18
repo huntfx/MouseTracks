@@ -277,7 +277,7 @@ class RunningApplications(object):
             #Only fallback to window name if it is the only entry for that application
             except KeyError:
                 if len(names) == 1 or len(set(names.values())) == 1:
-                    loaded.append(names[names.keys()[0]])
+                    loaded.append(names[tuple(names.keys())[0]])
         return set(loaded)
             
     def check(self):
@@ -299,7 +299,7 @@ class RunningApplications(object):
                 #Otherwise we don't know which entry to use, so ignore
                 except KeyError:
                     if len(names) == 1 or len(set(names.values())) == 1:
-                        return names[names.keys()[0]], loaded_exe
+                        return names[tuple(names.keys())[0]], loaded_exe
             return None
 
         #Get currently focused application
