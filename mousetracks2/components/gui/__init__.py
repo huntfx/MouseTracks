@@ -916,7 +916,7 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if self.ui.current_profile.currentIndex() and self.ui.current_profile.currentData() != self.current_profile.name:
+        if not self.isVisible() or self.ui.current_profile.currentData() != self.current_profile.name:
             return
 
         unique_pixels = set()
