@@ -249,18 +249,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.colour_option.clear()
         self.ui.colour_option.addItem('BlackToRedToWhite')
-        for data in colours.parse_colour_file()['Maps'].values():
-            match render_type:
-                case (ipc.RenderType.Time| ipc.RenderType.TimeSincePause | ipc.RenderType.Speed
-                      | ipc.RenderType.Thumbstick_L | ipc.RenderType.Thumbstick_R | ipc.RenderType.Thumbstick_C
-                      | ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_C_SPEED):
-                    if data['Type']['tracks']:
-                        self.ui.colour_option.addItem(data['UpperCase'])
-                case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                      | ipc.RenderType.Thumbstick_L_Heatmap | ipc.RenderType.Thumbstick_R_Heatmap
-                      | ipc.RenderType.Thumbstick_C_Heatmap | ipc.RenderType.TimeHeatmap):
-                    if data['Type']['clicks']:
-                        self.ui.colour_option.addItem(data['UpperCase'])
+
+        colour_maps = colours.get_map_matches(
+            tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause, ipc.RenderType.Speed,
+                                   ipc.RenderType.Thumbstick_L, ipc.RenderType.Thumbstick_R, ipc.RenderType.Thumbstick_C,
+                                   ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED, ipc.RenderType.Thumbstick_C_SPEED),
+            clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
+                                   ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap,
+                                   ipc.RenderType.Thumbstick_C_Heatmap, ipc.RenderType.TimeHeatmap)
+        )
+        self.ui.colour_option.addItems(colour_maps)
 
         # Load previous colour if available, otherwise revert to default
         if previous_text and previous_text != self.ui.colour_option.currentText():
