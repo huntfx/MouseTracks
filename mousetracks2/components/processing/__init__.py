@@ -3,11 +3,10 @@ import multiprocessing
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
+from importlib import reload
 
 import numpy as np
 
-from mousetracks.config.settings import CONFIG
-from mousetracks.image.keyboard import DrawKeyboard
 from .. import ipc
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
@@ -313,20 +312,27 @@ class Processing:
             image = np.ndarray([0, 0, 3])
         return image
 
-    def _render_keyboard(self, profile: TrackingProfile, colour_map: str) -> np.ndarray:
+    def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render a keyboard image."""
+        from mousetracks.config.settings import CONFIG
+        CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
+        CONFIG['GenerateKeyboard']['SizeMultiplier'] = sampling
+
+        # The legacy keyboard module sets constants based on the multiplier, so reload
+        from mousetracks.image import keyboard
+        reload(keyboard)
+
         # Recreate the legacy data
         data: dict[str, any] = {
             'Keys': {'All': {'Pressed': dict(enumerate(np.asarray(profile.key_presses))),
                              'Held': dict(enumerate(np.asarray(profile.key_held)))}},
             'Ticks': {'Total': profile.active}
         }
-        # Run the legacy code
-        CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
-        kb = DrawKeyboard(profile.name, data)
+        # Generate the image
+        kb = keyboard.DrawKeyboard(profile.name, data)
         image = kb.draw_image()
 
-        # Convert back to numpy array to send to GUI
+        # Convert back to array to send to GUI
         return np.asarray(image)
 
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:
@@ -404,7 +410,11 @@ class Processing:
                     profile = self.profile
 
                 if message.type == ipc.RenderType.Keyboard:
-                    image = self._render_keyboard(profile, message.colour_map)
+                    # Double the sampling, since the default render is too small
+                    sampling = message.sampling
+                    if not message.thumbnail:
+                        sampling *= 2
+                    image = self._render_keyboard(profile, message.colour_map, sampling)
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
