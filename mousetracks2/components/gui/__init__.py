@@ -154,7 +154,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.last_click: int | None = None
         self.save_request_sent = False
         self._bytes_sent = self.bytes_sent = 0
         self._bytes_recv = self.bytes_recv = 0
@@ -464,6 +463,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._redrawing_profiles:
             return
 
+        self.q_send.put(ipc.ProfileDataRequest(self.ui.current_profile.currentData()))
         self.request_thumbnail(force=True)
         if idx:
             self.ui.auto_switch_profile.setChecked(False)
@@ -596,15 +596,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def _process_message(self, message: ipc.Message) -> None:
         """Process messages."""
         match message:
-            case ipc.Tick():
+            case ipc.Tick() if self.is_live:
                 self.tick_current = message.tick
                 self.elapsed_time += 1
                 self.thumbnail_render_check()
 
-            case ipc.Active():
+            case ipc.Active() if self.is_live:
                 self.active_time += message.ticks
 
-            case ipc.Inactive():
+            case ipc.Inactive() if self.is_live:
                 self.inactive_time += message.ticks
 
             # When monitors change, store the new data
@@ -667,20 +667,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         im.save(file_path)
                         os.startfile(file_path)
 
-            case ipc.MouseClick():
-                self.last_click = self.tick_current
-
-            case ipc.MouseHeld():
+            case ipc.MouseHeld() if self.is_live:
                 self.mouse_held_count += 1
-                self.last_click = self.tick_current
 
-            case ipc.MouseMove():
+            case ipc.MouseMove() if self.is_live:
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
 
-            case ipc.ThumbstickMove():
+            case ipc.ThumbstickMove() if self.is_live:
                 draw = False
 
                 match message.thumbstick:
@@ -704,22 +700,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
-            case ipc.KeyPress():
+            case ipc.KeyPress() if self.is_live:
                 if message.opcode in MOUSE_OPCODES:
                     self.mouse_click_count += 1
                 else:
                     self.key_press_count += 1
 
-            case ipc.KeyHeld():
+            case ipc.KeyHeld() if self.is_live:
                 if message.opcode in SCROLL_EVENTS:
                     self.mouse_scroll_count += 1
 
-            case ipc.ButtonPress():
+            case ipc.ButtonPress() if self.is_live:
                 self.button_press_count += 1
 
             case ipc.ApplicationDetected():
                 self.current_profile = Profile(message.name, message.rect)
-                self.request_thumbnail()
 
             # Show the correct distance
             case ipc.ProfileLoaded():
@@ -739,7 +734,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
 
-            case ipc.DataTransfer():
+            case ipc.DataTransfer() if self.is_live:
                 self.bytes_sent += message.bytes_sent
                 self.bytes_recv += message.bytes_recv
 
@@ -913,13 +908,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if data.counter > COMPRESSION_THRESHOLD:
             data.counter = int(data.counter / COMPRESSION_FACTOR)
 
+    @property
+    def is_live(self) -> bool:
+        """Determine if the visible data is live."""
+        return self.ui.current_profile.currentData() == self.current_profile.name
+
     def draw_pixmap_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
                          force_monitor: tuple[int, int] | None = None):
         """When an object moves, draw it.
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if not self.isVisible() or self.ui.current_profile.currentData() != self.current_profile.name:
+        if not self.isVisible() or not self.is_live:
             return
 
         unique_pixels = set()

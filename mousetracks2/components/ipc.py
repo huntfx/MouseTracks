@@ -257,6 +257,12 @@ class Load(Message):
 
 
 @dataclass
+class ProfileDataRequest(Message):
+    target: int = field(default=Target.Processing, init=False)
+    application: str | None = field(default=None)
+
+
+@dataclass
 class ProfileLoaded(Message):
     """Data containing information about the loaded profile."""
 

@@ -83,7 +83,7 @@ class Processing:
         return self._current_application
 
     @current_application.setter
-    def current_application(self, application: Application):
+    def current_application(self, application: Application) -> None:
         """Update the currently loaded application."""
         if application == self._current_application:
             return
@@ -92,33 +92,39 @@ class Processing:
         # Reset the cursor position
         self.profile.cursor_map.position = None
 
+        self.send_profile_data(application.name)
+
+    def send_profile_data(self, name: str) -> None:
+        """Send all the stats for the profile."""
+        profile = self.all_profiles[name]
+
         # Count total clicks
         clicks = 0
-        for resolution_maps in self.profile.mouse_single_clicks.values():
+        for resolution_maps in profile.mouse_single_clicks.values():
             for array in resolution_maps.values():
                 clicks += np.sum(array)
 
         # Count scrolls
         scrolls = 0
         for opcode in SCROLL_EVENTS:
-            scrolls += self.profile.key_held[opcode]
+            scrolls += profile.key_held[opcode]
 
         # Send data back to the GUI
         self.q_send.put(ipc.ProfileLoaded(
-            application=self.current_application.name,
-            distance=self.profile.cursor_map.distance,
-            cursor_counter=self.profile.cursor_map.counter,
-            thumb_l_counter=self.profile.thumbstick_l_map[0].counter if self.profile.thumbstick_l_map else 0,
-            thumb_r_counter=self.profile.thumbstick_r_map[0].counter if self.profile.thumbstick_r_map else 0,
+            application=profile.name,
+            distance=profile.cursor_map.distance,
+            cursor_counter=profile.cursor_map.counter,
+            thumb_l_counter=profile.thumbstick_l_map[0].counter if profile.thumbstick_l_map else 0,
+            thumb_r_counter=profile.thumbstick_r_map[0].counter if profile.thumbstick_r_map else 0,
             clicks=clicks,
             scrolls=scrolls,
-            keys_pressed=np.sum(self.profile.key_presses),
-            buttons_pressed=sum(np.sum(array) for array in self.profile.button_presses.values()),
-            elapsed_ticks=self.profile.elapsed,
-            active_ticks=self.profile.active,
-            inactive_ticks=self.profile.inactive,
-            bytes_sent=sum(self.profile.data_upload.values()),
-            bytes_recv=sum(self.profile.data_download.values()),
+            keys_pressed=np.sum(profile.key_presses),
+            buttons_pressed=sum(np.sum(array) for array in profile.button_presses.values()),
+            elapsed_ticks=profile.elapsed,
+            active_ticks=profile.active,
+            inactive_ticks=profile.inactive,
+            bytes_sent=sum(profile.data_upload.values()),
+            bytes_recv=sum(profile.data_download.values()),
         ))
 
     @property
@@ -504,6 +510,11 @@ class Processing:
 
                 if message.mac_address not in self.profile.data_interfaces:
                     self.profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
+
+            case ipc.ProfileDataRequest(application=name):
+                if name is None:
+                    name = DEFAULT_PROFILE_NAME
+                self.send_profile_data(name)
 
             case _:
                 raise NotImplementedError(message)
