@@ -667,7 +667,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     if accept:
                         im = Image.fromarray(message.array)
-                        im.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                        im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
                         im.save(file_path)
                         os.startfile(file_path)
 
