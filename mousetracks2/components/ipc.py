@@ -34,6 +34,7 @@ class RenderType(Enum):
     Thumbstick_R_Heatmap = auto()
     Thumbstick_L_Heatmap = auto()
     Thumbstick_C_Heatmap = auto()
+    Keyboard = auto()
 
 
 @dataclass

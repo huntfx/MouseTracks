@@ -129,6 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('Clicks', ipc.RenderType.SingleClick)
         self.ui.map_type.addItem('Double Clicks', ipc.RenderType.DoubleClick)
         self.ui.map_type.addItem('Held Clicks', ipc.RenderType.HeldClick)
+        self.ui.map_type.addItem('Keyboard', ipc.RenderType.Keyboard)
         self.ui.map_type.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
         self.ui.map_type.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
         self.ui.map_type.addItem('Twin Thumbsticks', ipc.RenderType.Thumbstick_C)
@@ -256,7 +257,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                    ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED, ipc.RenderType.Thumbstick_C_SPEED),
             clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
                                    ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap,
-                                   ipc.RenderType.Thumbstick_C_Heatmap, ipc.RenderType.TimeHeatmap)
+                                   ipc.RenderType.Thumbstick_C_Heatmap, ipc.RenderType.TimeHeatmap),
+            keyboard=render_type == ipc.RenderType.Keyboard,
         )
         self.ui.colour_option.addItems(colour_maps)
 
@@ -561,6 +563,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.Thumbstick_C_SPEED | ipc.RenderType.Thumbstick_C_Heatmap:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = 50
+            case ipc.RenderType.Keyboard:
+                update_frequency = 1
+                count = self.key_press_count
             case _:
                 return
 
@@ -635,7 +640,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.ui.thumbnail.setPixmap(pixmap)
 
                     else:
-                        image = QtGui.QImage(message.array.data, width, height, image_format)
+                        stride = channels * width
+                        image = QtGui.QImage(message.array.data, width, height, stride, image_format)
 
                         # Scale the QImage to fit the pixmap size
                         scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)

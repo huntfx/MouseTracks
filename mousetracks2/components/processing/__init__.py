@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from mousetracks.config.settings import CONFIG
+from mousetracks.image.keyboard import DrawKeyboard
 from .. import ipc
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
@@ -311,6 +313,22 @@ class Processing:
             image = np.ndarray([0, 0, 3])
         return image
 
+    def _render_keyboard(self, profile: TrackingProfile, colour_map: str) -> np.ndarray:
+        """Render a keyboard image."""
+        # Recreate the legacy data
+        data: dict[str, any] = {
+            'Keys': {'All': {'Pressed': dict(enumerate(np.asarray(profile.key_presses))),
+                             'Held': dict(enumerate(np.asarray(profile.key_held)))}},
+            'Ticks': {'Total': profile.active}
+        }
+        # Run the legacy code
+        CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
+        kb = DrawKeyboard(profile.name, data)
+        image = kb.draw_image()
+
+        # Convert back to numpy array to send to GUI
+        return np.asarray(image)
+
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.active += ticks
@@ -385,7 +403,11 @@ class Processing:
                 else:
                     profile = self.profile
 
-                image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
+                if message.type == ipc.RenderType.Keyboard:
+                    image = self._render_keyboard(profile, message.colour_map)
+
+                else:
+                    image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
                 self.q_send.put(ipc.Render(image, message.sampling, message.thumbnail))
 
                 print('[Processing] Render request completed')
