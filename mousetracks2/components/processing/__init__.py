@@ -13,7 +13,7 @@ from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_fi
 from ...typing import ArrayLike
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
-from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, SCROLL_EVENTS
+from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, KEYBOARD_OPCODES, SCROLL_EVENTS
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
 from ...render import render, EmptyRenderError
 
@@ -119,7 +119,7 @@ class Processing:
             thumb_r_counter=profile.thumbstick_r_map[0].counter if profile.thumbstick_r_map else 0,
             clicks=clicks,
             scrolls=scrolls,
-            keys_pressed=np.sum(profile.key_presses),
+            keys_pressed=sum(profile.key_presses[opcode] for opcode in KEYBOARD_OPCODES),
             buttons_pressed=sum(np.sum(array) for array in profile.button_presses.values()),
             elapsed_ticks=profile.elapsed,
             active_ticks=profile.active,
@@ -324,10 +324,11 @@ class Processing:
 
         # Recreate the legacy data
         data: dict[str, any] = {
-            'Keys': {'All': {'Pressed': dict(enumerate(np.asarray(profile.key_presses))),
-                             'Held': dict(enumerate(np.asarray(profile.key_held)))}},
+            'Keys': {'All': {'Pressed': {i: profile.key_presses[i] for i in KEYBOARD_OPCODES},
+                             'Held': {i: profile.key_held[i] for i in KEYBOARD_OPCODES}}},
             'Ticks': {'Total': profile.active}
         }
+
         # Generate the image
         kb = keyboard.DrawKeyboard(profile.name, data)
         image = kb.draw_image()

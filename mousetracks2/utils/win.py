@@ -29,6 +29,8 @@ SCROLL_WHEEL_RIGHT = 0xFF + 4
 
 SCROLL_EVENTS = (SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT)
 
+KEYBOARD_OPCODES = [i for i in range(0xFF) if i not in MOUSE_OPCODES]
+
 
 def cursor_position() -> tuple[int, int] | None:
     """Get the current mouse position.
