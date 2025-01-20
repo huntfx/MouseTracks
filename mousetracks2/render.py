@@ -156,10 +156,11 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayL
     # Rescale the arrays to the target size and combine them
     combined_arrays: dict[tuple[int, int], np.ndarray] = {}
     for pos, arrays in positional_arrays.items():
-        if not arrays:
-            continue
-        rescaled = [array_rescale(array, scale_width, scale_height) for array in arrays]
-        combined_arrays[pos] = np.maximum.reduce(rescaled)
+        if arrays:
+            rescaled = [array_rescale(array, scale_width, scale_height) for array in arrays]
+            combined_arrays[pos] = np.maximum.reduce(rescaled)
+        else:
+            combined_arrays[pos] = np.zeros([scale_height, scale_width], dtype=np.uint8)
 
     # Convert to linear arrays
     if linear:
@@ -179,7 +180,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayL
 
     # Equalise the max values
     if len(combined_arrays) > 1:
-        max_values = {pos: np.max(array) for pos, array in combined_arrays.items()}
+        max_values = {pos: max(1, np.max(array)) for pos, array in combined_arrays.items()}
         max_value = max(max_values.values())
         combined_arrays = {pos: combined_arrays[pos].astype(np.float64) * (max_value / value)
                            for pos, value in max_values.items()}
