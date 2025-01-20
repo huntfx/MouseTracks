@@ -38,7 +38,7 @@ def array_target_resolution(arrays: list[ArrayLike], width: int | None = None,
         res_y, res_x = array.shape
         popularity[(res_x, res_y)] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9
-    _width, _height = max(res for res, value in popularity.items() if value > threshold)
+    _width, _height = max(res for res, value in popularity.items() if value >= threshold)
 
     if width is None and height is None:
         return _width, _height
