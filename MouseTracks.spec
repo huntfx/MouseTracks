@@ -11,6 +11,9 @@ a = Analysis(
     binaries=[],
     datas=[
         ('config/colours.txt', 'config'),
+        ('config/language/strings/en_GB.ini', 'config/language/strings'),
+        ('config/language/keyboard/keys/en_GB.ini', 'config/language/keyboard/keys'),
+        ('config/language/keyboard/layout/en_US.txt', 'config/language/keyboard/layout'),
         ('resources/images/icon.png', 'resources/images'),
     ],
     hiddenimports=['resources.build.scipy'],
