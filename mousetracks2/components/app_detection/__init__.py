@@ -23,6 +23,9 @@ class AppDetection:
         self.last_coordinates = None
         self.last_resolution = None
 
+        self._previous_focus: tuple[str, str] = '', ''
+        self._current_focus = self.running_apps.focused_exe, self.running_apps.focused_name
+
         self.state = ipc.TrackingState.State.Pause
 
     def _process_message(self, message: ipc.Message) -> None:
@@ -36,6 +39,12 @@ class AppDetection:
             # This is using the legacy app detection for the time being
             case ipc.RequestRunningAppCheck():
                 self.running_apps.refresh()
+
+                # Display the current focus for easier debugging
+                self._current_focus = (self.running_apps.focused_exe, self.running_apps.focused_name)
+                if self._previous_focus != self._current_focus:
+                    self._previous_focus = self._current_focus
+                    print(f'[Application Detection] Focus changed: {self._current_focus[0]} ({self._current_focus[1]})')
 
                 current_app: tuple[str, str] | None = None
                 focused = self.running_apps.focus
