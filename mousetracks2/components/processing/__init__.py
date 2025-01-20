@@ -305,9 +305,10 @@ class Processing:
         """Render an array (tracks / heatmaps)."""
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
                                      ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap, ipc.RenderType.Thumbstick_C_Heatmap)
+        is_speed = render_type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_C_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
         positional_arrays = self._arrays_for_rendering(profile, render_type)
         try:
-            image = render(colour_map, positional_arrays, width, height, sampling, linear=is_heatmap, blur=is_heatmap)
+            image = render(colour_map, positional_arrays, width, height, sampling, linear=is_heatmap or is_speed, blur=is_heatmap)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
         return image
