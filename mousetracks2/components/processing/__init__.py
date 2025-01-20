@@ -240,17 +240,7 @@ class Processing:
                 for map in profile.mouse_held_clicks.values():
                     arrays[0, 0].extend(map.values())
 
-            case ipc.RenderType.Thumbstick_R:
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.sequential_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_L:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.sequential_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_C:
+            case ipc.RenderType.Thumbstick_Time:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.sequential_arrays
                     arrays[0, 0].extend(map.values())
@@ -258,17 +248,7 @@ class Processing:
                     map = gamepad_maps.sequential_arrays
                     arrays[1, 0].extend(map.values())
 
-            case ipc.RenderType.Thumbstick_R_SPEED:
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.speed_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_L_SPEED:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.speed_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_C_SPEED:
+            case ipc.RenderType.Thumbstick_Speed:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.speed_arrays
                     arrays[0, 0].extend(map.values())
@@ -276,17 +256,7 @@ class Processing:
                     map = gamepad_maps.speed_arrays
                     arrays[1, 0].extend(map.values())
 
-            case ipc.RenderType.Thumbstick_R_Heatmap:
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.density_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_L_Heatmap:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.density_arrays
-                    arrays[0, 0].extend(map.values())
-
-            case ipc.RenderType.Thumbstick_C_Heatmap:
+            case ipc.RenderType.Thumbstick_Heatmap:
                 for gamepad_maps in profile.thumbstick_l_map.values():
                     map = gamepad_maps.density_arrays
                     arrays[0, 0].extend(map.values())
@@ -303,9 +273,9 @@ class Processing:
                       width: int | None, height: int | None,
                       colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
-        is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick, ipc.RenderType.TimeHeatmap,
-                                     ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap, ipc.RenderType.Thumbstick_C_Heatmap)
-        is_speed = render_type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_C_SPEED, ipc.RenderType.Thumbstick_R_SPEED)
+        is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
+                                     ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_Heatmap)
+        is_speed = render_type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_Speed)
         positional_arrays = self._arrays_for_rendering(profile, render_type)
         try:
             image = render(colour_map, positional_arrays, width, height, sampling, linear=is_heatmap or is_speed, blur=is_heatmap)

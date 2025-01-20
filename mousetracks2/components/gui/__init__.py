@@ -122,23 +122,17 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
 
         # self.ui.map_type = QtWidgets.QComboBox()
-        self.ui.map_type.addItem('Time', ipc.RenderType.Time)
-        self.ui.map_type.addItem('Time (since pause)', ipc.RenderType.TimeSincePause)
-        self.ui.map_type.addItem('Time (heatmap)', ipc.RenderType.TimeHeatmap)
-        self.ui.map_type.addItem('Speed', ipc.RenderType.Speed)
-        self.ui.map_type.addItem('Clicks', ipc.RenderType.SingleClick)
-        self.ui.map_type.addItem('Double Clicks', ipc.RenderType.DoubleClick)
-        self.ui.map_type.addItem('Held Clicks', ipc.RenderType.HeldClick)
-        self.ui.map_type.addItem('Keyboard', ipc.RenderType.Keyboard)
-        self.ui.map_type.addItem('Left Thumbstick', ipc.RenderType.Thumbstick_L)
-        self.ui.map_type.addItem('Right Thumbstick', ipc.RenderType.Thumbstick_R)
-        self.ui.map_type.addItem('Twin Thumbsticks', ipc.RenderType.Thumbstick_C)
-        self.ui.map_type.addItem('Left Thumbstick (heatmap)', ipc.RenderType.Thumbstick_L_Heatmap)
-        self.ui.map_type.addItem('Right Thumbstick (heatmap)', ipc.RenderType.Thumbstick_R_Heatmap)
-        self.ui.map_type.addItem('Twin Thumbstick (heatmap)', ipc.RenderType.Thumbstick_C_Heatmap)
-        self.ui.map_type.addItem('Left Thumbstick (speed)', ipc.RenderType.Thumbstick_L_SPEED)
-        self.ui.map_type.addItem('Right Thumbstick (speed)', ipc.RenderType.Thumbstick_R_SPEED)
-        self.ui.map_type.addItem('Twin Thumbstick (speed)', ipc.RenderType.Thumbstick_C_SPEED)
+        self.ui.map_type.addItem('[Mouse] Time', ipc.RenderType.Time)
+        self.ui.map_type.addItem('[Mouse] Time (since pause)', ipc.RenderType.TimeSincePause)
+        self.ui.map_type.addItem('[Mouse] Heatmap', ipc.RenderType.TimeHeatmap)
+        self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.Speed)
+        self.ui.map_type.addItem('[Mouse] Clicks', ipc.RenderType.SingleClick)
+        self.ui.map_type.addItem('[Mouse] Double Clicks', ipc.RenderType.DoubleClick)
+        self.ui.map_type.addItem('[Mouse] Held Clicks', ipc.RenderType.HeldClick)
+        self.ui.map_type.addItem('[Keyboard] Key Presses', ipc.RenderType.Keyboard)
+        self.ui.map_type.addItem('[Gamepad] Thumbstick Time', ipc.RenderType.Thumbstick_Time)
+        self.ui.map_type.addItem('[Gamepad] Thumbstick Heatmap', ipc.RenderType.Thumbstick_Heatmap)
+        self.ui.map_type.addItem('[Gamepad] Thumbstick Speed', ipc.RenderType.Thumbstick_Speed)
 
         # Thumbnail pixmap
         self.ui.thumbnail.setPixmap(QtGui.QPixmap(640, 400))
@@ -253,11 +247,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         colour_maps = colours.get_map_matches(
             tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause, ipc.RenderType.Speed,
-                                   ipc.RenderType.Thumbstick_L, ipc.RenderType.Thumbstick_R, ipc.RenderType.Thumbstick_C,
-                                   ipc.RenderType.Thumbstick_L_SPEED, ipc.RenderType.Thumbstick_R_SPEED, ipc.RenderType.Thumbstick_C_SPEED),
+                                   ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed),
             clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
-                                   ipc.RenderType.Thumbstick_L_Heatmap, ipc.RenderType.Thumbstick_R_Heatmap,
-                                   ipc.RenderType.Thumbstick_C_Heatmap, ipc.RenderType.TimeHeatmap),
+                                   ipc.RenderType.Thumbstick_Heatmap, ipc.RenderType.TimeHeatmap),
             keyboard=render_type == ipc.RenderType.Keyboard,
         )
         self.ui.colour_option.addItems(colour_maps)
@@ -545,22 +537,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.HeldClick:
                 update_frequency = 50
                 count = self.mouse_held_count
-            case ipc.RenderType.Thumbstick_L:
-                count = self.thumbstick_l_data.counter
-                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.Thumbstick_R:
-                count = self.thumbstick_r_data.counter
-                update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.Thumbstick_C:
+            case ipc.RenderType.Thumbstick_Time:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.Thumbstick_L_SPEED | ipc.RenderType.Thumbstick_L_Heatmap:
-                count = self.thumbstick_l_data.counter
-                update_frequency = 50
-            case ipc.RenderType.Thumbstick_R_SPEED | ipc.RenderType.Thumbstick_R_Heatmap:
-                count = self.thumbstick_r_data.counter
-                update_frequency = 50
-            case ipc.RenderType.Thumbstick_C_SPEED | ipc.RenderType.Thumbstick_C_Heatmap:
+            case ipc.RenderType.Thumbstick_Speed | ipc.RenderType.Thumbstick_Heatmap:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = 50
             case ipc.RenderType.Keyboard:
@@ -681,26 +661,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
 
             case ipc.ThumbstickMove() if self.is_live:
-                draw = False
-
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
                         data = self.thumbstick_l_data
-                        draw = self.render_type in (ipc.RenderType.Thumbstick_L, ipc.RenderType.Thumbstick_C)
                         offset = -0.5
                     case ipc.ThumbstickMove.Thumbstick.Right:
                         data = self.thumbstick_r_data
-                        draw = self.render_type in (ipc.RenderType.Thumbstick_R, ipc.RenderType.Thumbstick_C)
                         offset = 0.5
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
                 x, y = message.position
-                if self.render_type == ipc.RenderType.Thumbstick_C:
-                    x = x * 0.5 + offset
+                x = x * 0.5 + offset  # Required for the side by side display
 
                 remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
-                if draw:
+                if self.render_type == ipc.RenderType.Thumbstick_Time:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 

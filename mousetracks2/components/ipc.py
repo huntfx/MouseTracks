@@ -25,15 +25,9 @@ class RenderType(Enum):
     SingleClick = auto()
     DoubleClick = auto()
     HeldClick = auto()
-    Thumbstick_R = auto()
-    Thumbstick_L = auto()
-    Thumbstick_C = auto()
-    Thumbstick_R_SPEED = auto()
-    Thumbstick_L_SPEED = auto()
-    Thumbstick_C_SPEED = auto()
-    Thumbstick_R_Heatmap = auto()
-    Thumbstick_L_Heatmap = auto()
-    Thumbstick_C_Heatmap = auto()
+    Thumbstick_Time = auto()
+    Thumbstick_Speed = auto()
+    Thumbstick_Heatmap = auto()
     Keyboard = auto()
 
 
