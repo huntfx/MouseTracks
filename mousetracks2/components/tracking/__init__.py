@@ -7,7 +7,7 @@ from typing import Iterator
 
 import psutil
 import pynput
-import XInput
+import XInput  # type: ignore
 
 from . import utils
 from .. import ipc
@@ -29,7 +29,7 @@ class DataState:
 
     tick_current: int = field()
     tick_previous: int = field(default=-1)
-    tick_modified: bool | None = field(default=None)
+    tick_modified: int | None = field(default=None)
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: tuple[int, int] | None = field(default_factory=cursor_position)
@@ -37,9 +37,9 @@ class DataState:
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepad_force_recheck: bool = field(default=False)
-    gamepad_stick_l_position: dict[int, tuple[int, int] | None] = field(default_factory=lambda: defaultdict(int))
-    gamepad_stick_r_position: dict[int, tuple[int, int] | None] = field(default_factory=lambda: defaultdict(int))
-    key_presses: dict[int, int] = field(default_factory=dict)
+    gamepad_stick_l_position: dict[int, tuple[int, int]] = field(default_factory=dict)
+    gamepad_stick_r_position: dict[int, tuple[int, int]] = field(default_factory=dict)
+    key_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
     button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
     bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
@@ -131,7 +131,7 @@ class Tracking:
                     print('[Tracking] Shut down.')
                     return
 
-    def _calculate_inactivity(self) -> None:
+    def _calculate_inactivity(self) -> int:
         """Send the activity or inactivity ticks.
 
         It took a few iterations but this stays completely in sync with
@@ -141,7 +141,7 @@ class Tracking:
         TODO: Testing needed on tracking pause/stop
         """
         if self.data.tick_modified is None:
-            return
+            return 0
 
         inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
         diff = self.data.tick_modified - self.data.tick_previous
@@ -202,13 +202,13 @@ class Tracking:
         if opcode <= 0xFF:
             # First press
             if press_latest != self.data.tick_current - 1:
-                if opcode in MOUSE_BUTTONS:
+                if opcode in MOUSE_BUTTONS and self.data.mouse_position is not None:
                     self.send_data(ipc.MouseClick(opcode, self.data.mouse_position))
                 self.send_data(ipc.KeyPress(opcode))
 
             # Being held
             else:
-                if opcode in MOUSE_BUTTONS:
+                if opcode in MOUSE_BUTTONS and self.data.mouse_position is not None:
                     self.send_data(ipc.MouseHeld(opcode, self.data.mouse_position))
                 self.send_data(ipc.KeyHeld(opcode))
 
@@ -301,12 +301,12 @@ class Tracking:
                         self.send_data(ipc.ButtonHeld(gamepad, opcode))
                         data.button_presses[opcode] = (press_start, tick)
 
-                if stick_l != data.gamepad_stick_l_position[gamepad]:
+                if stick_l != data.gamepad_stick_l_position.get(gamepad):
                     self.data.tick_modified = self.data.tick_current
                     data.gamepad_stick_l_position[gamepad] = stick_l
                     self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, stick_l))
 
-                if stick_r != data.gamepad_stick_r_position[gamepad]:
+                if stick_r != data.gamepad_stick_r_position.get(gamepad):
                     self.data.tick_modified = self.data.tick_current
                     data.gamepad_stick_r_position[gamepad] = stick_r
                     self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))

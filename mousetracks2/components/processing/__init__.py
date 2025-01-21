@@ -4,6 +4,7 @@ import traceback
 from collections import defaultdict
 from dataclasses import dataclass
 from importlib import reload
+from typing import Any
 
 import numpy as np
 
@@ -139,11 +140,11 @@ class Processing:
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        use_app = self.current_application is not None and self.current_application.rect is not None
-        if use_app:
-            monitor_data = [self.current_application.rect]
-        else:
-            monitor_data = self.monitor_data
+        monitor_data = self.monitor_data
+        if self.current_application is not None:
+            rect = self.current_application.rect
+            if rect is not None:
+                monitor_data = [rect]
 
         for x1, y1, x2, y2 in monitor_data:
             result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
@@ -294,7 +295,7 @@ class Processing:
         reload(keyboard)
 
         # Recreate the legacy data
-        data: dict[str, any] = {
+        data: dict[str, Any] = {
             'Keys': {'All': {'Pressed': {i: profile.key_presses[i] for i in KEYBOARD_OPCODES},
                              'Held': {i: profile.key_held[i] for i in KEYBOARD_OPCODES}}},
             'Ticks': {'Total': profile.active}

@@ -91,7 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pause_redraw = 0
         self.pause_colour_change = False
-        self.redraw_queue: list[tuple[int, int, QtGui.QColor]] = []
+        self.redraw_queue: list[Pixel] = []
         self.shutting_down = False
         self._last_save_time = self._last_thumbnail_time = time.time()
 
@@ -101,22 +101,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_context_menu.menuAction().setVisible(False)
 
         # Set up the tray icon
+        self.tray: QtWidgets.QSystemTrayIcon | None
         if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
             self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
+            self.tray.show()
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
             self.ui.menu_allow_minimise.setEnabled(False)
 
-        self.tray_force_visible = True
-        if self.tray_force_visible:
-            self.tray.show()
-
         self._profile_names = get_profile_names()
-        self._unsaved_profiles = set()
+        self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self.current_profile = Profile(DEFAULT_PROFILE_NAME)
         #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
@@ -166,7 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.menu_exit.triggered.connect(self.shut_down)
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
-        self.ui.save_render.clicked.connect(self.render)
+        self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
@@ -211,20 +209,20 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self._render_colour = colour
         try:
-            self.pixel_colour = colours.calculate_colour_map(colour)[-1]
+            self.pixel_colour = QtGui.QColor(*colours.calculate_colour_map(colour)[-1])
         except Exception:  # Old code - just fallback to tranparent
             self._render_colour = 'TransparentBlack'
-            self.pixel_colour = (0, 0, 0, 0)
+            self.pixel_colour = QtGui.QColor(QtCore.Qt.GlobalColor.black)
 
     @property
-    def pixel_colour(self) -> tuple[int, int, int, int]:
+    def pixel_colour(self) -> QtGui.QColor:
         """Get the pixel colour to draw with."""
         return self._pixel_colour
 
     @pixel_colour.setter
-    def pixel_colour(self, colour: tuple[int, int, int, int]):
+    def pixel_colour(self, colour: QtGui.QColor):
         """Set the pixel colour to draw with."""
-        self._pixel_colour = QtGui.QColor(*colour)
+        self._pixel_colour = colour
 
     @property
     def render_type(self) -> ipc.RenderType:
@@ -514,7 +512,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                           self.render_colour, 1, app, True))
         return True
 
-    def render(self) -> None:
+    def request_render(self) -> None:
         """Send a render request."""
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
         self.q_send.put(ipc.RenderRequest(self.render_type, None, None,
@@ -616,7 +614,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     if failed:
                         pixmap = self.ui.thumbnail.pixmap()
-                        pixmap.fill(QtCore.Qt.transparent)
+                        pixmap.fill(QtCore.Qt.GlobalColor.transparent)
                         self.ui.thumbnail.setPixmap(pixmap)
 
                     else:
@@ -625,7 +623,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                         # Scale the QImage to fit the pixmap size
                         scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-                        self.ui.thumbnail.setImage(scaled_image)
+                        self.ui.thumbnail.setPixmap(scaled_image)
 
                     self.pause_redraw -= 1
 
@@ -826,7 +824,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def minimise(self) -> None:
         """Minimise the window."""
-        if not self.isVisible():
+        if not self.isVisible() or self.tray is None:
             return
 
         self.hide()
@@ -923,7 +921,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Send unique pixels to be drawn
         self.update_pixmap_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
 
-    @QtCore.Slot(int, int, QtGui.QColor)
     def update_pixmap_pixels(self, *pixels: Pixel) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
         self.ui.thumbnail.updatePixels(*pixels)

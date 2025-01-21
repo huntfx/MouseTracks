@@ -1,7 +1,8 @@
 import multiprocessing
 import traceback
+from typing import TYPE_CHECKING
 
-from mousetracks.applications import RunningApplications
+from mousetracks.applications import RunningApplications, WindowFocus
 from .. import ipc
 from ...constants import DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
@@ -19,7 +20,7 @@ class AppDetection:
         self.q_send = q_send
         self.q_receive = q_receive
         self.running_apps = RunningApplications()
-        self.previous_app = None
+        self.previous_app: tuple[str, str] | None = None
         self.last_coordinates = None
         self.last_resolution = None
 
@@ -54,7 +55,7 @@ class AppDetection:
                 app_is_windowed = False
                 changed = False
                 if focused is not None:
-                    current_app: tuple[str, str] | None = self.running_apps.check()  # (name, exe)
+                    current_app = self.running_apps.check()  # (name, exe)
                     process_id = focused.pid
 
                     if current_app is not None:
@@ -91,9 +92,10 @@ class AppDetection:
                 if current_app != self.previous_app:
                     if focused is None:
                         if current_app is None:
+                            if TYPE_CHECKING: assert self.previous_app is not None
                             print(f'[Application Detection] {self.previous_app[0]} ended')
                             changed = True
-                        elif current_app is not None:
+                        else:
                             print(f'[Application Detection] {current_app[0]} started')
                             changed = True
 

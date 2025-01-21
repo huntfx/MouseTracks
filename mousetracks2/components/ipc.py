@@ -206,7 +206,7 @@ class ApplicationDetected(Message):
 
     target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
-    process_id: int
+    process_id: int | None
     rect: tuple[int, int, int, int] | None
 
 

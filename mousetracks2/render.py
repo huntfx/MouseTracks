@@ -33,18 +33,17 @@ def array_target_resolution(arrays: list[ArrayLike], width: int | None = None,
     if width is not None and height is not None:
         return width, height
 
-    popularity = defaultdict(int)
+    popularity: dict[tuple[int, int], int] = defaultdict(int)
     for array in map(np.asarray, arrays):
         res_y, res_x = array.shape
         popularity[(res_x, res_y)] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9
     _width, _height = max(res for res, value in popularity.items() if value >= threshold)
-
-    if width is None and height is None:
-        return _width, _height
-
     aspect = _width / _height
+
     if width is None:
+        if height is None:
+            return _width, _height
         return int(height * aspect), height
     return width, int(width / aspect)
 
@@ -64,11 +63,12 @@ def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
 
 def array_rescale(array: ArrayLike, target_width: int, target_height: int) -> np.ndarray:
     """Rescale the array with the correct filtering."""
-    input_height, input_width = np.shape(array)
+    array = np.asarray(array)
+    input_height, input_width = array.shape
 
     # No rescaling required
     if target_height == input_height and target_width == input_width:
-        return array
+        return np.asarray(array)
 
     # Upscale without blurring
     if target_height > input_height or target_width > input_width:
@@ -199,7 +199,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayL
 
 
 def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
-                       scale_width: float, scale_height: float) -> np.ndarray:
+                       scale_width: int, scale_height: int) -> np.ndarray:
     """Combine arrays based on their positions and offsets."""
     if not positional_arrays:
         return np.zeros((scale_height, scale_width), dtype=np.int8)

@@ -34,7 +34,7 @@ class Interfaces:
         cls._FROM_NAME[name] = interface
         if mac is not None:
             cls._FROM_MAC[mac] = interface
-        return Interface
+        return interface
 
     @classmethod
     def get_from_name(cls, name: str) -> Interface:

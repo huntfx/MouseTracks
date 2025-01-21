@@ -30,16 +30,14 @@ class ResizableImage(QtWidgets.QLabel):
         """Get the size of the image."""
         return self._pixmap.size()
 
-    def setImage(self, image: QtGui.QImage) -> None:
-        """Set a new image."""
-        self._image = QtGui.QImage(image)
-        self._pixmap.convertFromImage(image)
-        super().setPixmap(self._scaledPixmap())
-
-    def setPixmap(self, pixmap: QtGui.QPixmap) -> None:
-        """Set a new pixmap."""
-        self._pixmap = pixmap
-        self._image: QtGui.QImage = pixmap.toImage()
+    def setPixmap(self, pixmap: QtGui.QPixmap | QtGui.QImage) -> None:
+        """Set a new pixmap or image."""
+        if isinstance(pixmap, QtGui.QPixmap):
+            self._pixmap = pixmap
+            self._image = pixmap.toImage()
+        else:
+            self._image = pixmap
+            self._pixmap.convertFromImage(pixmap)
         super().setPixmap(self._scaledPixmap())
 
     def _scaledPixmap(self, aspectRatio=QtCore.Qt.AspectRatioMode.KeepAspectRatio):

@@ -7,8 +7,7 @@ import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator, Self
-from typing import Callable, TypeVar, Generic
+from typing import Any, Iterator, Self
 from uuid import uuid4
 
 import numpy as np
@@ -16,8 +15,6 @@ import numpy as np
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
 from .utils.win import MOUSE_BUTTONS
 
-
-T = TypeVar('T')
 
 ALLOW_LEGACY_IMPORT = True
 """Legacy imports require unpickling data, so is unsafe.
@@ -48,30 +45,6 @@ match sys.platform:
 BASE_DIR = APPDATA / 'MouseTracks'
 
 PROFILE_DIR = BASE_DIR / 'Profiles'
-
-
-class DefaultList(list[T], Generic[T]):
-    """Implementation of a default list."""
-
-    def __init__(self, default_factory: Callable[[], T], *args):
-        self.default_factory = default_factory
-        super().__init__(*args)
-
-    def __getitem__(self, index: int) -> T:
-        try:
-            return super().__getitem__(index)
-        except IndexError:
-            while len(self) <= index:
-                self.append(self.default_factory())
-            return super().__getitem__(index)
-
-    def __setitem__(self, index: int, value: T) -> None:
-        try:
-            super().__setitem__(index, value)
-        except IndexError:
-            while len(self) <= index:
-                self.append(self.default_factory())
-            super().__setitem__(index, value)
 
 
 class UnsupportedVersionError(Exception):
@@ -172,9 +145,9 @@ class TrackingIntArray(TrackingArray):
     an array in-place isn't supported.
     """
 
-    DTYPES = [np.uint8, np.uint16, np.uint32, np.uint64]
+    DTYPES: list[type[np.unsignedinteger]] = [np.uint8, np.uint16, np.uint32, np.uint64]
 
-    MAX_VALUES = [np.iinfo(dtype).max for dtype in DTYPES]
+    MAX_VALUES: list[int] = [np.iinfo(dtype).max for dtype in DTYPES]
 
     def __init__(self, shape: int | list[int] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
@@ -197,11 +170,11 @@ class TrackingIntArray(TrackingArray):
 
         super().__init__(shape, dtype, auto_pad=auto_pad)
 
-    def __getitem__(self, item: any) -> int:
+    def __getitem__(self, item: Any) -> int:
         """Get an array item."""
         return int(super().__getitem__(item))
 
-    def __setitem__(self, item: int | tuple[int], value: int) -> None:
+    def __setitem__(self, item: int | tuple[int, ...], value: int) -> None:
         """Set an array item, changing dtype if required."""
         if value >= self.max_value:
             for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
@@ -548,7 +521,7 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
 
     # Load in the data
     with zf.open('data.pkl') as f:
-        data: dict[str, any] = pickle.load(f)
+        data: dict[str, Any] = pickle.load(f)
 
     # Load in the metadata
     profile.created = int(data['Time']['Created'])
@@ -558,8 +531,9 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
     # Calculate the active / inactive time
     # This was not recorded properly in the legacy code, so a very
     # rough formula is used to estimate based on the data available
-    profile.tick.active = int(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
-    profile.tick.inactive = data['Ticks']['Total'] - profile.tick.active
+    profile.elapsed = data['Ticks']['Total']
+    profile.active = int(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+    profile.inactive = data['Ticks']['Total'] - profile.active
 
     # Process main tracking data
     for resolution, values in data['Resolution'].items():
@@ -590,14 +564,14 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
         profile.button_held[0][opcode] = count
 
 
-def _get_profile_version(zf: zipfile.ZipFile) -> bool | None:
+def _get_profile_version(zf: zipfile.ZipFile) -> int | None:
     try:
         return int(zf.read('version'))
     except KeyError:
         return None
 
 
-def _get_profile_legacy_version(zf: zipfile.ZipFile) -> bool | None:
+def _get_profile_legacy_version(zf: zipfile.ZipFile) -> int | None:
     try:
         return int(zf.read('metadata/file.txt'))
     except KeyError:
