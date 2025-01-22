@@ -18,8 +18,9 @@ from ...ui.main import Ui_MainWindow
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
 from ...file import get_profile_names
+from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations, SCROLL_EVENTS, MOUSE_OPCODES
+from ...utils.win import cursor_position, monitor_locations
 from ...ui.widgets import Pixel
 
 
@@ -678,13 +679,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_track_data(data, remapped)
 
             case ipc.KeyPress() if self.is_live:
-                if message.opcode in MOUSE_OPCODES:
+                if message.keycode in keycodes.MOUSE_CODES:
                     self.mouse_click_count += 1
+
+                # If L/R CONTROL, then it also triggers CONTROL
+                elif message.keycode in (keycodes.VK_LCONTROL, keycodes.VK_RCONTROL):
+                    pass
+
+                # If L MENU, then it also triggers MENU
+                elif message.keycode == keycodes.VK_LMENU:
+                    pass
+
+                # If R MENU, then it triggers MENU, L CONTROL and CONTROL
+                elif message.keycode == keycodes.VK_RMENU:
+                    self.key_press_count -= 1
+
                 else:
                     self.key_press_count += 1
 
             case ipc.KeyHeld() if self.is_live:
-                if message.opcode in SCROLL_EVENTS:
+                if message.keycode in keycodes.SCROLL_CODES:
                     self.mouse_scroll_count += 1
 
             case ipc.ButtonPress() if self.is_live:

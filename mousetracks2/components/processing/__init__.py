@@ -12,9 +12,10 @@ from .. import ipc
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
+from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
-from ...utils.win import cursor_position, monitor_locations, MOUSE_BUTTONS, MOUSE_OPCODES, KEYBOARD_OPCODES, SCROLL_EVENTS
+from ...utils.win import cursor_position, monitor_locations
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
 from ...render import render, EmptyRenderError
 
@@ -108,8 +109,24 @@ class Processing:
 
         # Count scrolls
         scrolls = 0
-        for opcode in SCROLL_EVENTS:
-            scrolls += profile.key_held[opcode]
+        for keycode in keycodes.SCROLL_CODES:
+            scrolls += profile.key_held[keycode]
+
+        # Count keypresses
+        keys = 0
+        for keycode in keycodes.KEYBOARD_CODES:
+            keys += profile.key_presses[keycode]
+
+            # CONTROL is triggered with L CONTROL, R CONTROL and R MENU
+            if keycode == keycodes.VK_CONTROL:
+                keys -= profile.key_presses[keycodes.VK_LCONTROL]
+                keys -= profile.key_presses[keycodes.VK_RCONTROL]
+                keys -= profile.key_presses[keycodes.VK_RMENU]
+
+            # MENU is triggered with L MENU and R MENU
+            elif keycode == keycodes.VK_MENU:
+                keys -= profile.key_presses[keycodes.VK_LMENU]
+                keys -= profile.key_presses[keycodes.VK_RMENU]
 
         # Send data back to the GUI
         self.q_send.put(ipc.ProfileLoaded(
@@ -120,7 +137,7 @@ class Processing:
             thumb_r_counter=profile.thumbstick_r_map[0].counter if profile.thumbstick_r_map else 0,
             clicks=clicks,
             scrolls=scrolls,
-            keys_pressed=sum(profile.key_presses[opcode] for opcode in KEYBOARD_OPCODES),
+            keys_pressed=keys,
             buttons_pressed=sum(np.sum(array) for array in profile.button_presses.values()),
             elapsed_ticks=profile.elapsed,
             active_ticks=profile.active,
@@ -296,8 +313,8 @@ class Processing:
 
         # Recreate the legacy data
         data: dict[str, Any] = {
-            'Keys': {'All': {'Pressed': {i: profile.key_presses[i] for i in KEYBOARD_OPCODES},
-                             'Held': {i: profile.key_held[i] for i in KEYBOARD_OPCODES}}},
+            'Keys': {'All': {'Pressed': {i: profile.key_presses[i] for i in keycodes.KEYBOARD_CODES},
+                             'Held': {i: profile.key_held[i] for i in keycodes.KEYBOARD_CODES}}},
             'Ticks': {'Total': profile.active}
         }
 
@@ -418,10 +435,10 @@ class Processing:
 
                 if double_click:
                     arrays = self.profile.mouse_double_clicks[message.button]
-                    print(f'[Processing] Mouse button {message.button} double clicked.')
+                    print(f'[Processing] {keycodes.KeyCode(message.button)} double clicked.')
                 else:
                     arrays = self.profile.mouse_single_clicks[message.button]
-                    print(f'[Processing] Mouse button {message.button} clicked.')
+                    print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
 
                 result = self._monitor_offset(message.position)
                 if result is not None:
@@ -432,30 +449,30 @@ class Processing:
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
             case ipc.KeyPress():
-                if message.opcode not in MOUSE_BUTTONS:
-                    print(f'[Processing] Key {message.opcode} pressed.')
-                self.profile.key_presses[message.opcode] += 1
-                self.profile.key_held[message.opcode] += 1
+                if message.keycode not in keycodes.CLICK_CODES:
+                    print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
+                self.profile.key_presses[message.keycode] += 1
+                self.profile.key_held[message.keycode] += 1
 
-                if message.opcode in MOUSE_OPCODES:
+                if message.keycode in keycodes.MOUSE_CODES:
                     self.profile.daily_clicks[self.profile_age_days] += 1
                 else:
                     self.profile.daily_keys[self.profile_age_days] += 1
 
             case ipc.KeyHeld():
-                if message.opcode in SCROLL_EVENTS:
-                    print(f'[Processing] Scroll {message.opcode} triggered.')
+                if message.keycode in keycodes.SCROLL_CODES:
+                    print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
                     self.profile.daily_scrolls[self.profile_age_days] += 1
-                self.profile.key_held[message.opcode] += 1
+                self.profile.key_held[message.keycode] += 1
 
             case ipc.ButtonPress():
-                print(f'[Processing] Key {message.opcode} pressed.')
-                self.profile.button_presses[message.gamepad][int(math.log2(message.opcode))] += 1
-                self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
+                print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
+                self.profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
+                self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.daily_buttons[self.profile_age_days] += 1
 
             case ipc.ButtonHeld():
-                self.profile.button_held[message.gamepad][int(math.log2(message.opcode))] += 1
+                self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')

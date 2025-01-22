@@ -12,9 +12,9 @@ import XInput  # type: ignore
 from . import utils
 from .. import ipc
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ...utils.keycodes import CLICK_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT
 from ...utils.network import Interfaces
-from ...utils.win import cursor_position, monitor_locations, check_key_press, MOUSE_BUTTONS, SCROLL_EVENTS
-from ...utils.win import SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT
+from ...utils.win import cursor_position, monitor_locations, check_key_press
 
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
@@ -181,48 +181,48 @@ class Tracking:
         """
         if dx > 0:
             for _ in range(dx):
-                self._key_press(SCROLL_WHEEL_RIGHT)
+                self._key_press(VK_SCROLL_RIGHT)
         elif dx < 0:
             for _ in range(-dx):
-                self._key_press(SCROLL_WHEEL_LEFT)
+                self._key_press(VK_SCROLL_LEFT)
         if dy > 0:
             for _ in range(dy):
-                self._key_press(SCROLL_WHEEL_UP)
+                self._key_press(VK_SCROLL_UP)
         elif dy < 0:
             for _ in range(-dy):
-                self._key_press(SCROLL_WHEEL_DOWN)
+                self._key_press(VK_SCROLL_DOWN)
 
-    def _key_press(self, opcode: int) -> None:
+    def _key_press(self, keycode: int) -> None:
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
 
-        press_start, press_latest = self.data.key_presses.get(opcode, (self.data.tick_current, 0))
+        press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
 
         # Handle all standard keypresses
-        if opcode <= 0xFF:
+        if keycode <= 0xFF:
             # First press
             if press_latest != self.data.tick_current - 1:
-                if opcode in MOUSE_BUTTONS and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseClick(opcode, self.data.mouse_position))
-                self.send_data(ipc.KeyPress(opcode))
+                if keycode in CLICK_CODES and self.data.mouse_position is not None:
+                    self.send_data(ipc.MouseClick(keycode, self.data.mouse_position))
+                self.send_data(ipc.KeyPress(keycode))
 
             # Being held
             else:
-                if opcode in MOUSE_BUTTONS and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseHeld(opcode, self.data.mouse_position))
-                self.send_data(ipc.KeyHeld(opcode))
+                if keycode in CLICK_CODES and self.data.mouse_position is not None:
+                    self.send_data(ipc.MouseHeld(keycode, self.data.mouse_position))
+                self.send_data(ipc.KeyHeld(keycode))
 
         # Special case for scroll events
         # It is being sent to the "held" array instead of "pressed"
         # since the events will vastly outnumber individual key presses
         # Also note that multiple events may be sent per tick
-        elif opcode in SCROLL_EVENTS:
-            self.send_data(ipc.KeyHeld(opcode))
+        elif keycode in SCROLL_CODES:
+            self.send_data(ipc.KeyHeld(keycode))
 
         else:
-            raise RuntimeError(f'unexpected opcode: {opcode}')
+            raise RuntimeError(f'unexpected keycode: {keycode}')
 
-        self.data.key_presses[opcode] = (press_start, self.data.tick_current)
+        self.data.key_presses[keycode] = (press_start, self.data.tick_current)
 
     def _run(self):
         print('[Tracking] Loaded.')
@@ -255,8 +255,8 @@ class Tracking:
                 self.send_data(ipc.MouseMove(mouse_position))
 
             # Record key presses / mouse clicks
-            for opcode in filter(check_key_press, range(0x01, 0xFF)):
-                self._key_press(opcode)
+            for keycode in filter(check_key_press, range(0x01, 0xFF)):
+                self._key_press(keycode)
 
             # Determine which gamepads are connected
             if not tick % 60 or data.gamepad_force_recheck:
@@ -291,15 +291,15 @@ class Tracking:
                     self.data.tick_modified = self.data.tick_current
                     if button not in XINPUT_OPCODES:
                         button = f'BUTTON_{button}'
-                    opcode = XINPUT_OPCODES[button]
+                    keycode = XINPUT_OPCODES[button]
 
-                    press_start, press_latest = data.button_presses.get(opcode, (0, 0))
+                    press_start, press_latest = data.button_presses.get(keycode, (0, 0))
                     if press_latest != tick - 1:
-                        self.send_data(ipc.ButtonPress(gamepad, opcode))
-                        data.button_presses[opcode] = (tick, tick)
+                        self.send_data(ipc.ButtonPress(gamepad, keycode))
+                        data.button_presses[keycode] = (tick, tick)
                     else:
-                        self.send_data(ipc.ButtonHeld(gamepad, opcode))
-                        data.button_presses[opcode] = (press_start, tick)
+                        self.send_data(ipc.ButtonHeld(gamepad, keycode))
+                        data.button_presses[keycode] = (press_start, tick)
 
                 if stick_l != data.gamepad_stick_l_position.get(gamepad):
                     self.data.tick_modified = self.data.tick_current

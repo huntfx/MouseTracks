@@ -15,23 +15,6 @@ import win32gui
 import win32process
 
 
-MOUSE_BUTTONS = (win32con.VK_LBUTTON, win32con.VK_MBUTTON, win32con.VK_RBUTTON)
-
-MOUSE_OPCODES = MOUSE_BUTTONS + (win32con.VK_XBUTTON1, win32con.VK_XBUTTON2)
-
-SCROLL_WHEEL_UP = 0xFF + 1
-
-SCROLL_WHEEL_DOWN = 0xFF + 2
-
-SCROLL_WHEEL_LEFT = 0xFF + 3
-
-SCROLL_WHEEL_RIGHT = 0xFF + 4
-
-SCROLL_EVENTS = (SCROLL_WHEEL_UP, SCROLL_WHEEL_DOWN, SCROLL_WHEEL_LEFT, SCROLL_WHEEL_RIGHT)
-
-KEYBOARD_OPCODES = [i for i in range(0xFF) if i not in MOUSE_OPCODES]
-
-
 def cursor_position() -> tuple[int, int] | None:
     """Get the current mouse position.
 

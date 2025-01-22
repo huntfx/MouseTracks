@@ -84,7 +84,7 @@ class KeyPress(Message):
     """Key has been pressed."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
-    opcode: int
+    keycode: int
 
 
 @dataclass
@@ -94,7 +94,7 @@ class KeyHeld(Message):
     """
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
-    opcode: int
+    keycode: int
 
 
 @dataclass
@@ -103,7 +103,7 @@ class ButtonPress(Message):
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     gamepad: int
-    opcode: int
+    keycode: int
 
 
 @dataclass
@@ -112,7 +112,7 @@ class ButtonHeld(Message):
 
     target: int = field(default=Target.Processing, init=False)
     gamepad: int
-    opcode: int
+    keycode: int
 
 
 @dataclass

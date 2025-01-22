@@ -13,7 +13,7 @@ from uuid import uuid4
 import numpy as np
 
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
-from .utils.win import MOUSE_BUTTONS
+from .utils.keycodes import CLICK_CODES
 
 
 ALLOW_LEGACY_IMPORT = True
@@ -550,18 +550,18 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
                 with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
                     array = np.load(f)
                     if np.any(array > 0):
-                        container[MOUSE_BUTTONS[i]][resolution] = TrackingIntArray(array)
+                        container[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
 
     # Process key/button data
-    for opcode, count in data['Keys']['All']['Pressed'].items():
-        profile.key_presses[opcode] = count
-    for opcode, count in data['Keys']['All']['Held'].items():
-        profile.key_held[opcode] = count
+    for keycode, count in data['Keys']['All']['Pressed'].items():
+        profile.key_presses[keycode] = count
+    for keycode, count in data['Keys']['All']['Held'].items():
+        profile.key_held[keycode] = count
 
-    for opcode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
-        profile.button_presses[0][opcode] = count
-    for opcode, count in data['Gamepad']['All']['Buttons']['Held'].items():
-        profile.button_held[0][opcode] = count
+    for keycode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
+        profile.button_presses[0][keycode] = count
+    for keycode, count in data['Gamepad']['All']['Buttons']['Held'].items():
+        profile.button_held[0][keycode] = count
 
 
 def _get_profile_version(zf: zipfile.ZipFile) -> int | None:
