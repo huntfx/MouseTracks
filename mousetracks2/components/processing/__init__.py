@@ -130,7 +130,7 @@ class Processing:
 
         # Send data back to the GUI
         self.q_send.put(ipc.ProfileLoaded(
-            application=profile.name,
+            profile_name=profile.name,
             distance=profile.cursor_map.distance,
             cursor_counter=profile.cursor_map.counter,
             thumb_l_counter=profile.thumbstick_l_map[0].counter if profile.thumbstick_l_map else 0,
@@ -533,10 +533,54 @@ class Processing:
                 if message.mac_address not in self.profile.data_interfaces:
                     self.profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
 
-            case ipc.ProfileDataRequest(application=name):
+            case ipc.ProfileDataRequest(profile_name=name):
                 if name is None:
                     name = DEFAULT_PROFILE_NAME
                 self.send_profile_data(name)
+
+            case ipc.DeleteMouseData():
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.cursor_map = type(profile.cursor_map)()
+                profile.mouse_single_clicks.clear()
+                profile.mouse_double_clicks.clear()
+                profile.mouse_held_clicks.clear()
+                profile.daily_distance = profile.daily_distance.as_zero()
+                profile.daily_clicks = profile.daily_clicks.as_zero()
+                profile.daily_scrolls = profile.daily_scrolls.as_zero()
+                for code in keycodes.MOUSE_CODES + keycodes.SCROLL_CODES:
+                    profile.key_presses[code] = 0
+                    profile.key_held[code] = 0
+                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
+
+            case ipc.DeleteKeyboardData():
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.daily_keys = profile.daily_keys.as_zero()
+                for code in keycodes.KEYBOARD_CODES:
+                    profile.key_presses[code] = 0
+                    profile.key_held[code] = 0
+                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
+
+            case ipc.DeleteGamepadData():
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.thumbstick_l_map.clear()
+                profile.thumbstick_r_map.clear()
+                profile.button_presses.clear()
+                profile.button_held.clear()
+                profile.daily_buttons = profile.daily_buttons.as_zero()
+                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
+
+            case ipc.DeleteNetworkData():
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.data_interfaces.clear()
+                profile.data_upload.clear()
+                profile.data_download.clear()
+                profile.daily_upload = profile.daily_upload.as_zero()
+                profile.daily_download = profile.daily_download.as_zero()
+                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
 
             case _:
                 raise NotImplementedError(message)

@@ -74,6 +74,10 @@ class TrackingArray:
         else:
             self.auto_pad = auto_pad
 
+    def as_zero(self) -> Self:
+        """Return a copy of the same array with all values as 0."""
+        return type(self)(self.array.shape, self.array.dtype, self.auto_pad)
+
     def __array__(self) -> np.ndarray:
         """For internal numpy usage."""
         return self.array
@@ -169,6 +173,10 @@ class TrackingIntArray(TrackingArray):
         self.max_value = np.iinfo(dtype).max
 
         super().__init__(shape, dtype, auto_pad=auto_pad)
+
+    def as_zero(self) -> Self:
+        """Return a copy of the same array with all values as 0."""
+        return type(self)(self.array.shape, self.auto_pad)
 
     def __getitem__(self, item: Any) -> int:
         """Get an array item."""

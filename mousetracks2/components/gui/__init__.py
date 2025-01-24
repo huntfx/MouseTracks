@@ -7,6 +7,7 @@ import time
 import traceback
 from contextlib import suppress
 from dataclasses import dataclass, field
+from typing import Any
 
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -95,6 +96,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.redraw_queue: list[Pixel] = []
         self.shutting_down = False
         self._last_save_time = self._last_thumbnail_time = time.time()
+        self._delete_mouse_pressed = False
+        self._delete_keyboard_pressed = False
+        self._delete_gamepad_pressed = False
+        self._delete_network_pressed = False
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -167,10 +172,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
         self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
+        self.ui.current_profile.currentIndexChanged.connect(self.profile_changed_user)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
+        self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
+        self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
+        self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
+        self.ui.track_network.stateChanged.connect(self.handle_delete_button_visibility)
+        self.ui.delete_mouse.clicked.connect(self.delete_mouse)
+        self.ui.delete_keyboard.clicked.connect(self.delete_keyboard)
+        self.ui.delete_gamepad.clicked.connect(self.delete_gamepad)
+        self.ui.delete_network.clicked.connect(self.delete_network)
         self.ui.file_save.triggered.connect(self.manual_save)
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
@@ -195,6 +209,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Start the thread
         self.queue_thread.start()
         self.timer_activity.start(100)
+
+        # Trigger initial signals
+        self.profile_changed(0)
 
         self.start_tracking()
 
@@ -450,11 +467,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
+        """Change the profile."""
+        self.ui.tab_options.setTabText(1, f'{self.ui.current_profile.itemData(idx)} Options')
+
+    @QtCore.Slot(int)
+    def profile_changed_user(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
         if self._redrawing_profiles:
             return
 
-        self.q_send.put(ipc.ProfileDataRequest(self.ui.current_profile.currentData()))
+        self.q_send.put(ipc.ProfileDataRequest(self.ui.current_profile.itemData(idx)))
         self.request_thumbnail(force=True)
         if idx:
             self.ui.auto_switch_profile.setChecked(False)
@@ -725,6 +747,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
 
+                if message.profile_name == self.ui.current_profile.currentData():
+                    self.request_thumbnail(force=True)
+
+                self._delete_mouse_pressed = False
+                self._delete_keyboard_pressed = False
+                self._delete_gamepad_pressed = False
+                self._delete_network_pressed = False
+                self.handle_delete_button_visibility()
+
             case ipc.DataTransfer() if self.is_live:
                 self.bytes_sent += message.bytes_sent
                 self.bytes_recv += message.bytes_recv
@@ -956,6 +987,106 @@ class MainWindow(QtWidgets.QMainWindow):
         """Set a new thumbnail size after the window has finished resizing."""
         self.ui.thumbnail.freezeScale()
         self.request_thumbnail()
+
+    def delete_mouse(self) -> None:
+        """Request deletion of mouse data for the current profile."""
+        profile = self.ui.current_profile.currentData()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg.setWindowTitle('Delete Keyboard Data')
+        msg.setText(f'Are you sure you want to delete all mouse data for {profile}?\n'
+                    'This involves the movement, click and scroll data.\n'
+                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            self._delete_mouse_pressed = True
+            self.handle_delete_button_visibility()
+            self.q_send.put(ipc.DeleteMouseData(profile))
+            self._unsaved_profiles.add(profile)
+            self._redraw_profile_combobox()
+
+    def delete_keyboard(self) -> None:
+        """Request deletion of keyboard data for the current profile."""
+        profile = self.ui.current_profile.currentData()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg.setWindowTitle('Delete Keyboard Data')
+        msg.setText(f'Are you sure you want to delete all keyboard data for {profile}?\n'
+                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            self._delete_keyboard_pressed = True
+            self.handle_delete_button_visibility()
+            self.q_send.put(ipc.DeleteKeyboardData(profile))
+            self._unsaved_profiles.add(profile)
+            self._redraw_profile_combobox()
+
+    def delete_gamepad(self) -> None:
+        """Request deletion of gamepad data for the current profile."""
+        profile = self.ui.current_profile.currentData()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg.setWindowTitle('Delete Keyboard Data')
+        msg.setText(f'Are you sure you want to delete all gamepad data for {profile}?\n'
+                    'This involves both the buttons and the thumbstick maps.\n'
+                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            self._delete_gamepad_pressed = True
+            self.handle_delete_button_visibility()
+            self.q_send.put(ipc.DeleteGamepadData(profile))
+            self._unsaved_profiles.add(profile)
+            self._redraw_profile_combobox()
+
+    def delete_network(self) -> None:
+        """Request deletion of network data for the current profile."""
+        profile = self.ui.current_profile.currentData()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg.setWindowTitle('Delete Network Data')
+        msg.setText(f'Are you sure you want to delete all upload and download data for {profile}?\n'
+                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            self._delete_network_pressed = True
+            self.handle_delete_button_visibility()
+            self.q_send.put(ipc.DeleteNetworkData(profile))
+            self._unsaved_profiles.add(profile)
+            self._redraw_profile_combobox()
+
+    def handle_delete_button_visibility(self, _: Any = None) -> None:
+        """Toggle the delete button visibility.
+
+        They are only enabled when tracking is disabled, and when
+        processing is not waiting to delete. Deleting a profile is only
+        allowed once all tracking is disabled as a safety measure.
+        """
+        delete_mouse = not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
+        delete_keyboard = not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
+        delete_gamepad = not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
+        delete_network = not self.ui.track_network.isChecked() and not self._delete_network_pressed
+
+        self.ui.delete_mouse.setEnabled(delete_mouse)
+        self.ui.delete_keyboard.setEnabled(delete_keyboard)
+        self.ui.delete_gamepad.setEnabled(delete_gamepad)
+        self.ui.delete_network.setEnabled(delete_network)
+        self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:

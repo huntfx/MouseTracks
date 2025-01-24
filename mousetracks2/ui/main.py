@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainUzuWKR.ui'
+## Form generated from reading UI file 'main.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.8.0
 ##
@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(736, 468)
+        MainWindow.resize(919, 680)
         self.actionShow_Log = QAction(MainWindow)
         self.actionShow_Log.setObjectName(u"actionShow_Log")
         self.actionShow_Log.setCheckable(True)
@@ -101,6 +101,23 @@ class Ui_MainWindow(object):
         self.tray_show.setObjectName(u"tray_show")
         self.tray_hide = QAction(MainWindow)
         self.tray_hide.setObjectName(u"tray_hide")
+        self.actionTrack_Cursor_Movement = QAction(MainWindow)
+        self.actionTrack_Cursor_Movement.setObjectName(u"actionTrack_Cursor_Movement")
+        self.actionTrack_Cursor_Movement.setCheckable(True)
+        self.actionTrack_Mouse_Clicks = QAction(MainWindow)
+        self.actionTrack_Mouse_Clicks.setObjectName(u"actionTrack_Mouse_Clicks")
+        self.prefs_track_keyboard = QAction(MainWindow)
+        self.prefs_track_keyboard.setObjectName(u"prefs_track_keyboard")
+        self.prefs_track_keyboard.setCheckable(True)
+        self.prefs_track_keyboard.setChecked(True)
+        self.prefs_track_gamepad = QAction(MainWindow)
+        self.prefs_track_gamepad.setObjectName(u"prefs_track_gamepad")
+        self.prefs_track_gamepad.setCheckable(True)
+        self.prefs_track_gamepad.setChecked(True)
+        self.prefs_track_mouse = QAction(MainWindow)
+        self.prefs_track_mouse.setObjectName(u"prefs_track_mouse")
+        self.prefs_track_mouse.setCheckable(True)
+        self.prefs_track_mouse.setChecked(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_6 = QVBoxLayout(self.centralwidget)
@@ -141,14 +158,14 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.save_render)
 
         self.splitter.addWidget(self.widget)
-        self.tabWidget = QTabWidget(self.splitter)
-        self.tabWidget.setObjectName(u"tabWidget")
+        self.tab_options = QTabWidget(self.splitter)
+        self.tab_options.setObjectName(u"tab_options")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
-        self.tabWidget.setSizePolicy(sizePolicy3)
-        self.tabWidget.setMinimumSize(QSize(300, 0))
+        sizePolicy3.setHeightForWidth(self.tab_options.sizePolicy().hasHeightForWidth())
+        self.tab_options.setSizePolicy(sizePolicy3)
+        self.tab_options.setMinimumSize(QSize(300, 0))
         self.tab = QWidget()
         self.tab.setObjectName(u"tab")
         self.verticalLayout_2 = QVBoxLayout(self.tab)
@@ -352,7 +369,119 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_5)
 
-        self.tabWidget.addTab(self.tab, "")
+        self.tab_options.addTab(self.tab, "")
+        self.tab_profile_options = QWidget()
+        self.tab_profile_options.setObjectName(u"tab_profile_options")
+        self.verticalLayout_15 = QVBoxLayout(self.tab_profile_options)
+        self.verticalLayout_15.setObjectName(u"verticalLayout_15")
+        self.scrollArea_2 = QScrollArea(self.tab_profile_options)
+        self.scrollArea_2.setObjectName(u"scrollArea_2")
+        self.scrollArea_2.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_2 = QWidget()
+        self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 356))
+        self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
+        self.verticalLayout_13.setObjectName(u"verticalLayout_13")
+        self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.groupBox_7.setObjectName(u"groupBox_7")
+        self.gridLayout = QGridLayout(self.groupBox_7)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.horizontalLayout_6 = QHBoxLayout()
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.label_14 = QLabel(self.groupBox_7)
+        self.label_14.setObjectName(u"label_14")
+        self.label_14.setEnabled(False)
+
+        self.horizontalLayout_6.addWidget(self.label_14)
+
+        self.pushButton_4 = QPushButton(self.groupBox_7)
+        self.pushButton_4.setObjectName(u"pushButton_4")
+        self.pushButton_4.setEnabled(False)
+
+        self.horizontalLayout_6.addWidget(self.pushButton_4)
+
+
+        self.gridLayout.addLayout(self.horizontalLayout_6, 1, 1, 1, 1)
+
+        self.label_13 = QLabel(self.groupBox_7)
+        self.label_13.setObjectName(u"label_13")
+        self.label_13.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout.addWidget(self.label_13, 1, 0, 1, 1)
+
+
+        self.verticalLayout_13.addWidget(self.groupBox_7)
+
+        self.groupBox_6 = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.groupBox_6.setObjectName(u"groupBox_6")
+        self.verticalLayout_11 = QVBoxLayout(self.groupBox_6)
+        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
+        self.gridLayout_2 = QGridLayout()
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.track_mouse = QCheckBox(self.groupBox_6)
+        self.track_mouse.setObjectName(u"track_mouse")
+        self.track_mouse.setChecked(True)
+
+        self.gridLayout_2.addWidget(self.track_mouse, 0, 0, 1, 1)
+
+        self.delete_mouse = QPushButton(self.groupBox_6)
+        self.delete_mouse.setObjectName(u"delete_mouse")
+
+        self.gridLayout_2.addWidget(self.delete_mouse, 0, 1, 1, 1)
+
+        self.track_keyboard = QCheckBox(self.groupBox_6)
+        self.track_keyboard.setObjectName(u"track_keyboard")
+        self.track_keyboard.setChecked(True)
+
+        self.gridLayout_2.addWidget(self.track_keyboard, 1, 0, 1, 1)
+
+        self.delete_keyboard = QPushButton(self.groupBox_6)
+        self.delete_keyboard.setObjectName(u"delete_keyboard")
+
+        self.gridLayout_2.addWidget(self.delete_keyboard, 1, 1, 1, 1)
+
+        self.track_gamepad = QCheckBox(self.groupBox_6)
+        self.track_gamepad.setObjectName(u"track_gamepad")
+        self.track_gamepad.setChecked(True)
+
+        self.gridLayout_2.addWidget(self.track_gamepad, 2, 0, 1, 1)
+
+        self.delete_gamepad = QPushButton(self.groupBox_6)
+        self.delete_gamepad.setObjectName(u"delete_gamepad")
+
+        self.gridLayout_2.addWidget(self.delete_gamepad, 2, 1, 1, 1)
+
+        self.track_network = QCheckBox(self.groupBox_6)
+        self.track_network.setObjectName(u"track_network")
+        self.track_network.setChecked(True)
+
+        self.gridLayout_2.addWidget(self.track_network, 3, 0, 1, 1)
+
+        self.delete_network = QPushButton(self.groupBox_6)
+        self.delete_network.setObjectName(u"delete_network")
+
+        self.gridLayout_2.addWidget(self.delete_network, 3, 1, 1, 1)
+
+
+        self.verticalLayout_11.addLayout(self.gridLayout_2)
+
+        self.delete_profile = QPushButton(self.groupBox_6)
+        self.delete_profile.setObjectName(u"delete_profile")
+
+        self.verticalLayout_11.addWidget(self.delete_profile)
+
+
+        self.verticalLayout_13.addWidget(self.groupBox_6)
+
+        self.verticalSpacer_4 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_13.addItem(self.verticalSpacer_4)
+
+        self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_2)
+
+        self.verticalLayout_15.addWidget(self.scrollArea_2)
+
+        self.tab_options.addTab(self.tab_profile_options, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName(u"tab_3")
         self.verticalLayout_8 = QVBoxLayout(self.tab_3)
@@ -362,7 +491,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 261, 235))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 274, 356))
         self.verticalLayout_7 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_7.setObjectName(u"verticalLayout_7")
         self.custom_resolution = QGroupBox(self.scrollAreaWidgetContents_4)
@@ -459,7 +588,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_8.addWidget(self.scrollArea_4)
 
-        self.tabWidget.addTab(self.tab_3, "")
+        self.tab_options.addTab(self.tab_3, "")
         self.tab_4 = QWidget()
         self.tab_4.setObjectName(u"tab_4")
         self.verticalLayout_10 = QVBoxLayout(self.tab_4)
@@ -469,7 +598,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -84, 257, 494))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 257, 494))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -653,8 +782,8 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_10.addWidget(self.scrollArea_3)
 
-        self.tabWidget.addTab(self.tab_4, "")
-        self.splitter.addWidget(self.tabWidget)
+        self.tab_options.addTab(self.tab_4, "")
+        self.splitter.addWidget(self.tab_options)
         self.splitter_2.addWidget(self.splitter)
         self.output_logs = QTabWidget(self.splitter_2)
         self.output_logs.setObjectName(u"output_logs")
@@ -699,7 +828,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 736, 22))
+        self.menubar.setGeometry(QRect(0, 0, 919, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -739,6 +868,10 @@ class Ui_MainWindow(object):
         self.menuHelp.addAction(self.actionWebsite)
         self.menuHelp.addAction(self.actionReddit)
         self.menuHelp.addAction(self.actionFacebook)
+        self.menuPreferences.addAction(self.prefs_track_mouse)
+        self.menuPreferences.addAction(self.prefs_track_keyboard)
+        self.menuPreferences.addAction(self.prefs_track_gamepad)
+        self.menuPreferences.addSeparator()
         self.menuPreferences.addAction(self.menu_allow_minimise)
         self.menuPreferences.addAction(self.actionShow_Log)
         self.menu_debug.addAction(self.menu_debug_tracking.menuAction())
@@ -760,7 +893,7 @@ class Ui_MainWindow(object):
         self.render_samples.valueChanged.connect(self.label_2.setNum)
         self.save.clicked.connect(self.file_save.trigger)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tab_options.setCurrentIndex(0)
         self.output_logs.setCurrentIndex(1)
 
 
@@ -801,6 +934,11 @@ class Ui_MainWindow(object):
         self.tray_exit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.tray_show.setText(QCoreApplication.translate("MainWindow", u"Open", None))
         self.tray_hide.setText(QCoreApplication.translate("MainWindow", u"Minimise to Tray", None))
+        self.actionTrack_Cursor_Movement.setText(QCoreApplication.translate("MainWindow", u"Track Cursor Movement", None))
+        self.actionTrack_Mouse_Clicks.setText(QCoreApplication.translate("MainWindow", u"Track Mouse Clicks", None))
+        self.prefs_track_keyboard.setText(QCoreApplication.translate("MainWindow", u"Track Keyboard", None))
+        self.prefs_track_gamepad.setText(QCoreApplication.translate("MainWindow", u"Track Gamepad", None))
+        self.prefs_track_mouse.setText(QCoreApplication.translate("MainWindow", u"Track Mouse", None))
         self.thumbnail.setText(QCoreApplication.translate("MainWindow", u"<image>", None))
         self.save_render.setText(QCoreApplication.translate("MainWindow", u"Save Render", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Profile Selection", None))
@@ -838,13 +976,28 @@ class Ui_MainWindow(object):
         self.stat_elapsed.setText(QCoreApplication.translate("MainWindow", u"50.30 hours", None))
         self.tracking_start.setText(QCoreApplication.translate("MainWindow", u"Start / Unpause", None))
         self.tracking_pause.setText(QCoreApplication.translate("MainWindow", u"Pause", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Main", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Main", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Status", None))
+        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Yes", None))
+        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Modified:", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
+        self.track_mouse.setText(QCoreApplication.translate("MainWindow", u"Track Mouse", None))
+        self.delete_mouse.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
+        self.track_keyboard.setText(QCoreApplication.translate("MainWindow", u"Track Keyboard", None))
+        self.delete_keyboard.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
+        self.track_gamepad.setText(QCoreApplication.translate("MainWindow", u"Track Gamepads", None))
+        self.delete_gamepad.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
+        self.track_network.setText(QCoreApplication.translate("MainWindow", u"Track Network", None))
+        self.delete_network.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
+        self.delete_profile.setText(QCoreApplication.translate("MainWindow", u"Delete Profile", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab_profile_options), QCoreApplication.translate("MainWindow", u"Profile Options", None))
         self.custom_resolution.setTitle(QCoreApplication.translate("MainWindow", u"Custom Render Resolution", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Render Sampling", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"4", None))
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Advanced", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Advanced", None))
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Current Application", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"Tracked", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Window Name", None))
@@ -877,7 +1030,7 @@ class Ui_MainWindow(object):
         self.label_44.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
         self.stat_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.stat_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
 
         __sortingEnabled = self.listWidget_3.isSortingEnabled()
         self.listWidget_3.setSortingEnabled(False)

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>736</width>
-    <height>468</height>
+    <width>919</width>
+    <height>680</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -60,7 +60,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QTabWidget" name="tabWidget">
+       <widget class="QTabWidget" name="tab_options">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -399,6 +399,176 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab_profile_options">
+         <attribute name="title">
+          <string>Profile Options</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_15">
+          <item>
+           <widget class="QScrollArea" name="scrollArea_2">
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents_2">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>274</width>
+               <height>356</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_13">
+              <item>
+               <widget class="QGroupBox" name="groupBox_7">
+                <property name="title">
+                 <string>Status</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout">
+                 <item row="1" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <item>
+                    <widget class="QLabel" name="label_14">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>Yes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="pushButton_4">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>Save</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_13">
+                   <property name="text">
+                    <string>Modified:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_6">
+                <property name="title">
+                 <string>Data</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_11">
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_2">
+                   <item row="0" column="0">
+                    <widget class="QCheckBox" name="track_mouse">
+                     <property name="text">
+                      <string>Track Mouse</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QPushButton" name="delete_mouse">
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QCheckBox" name="track_keyboard">
+                     <property name="text">
+                      <string>Track Keyboard</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QPushButton" name="delete_keyboard">
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QCheckBox" name="track_gamepad">
+                     <property name="text">
+                      <string>Track Gamepads</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QPushButton" name="delete_gamepad">
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QCheckBox" name="track_network">
+                     <property name="text">
+                      <string>Track Network</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QPushButton" name="delete_network">
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="delete_profile">
+                   <property name="text">
+                    <string>Delete Profile</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
           <string>Advanced</string>
@@ -414,8 +584,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>235</height>
+               <width>274</width>
+               <height>356</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -592,7 +762,7 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-84</y>
+               <y>0</y>
                <width>257</width>
                <height>494</height>
               </rect>
@@ -1000,7 +1170,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>736</width>
+     <width>919</width>
      <height>22</height>
     </rect>
    </property>
@@ -1033,6 +1203,10 @@
     <property name="title">
      <string>Preferences</string>
     </property>
+    <addaction name="prefs_track_mouse"/>
+    <addaction name="prefs_track_keyboard"/>
+    <addaction name="prefs_track_gamepad"/>
+    <addaction name="separator"/>
     <addaction name="menu_allow_minimise"/>
     <addaction name="actionShow_Log"/>
    </widget>
@@ -1264,6 +1438,52 @@
     <string>Minimise to Tray</string>
    </property>
   </action>
+  <action name="actionTrack_Cursor_Movement">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Track Cursor Movement</string>
+   </property>
+  </action>
+  <action name="actionTrack_Mouse_Clicks">
+   <property name="text">
+    <string>Track Mouse Clicks</string>
+   </property>
+  </action>
+  <action name="prefs_track_keyboard">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Track Keyboard</string>
+   </property>
+  </action>
+  <action name="prefs_track_gamepad">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Track Gamepad</string>
+   </property>
+  </action>
+  <action name="prefs_track_mouse">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Track Mouse</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -1281,11 +1501,11 @@
    <slot>setNum(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>942</x>
+     <x>771</x>
      <y>186</y>
     </hint>
     <hint type="destinationlabel">
-     <x>954</x>
+     <x>783</x>
      <y>186</y>
     </hint>
    </hints>
@@ -1297,8 +1517,8 @@
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>511</x>
-     <y>130</y>
+     <x>654</x>
+     <y>212</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

@@ -254,7 +254,7 @@ class Load(Message):
 @dataclass
 class ProfileDataRequest(Message):
     target: int = field(default=Target.Processing, init=False)
-    application: str | None = field(default=None)
+    profile_name: str | None = field(default=None)
 
 
 @dataclass
@@ -262,7 +262,7 @@ class ProfileLoaded(Message):
     """Data containing information about the loaded profile."""
 
     target: int = field(default=Target.GUI, init=False)
-    application: str | None
+    profile_name: str
     distance: float
     cursor_counter: int
     thumb_l_counter: int
@@ -303,3 +303,26 @@ class Inactive(Message):
     profile_name: str
     ticks: int
 
+
+@dataclass
+class DeleteMouseData(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile_name: str
+
+
+@dataclass
+class DeleteKeyboardData(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile_name: str
+
+
+@dataclass
+class DeleteGamepadData(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile_name: str
+
+
+@dataclass
+class DeleteNetworkData(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile_name: str
