@@ -21,7 +21,7 @@ from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
 from ...file import get_profile_names
 from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations
+from ...utils.win import cursor_position, monitor_locations, AutoRun
 from ...ui.widgets import Pixel
 
 
@@ -105,6 +105,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.ui.output_logs.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
+        try:
+            self.ui.prefs_autorun.setChecked(bool(AutoRun()))
+        except ValueError:
+            self.ui.prefs_autorun.setEnabled(False)
 
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
@@ -189,6 +193,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
         self.ui.tray_exit.triggered.connect(self.shut_down)
+        self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
@@ -1087,6 +1092,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_gamepad.setEnabled(delete_gamepad)
         self.ui.delete_network.setEnabled(delete_network)
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
+
+    @QtCore.Slot(bool)
+    def set_autorun(self, enabled: bool) -> None:
+        """Set if the application runs on startup."""
+        AutoRun()(enabled)
+
+        self.tray.showMessage(
+            self.windowTitle(),
+            f'{self.windowTitle()} will {"now" if enabled else "no longer"} launch when Windows starts.',
+            self.tray.icon(),
+            2000,
+        )
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:

@@ -4,7 +4,8 @@ This is part of the Mouse Tracks Python application.
 Source: https://github.com/Peter92/MouseTracks
 """
 
-import ctypes
+import os
+import sys
 from contextlib import contextmanager
 
 import pywintypes
@@ -13,6 +14,7 @@ import win32con
 import win32console
 import win32gui
 import win32process
+import winreg
 
 
 def cursor_position() -> tuple[int, int] | None:
@@ -170,6 +172,44 @@ def get_pid_from_hwnd(hwnd):
         win32gui.EnumWindows(enumeration_handler, top_windows)
     return _top_window_mapping.get(str(hwnd), 0)
 
+
+class AutoRun:
+    """Handle running the application on startup."""
+
+    PATH = r'Software\Microsoft\Windows\CurrentVersion\Run'
+
+    def __init__(self, executable: str = os.path.abspath(sys.argv[0]), name: str = 'MouseTracks'):
+        self.executable = executable
+        if not self.executable.lower().endswith('.exe'):
+           raise ValueError('running on startup not supported when running as a script')
+        self.name = name
+
+    def __bool__(self) -> bool:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.PATH, 0, winreg.KEY_READ) as key:
+                winreg.QueryValueEx(key, self.name)
+                return True
+        except OSError:
+            return False
+
+    def __call__(self, startup):
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.PATH, 0, winreg.KEY_WRITE) as key:
+            if startup:
+                winreg.SetValueEx(key, self.name, 0, winreg.REG_SZ, self.executable)
+            else:
+                winreg.DeleteValue(key, self.name)
+
+    @classmethod
+    def from_name(cls, name: str) -> str | None:
+        """Get the executable for a given name if it exists."""
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, cls.PATH, 0, winreg.KEY_READ) as key:
+                exe = winreg.QueryValueEx(key, name)[0]
+                if os.path.exists(exe):
+                    return exe
+                return None
+        except OSError:
+            return None
 
 
 if __name__ == '__main__':

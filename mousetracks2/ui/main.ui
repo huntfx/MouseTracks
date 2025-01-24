@@ -1203,6 +1203,8 @@
     <property name="title">
      <string>Preferences</string>
     </property>
+    <addaction name="prefs_autorun"/>
+    <addaction name="separator"/>
     <addaction name="prefs_track_mouse"/>
     <addaction name="prefs_track_keyboard"/>
     <addaction name="prefs_track_gamepad"/>
@@ -1482,6 +1484,14 @@
    </property>
    <property name="text">
     <string>Track Mouse</string>
+   </property>
+  </action>
+  <action name="prefs_autorun">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Start MouseTracks at Login</string>
    </property>
   </action>
  </widget>
