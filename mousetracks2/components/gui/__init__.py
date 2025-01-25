@@ -118,6 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
             self.tray.show()
+            self.hide()
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
@@ -1096,7 +1097,12 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def set_autorun(self, enabled: bool) -> None:
         """Set if the application runs on startup."""
-        AutoRun()(enabled)
+        ar = AutoRun()
+
+        if enabled:
+            ar(['--silent'])
+        else:
+            ar(None)
 
         self.tray.showMessage(
             self.windowTitle(),
@@ -1117,7 +1123,8 @@ def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None
 
         app.setStyle('Fusion')
         m = MainWindow(q_send, q_receive)
-        m.show()
+        if '--silent' not in sys.argv:
+            m.show()
         icon = QtGui.QIcon(ICON_PATH)
         app.setWindowIcon(icon)
         app.exec()
