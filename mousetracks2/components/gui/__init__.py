@@ -16,6 +16,7 @@ from mousetracks.image import colours
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .. import ipc
 from ...ui.main import Ui_MainWindow
+from ...config import Config
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
 from ...file import get_profile_names
@@ -90,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
         self.q_send = q_send
         self.q_receive = q_receive
+        self.config = Config()
 
         self.pause_redraw = 0
         self.pause_colour_change = False
@@ -195,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_hide.triggered.connect(self.minimise)
         self.ui.tray_exit.triggered.connect(self.shut_down)
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
+        self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.queue_worker.message_received.connect(self.process_message)
         self.queue_thread.started.connect(self.queue_worker.run)
         self.queue_thread.finished.connect(self.queue_worker.deleteLater)
@@ -1095,21 +1098,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
 
     @QtCore.Slot(bool)
-    def set_autorun(self, enabled: bool) -> None:
-        """Set if the application runs on startup."""
-        ar = AutoRun()
-
-        if enabled:
-            ar(['--silent'])
-        else:
-            ar(None)
+    def set_autorun(self, value: bool) -> None:
+        """Set if the application runs on startup.
+        This only works on the built executable as it adds it to the
+        registry. If the executable is moved then it will need to be
+        re-added.
+        """
+        AutoRun()(value)
 
         self.tray.showMessage(
             self.windowTitle(),
-            f'{self.windowTitle()} will {"now" if enabled else "no longer"} launch when Windows starts.',
+            f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.',
             self.tray.icon(),
             2000,
         )
+
+    @QtCore.Slot(bool)
+    def set_minimise_on_start(self, value: bool) -> None:
+        """Set if the app should minimise on startup.
+        This saves a config value which is read the next time it loads.
+        """
+        self.config.minimise_on_start = value
+        self.config.save()
 
 
 def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
@@ -1123,7 +1133,7 @@ def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None
 
         app.setStyle('Fusion')
         m = MainWindow(q_send, q_receive)
-        if '--silent' not in sys.argv:
+        if not Config().minimise_on_start:
             m.show()
         icon = QtGui.QIcon(ICON_PATH)
         app.setWindowIcon(icon)

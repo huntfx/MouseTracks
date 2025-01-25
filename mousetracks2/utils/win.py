@@ -192,15 +192,12 @@ class AutoRun:
         except OSError:
             return False
 
-    def __call__(self, args: list[str] | None):
+    def __call__(self, enable: bool) -> None:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.PATH, 0, winreg.KEY_WRITE) as key:
-            if args is None:
-                winreg.DeleteValue(key, self.name)
+            if enable:
+                winreg.SetValueEx(key, self.name, 0, winreg.REG_SZ, self.executable)
             else:
-                executable = self.executable
-                if args:
-                    executable = f'{self.executable} {" ".join(args)}'
-                winreg.SetValueEx(key, self.name, 0, winreg.REG_SZ, executable)
+                winreg.DeleteValue(key, self.name)
 
     @classmethod
     def from_name(cls, name: str) -> str | None:

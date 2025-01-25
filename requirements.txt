@@ -4,6 +4,7 @@ pynput==1.7.7
 psutil==5.9.8
 PySide6==6.8.0.2
 scipy==1.14.1
+pyyaml==6.0.2
 pywin32==308; platform_system=='Windows'
 XInput-Python==0.4; platform_system=='Windows'
 pyxhook; platform_system=='Linux'
