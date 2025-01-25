@@ -588,13 +588,25 @@ def _get_profile_legacy_version(zf: zipfile.ZipFile) -> int | None:
 
 class TrackingProfileLoader(dict):
     """Act like a defaultdict to load data if available."""
-    def __missing__(self, application) -> TrackingProfile:
-        filename = get_filename(application)
+
+    def __getitem__(self, profile_name: str) -> TrackingProfile:
+        """Load the profile and update the current name.
+
+        This is due to the name being stored internally and will not
+        update even if the profile is manually renamed.
+        """
+        profile: TrackingProfile = super().__getitem__(profile_name)
+        profile.name = profile_name
+        return profile
+
+    def __missing__(self, profile_name: str) -> TrackingProfile:
+        """Load in any missing data or create a new profile."""
+        filename = get_filename(profile_name)
         if os.path.exists(filename):
-            self[application] = TrackingProfile.load(filename)
+            self[profile_name] = TrackingProfile.load(filename)
         else:
-            self[application] = TrackingProfile(application)
-        return self[application]
+            self[profile_name] = TrackingProfile(profile_name)
+        return self[profile_name]
 
 
 def get_filename(application: str) -> str:
