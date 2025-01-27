@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 import numpy as np
 
+from ..config import ProfileConfig
+
 
 class Target:
     """System components that can send or receive messages."""
@@ -258,8 +260,8 @@ class ProfileDataRequest(Message):
 
 
 @dataclass
-class ProfileLoaded(Message):
-    """Data containing information about the loaded profile."""
+class ProfileData(Message):
+    """Information about a profile."""
 
     target: int = field(default=Target.GUI, init=False)
     profile_name: str
@@ -276,6 +278,7 @@ class ProfileLoaded(Message):
     inactive_ticks: int
     bytes_sent: int
     bytes_recv: int
+    config: ProfileConfig
 
 
 @dataclass
@@ -302,6 +305,34 @@ class Inactive(Message):
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     profile_name: str
     ticks: int
+
+
+@dataclass
+class SetProfileMouseTracking(Message):
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    enable: bool
+
+
+@dataclass
+class SetProfileKeyboardTracking(Message):
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    enable: bool
+
+
+@dataclass
+class SetProfileGamepadTracking(Message):
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    enable: bool
+
+
+@dataclass
+class SetProfileNetworkTracking(Message):
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    profile_name: str
+    enable: bool
 
 
 @dataclass

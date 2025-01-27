@@ -95,9 +95,7 @@ class Processing:
         # Reset the cursor position
         self.profile.cursor_map.position = None
 
-        self.send_profile_data(application.name)
-
-    def send_profile_data(self, name: str) -> None:
+    def _send_profile_data(self, name: str) -> None:
         """Send all the stats for the profile."""
         profile = self.all_profiles[name]
 
@@ -129,7 +127,7 @@ class Processing:
                 keys -= profile.key_presses[keycodes.VK_RMENU]
 
         # Send data back to the GUI
-        self.q_send.put(ipc.ProfileLoaded(
+        self.q_send.put(ipc.ProfileData(
             profile_name=profile.name,
             distance=profile.cursor_map.distance,
             cursor_counter=profile.cursor_map.counter,
@@ -144,6 +142,7 @@ class Processing:
             inactive_ticks=profile.inactive,
             bytes_sent=sum(profile.data_upload.values()),
             bytes_recv=sum(profile.data_download.values()),
+            config=profile.config,
         ))
 
     @property
@@ -413,10 +412,16 @@ class Processing:
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
+                if not self.profile.config.track_mouse:
+                    return
+
                 distance = self._record_move(self.profile.cursor_map, message.position)
                 self.profile.daily_distance[self.profile_age_days] += distance
 
             case ipc.MouseHeld():
+                if not self.profile.config.track_mouse:
+                    return
+
                 result = self._monitor_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
@@ -424,6 +429,9 @@ class Processing:
                     self.profile.mouse_held_clicks[message.button][current_monitor][index] += 1
 
             case ipc.MouseClick():
+                if not self.profile.config.track_mouse:
+                    return
+
                 previous = self.previous_mouse_click
                 double_click = (
                     previous is not None
@@ -449,6 +457,9 @@ class Processing:
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
             case ipc.KeyPress():
+                if not self.profile.config.should_track_keycode(message.keycode):
+                    return
+
                 if message.keycode not in keycodes.CLICK_CODES:
                     print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
                 self.profile.key_presses[message.keycode] += 1
@@ -460,18 +471,27 @@ class Processing:
                     self.profile.daily_keys[self.profile_age_days] += 1
 
             case ipc.KeyHeld():
+                if not self.profile.config.should_track_keycode(message.keycode):
+                    return
+
                 if message.keycode in keycodes.SCROLL_CODES:
                     print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
                     self.profile.daily_scrolls[self.profile_age_days] += 1
                 self.profile.key_held[message.keycode] += 1
 
             case ipc.ButtonPress():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.daily_buttons[self.profile_age_days] += 1
 
             case ipc.ButtonHeld():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
 
             case ipc.MonitorsChanged():
@@ -479,6 +499,9 @@ class Processing:
                 self.monitor_data = message.data
 
             case ipc.ThumbstickMove():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 width = height = RADIAL_ARRAY_SIZE
                 x = int((message.position[0] + 1) * (width - 1) / 2)
                 y = int((message.position[1] + 1) * (height - 1) / 2)
@@ -525,6 +548,9 @@ class Processing:
                 self.q_send.put(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
+                if not self.profile.config.track_network:
+                    return
+
                 self.profile.data_upload[message.mac_address] += message.bytes_sent
                 self.profile.data_download[message.mac_address] += message.bytes_recv
                 self.profile.daily_upload[self.profile_age_days] += message.bytes_sent
@@ -536,9 +562,34 @@ class Processing:
             case ipc.ProfileDataRequest(profile_name=name):
                 if name is None:
                     name = DEFAULT_PROFILE_NAME
-                self.send_profile_data(name)
+                self._send_profile_data(name)
+
+            case ipc.SetProfileMouseTracking():
+                print(f'[Processing] Setting mouse tracking state on {message.profile_name}: {message.enable}')
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.config.track_mouse = message.enable
+
+            case ipc.SetProfileKeyboardTracking():
+                print(f'[Processing] Setting keyboard tracking state on {message.profile_name}: {message.enable}')
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.config.track_keyboard = message.enable
+
+            case ipc.SetProfileGamepadTracking():
+                print(f'[Processing] Setting gamepad tracking state on {message.profile_name}: {message.enable}')
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.config.track_gamepad = message.enable
+
+            case ipc.SetProfileNetworkTracking():
+                print(f'[Processing] Setting network tracking state on {message.profile_name}: {message.enable}')
+                profile = self.all_profiles[message.profile_name]
+                profile.modified = True
+                profile.config.track_network = message.enable
 
             case ipc.DeleteMouseData():
+                print(f'[Processing] Deleting all mouse data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
                 profile.modified = True
                 profile.cursor_map = type(profile.cursor_map)()
@@ -551,18 +602,18 @@ class Processing:
                 for code in keycodes.MOUSE_CODES + keycodes.SCROLL_CODES:
                     profile.key_presses[code] = 0
                     profile.key_held[code] = 0
-                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
 
             case ipc.DeleteKeyboardData():
+                print(f'[Processing] Deleting all keyboard data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
                 profile.modified = True
                 profile.daily_keys = profile.daily_keys.as_zero()
                 for code in keycodes.KEYBOARD_CODES:
                     profile.key_presses[code] = 0
                     profile.key_held[code] = 0
-                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
 
             case ipc.DeleteGamepadData():
+                print(f'[Processing] Deleting all gamepad data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
                 profile.modified = True
                 profile.thumbstick_l_map.clear()
@@ -570,9 +621,9 @@ class Processing:
                 profile.button_presses.clear()
                 profile.button_held.clear()
                 profile.daily_buttons = profile.daily_buttons.as_zero()
-                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
 
             case ipc.DeleteNetworkData():
+                print(f'[Processing] Deleting all network data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
                 profile.modified = True
                 profile.data_interfaces.clear()
@@ -580,7 +631,6 @@ class Processing:
                 profile.data_download.clear()
                 profile.daily_upload = profile.daily_upload.as_zero()
                 profile.daily_download = profile.daily_download.as_zero()
-                self.q_send.put(ipc.ProfileDataRequest(message.profile_name))
 
             case _:
                 raise NotImplementedError(message)

@@ -63,7 +63,11 @@ class Profile:
     """Hold data related to the currently running profile."""
 
     name: str
-    rect: tuple[int, int, int, int] | None = field(default=None)
+    rect: tuple[int, int, int, int] | None = None
+    track_mouse: bool = True
+    track_keyboard: bool = True
+    track_gamepad: bool = True
+    track_network: bool = True
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -102,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
         self._delete_network_pressed = False
+        self._is_loading_profile = 0
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -188,6 +193,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_network.stateChanged.connect(self.handle_delete_button_visibility)
+        self.ui.track_mouse.stateChanged.connect(self.toggle_profile_mouse_tracking)
+        self.ui.track_keyboard.stateChanged.connect(self.toggle_profile_keyboard_tracking)
+        self.ui.track_gamepad.stateChanged.connect(self.toggle_profile_gamepad_tracking)
+        self.ui.track_network.stateChanged.connect(self.toggle_profile_network_tracking)
         self.ui.delete_mouse.clicked.connect(self.delete_mouse)
         self.ui.delete_keyboard.clicked.connect(self.delete_keyboard)
         self.ui.delete_gamepad.clicked.connect(self.delete_gamepad)
@@ -222,6 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Trigger initial signals
         self.profile_changed(0)
 
+        self.request_profile_data(DEFAULT_PROFILE_NAME)
         self.start_tracking()
 
     @property
@@ -485,10 +495,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._redrawing_profiles:
             return
 
-        self.q_send.put(ipc.ProfileDataRequest(self.ui.current_profile.itemData(idx)))
-        self.request_thumbnail(force=True)
+        self.request_profile_data(self.ui.current_profile.itemData(idx))
         if idx:
             self.ui.auto_switch_profile.setChecked(False)
+
+    def request_profile_data(self, profile_name: str) -> None:
+        """Request loading profile data."""
+        self.q_send.put(ipc.ProfileDataRequest(profile_name))
+        self._is_loading_profile += 1
 
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
@@ -681,16 +695,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         im.save(file_path)
                         os.startfile(file_path)
 
-            case ipc.MouseHeld() if self.is_live:
+            case ipc.MouseHeld() if self.is_live and self.ui.track_mouse.isChecked():
                 self.mouse_held_count += 1
 
-            case ipc.MouseMove() if self.is_live:
+            case ipc.MouseMove() if self.is_live and self.ui.track_mouse.isChecked():
                 if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
 
-            case ipc.ThumbstickMove() if self.is_live:
+            case ipc.ThumbstickMove() if self.is_live and self.ui.track_gamepad.isChecked():
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
                         data = self.thumbstick_l_data
@@ -709,7 +723,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
-            case ipc.KeyPress() if self.is_live:
+            case ipc.KeyPress() if self.is_live and self.ui.track_keyboard.isChecked():
                 if message.keycode in keycodes.MOUSE_CODES:
                     self.mouse_click_count += 1
 
@@ -728,18 +742,28 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.key_press_count += 1
 
-            case ipc.KeyHeld() if self.is_live:
+            case ipc.KeyHeld() if self.is_live and self.ui.track_keyboard.isChecked():
                 if message.keycode in keycodes.SCROLL_CODES:
                     self.mouse_scroll_count += 1
 
-            case ipc.ButtonPress() if self.is_live:
+            case ipc.ButtonPress() if self.is_live and self.ui.track_gamepad.isChecked():
                 self.button_press_count += 1
 
             case ipc.ApplicationDetected():
                 self.current_profile = Profile(message.name, message.rect)
+                self.request_profile_data(message.name)
 
             # Show the correct distance
-            case ipc.ProfileLoaded():
+            case ipc.ProfileData():
+                self._is_loading_profile -= 1
+                finished_loading = not self._is_loading_profile
+
+                # Pause the signals on the track options
+                self.ui.track_mouse.setEnabled(False)
+                self.ui.track_keyboard.setEnabled(False)
+                self.ui.track_gamepad.setEnabled(False)
+                self.ui.track_network.setEnabled(False)
+
                 self.cursor_data.distance = message.distance
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
                 self.cursor_data.counter = message.cursor_counter
@@ -756,16 +780,28 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
 
-                if message.profile_name == self.ui.current_profile.currentData():
+                if finished_loading:
                     self.request_thumbnail(force=True)
 
+                self.ui.track_mouse.setChecked(message.config.track_mouse)
+                self.ui.track_keyboard.setChecked(message.config.track_keyboard)
+                self.ui.track_gamepad.setChecked(message.config.track_gamepad)
+                self.ui.track_network.setChecked(message.config.track_network)
+
+                # Update the visibility of the delete options
                 self._delete_mouse_pressed = False
                 self._delete_keyboard_pressed = False
                 self._delete_gamepad_pressed = False
                 self._delete_network_pressed = False
                 self.handle_delete_button_visibility()
 
-            case ipc.DataTransfer() if self.is_live:
+                # Resume signals on the track options
+                self.ui.track_mouse.setEnabled(finished_loading)
+                self.ui.track_keyboard.setEnabled(finished_loading)
+                self.ui.track_gamepad.setEnabled(finished_loading)
+                self.ui.track_network.setEnabled(finished_loading)
+
+            case ipc.DataTransfer() if self.is_live and self.ui.track_network.isChecked():
                 self.bytes_sent += message.bytes_sent
                 self.bytes_recv += message.bytes_recv
 
@@ -1017,6 +1053,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.q_send.put(ipc.DeleteMouseData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
+            self.request_profile_data(profile)
 
     def delete_keyboard(self) -> None:
         """Request deletion of keyboard data for the current profile."""
@@ -1037,6 +1074,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.q_send.put(ipc.DeleteKeyboardData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
+            self.request_profile_data(profile)
 
     def delete_gamepad(self) -> None:
         """Request deletion of gamepad data for the current profile."""
@@ -1058,6 +1096,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.q_send.put(ipc.DeleteGamepadData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
+            self.request_profile_data(profile)
 
     def delete_network(self) -> None:
         """Request deletion of network data for the current profile."""
@@ -1078,6 +1117,43 @@ class MainWindow(QtWidgets.QMainWindow):
             self.q_send.put(ipc.DeleteNetworkData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
+            self.request_profile_data(profile)
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
+        if not self.ui.track_mouse.isEnabled():
+            return
+
+        selected_profile = self.ui.current_profile.currentData()
+        enable = state == QtCore.Qt.CheckState.Checked.value
+        self.q_send.put(ipc.SetProfileMouseTracking(selected_profile, enable))
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
+        if not self.ui.track_keyboard.isEnabled():
+            return
+
+        selected_profile = self.ui.current_profile.currentData()
+        enable = state == QtCore.Qt.CheckState.Checked.value
+        self.q_send.put(ipc.SetProfileKeyboardTracking(selected_profile, enable))
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
+        if not self.ui.track_gamepad.isEnabled():
+            return
+
+        selected_profile = self.ui.current_profile.currentData()
+        enable = state == QtCore.Qt.CheckState.Checked.value
+        self.q_send.put(ipc.SetProfileGamepadTracking(selected_profile, enable))
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
+        if not self.ui.track_network.isEnabled():
+            return
+
+        selected_profile = self.ui.current_profile.currentData()
+        enable = state == QtCore.Qt.CheckState.Checked.value
+        self.q_send.put(ipc.SetProfileNetworkTracking(selected_profile, enable))
 
     def handle_delete_button_visibility(self, _: Any = None) -> None:
         """Toggle the delete button visibility.
@@ -1086,10 +1162,10 @@ class MainWindow(QtWidgets.QMainWindow):
         processing is not waiting to delete. Deleting a profile is only
         allowed once all tracking is disabled as a safety measure.
         """
-        delete_mouse = not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
-        delete_keyboard = not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
-        delete_gamepad = not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
-        delete_network = not self.ui.track_network.isChecked() and not self._delete_network_pressed
+        delete_mouse = self.ui.track_mouse.isEnabled() and not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
+        delete_keyboard = self.ui.track_keyboard.isEnabled() and not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
+        delete_gamepad = self.ui.track_gamepad.isEnabled() and not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
+        delete_network = self.ui.track_network.isEnabled() and not self.ui.track_network.isChecked() and not self._delete_network_pressed
 
         self.ui.delete_mouse.setEnabled(delete_mouse)
         self.ui.delete_keyboard.setEnabled(delete_keyboard)
