@@ -60,6 +60,7 @@ class Tracking:
         self.q_receive = q_receive
         self.state = ipc.TrackingState.State.Pause
         self.profile_name = DEFAULT_PROFILE_NAME
+        self.autosave = True
 
         # Setup pynput listeners
         # TODO: link up the other callbacks
@@ -88,6 +89,10 @@ class Tracking:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()
                     self.profile_name = message.name
+
+                case ipc.Autosave():
+                    self.autosave = message.enabled
+                    print(f'[Tracking] Autosave Enabled: {message.enabled}')
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
@@ -326,7 +331,7 @@ class Tracking:
             self._calculate_inactivity()
 
             # Save every 5 mins
-            if tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
+            if self.autosave and tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
                 self.send_data(ipc.Save())
 
     def run(self) -> None:

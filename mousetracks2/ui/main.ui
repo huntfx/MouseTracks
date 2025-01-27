@@ -414,8 +414,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>230</width>
-               <height>274</height>
+               <width>274</width>
+               <height>356</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -584,8 +584,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>235</height>
+               <width>274</width>
+               <height>356</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -763,7 +763,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>231</width>
+               <width>259</width>
                <height>494</height>
               </rect>
              </property>
@@ -845,17 +845,17 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QPushButton" name="thumbnail_refresh">
-                   <property name="text">
-                    <string>Thumbnail Update</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="1" column="1">
                   <widget class="QLabel" name="time_since_thumbnail">
                    <property name="text">
                     <string>5.4 s</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QPushButton" name="thumbnail_refresh">
+                   <property name="text">
+                    <string>Thumbnail Update</string>
                    </property>
                   </widget>
                  </item>
@@ -870,11 +870,25 @@
                   </widget>
                  </item>
                  <item row="0" column="1">
-                  <widget class="QLabel" name="time_since_save">
-                   <property name="text">
-                    <string>23.5 s</string>
-                   </property>
-                  </widget>
+                  <layout class="QHBoxLayout" name="horizontalLayout_7">
+                   <item>
+                    <widget class="QLabel" name="time_since_save">
+                     <property name="text">
+                      <string>23.5 s</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="autosave">
+                     <property name="text">
+                      <string>Autosave</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>

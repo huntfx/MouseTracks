@@ -1,15 +1,11 @@
 [MVP]
 - generate image filename
-- rename main to desktop
 - ctypes app detection
 - [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
-- disable tracking and delete data per profile
-    /disabled KEYBOARD MOUSE NETWORK GAMEPAD
 - ensure renders are paused on minimise, ensure rerender on maximise
 - Test closing down process with task manager
 - Store last size for use with resize timer and only update+draw if not none and changed
-
-- flags --silent
+- [Config] Enable / disable each type of tracking
 
 [Bugs]
 - scrolling doesn't pause
@@ -27,7 +23,6 @@
 - Handle multiple windows from the same process if they have the same PID (eg. HP Anyware/Teradici)
 - Add optional padding around heatmaps
 - [GUI] Show pause/play overlay when hoving on live preview, click to pause/unpause
-- [Config] Enable / disable each type of tracking
 - [Config] Choose network interfaces to show
 - User friendly API (eg. from mousetracks2.api import profile, render; render(profile('main'), type='mouse clicks'))
 - When attempting to save while unable to, make sure messages are sent back so that the process doesn't close

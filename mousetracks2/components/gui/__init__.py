@@ -201,6 +201,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_keyboard.clicked.connect(self.delete_keyboard)
         self.ui.delete_gamepad.clicked.connect(self.delete_gamepad)
         self.ui.delete_network.clicked.connect(self.delete_network)
+        self.ui.autosave.stateChanged.connect(self.toggle_autosave)
         self.ui.file_save.triggered.connect(self.manual_save)
         self.ui.tray_show.triggered.connect(self.maximise)
         self.ui.tray_hide.triggered.connect(self.minimise)
@@ -483,6 +484,11 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.save_request_sent = True
         self.q_send.put(ipc.Save())
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_autosave(self, state: QtCore.Qt.CheckState) -> None:
+        """Enable or disable autosaving."""
+        self.q_send.put(ipc.Autosave(state == QtCore.Qt.CheckState.Checked.value))
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
