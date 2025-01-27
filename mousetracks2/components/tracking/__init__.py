@@ -184,6 +184,9 @@ class Tracking:
         The scroll vector is mostly -1, 0 or 1, but support has been
         added in case it can go outside this range.
         """
+        if self.state != ipc.TrackingState.State.Start:
+            return
+
         if dx > 0:
             for _ in range(dx):
                 self._key_press(VK_SCROLL_RIGHT)

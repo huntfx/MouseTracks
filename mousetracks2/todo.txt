@@ -7,7 +7,6 @@
 - [Config] Enable / disable each type of tracking
 
 [Bugs]
-- scrolling doesn't pause
 - disable.mtk2 is being saved
 - [GUI] Stopped updating after sleep but processing was still printing out, failed with elapsed check
 
