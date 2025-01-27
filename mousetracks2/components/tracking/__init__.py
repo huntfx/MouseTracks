@@ -11,6 +11,7 @@ import XInput  # type: ignore
 
 from . import utils
 from .. import ipc
+from ..abstract import Component
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ...utils.keycodes import CLICK_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT
 from ...utils.network import Interfaces
@@ -54,10 +55,10 @@ class DataState:
             self.bytes_recv_previous[connection_name] = data.bytes_recv
 
 
-class Tracking:
+class Tracking(Component):
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        self.q_send = q_send
-        self.q_receive = q_receive
+        super().__init__(q_send, q_receive)
+
         self.state = ipc.TrackingState.State.Pause
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True
@@ -69,9 +70,6 @@ class Tracking:
 
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
-
-    def send_data(self, message: ipc.Message):
-        self.q_send.put(message)
 
     def _receive_data(self):
         while not self.q_receive.empty():
@@ -232,7 +230,8 @@ class Tracking:
 
         self.data.key_presses[keycode] = (press_start, self.data.tick_current)
 
-    def _run(self):
+    def run(self):
+        """Run the tracking."""
         print('[Tracking] Loaded.')
 
         for tick, data in self._run_with_state():
@@ -337,28 +336,7 @@ class Tracking:
             if self.autosave and tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
                 self.send_data(ipc.Save())
 
-    def run(self) -> None:
-        print('[Tracking] Loaded.')
-
-        try:
-            self._run()
-
-        # Catch error after KeyboardInterrupt
-        except EOFError:
-            print('[Tracking] Force shut down.')
-            return
-
-        except Exception as e:
-            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            print(f'[Tracking] Error shut down: {e}')
-
-        finally:
-            self._pynput_mouse_listener.stop()
-            self._pynput_keyboard_listener.stop()
-
-        self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Tracking))
-        print('[Tracking] Sent process closed notification.')
-
-
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-    Tracking(q_send, q_receive).run()
+    def on_exit(self):
+        """Close threads on exit."""
+        self._pynput_mouse_listener.stop()
+        self._pynput_keyboard_listener.stop()

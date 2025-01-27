@@ -34,7 +34,7 @@ class Hub:
         self._q_app_detection = multiprocessing.Queue()
 
         # Setup processes
-        self._p_gui = multiprocessing.Process(target=gui.run, args=(self._q_main, self._q_gui))
+        self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
         self._create_tracking_processes()
 
@@ -105,13 +105,13 @@ class Hub:
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
-        self._p_tracking = multiprocessing.Process(target=tracking.run, args=(self._q_main, self._q_tracking))
+        self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
-        self._p_processing = multiprocessing.Process(target=processing.run, args=(self._q_main, self._q_processing))
+        self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
-        self._p_app_detection = multiprocessing.Process(target=app_detection.run, args=(self._q_main, self._q_app_detection))
+        self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
 

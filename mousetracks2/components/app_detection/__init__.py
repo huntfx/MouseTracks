@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING
 
 from mousetracks.applications import RunningApplications, WindowFocus
 from .. import ipc
+from ..abstract import Component
 from ...constants import DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
 from ...utils.win import monitor_locations
 
 
-class AppDetection:
+class AppDetection(Component):
     """Application detection component.
 
     This is using legacy code for the time being, just to get an inital
@@ -17,8 +18,8 @@ class AppDetection:
     """
 
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        self.q_send = q_send
-        self.q_receive = q_receive
+        super().__init__(q_send, q_receive)
+
         self.running_apps = RunningApplications()
         self.previous_app: tuple[str, str] | None = None
         self.last_coordinates = None
@@ -109,39 +110,18 @@ class AppDetection:
 
                 if changed:
                     if current_app is None:
-                        self.q_send.put(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
+                        self.send_data(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
                     elif app_is_windowed:
-                        self.q_send.put(ipc.ApplicationDetected(current_app[0], process_id, app_position))
+                        self.send_data(ipc.ApplicationDetected(current_app[0], process_id, app_position))
                     else:
-                        self.q_send.put(ipc.ApplicationDetected(current_app[0], process_id, None))
+                        self.send_data(ipc.ApplicationDetected(current_app[0], process_id, None))
 
                 self.previous_app = current_app
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[Application Detection] Test Exception')
 
-    def run(self) -> None:
-        print('[Application Detection] Loaded.')
-
-        try:
-            while True:
-                self._process_message(self.q_receive.get())
-
-        except ExitRequest:
-            print('[Application Detection] Shut down.')
-
-        # Catch error after KeyboardInterrupt
-        except EOFError:
-            print('[Application Detection] Force shut down.')
-            return
-
-        except Exception as e:
-            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            print(f'[Application Detection] Error shut down: {e}')
-
-        self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.AppDetection))
-        print('[Application Detection] Sent process closed notification.')
-
-
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-    AppDetection(q_send, q_receive).run()
+    def run(self):
+        """Listen for events to process."""
+        while True:
+            self._process_message(self.receive_data())

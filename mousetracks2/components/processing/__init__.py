@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from .. import ipc
+from ..abstract import Component
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...typing import ArrayLike
@@ -44,10 +45,9 @@ class Application:
     rect: tuple[int, int, int, int] | None
 
 
-class Processing:
+class Processing(Component):
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        self.q_send = q_send
-        self.q_receive = q_receive
+        super().__init__(q_send, q_receive)
 
         self.tick = 0
         self._timestamp = None
@@ -126,7 +126,7 @@ class Processing:
                 keys -= profile.key_presses[keycodes.VK_RMENU]
 
         # Send data back to the GUI
-        self.q_send.put(ipc.ProfileData(
+        self.send_data(ipc.ProfileData(
             profile_name=profile.name,
             distance=profile.cursor_map.distance,
             cursor_counter=profile.cursor_map.counter,
@@ -399,7 +399,7 @@ class Processing:
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
-                self.q_send.put(ipc.Render(image, message))
+                self.send_data(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')
 
@@ -535,7 +535,7 @@ class Processing:
                         succeeded.append(name)
                     else:
                         failed.append(name)
-                self.q_send.put(ipc.SaveComplete(succeeded, failed))
+                self.send_data(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
                 if not self.profile.config.track_network:
@@ -625,29 +625,7 @@ class Processing:
             case _:
                 raise NotImplementedError(message)
 
-    def run(self) -> None:
-        print('[Processing] Loaded.')
-
-        try:
-            while True:
-                self._process_message(self.q_receive.get())
-
-        except ExitRequest:
-            print('[Processing] Shut down.')
-
-        # Catch error after KeyboardInterrupt
-        except EOFError:
-            print('[Processing] Force shut down.')
-            return
-
-        except Exception as e:
-            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
-            traceback.print_exc()
-            print(f'[Processing] Error shut down: {e}')
-
-        self.q_send.put(ipc.ProcessShutDownNotification(ipc.Target.Processing))
-        print('[Processing] Sent process closed notification.')
-
-
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-    Processing(q_send, q_receive).run()
+    def run(self):
+        """Listen for events to process."""
+        while True:
+            self._process_message(self.receive_data())

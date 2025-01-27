@@ -15,6 +15,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from mousetracks.image import colours
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .. import ipc
+from ..abstract import Component
 from ...ui.main import Ui_MainWindow
 from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
@@ -70,6 +71,27 @@ class Profile:
     track_network: bool = True
 
 
+class GUI(Component):
+    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+        super().__init__(q_send, q_receive)
+
+    def run(self):
+        app = QtWidgets.QApplication(sys.argv)
+        # Register app so that setting an icon is possible
+        if os.name == "nt":
+            import ctypes
+            myappid = "uk.huntfx.mousetracks"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+        app.setStyle('Fusion')
+        m = MainWindow(self)
+        if not GlobalConfig().minimise_on_start:
+            m.show()
+        icon = QtGui.QIcon(ICON_PATH)
+        app.setWindowIcon(icon)
+        app.exec()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -90,11 +112,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     update_pixel = QtCore.Signal(int, int, QtGui.QColor)
 
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+    def __init__(self, component: GUI) -> None:
         super().__init__()
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
-        self.q_send = q_send
-        self.q_receive = q_receive
+        self.component = component
         self.config = GlobalConfig()
 
         self.pause_redraw = 0
@@ -170,7 +191,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start queue worker
         self.queue_thread = QtCore.QThread()
-        self.queue_worker = QueueWorker(q_receive)
+        self.queue_worker = QueueWorker(self.component.q_receive)
         self.queue_worker.moveToThread(self.queue_thread)
 
         self.timer_activity = QtCore.QTimer(self)
@@ -482,12 +503,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.save_request_sent:
             return
         self.save_request_sent = True
-        self.q_send.put(ipc.Save())
+        self.component.send_data(ipc.Save())
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_autosave(self, state: QtCore.Qt.CheckState) -> None:
         """Enable or disable autosaving."""
-        self.q_send.put(ipc.Autosave(state == QtCore.Qt.CheckState.Checked.value))
+        self.component.send_data(ipc.Autosave(state == QtCore.Qt.CheckState.Checked.value))
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
@@ -506,7 +527,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def request_profile_data(self, profile_name: str) -> None:
         """Request loading profile data."""
-        self.q_send.put(ipc.ProfileDataRequest(profile_name))
+        self.component.send_data(ipc.ProfileDataRequest(profile_name))
         self._is_loading_profile += 1
 
     @QtCore.Slot(int)
@@ -559,15 +580,15 @@ class MainWindow(QtWidgets.QMainWindow):
         size = self.ui.thumbnail.pixmapSize()
 
         # Request size at the current height of the field, since it's likely width > height
-        self.q_send.put(ipc.RenderRequest(self.render_type, None, size.height(),
-                                          self.render_colour, 1, app, True))
+        self.component.send_data(ipc.RenderRequest(self.render_type, None, size.height(),
+                                                   self.render_colour, 1, app, True))
         return True
 
     def request_render(self) -> None:
         """Send a render request."""
         app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
-        self.q_send.put(ipc.RenderRequest(self.render_type, None, None,
-                                          self.render_colour, self.ui.render_samples.value(), app, False))
+        self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
+                                                   self.render_colour, self.ui.render_samples.value(), app, False))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -622,7 +643,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self._process_message(message)
         except Exception as e:
-            self.q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            self.component.send_data(ipc.Traceback(e, traceback.format_exc()))
             print(f'[GUI] Error shut down: {e}')
 
     def _process_message(self, message: ipc.Message) -> None:
@@ -868,52 +889,52 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_tracking(self) -> None:
         """Start/unpause the script."""
         self.cursor_data.position = cursor_position()  # Prevent erroneous line jumps
-        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
+        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()
     def pause_tracking(self) -> None:
         """Pause/unpause the script."""
-        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
+        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
     @QtCore.Slot()
     def stop_tracking(self) -> None:
         """Stop the script."""
-        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Stop))
+        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Stop))
 
     @QtCore.Slot()
     def raise_tracking(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Tracking))
+        self.component.send_data(ipc.DebugRaiseError(ipc.Target.Tracking))
 
     @QtCore.Slot()
     def raise_processing(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Processing))
+        self.component.send_data(ipc.DebugRaiseError(ipc.Target.Processing))
 
     @QtCore.Slot()
     def raise_hub(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.DebugRaiseError(ipc.Target.Hub))
+        self.component.send_data(ipc.DebugRaiseError(ipc.Target.Hub))
 
     @QtCore.Slot()
     def raise_app_detection(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.DebugRaiseError(ipc.Target.AppDetection))
+        self.component.send_data(ipc.DebugRaiseError(ipc.Target.AppDetection))
 
     @QtCore.Slot()
     def raise_gui(self) -> None:
         """Send a command to raise an exception.
         For testing purposes only.
         """
-        self.q_send.put(ipc.DebugRaiseError(ipc.Target.GUI))
+        self.component.send_data(ipc.DebugRaiseError(ipc.Target.GUI))
 
     @QtCore.Slot()
     def shut_down(self) -> None:
@@ -955,7 +976,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Ask the user to save.
         Returns False if the save was cancelled.
         """
-        self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
+        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
@@ -964,12 +985,12 @@ class MainWindow(QtWidgets.QMainWindow):
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Start))
+                self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
                 self.shutting_down = False
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
-                self.q_send.put(ipc.Save())
+                self.component.send_data(ipc.Save())
         return True
 
     def changeEvent(self, event: QtCore.QEvent) -> None:
@@ -981,7 +1002,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle what to do when the GUI is closed."""
         if self.ask_to_save():
-            self.q_send.put(ipc.Exit())
+            self.component.send_data(ipc.Exit())
             self.queue_thread.quit()
             self.queue_thread.wait()
             self.queue_worker.stop()
@@ -1076,7 +1097,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_mouse_pressed = True
             self.handle_delete_button_visibility()
-            self.q_send.put(ipc.DeleteMouseData(profile))
+            self.component.send_data(ipc.DeleteMouseData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
@@ -1097,7 +1118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_keyboard_pressed = True
             self.handle_delete_button_visibility()
-            self.q_send.put(ipc.DeleteKeyboardData(profile))
+            self.component.send_data(ipc.DeleteKeyboardData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
@@ -1140,7 +1161,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_network_pressed = True
             self.handle_delete_button_visibility()
-            self.q_send.put(ipc.DeleteNetworkData(profile))
+            self.component.send_data(ipc.DeleteNetworkData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
@@ -1152,7 +1173,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.q_send.put(ipc.SetProfileMouseTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileMouseTracking(selected_profile, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
@@ -1161,7 +1182,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.q_send.put(ipc.SetProfileKeyboardTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileKeyboardTracking(selected_profile, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
@@ -1170,7 +1191,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.q_send.put(ipc.SetProfileGamepadTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileGamepadTracking(selected_profile, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
@@ -1179,7 +1200,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.q_send.put(ipc.SetProfileNetworkTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileNetworkTracking(selected_profile, enable))
 
     def handle_delete_button_visibility(self, _: Any = None) -> None:
         """Toggle the delete button visibility.
@@ -1222,25 +1243,3 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
-
-
-def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-    try:
-        app = QtWidgets.QApplication(sys.argv)
-        # Register app so that setting an icon is possible
-        if os.name == "nt":
-            import ctypes
-            myappid = "uk.huntfx.mousetracks"
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
-        app.setStyle('Fusion')
-        m = MainWindow(q_send, q_receive)
-        if not GlobalConfig().minimise_on_start:
-            m.show()
-        icon = QtGui.QIcon(ICON_PATH)
-        app.setWindowIcon(icon)
-        app.exec()
-
-    except Exception as e:
-        q_send.put(ipc.Traceback(e, traceback.format_exc()))
-        print(f'[GUI] Error shut down: {e}')
