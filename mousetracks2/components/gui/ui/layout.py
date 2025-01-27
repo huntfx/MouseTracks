@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main.ui'
+## Form generated from reading UI file 'layout.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.8.0
 ##
@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QSlider, QSpacerItem, QSpinBox, QSplitter,
     QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.ui.widgets import ResizableImage
+from mousetracks2.components.gui.widgets import ResizableImage
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

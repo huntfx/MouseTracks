@@ -66,7 +66,6 @@ class Component:
 
         except Exception as e:
             self.send_data(ipc.Traceback(e, traceback.format_exc()))
-            traceback.print_exc()
             print(f'[{self.name}] Error shut down: {e}')
 
         finally:

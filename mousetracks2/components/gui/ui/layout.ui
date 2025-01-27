@@ -1522,7 +1522,7 @@
   <customwidget>
    <class>ResizableImage</class>
    <extends>QLabel</extends>
-   <header>mousetracks2.ui.widgets</header>
+   <header>mousetracks2.components.gui.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>
