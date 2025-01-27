@@ -46,9 +46,7 @@ class Application:
 
 
 class Processing(Component):
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        super().__init__(q_send, q_receive)
-
+    def __post_init__(self) -> None:
         self.tick = 0
         self._timestamp = None
 

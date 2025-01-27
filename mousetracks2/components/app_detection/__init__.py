@@ -17,9 +17,7 @@ class AppDetection(Component):
     version out the door. I plan to improve it at some point.
     """
 
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        super().__init__(q_send, q_receive)
-
+    def __post_init__(self) -> None:
         self.running_apps = RunningApplications()
         self.previous_app: tuple[str, str] | None = None
         self.last_coordinates = None

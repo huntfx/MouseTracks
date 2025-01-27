@@ -9,6 +9,10 @@ class Component:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         self.q_send = q_send
         self.q_receive = q_receive
+        self.__post_init__()
+
+    def __post_init__(self) -> None:
+        """Call this after running `__init__`."""
 
     @property
     def name(self) -> str:

@@ -72,15 +72,12 @@ class Profile:
 
 
 class GUI(Component):
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        super().__init__(q_send, q_receive)
-
     def run(self):
         app = QtWidgets.QApplication(sys.argv)
         # Register app so that setting an icon is possible
-        if os.name == "nt":
+        if os.name == 'nt':
             import ctypes
-            myappid = "uk.huntfx.mousetracks"
+            myappid = 'uk.huntfx.mousetracks'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         app.setStyle('Fusion')
@@ -1140,7 +1137,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_gamepad_pressed = True
             self.handle_delete_button_visibility()
-            self.q_send.put(ipc.DeleteGamepadData(profile))
+            self.component.send_data(ipc.DeleteGamepadData(profile))
             self._unsaved_profiles.add(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
