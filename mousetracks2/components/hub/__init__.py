@@ -156,6 +156,13 @@ class Hub:
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Hub] Test Exception')
 
+                case ipc.RequestQueueSize():
+                    self._q_main.put(ipc.QueueSize(self._q_main.qsize(),
+                                                   self._q_tracking.qsize(),
+                                                   self._q_processing.qsize(),
+                                                   self._q_gui.qsize(),
+                                                   self._q_app_detection.qsize()))
+
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:
             self._q_tracking.put(message)

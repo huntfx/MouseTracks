@@ -361,3 +361,18 @@ class DeleteNetworkData(Message):
 class Autosave(Message):
     target: int = field(default=Target.Tracking, init=False)
     enabled: bool
+
+
+@dataclass
+class RequestQueueSize(Message):
+    target: int = field(default=Target.Hub, init=False)
+
+
+@dataclass
+class QueueSize(Message):
+    target: int = field(default=Target.GUI, init=False)
+    hub: int
+    tracking: int
+    processing: int
+    gui: int
+    app_detection: int

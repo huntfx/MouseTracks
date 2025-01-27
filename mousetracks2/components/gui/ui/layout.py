@@ -604,7 +604,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 259, 494))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -155, 259, 516))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -745,48 +745,57 @@ class Ui_MainWindow(object):
 
         self.groupBox_14 = QGroupBox(self.scrollAreaWidgetContents_3)
         self.groupBox_14.setObjectName(u"groupBox_14")
-        self.groupBox_14.setEnabled(False)
         self.gridLayout_9 = QGridLayout(self.groupBox_14)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
         self.stat_tracking_queue = QLabel(self.groupBox_14)
         self.stat_tracking_queue.setObjectName(u"stat_tracking_queue")
 
-        self.gridLayout_9.addWidget(self.stat_tracking_queue, 0, 1, 1, 1)
-
-        self.label_45 = QLabel(self.groupBox_14)
-        self.label_45.setObjectName(u"label_45")
-
-        self.gridLayout_9.addWidget(self.label_45, 1, 0, 1, 1)
-
-        self.label_49 = QLabel(self.groupBox_14)
-        self.label_49.setObjectName(u"label_49")
-
-        self.gridLayout_9.addWidget(self.label_49, 3, 0, 1, 1)
-
-        self.label_43 = QLabel(self.groupBox_14)
-        self.label_43.setObjectName(u"label_43")
-
-        self.gridLayout_9.addWidget(self.label_43, 0, 0, 1, 1)
+        self.gridLayout_9.addWidget(self.stat_tracking_queue, 1, 1, 1, 1)
 
         self.stat_processing_queue = QLabel(self.groupBox_14)
         self.stat_processing_queue.setObjectName(u"stat_processing_queue")
 
-        self.gridLayout_9.addWidget(self.stat_processing_queue, 1, 1, 1, 1)
+        self.gridLayout_9.addWidget(self.stat_processing_queue, 2, 1, 1, 1)
+
+        self.label_43 = QLabel(self.groupBox_14)
+        self.label_43.setObjectName(u"label_43")
+
+        self.gridLayout_9.addWidget(self.label_43, 1, 0, 1, 1)
+
+        self.label_45 = QLabel(self.groupBox_14)
+        self.label_45.setObjectName(u"label_45")
+
+        self.gridLayout_9.addWidget(self.label_45, 2, 0, 1, 1)
+
+        self.label_49 = QLabel(self.groupBox_14)
+        self.label_49.setObjectName(u"label_49")
+
+        self.gridLayout_9.addWidget(self.label_49, 4, 0, 1, 1)
+
+        self.stat_app_detection_queue = QLabel(self.groupBox_14)
+        self.stat_app_detection_queue.setObjectName(u"stat_app_detection_queue")
+
+        self.gridLayout_9.addWidget(self.stat_app_detection_queue, 4, 1, 1, 1)
 
         self.label_44 = QLabel(self.groupBox_14)
         self.label_44.setObjectName(u"label_44")
 
-        self.gridLayout_9.addWidget(self.label_44, 2, 0, 1, 1)
+        self.gridLayout_9.addWidget(self.label_44, 0, 0, 1, 1)
 
         self.stat_hub_queue = QLabel(self.groupBox_14)
         self.stat_hub_queue.setObjectName(u"stat_hub_queue")
 
-        self.gridLayout_9.addWidget(self.stat_hub_queue, 2, 1, 1, 1)
+        self.gridLayout_9.addWidget(self.stat_hub_queue, 0, 1, 1, 1)
 
-        self.stat_app_queue = QLabel(self.groupBox_14)
-        self.stat_app_queue.setObjectName(u"stat_app_queue")
+        self.label_12 = QLabel(self.groupBox_14)
+        self.label_12.setObjectName(u"label_12")
 
-        self.gridLayout_9.addWidget(self.stat_app_queue, 3, 1, 1, 1)
+        self.gridLayout_9.addWidget(self.label_12, 3, 0, 1, 1)
+
+        self.stat_gui_queue = QLabel(self.groupBox_14)
+        self.stat_gui_queue.setObjectName(u"stat_gui_queue")
+
+        self.gridLayout_9.addWidget(self.stat_gui_queue, 3, 1, 1, 1)
 
 
         self.verticalLayout.addWidget(self.groupBox_14)
@@ -1046,13 +1055,15 @@ class Ui_MainWindow(object):
         self.label_40.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
         self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Queue Size", None))
         self.stat_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.stat_processing_queue.setText(QCoreApplication.translate("MainWindow", u"12", None))
+        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
         self.label_45.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
         self.label_49.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
-        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
-        self.stat_processing_queue.setText(QCoreApplication.translate("MainWindow", u"12", None))
+        self.stat_app_detection_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.label_44.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
         self.stat_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.stat_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"GUI", None))
+        self.stat_gui_queue.setText(QCoreApplication.translate("MainWindow", u"1", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
 
         __sortingEnabled = self.listWidget_3.isSortingEnabled()

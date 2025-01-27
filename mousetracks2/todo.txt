@@ -14,7 +14,6 @@
 [QOL]
 - Store previous render in case of background thread busy, show blank image if not
 - Queue multiple render requests
-- Use .qsize() to show how backlogged the queue is
 
 [Low Priority]
 - Option to disable multi monitor handling, track both separately

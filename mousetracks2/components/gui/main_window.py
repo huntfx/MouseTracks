@@ -183,6 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
+        self.timer_activity.timeout.connect(self.update_queue_size)
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
@@ -373,6 +374,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_time_since_thumbnail(self) -> None:
         """Set how long it has been since the last thumbnail render."""
         self.ui.time_since_thumbnail.setText(f'{round(time.time() - self._last_thumbnail_time, 1)} s')
+
+    def update_queue_size(self) -> None:
+        """Request an update of the queue size."""
+        self.component.send_data(ipc.RequestQueueSize())
 
     @property
     def bytes_sent(self) -> int:
@@ -828,6 +833,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
+
+            case ipc.QueueSize():
+                self.ui.stat_hub_queue.setText(str(message.hub))
+                self.ui.stat_tracking_queue.setText(str(message.tracking))
+                self.ui.stat_processing_queue.setText(str(message.processing))
+                self.ui.stat_gui_queue.setText(str(message.gui))
+                self.ui.stat_app_detection_queue.setText(str(message.app_detection))
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
