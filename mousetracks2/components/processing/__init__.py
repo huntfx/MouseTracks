@@ -55,7 +55,6 @@ class Processing:
         self.previous_mouse_click: PreviousMouseClick | None = None
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
-        self.pause_tick = 0
         self.state = ipc.TrackingState.State.Pause
 
         # Load in the default profile
@@ -234,13 +233,6 @@ class Processing:
 
             case ipc.RenderType.TimeHeatmap:
                 arrays[0, 0].extend(profile.cursor_map.density_arrays.values())
-
-            # Subtract a value from each array and ensure it doesn't go below 0
-            case ipc.RenderType.TimeSincePause:
-                for array in profile.cursor_map.sequential_arrays.values():
-                    partial_array = np.asarray(array).astype(np.int64) - self.pause_tick
-                    partial_array[partial_array < 0] = 0
-                    arrays[0, 0].append(partial_array)
 
             case ipc.RenderType.Speed:
                 arrays[0, 0].extend(profile.cursor_map.speed_arrays.values())
@@ -523,8 +515,6 @@ class Processing:
                         self.profile.cursor_map.position = cursor_position()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
-                    case ipc.TrackingState.State.Pause:
-                        self.pause_tick = self.profile.cursor_map.counter
                 self.state = message.state
 
             case ipc.ApplicationDetected():

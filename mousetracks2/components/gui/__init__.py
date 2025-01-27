@@ -139,7 +139,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # self.ui.map_type = QtWidgets.QComboBox()
         self.ui.map_type.addItem('[Mouse] Time', ipc.RenderType.Time)
-        self.ui.map_type.addItem('[Mouse] Time (since pause)', ipc.RenderType.TimeSincePause)
         self.ui.map_type.addItem('[Mouse] Heatmap', ipc.RenderType.TimeHeatmap)
         self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.Speed)
         self.ui.map_type.addItem('[Mouse] Clicks', ipc.RenderType.SingleClick)
@@ -282,7 +281,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.addItem('BlackToRedToWhite')
 
         colour_maps = colours.get_map_matches(
-            tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause, ipc.RenderType.Speed,
+            tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.Speed,
                                    ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed),
             clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
                                    ipc.RenderType.Thumbstick_Heatmap, ipc.RenderType.TimeHeatmap),
@@ -578,7 +577,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 count = self.cursor_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             # With speed it must be constant, doesn't work as well live
-            case ipc.RenderType.Speed | ipc.RenderType.TimeSincePause | ipc.RenderType.TimeHeatmap:
+            case ipc.RenderType.Speed | ipc.RenderType.TimeHeatmap:
                 update_frequency = 50
                 count = self.cursor_data.counter
             case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
@@ -699,8 +698,6 @@ class MainWindow(QtWidgets.QMainWindow):
                             name = 'Mouse Tracks'
                         case ipc.RenderType.TimeHeatmap:
                             name = 'Mouse Heatmap'
-                        case ipc.RenderType.TimeSincePause:  # TODO: switch to time since load
-                            name = 'Mouse Tracks'
                         case ipc.RenderType.Speed:
                             name = 'Mouse Speed'
                         case ipc.RenderType.SingleClick:
@@ -730,7 +727,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_held_count += 1
 
             case ipc.MouseMove() if self.is_live and self.ui.track_mouse.isChecked():
-                if self.render_type in (ipc.RenderType.Time, ipc.RenderType.TimeSincePause):
+                if self.render_type == ipc.RenderType.Time:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -877,10 +874,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def pause_tracking(self) -> None:
         """Pause/unpause the script."""
         self.q_send.put(ipc.TrackingState(ipc.TrackingState.State.Pause))
-
-        # Special case to redraw thumbnail
-        if self.ui.map_type.currentData() == ipc.RenderType.TimeSincePause:
-            self.request_thumbnail()
 
     @QtCore.Slot()
     def stop_tracking(self) -> None:
