@@ -24,14 +24,21 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
     return f'{round(cm, 3)} cm'
 
 
-def format_ticks(ticks: int) -> str:
+def format_ticks(ticks: int, accuracy: bool = 1) -> str:
     """Convert ticks to a formatted time string."""
     seconds = ticks / UPDATES_PER_SECOND
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
 
-    return f'{int(days):02}:{int(hours):02}:{int(minutes):02}:{seconds:04.1f}'
+    parts = [f'{seconds:03.{accuracy}f}s']
+    if minutes or hours or days:
+        parts.append(f'{int(minutes)}m')
+        if hours or days:
+            parts.append(f'{int(hours)}h')
+            if days:
+                parts.append(f'{int(days)}d')
+    return ' '.join(reversed(parts))
 
 
 def format_bytes(b: int) -> str:

@@ -407,7 +407,7 @@ class Processing:
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height, message.colour_map, message.sampling)
-                self.q_send.put(ipc.Render(image, message.sampling, message.thumbnail))
+                self.q_send.put(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')
 

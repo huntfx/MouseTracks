@@ -190,8 +190,7 @@ class Render(Message):
 
     target: int = field(default=Target.GUI, init=False)
     array: np.ndarray
-    sampling: int
-    thumbnail: bool = field(default=False)
+    request: RenderRequest
 
 
 

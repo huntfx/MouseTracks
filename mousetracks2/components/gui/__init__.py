@@ -648,11 +648,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 height, width, channels = message.array.shape
                 failed = width == height == 0
 
-                target_height = int(height / message.sampling)
-                target_width = int(width / message.sampling)
+                target_height = int(height / message.request.sampling)
+                target_width = int(width / message.request.sampling)
 
                 # Draw the new pixmap
-                if message.thumbnail:
+                if message.request.thumbnail:
                     self._last_thumbnail_time = time.time()
                     match channels:
                         case 1:
@@ -693,7 +693,32 @@ class MainWindow(QtWidgets.QMainWindow):
                     dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
                     dialog.setNameFilters(['PNG Files (*.png)"'])
                     dialog.setDefaultSuffix('png')
-                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', '', 'Image Files (*.png)')
+
+                    match message.request.type:
+                        case ipc.RenderType.Time:
+                            name = 'Mouse Tracks'
+                        case ipc.RenderType.TimeHeatmap:
+                            name = 'Mouse Heatmap'
+                        case ipc.RenderType.TimeSincePause:  # TODO: switch to time since load
+                            name = 'Mouse Tracks'
+                        case ipc.RenderType.Speed:
+                            name = 'Mouse Speed'
+                        case ipc.RenderType.SingleClick:
+                            name = 'Mouse Clicks'
+                        case ipc.RenderType.DoubleClick:
+                            name = 'Mouse Double Clicks'
+                        case ipc.RenderType.HeldClick:
+                            name = 'Mouse Held Clicks'
+                        case ipc.RenderType.Thumbstick_Time:
+                            name = 'Gamepad Thumbstick Tracks'
+                        case ipc.RenderType.Thumbstick_Heatmap:
+                            name = 'Gamepad Thumbstick Heatmap'
+                        case ipc.RenderType.Thumbstick_Speed:
+                            name = 'Gamepad Thumbstick Speed'
+                        case _:
+                            name = 'Tracks'
+                    filename = f'[{format_ticks(self.elapsed_time)}][{message.request.colour_map}] {name}.png'
+                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
 
                     if accept:
                         im = Image.fromarray(message.array)
@@ -757,7 +782,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.ApplicationDetected():
                 self.current_profile = Profile(message.name, message.rect)
-                self.request_profile_data(message.name)
+
+                if self.is_live:
+                    self.request_profile_data(message.name)
 
             # Show the correct distance
             case ipc.ProfileData():
