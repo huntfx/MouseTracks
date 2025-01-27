@@ -12,7 +12,8 @@ from uuid import uuid4
 
 import numpy as np
 
-from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
+from .config import ProfileConfig
+from .constants import BASE_DIR, COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
 from .utils.keycodes import CLICK_CODES
 
 
@@ -30,19 +31,6 @@ CURRENT_FILE_VERSION = 1
 
 EXTENSION = 'mtk'
 """Extension to use for the profile data."""
-
-
-# Get the appdata folder
-# Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
-match sys.platform:
-    case "win32":
-        APPDATA = Path(os.path.expandvars('%APPDATA%'))
-    case 'darwin':
-        APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
-    case _:
-        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser("~/.local/share")))
-
-BASE_DIR = APPDATA / 'MouseTracks'
 
 PROFILE_DIR = BASE_DIR / 'Profiles'
 
@@ -300,44 +288,49 @@ class TrackingProfile:
     Everything that gets saved to disk is contained in here.
     """
 
-    name: str
+    name: str = ''
 
-    created: int = field(default_factory=lambda: int(time.time()))
-    modified: bool = field(default=False)
-    elapsed: int = field(default=0)
-    active: int = field(default=0)
-    inactive: int = field(default=0)
+    config: ProfileConfig = field(default_factory=ProfileConfig, init=False)
 
-    cursor_map: MovementMaps = field(default_factory=MovementMaps)
-    thumbstick_l_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
-    thumbstick_r_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps))
+    created: int = field(default_factory=lambda: int(time.time()), init=False)
+    modified: bool = field(default=False, init=False)
+    elapsed: int = field(default=0, init=False)
+    active: int = field(default=0, init=False)
+    inactive: int = field(default=0, init=False)
 
-    mouse_single_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
-    mouse_double_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
-    mouse_held_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap))
+    cursor_map: MovementMaps = field(default_factory=MovementMaps, init=False)
+    thumbstick_l_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps), init=False)
+    thumbstick_r_map: dict[int, MovementMaps] = field(default_factory=lambda: defaultdict(MovementMaps), init=False)
 
-    key_presses: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]))
-    key_held: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]))
+    mouse_single_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap), init=False)
+    mouse_double_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap), init=False)
+    mouse_held_clicks: dict[int, ArrayResolutionMap] = field(default_factory=lambda: defaultdict(ArrayResolutionMap), init=False)
 
-    button_presses: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
-    button_held: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)))
+    key_presses: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]), init=False)
+    key_held: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(0xFF, auto_pad=[True]), init=False)
 
-    data_interfaces: dict[str, str | None] = field(default_factory=lambda: defaultdict(str))
-    data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int))
-    data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    button_presses: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)), init=False)
+    button_held: dict[int, TrackingIntArray] = field(default_factory=lambda: defaultdict(lambda: TrackingIntArray(20)), init=False)
 
-    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray([1, 3], auto_pad=[True, False]))
-    daily_distance: TrackingArray = field(default_factory=lambda: TrackingArray(1, np.float32, auto_pad=True))
-    daily_clicks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
-    daily_scrolls: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
-    daily_keys: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
-    daily_buttons: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
-    daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
-    daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True))
+    data_interfaces: dict[str, str | None] = field(default_factory=lambda: defaultdict(str), init=False)
+    data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
+    data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
+
+    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray([1, 3], auto_pad=[True, False]), init=False)
+    daily_distance: TrackingArray = field(default_factory=lambda: TrackingArray(1, np.float32, auto_pad=True), init=False)
+    daily_clicks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
+    daily_scrolls: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
+    daily_keys: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
+    daily_buttons: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
+    daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
+    daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
 
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
+
+        with zf.open('config.yaml', 'w') as f:
+            self.config.save(f)
 
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
@@ -387,6 +380,10 @@ class TrackingProfile:
         all_paths = zf.namelist()
 
         self.name = zf.read('metadata/name').decode('utf-8')
+        if 'config.yaml' in all_paths:
+            with zf.open('config.yaml', 'r') as f:
+                self.config.load(f)
+
         self.created = int(zf.read('metadata/time/created'))
         self.elapsed = int(zf.read('metadata/ticks/elapsed'))
         self.active = int(zf.read('metadata/ticks/active'))
@@ -486,7 +483,7 @@ class TrackingProfile:
 
     @classmethod
     def load(cls, path: str, allow_legacy: bool = ALLOW_LEGACY_IMPORT) -> Self:
-        profile = cls('')
+        profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
             version = _get_profile_version(zf)
 
@@ -605,7 +602,8 @@ class TrackingProfileLoader(dict):
         if os.path.exists(filename):
             self[profile_name] = TrackingProfile.load(filename)
         else:
-            self[profile_name] = TrackingProfile(profile_name)
+            self[profile_name] = profile = TrackingProfile()
+            profile.name = profile_name
         return self[profile_name]
 
 

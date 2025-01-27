@@ -16,7 +16,7 @@ from mousetracks.image import colours
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .. import ipc
 from ...ui.main import Ui_MainWindow
-from ...config import Config
+from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
 from ...file import get_profile_names
@@ -91,7 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
         self.q_send = q_send
         self.q_receive = q_receive
-        self.config = Config()
+        self.config = GlobalConfig()
 
         self.pause_redraw = 0
         self.pause_colour_change = False
@@ -1133,7 +1133,7 @@ def run(q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None
 
         app.setStyle('Fusion')
         m = MainWindow(q_send, q_receive)
-        if not Config().minimise_on_start:
+        if not GlobalConfig().minimise_on_start:
             m.show()
         icon = QtGui.QIcon(ICON_PATH)
         app.setWindowIcon(icon)
