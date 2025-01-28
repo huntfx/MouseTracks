@@ -1179,12 +1179,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         AutoRun()(value)
 
-        self.tray.showMessage(
-            self.windowTitle(),
-            f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.',
-            self.tray.icon(),
-            2000,
-        )
+        if self.tray is not None:
+            self.tray.showMessage(
+                self.windowTitle(),
+                f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.',
+                self.tray.icon(),
+                2000,
+            )
 
     @QtCore.Slot(bool)
     def set_minimise_on_start(self, value: bool) -> None:

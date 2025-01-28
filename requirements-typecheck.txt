@@ -1,0 +1,6 @@
+mypy==1.14.1
+types-psutil==6.1.*
+types-pywin32==308.*
+types-pynput==1.7.*
+types-PyYAML==6.0.*
+scipy-stubs==1.14.*

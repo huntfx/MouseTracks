@@ -210,32 +210,3 @@ class AutoRun:
                 return None
         except OSError:
             return None
-
-
-if __name__ == '__main__':
-    '''
-    wh = WindowHandle.from_title('Untitled - Notepad')
-    print(list(wh.modules))
-    print(wh.executable)
-    '''
-
-    hwnd = win32gui.FindWindow('Notepad', None)
-    win32con.WS_EX_TOPMOST
-
-    #top_most(hwnd)
-    print(win32gui.GetWindowText(hwnd))
-
-    top_windows = {}
-    def window_enumeration_handler(hwnd, top_windows):
-        """Add window title and ID to array."""
-        top_windows[win32process.GetWindowThreadProcessId(hwnd)[1]] = hwnd
-        #top_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
-    win32gui.EnumWindows(window_enumeration_handler, top_windows)
-    for i in top_windows:
-        print(i)
-
-
-    '''
-    from win32gui import GetWindowText, GetForegroundWindow
-    print GetWindowText(GetForegroundWindow())
-    '''

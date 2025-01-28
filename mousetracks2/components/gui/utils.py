@@ -24,7 +24,7 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
     return f'{round(cm, 3)} cm'
 
 
-def format_ticks(ticks: int, accuracy: bool = 1) -> str:
+def format_ticks(ticks: int, accuracy: int = 1) -> str:
     """Convert ticks to a formatted time string."""
     seconds = ticks / UPDATES_PER_SECOND
     minutes, seconds = divmod(seconds, 60)

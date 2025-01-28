@@ -17,9 +17,13 @@ if errorlevel 1 (
     exit /b 1
 )
 :: Ensure type stubs are installed
-python -m pip install mypy types-psutil types-pywin32 types-pynput scipy-stubs
+python -m pip install -r requirements-typecheck.txt --upgrade
+if errorlevel 1 (
+    echo Failed to install or update modules. Exiting.
+    exit /b 1
+)
 
-:: Run the application entry point
+:: Run mypy on the entry point
 python -m mypy launch.py
 
 :: Exit the virtual environment

@@ -1,12 +1,10 @@
 import os
 import pickle
 import re
-import sys
 import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Iterator, Self
 from uuid import uuid4
 
@@ -40,7 +38,7 @@ class UnsupportedVersionError(Exception):
 
 
 class TrackingArray:
-    def __init__(self, shape: int | list[int] | np.ndarray, dtype, auto_pad: bool | list[bool] = False) -> None:
+    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, dtype, auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -141,7 +139,7 @@ class TrackingIntArray(TrackingArray):
 
     MAX_VALUES: list[int] = [np.iinfo(dtype).max for dtype in DTYPES]
 
-    def __init__(self, shape: int | list[int] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -188,7 +186,7 @@ class ArrayResolutionMap(dict):
     """
 
     def __missing__(self, key: tuple[int, int]) -> TrackingIntArray:
-        self[key] = TrackingIntArray([key[1], key[0]])
+        self[key] = TrackingIntArray((key[1], key[0]))
         return self[key]
 
     def __setitem__(self, key: tuple[int, int], array: np.ndarray | TrackingIntArray) -> None:
@@ -316,7 +314,7 @@ class TrackingProfile:
     data_upload: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     data_download: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
 
-    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray([1, 3], auto_pad=[True, False]), init=False)
+    daily_ticks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray((1, 3), auto_pad=[True, False]), init=False)
     daily_distance: TrackingArray = field(default_factory=lambda: TrackingArray(1, np.float32, auto_pad=True), init=False)
     daily_clicks: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
     daily_scrolls: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
@@ -543,19 +541,19 @@ def _load_legacy_data(zf: zipfile.ZipFile, profile: TrackingProfile) -> None:
     # Process main tracking data
     for resolution, values in data['Resolution'].items():
         # Load tracking heatmap
-        for array_type, container in (('Tracks', profile.cursor_map.sequential_arrays), ('Speed', profile.cursor_map.speed_arrays)):
+        for array_type, cursor_container in (('Tracks', profile.cursor_map.sequential_arrays), ('Speed', profile.cursor_map.speed_arrays)):
             with zf.open(f'maps/{values[array_type]}.npy') as f:
                 array = np.load(f)
                 if np.any(array > 0):
-                    container[resolution] = TrackingIntArray(array)
+                    cursor_container[resolution] = TrackingIntArray(array)
 
         # Load click heatmap
-        for array_type, container in (('Single', profile.mouse_single_clicks), ('Double', profile.mouse_double_clicks)):
+        for array_type, click_container in (('Single', profile.mouse_single_clicks), ('Double', profile.mouse_double_clicks)):
             for i, mb in enumerate(('Left', 'Middle', 'Right')):
                 with zf.open(f'maps/{values["Clicks"][array_type][mb]}.npy') as f:
                     array = np.load(f)
                     if np.any(array > 0):
-                        container[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
+                        click_container[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
 
     # Process key/button data
     for keycode, count in data['Keys']['All']['Pressed'].items():

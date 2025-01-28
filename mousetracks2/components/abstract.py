@@ -20,7 +20,7 @@ class Component:
         return type(self).__name__
 
     @property
-    def target(self) -> ipc.Target:
+    def target(self) -> int:
         """Get the component target enum."""
         # TODO: Define this in subclasses
         match self.name:

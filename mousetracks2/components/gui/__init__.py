@@ -39,7 +39,7 @@ class QueueWorker(QtCore.QObject):
 
 
 class GUI(Component):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Setup the threads."""
         self.error: Exception | None = None
 
@@ -49,7 +49,7 @@ class GUI(Component):
         self.receiver_thread.started.connect(self.receiver_worker.run)
         self.receiver_thread.finished.connect(self.receiver_worker.deleteLater)
 
-    def on_exit(self):
+    def on_exit(self) -> None:
         """Safely exit the threads."""
         self.receiver_thread.quit()
         self.receiver_thread.wait()

@@ -1,3 +1,0 @@
-Qt.py
-PySide2
-vfxwindow

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import BinaryIO
+from typing import IO
 
 import yaml
 
@@ -16,15 +16,15 @@ class GlobalConfig:
 
     minimise_on_start: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.load()
 
-    def save(self):
+    def save(self) -> None:
         """Save the config to a YAML file."""
         with open(GLOBAL_CONFIG_PATH, "w", encoding="utf-8") as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
 
-    def load(self):
+    def load(self) -> None:
         """Load the config from a YAML file, if it exists."""
         if GLOBAL_CONFIG_PATH.exists():
             with open(GLOBAL_CONFIG_PATH, 'r', encoding='utf-8') as f:
@@ -44,11 +44,11 @@ class ProfileConfig:
     track_gamepad: bool = True
     track_network: bool = True
 
-    def save(self, f: BinaryIO) -> None:
+    def save(self, f: IO[bytes]) -> None:
         """Save the config to a YAML file."""
         yaml.dump(self.__dict__, f, default_flow_style=False, encoding='utf-8')
 
-    def load(self, f: BinaryIO):
+    def load(self, f: IO[bytes]) -> None:
         """Load the config from a YAML file if it exists."""
         self.__dict__.update(yaml.safe_load(f.read()))
 
