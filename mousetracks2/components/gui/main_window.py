@@ -78,7 +78,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_redraw = 0
         self.pause_colour_change = False
         self.redraw_queue: list[Pixel] = []
-        self.shutting_down = False
         self._last_save_time = self._last_thumbnail_time = time.time()
         self._delete_mouse_pressed = False
         self._delete_keyboard_pressed = False
@@ -103,7 +102,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
             self.tray.show()
-            self.hide()
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
@@ -894,8 +892,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def shut_down(self) -> None:
-        """Trigger a shutdown of the application."""
-        self.shutting_down = True
+        """Trigger a safe shutdown of the application."""
+        # If invisible then the close event does not end the QApplication
+        if not self.isVisible():
+            self.show()
+
         self.close()
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
@@ -942,7 +943,6 @@ class MainWindow(QtWidgets.QMainWindow):
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
-                self.shutting_down = False
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
