@@ -163,6 +163,9 @@ class Hub:
                                                    self._q_gui.qsize(),
                                                    self._q_app_detection.qsize()))
 
+                case ipc.ToggleConsole():
+                    self._toggle_console(message.show)
+
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:
             self._q_tracking.put(message)
@@ -179,15 +182,18 @@ class Hub:
         if message.target & ipc.Target.AppDetection:
             self._q_app_detection.put(message)
 
+    def _toggle_console(self, show: bool) -> None:
+        """Show or hide the console."""
+        hwnd = WindowHandle(parent=False, console=True)
+        if hwnd.pid:
+            hwnd.restore() if show else hwnd.hide()
+        else:
+            self._q_main.put(ipc.InvalidConsole())
+
     def run(self, gui: bool = True) -> None:
         """Setup the tracking."""
         if gui:
             self._p_gui.start()
-
-            # Hide the console window if running as an executable
-            if sys.argv[0].endswith('.exe') and '--console' not in sys.argv:
-                self._hwnd = WindowHandle(parent=False, console=True)
-                self._hwnd.hide()
 
         else:
             self.start_tracking()
@@ -211,8 +217,7 @@ class Hub:
         except Exception:
             traceback.print_exc()
             # Show console if hidden
-            if self._hwnd is not None:
-                self._hwnd.restore()
+            self._toggle_console(True)
             error_occurred = True
 
         finally:

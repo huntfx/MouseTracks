@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import math
+import sys
 import time
-import traceback
 from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
@@ -18,7 +18,7 @@ from .widgets import Pixel
 from .. import ipc
 from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS
+from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE
 from ...file import get_profile_names
 from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
@@ -83,16 +83,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
         self._delete_network_pressed = False
+        self._profile_names = get_profile_names()
+        self._unsaved_profiles: set[str] = set()
+        self._redrawing_profiles = False
         self._is_loading_profile = 0
 
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Set initial widget states
         self.ui.output_logs.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
         try:
             self.ui.prefs_autorun.setChecked(bool(AutoRun()))
         except ValueError:
             self.ui.prefs_autorun.setEnabled(False)
+        self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
+        self.ui.prefs_console.setChecked(not IS_EXE)
 
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
@@ -107,9 +114,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.menu_allow_minimise.setChecked(False)
             self.ui.menu_allow_minimise.setEnabled(False)
 
-        self._profile_names = get_profile_names()
-        self._unsaved_profiles: set[str] = set()
-        self._redrawing_profiles = False
         self.current_profile = Profile(DEFAULT_PROFILE_NAME)
         #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
 
@@ -156,7 +160,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
         self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
-        self.ui.current_profile.currentIndexChanged.connect(self.profile_changed_user)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
@@ -180,6 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_exit.triggered.connect(self.shut_down)
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
+        self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -197,11 +201,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.timer_activity.start(100)
 
-        # Trigger initial signals
+        # Trigger initial setup
         self.profile_changed(0)
-
-        # Load in data for the default profile to ensure the UI is up to date
-        self.request_profile_data(DEFAULT_PROFILE_NAME)
+        self.toggle_console(not IS_EXE)
 
     @property
     def render_colour(self) -> str:
@@ -466,18 +468,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
-        """Change the profile."""
+        """Change the profile and trigger a redraw."""
         self.ui.tab_options.setTabText(1, f'{self.ui.current_profile.itemData(idx)} Options')
 
-    @QtCore.Slot(int)
-    def profile_changed_user(self, idx: int) -> None:
-        """Change the profile and trigger a redraw."""
-        if self._redrawing_profiles:
-            return
-
-        self.request_profile_data(self.ui.current_profile.itemData(idx))
-        if idx:
-            self.ui.auto_switch_profile.setChecked(False)
+        if not self._redrawing_profiles:
+            self.request_profile_data(self.ui.current_profile.itemData(idx))
+            if idx:
+                self.ui.auto_switch_profile.setChecked(False)
 
     def request_profile_data(self, profile_name: str) -> None:
         """Request loading profile data."""
@@ -841,6 +838,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.stat_gui_queue.setText(str(message.gui))
                 self.ui.stat_app_detection_queue.setText(str(message.app_detection))
 
+            case ipc.InvalidConsole():
+                self.ui.prefs_console.setEnabled(False)
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the script."""
@@ -1182,6 +1182,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
+
+    @QtCore.Slot(bool)
+    def toggle_console(self, show: bool) -> None:
+        """Show or hide the console."""
+        self.config.show_console = show
+        self.config.save()
+        self.component.send_data(ipc.ToggleConsole(show))
 
     def notify(self, message: str) -> None:
         """Show a notification.

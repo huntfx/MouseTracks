@@ -16,6 +16,8 @@ import win32gui
 import win32process
 import winreg
 
+from ..constants import IS_EXE
+
 
 def cursor_position() -> tuple[int, int] | None:
     """Get the current mouse position.
@@ -180,7 +182,7 @@ class AutoRun:
 
     def __init__(self, executable: str = os.path.abspath(sys.argv[0]), name: str = 'MouseTracks'):
         self.executable = executable
-        if not self.executable.lower().endswith('.exe'):
+        if not IS_EXE:
            raise ValueError('running on startup not supported when running as a script')
         self.name = name
 

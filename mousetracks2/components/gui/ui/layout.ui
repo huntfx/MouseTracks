@@ -1230,6 +1230,7 @@
     </property>
     <addaction name="prefs_autorun"/>
     <addaction name="prefs_automin"/>
+    <addaction name="prefs_console"/>
     <addaction name="separator"/>
     <addaction name="prefs_track_mouse"/>
     <addaction name="prefs_track_keyboard"/>
@@ -1526,6 +1527,17 @@
    </property>
    <property name="text">
     <string>Minimise at Launch</string>
+   </property>
+  </action>
+  <action name="prefs_console">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Console</string>
    </property>
   </action>
  </widget>

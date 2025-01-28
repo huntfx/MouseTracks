@@ -38,3 +38,6 @@ RADIAL_ARRAY_SIZE = 2048
 
 DEBUG = True
 """Switch on assertion statements for testing."""
+
+IS_EXE = getattr(sys, 'frozen', False)
+"""Determine if running as an executable."""

@@ -376,3 +376,14 @@ class QueueSize(Message):
     processing: int
     gui: int
     app_detection: int
+
+
+@dataclass
+class ToggleConsole(Message):
+    target: int = field(default=Target.Hub, init=False)
+    show: bool
+
+
+@dataclass
+class InvalidConsole(Message):
+    target: int = field(default=Target.GUI, init=False)
