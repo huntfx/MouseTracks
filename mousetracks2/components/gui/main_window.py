@@ -199,8 +199,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.debug_raise_gui.triggered.connect(self.raise_gui)
         self.ui.debug_raise_hub.triggered.connect(self.raise_hub)
 
-        self.timer_activity.start(100)
-
         # Trigger initial setup
         self.profile_changed(0)
         self.toggle_console(not IS_EXE)
@@ -518,21 +516,18 @@ class MainWindow(QtWidgets.QMainWindow):
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
-        if not force:
-            # If already redrawing then prevent building up commands
-            if self.pause_redraw:
-                return False
-            # Pause when minimised
-            if not self.isVisible():
-                return False
+        # Block when minimised
+        if not self.isVisible():
+            return False
+
+        # If already redrawing then prevent building up duplicate commands
+        if self.pause_redraw and not force:
+            return False
         self.pause_redraw += 1
 
-        app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
-        size = self.ui.thumbnail.pixmapSize()
-
-        # Request size at the current height of the field, since it's likely width > height
-        self.component.send_data(ipc.RenderRequest(self.render_type, None, size.height(),
-                                                   self.render_colour, 1, app, True))
+        # Request size at the current height, since it's likely width > height
+        self.component.send_data(ipc.RenderRequest(self.render_type, None, self.ui.thumbnail.height(),
+                                                   self.render_colour, 1, self.ui.current_profile.currentData(), True))
         return True
 
     def request_render(self) -> None:
@@ -570,7 +565,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case _:
                 return
 
-        # Don't re-render if there's no data
+        # Don't render if there's no data
         if not count:
             return
 
@@ -911,9 +906,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def maximise(self):
         """Maximise the window."""
         if not self.isVisible():
-            self.request_thumbnail(force=True)
             self.setWindowState(self.windowState() & ~QtCore.Qt.WindowState.WindowMinimized)
             self.show()
+            self.resize(self.geometry().width(), self.geometry().height())
+            self.request_thumbnail(force=True)
+            self.timer_activity.start(100)
         self.raise_()
         self.activateWindow()
 
@@ -925,6 +922,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.hide()
         self.notify(f'{self.windowTitle()} is now running in the background.')
+        self.timer_activity.stop()
 
     def ask_to_save(self) -> bool:
         """Ask the user to save.
