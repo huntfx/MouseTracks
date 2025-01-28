@@ -126,7 +126,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('[Gamepad] Thumbstick Speed', ipc.RenderType.Thumbstick_Speed)
 
         # Thumbnail pixmap
-        self.ui.thumbnail.setPixmap(QtGui.QPixmap(640, 400))
+        pixmap = QtGui.QPixmap(1, 1)
+        pixmap.fill(QtCore.Qt.GlobalColor.transparent)
+        self.ui.thumbnail.setPixmap(pixmap)
 
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
