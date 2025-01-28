@@ -203,7 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Trigger initial setup
         self.profile_changed(0)
-        self.toggle_console(not IS_EXE)
 
     @property
     def render_colour(self) -> str:

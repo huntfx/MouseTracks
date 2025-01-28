@@ -15,7 +15,7 @@ import queue
 
 from .. import ipc, app_detection, tracking, processing, gui
 from ..gui.splash import SplashScreen
-from ...constants import UPDATES_PER_SECOND
+from ...constants import IS_EXE, UPDATES_PER_SECOND
 from ...exceptions import ExitRequest
 from mousetracks.utils.os.windows.ctypes import WindowHandle
 
@@ -197,17 +197,22 @@ class Hub:
 
     def run(self, launch_gui: bool = True) -> None:
         """Setup the tracking."""
-        if launch_gui:
-            self.splash = SplashScreen.standalone()
-            self._p_gui.start()
-
-        else:
-            self.start_tracking()
-
         running = True
         error_occurred = False
-        print('[Hub] Queue handler started.')
         try:
+            # Start the app
+            print('[Hub] Launching application...')
+            if launch_gui:
+                if IS_EXE:
+                    self._toggle_console(False)
+                self.splash = SplashScreen.standalone()
+                self._p_gui.start()
+
+            else:
+                self.start_tracking()
+
+            # Listen for
+            print('[Hub] Queue handler started.')
             while running or not self._q_main.empty():
                 try:
                     self._process_message(self._q_main.get())
