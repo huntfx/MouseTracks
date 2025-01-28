@@ -387,3 +387,13 @@ class ToggleConsole(Message):
 @dataclass
 class InvalidConsole(Message):
     target: int = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class CloseSplashScreen(Message):
+    """Send a request to close the splash screen.
+    The splash screen is run by the hub, and waits for the GUI to finish
+    loading before closing.
+    """
+
+    target: int = field(default=Target.Hub, init=False)

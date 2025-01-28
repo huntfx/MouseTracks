@@ -69,6 +69,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     exception_raised = QtCore.Signal(Exception)
 
+    close_splash_screen = QtCore.Signal()
+
     def __init__(self, component: GUI) -> None:
         super().__init__()
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
@@ -836,6 +838,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)
 
+            case ipc.CloseSplashScreen():
+                self.close_splash_screen.emit()
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the script."""
@@ -1185,8 +1190,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
-        self.config.show_console = show
-        self.config.save()
         self.component.send_data(ipc.ToggleConsole(show))
 
     def notify(self, message: str) -> None:

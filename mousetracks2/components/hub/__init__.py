@@ -14,6 +14,7 @@ import multiprocessing
 import queue
 
 from .. import ipc, app_detection, tracking, processing, gui
+from ..gui.splash import SplashScreen
 from ...constants import UPDATES_PER_SECOND
 from ...exceptions import ExitRequest
 from mousetracks.utils.os.windows.ctypes import WindowHandle
@@ -24,7 +25,7 @@ class Hub:
 
     def __init__(self):
         """Initialise the hub with queues and processes."""
-        self._hwnd = None
+        self.splash: SplashScreen | None = None
 
         # Setup queues
         self._q_main = multiprocessing.Queue()
@@ -166,6 +167,10 @@ class Hub:
                 case ipc.ToggleConsole():
                     self._toggle_console(message.show)
 
+                case ipc.CloseSplashScreen() if self.splash is not None:
+                    self.splash.close()
+                    self.splash = None
+
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:
             self._q_tracking.put(message)
@@ -190,9 +195,10 @@ class Hub:
         else:
             self._q_main.put(ipc.InvalidConsole())
 
-    def run(self, gui: bool = True) -> None:
+    def run(self, launch_gui: bool = True) -> None:
         """Setup the tracking."""
-        if gui:
+        if launch_gui:
+            self.splash = SplashScreen.standalone()
             self._p_gui.start()
 
         else:
