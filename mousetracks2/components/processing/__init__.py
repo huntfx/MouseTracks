@@ -12,7 +12,6 @@ from .. import ipc
 from ..abstract import Component
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
-from ...typing import ArrayLike
 from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
@@ -222,9 +221,10 @@ class Processing(Component):
 
         return distance
 
-    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType) -> dict[tuple[int, int], list[ArrayLike]]:
+    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType
+                              ) -> dict[tuple[int, int], list[np.typing.ArrayLike]]:
         """Get a list of arrays to use for a render."""
-        arrays: dict[tuple[int, int], list[ArrayLike]] = defaultdict(list)
+        arrays: dict[tuple[int, int], list[np.typing.ArrayLike]] = defaultdict(list)
         match render_type:
             case ipc.RenderType.Time:
                 arrays[0, 0].extend(profile.cursor_map.sequential_arrays.values())

@@ -10,7 +10,6 @@ except ModuleNotFoundError:
     from scipy import ndimage
 
 from mousetracks.image import colours
-from .typing import ArrayLike
 
 
 class EmptyRenderError(ValueError):
@@ -24,7 +23,7 @@ class EmptyRenderError(ValueError):
         super().__init__('input arrays cannot be empty if size not defined')
 
 
-def array_target_resolution(arrays: list[ArrayLike], width: int | None = None,
+def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None = None,
                             height: int | None = None) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
@@ -61,7 +60,7 @@ def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
     return int(round(min(width, height) * base * multiplier))
 
 
-def array_rescale(array: ArrayLike, target_width: int, target_height: int) -> np.ndarray:
+def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: int) -> np.ndarray:
     """Rescale the array with the correct filtering."""
     array = np.asarray(array)
     input_height, input_width = array.shape
@@ -116,7 +115,7 @@ def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256
     return lookup
 
 
-def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[ArrayLike]],
+def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1,
            linear: bool = False, blur: bool = False) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
