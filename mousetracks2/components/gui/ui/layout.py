@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(919, 680)
+        MainWindow.resize(1060, 664)
         self.actionShow_Log = QAction(MainWindow)
         self.actionShow_Log.setObjectName(u"actionShow_Log")
         self.actionShow_Log.setCheckable(True)
@@ -385,7 +385,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 356))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 345))
         self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_13.setObjectName(u"verticalLayout_13")
         self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
@@ -497,7 +497,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 274, 356))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 274, 345))
         self.verticalLayout_7 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_7.setObjectName(u"verticalLayout_7")
         self.custom_resolution = QGroupBox(self.scrollAreaWidgetContents_4)
@@ -604,7 +604,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -155, 259, 516))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -154, 257, 516))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -649,32 +649,32 @@ class Ui_MainWindow(object):
         self.groupBox_10.setObjectName(u"groupBox_10")
         self.gridLayout_4 = QGridLayout(self.groupBox_10)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
-        self.save = QPushButton(self.groupBox_10)
-        self.save.setObjectName(u"save")
-
-        self.gridLayout_4.addWidget(self.save, 0, 0, 1, 1)
-
-        self.pushButton = QPushButton(self.groupBox_10)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setEnabled(False)
-
-        self.gridLayout_4.addWidget(self.pushButton, 2, 0, 1, 1)
-
         self.time_since_thumbnail = QLabel(self.groupBox_10)
         self.time_since_thumbnail.setObjectName(u"time_since_thumbnail")
 
         self.gridLayout_4.addWidget(self.time_since_thumbnail, 1, 1, 1, 1)
 
-        self.thumbnail_refresh = QPushButton(self.groupBox_10)
-        self.thumbnail_refresh.setObjectName(u"thumbnail_refresh")
+        self.save = QPushButton(self.groupBox_10)
+        self.save.setObjectName(u"save")
 
-        self.gridLayout_4.addWidget(self.thumbnail_refresh, 1, 0, 1, 1)
+        self.gridLayout_4.addWidget(self.save, 0, 0, 1, 1)
 
         self.label_3 = QLabel(self.groupBox_10)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setEnabled(False)
 
         self.gridLayout_4.addWidget(self.label_3, 2, 1, 1, 1)
+
+        self.thumbnail_refresh = QPushButton(self.groupBox_10)
+        self.thumbnail_refresh.setObjectName(u"thumbnail_refresh")
+
+        self.gridLayout_4.addWidget(self.thumbnail_refresh, 1, 0, 1, 1)
+
+        self.pushButton = QPushButton(self.groupBox_10)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setEnabled(False)
+
+        self.gridLayout_4.addWidget(self.pushButton, 2, 0, 1, 1)
 
         self.horizontalLayout_7 = QHBoxLayout()
         self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
@@ -854,7 +854,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 919, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1060, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -992,7 +992,7 @@ class Ui_MainWindow(object):
         self.label_22.setText(QCoreApplication.translate("MainWindow", u"Active Time:", None))
         self.label_23.setText(QCoreApplication.translate("MainWindow", u"Inactive Time:", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Cursor Distance:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Gamepad Buttons Pressed:", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Buttons Pressed:", None))
         self.stat_active.setText(QCoreApplication.translate("MainWindow", u"45.0 hours", None))
         self.stat_keys.setText(QCoreApplication.translate("MainWindow", u"42544", None))
         self.label_20.setText(QCoreApplication.translate("MainWindow", u"Keys Pressed:", None))
@@ -1037,11 +1037,11 @@ class Ui_MainWindow(object):
         self.stat_app_window_name.setText(QCoreApplication.translate("MainWindow", u"Qt Widgets Designer", None))
         self.stat_app_tracked.setText(QCoreApplication.translate("MainWindow", u"No", None))
         self.groupBox_10.setTitle(QCoreApplication.translate("MainWindow", u"Time Since", None))
-        self.save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"AppList.txt Reload", None))
         self.time_since_thumbnail.setText(QCoreApplication.translate("MainWindow", u"5.4 s", None))
-        self.thumbnail_refresh.setText(QCoreApplication.translate("MainWindow", u"Thumbnail Update", None))
+        self.save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"4m12s", None))
+        self.thumbnail_refresh.setText(QCoreApplication.translate("MainWindow", u"Preview Render", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"AppList Reload", None))
         self.time_since_save.setText(QCoreApplication.translate("MainWindow", u"23.5 s", None))
         self.autosave.setText(QCoreApplication.translate("MainWindow", u"Autosave", None))
         self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
@@ -1053,7 +1053,7 @@ class Ui_MainWindow(object):
         self.stat_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.stat_processing_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.label_40.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
-        self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Queue Size", None))
+        self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Command Backlog", None))
         self.stat_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.stat_processing_queue.setText(QCoreApplication.translate("MainWindow", u"12", None))
         self.label_43.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
