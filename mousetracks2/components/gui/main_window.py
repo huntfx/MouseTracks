@@ -924,12 +924,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.hide()
-        self.tray.showMessage(
-            self.windowTitle(),
-            f'{self.windowTitle()} is now running in the background.',
-            self.tray.icon(),
-            2000,
-        )
+        self.notify(f'{self.windowTitle()} is now running in the background.')
 
     def ask_to_save(self) -> bool:
         """Ask the user to save.
@@ -1178,14 +1173,7 @@ class MainWindow(QtWidgets.QMainWindow):
         re-added.
         """
         AutoRun()(value)
-
-        if self.tray is not None:
-            self.tray.showMessage(
-                self.windowTitle(),
-                f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.',
-                self.tray.icon(),
-                2000,
-            )
+        self.notify(f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.')
 
     @QtCore.Slot(bool)
     def set_minimise_on_start(self, value: bool) -> None:
@@ -1194,3 +1182,16 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
+
+    def notify(self, message: str) -> None:
+        """Show a notification.
+        If the tray icon is not available, a popup will be shown.
+        """
+        if self.tray is None:
+            msg = QtWidgets.QMessageBox(self)
+            msg.setWindowTitle(self.windowTitle())
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+            msg.setText(message)
+            msg.exec_()
+        else:
+            self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
