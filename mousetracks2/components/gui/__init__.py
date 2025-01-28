@@ -90,6 +90,7 @@ class GUI(Component):
         self.send_data(ipc.CloseSplashScreen())
 
         retcode = app.exec()
+        self.send_data(ipc.ToggleConsole(True))
         match retcode:
             case 0:
                 self.send_data(ipc.Exit())
