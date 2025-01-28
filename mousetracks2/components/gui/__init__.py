@@ -38,6 +38,15 @@ class QueueWorker(QtCore.QObject):
         self.running = False
 
 
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self, icon_path: str):
+        pixmap = QtGui.QPixmap(icon_path)
+        super().__init__(pixmap)
+        self.setWindowFlags(QtCore.Qt.SplashScreen | QtCore.Qt.FramelessWindowHint)
+        self.setMask(pixmap.mask())
+        self.show()
+
+
 class GUI(Component):
     def __post_init__(self) -> None:
         """Setup the threads."""
@@ -75,7 +84,11 @@ class GUI(Component):
 
         # Setup the window
         win = MainWindow(self)
-        if not GlobalConfig().minimise_on_start:
+        if GlobalConfig().minimise_on_start:
+            splash = SplashScreen(ICON_PATH)
+            QtCore.QTimer.singleShot(1500, splash.close)
+            win.minimise()
+        else:
             win.maximise()
         self.receiver_worker.message_received.connect(win.process_message)
         win.exception_raised.connect(self.exception_raised)

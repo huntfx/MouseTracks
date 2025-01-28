@@ -917,12 +917,13 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def minimise(self) -> None:
         """Minimise the window."""
-        if not self.isVisible() or self.tray is None:
+        if self.tray is None:
             return
-
-        self.hide()
-        self.notify(f'{self.windowTitle()} is now running in the background.')
         self.timer_activity.stop()
+
+        if self.isVisible():
+            self.hide()
+            self.notify(f'{self.windowTitle()} is now running in the background.')
 
     def ask_to_save(self) -> bool:
         """Ask the user to save.
