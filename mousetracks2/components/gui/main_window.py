@@ -18,7 +18,7 @@ from .widgets import Pixel
 from .. import ipc
 from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE
+from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
 from ...file import get_profile_names
 from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
@@ -929,17 +929,36 @@ class MainWindow(QtWidgets.QMainWindow):
             self.hide()
             self.notify(f'{self.windowTitle()} is now running in the background.')
 
-    def ask_to_save(self) -> bool:
+    def ask_to_save(self, timeout: float = SHUTDOWN_TIMEOUT, accuracy: int = 1) -> bool:
         """Ask the user to save.
         Returns False if the save was cancelled.
         """
+        target_timeout = time.time() + timeout
+
+        def update_message() -> None:
+            """Updates the countdown message and auto-saves if time runs out."""
+            remaining_timeout = round(target_timeout - time.time(), accuracy)
+            if remaining_timeout > 0:
+                msg.setText('Do you want to save?')
+                msg.setInformativeText(f'Saving automatically in {remaining_timeout} seconds...')
+            else:
+                timer.stop()
+                msg.accept()
+
+        # Pause the tracking
         self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Pause))
 
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
-        msg.setText('Do you want to save?')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
+        update_message()
+
+        # Use a QTimer to update the countdown
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(update_message)
+        timer.start(10 ** (3 - accuracy))
+
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))

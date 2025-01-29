@@ -41,3 +41,10 @@ DEBUG = True
 
 IS_EXE = getattr(sys, 'frozen', False)
 """Determine if running as an executable."""
+
+SHUTDOWN_TIMEOUT = 15.0
+"""How many seconds to wait before shutting down automatically.
+This is to avoid blocking Windows from shutting down.
+The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
+20 seconds, so don't exceed 25 seconds or it may get terminated.
+"""

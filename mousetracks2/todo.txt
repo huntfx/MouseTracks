@@ -4,7 +4,6 @@
 - Detect spawned processes closed via task manager (currently not detected)
 - Store last size for use with resize timer and only update+draw if not none and changed
 - [Config] Enable / disable each type of tracking
-- [GUI] App close timeout
 
 [Bugs]
 - disable.mtk2 is being saved
