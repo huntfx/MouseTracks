@@ -12,10 +12,11 @@ import time
 import traceback
 import multiprocessing
 import queue
+from contextlib import suppress
 
 from .. import ipc, app_detection, tracking, processing, gui
 from ..gui.splash import SplashScreen
-from ...constants import IS_EXE, UPDATES_PER_SECOND
+from ...constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
 from ...exceptions import ExitRequest
 from mousetracks.utils.os.windows.ctypes import WindowHandle
 
@@ -23,18 +24,16 @@ from mousetracks.utils.os.windows.ctypes import WindowHandle
 class Hub:
     """Set up individual components with queues for communication."""
 
-    def __init__(self):
+    def __init__(self, use_gui: bool = True):
         """Initialise the hub with queues and processes."""
+        self.state = ipc.TrackingState.State.Pause
+        self.use_gui = use_gui
         self.splash: SplashScreen | None = None
+        self._previous_component_check: float = 0.0
 
-        # Setup queues
         self._q_main = multiprocessing.Queue()
-        self._q_tracking = multiprocessing.Queue()
-        self._q_processing = multiprocessing.Queue()
-        self._q_gui = multiprocessing.Queue()
-        self._q_app_detection = multiprocessing.Queue()
 
-        # Setup processes
+        self._q_gui = multiprocessing.Queue()
         self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
         self._create_tracking_processes()
@@ -55,6 +54,11 @@ class Hub:
         send a close notification back is required.
         If one thread is doing something particularly heavy, an attempt
         will be made to wait for it, but it will eventually terminate.
+
+        In the case of an unclean shutdown, it can leave the queues in a
+        corrupt state, where they cannot be emptied, and therefore the
+        application can't exit. Using `cancel_join_thread` will discard
+        all data and allow the application to close.
         """
         print('[Hub] Sending stop tracking signal...')
         self._process_message(ipc.TrackingState(ipc.TrackingState.State.Stop))
@@ -90,14 +94,17 @@ class Hub:
         self._p_processing.join()
         self._p_app_detection.join()
 
-        # Flush process queues
-        # This is only in case of restarting the tracking again
-        while not self._q_tracking.empty():
-            self._q_tracking.get()
-        while not self._q_processing.empty():
-            self._q_processing.get()
-        while not self._q_app_detection.empty():
-            self._q_app_detection.get()
+        # Ensure queues are closed
+        print('[Hub] Closing queues...')
+        self._q_tracking.close()
+        self._q_processing.close()
+        self._q_app_detection.close()
+
+        # Discard any data left in the queue
+        print('[Hub] Flushing queues...')
+        self._q_tracking.cancel_join_thread()
+        self._q_processing.cancel_join_thread()
+        self._q_app_detection.cancel_join_thread()
 
         print('[Hub] Processes shut down')
 
@@ -106,12 +113,17 @@ class Hub:
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
+        self._q_tracking = multiprocessing.Queue()
         self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
+
+        self._q_processing = multiprocessing.Queue()
         self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
+
+        self._q_app_detection = multiprocessing.Queue()
         self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
@@ -145,8 +157,11 @@ class Hub:
         # Process messages meant for the hub
         if message.target & ipc.Target.Hub:
             match message:
-                case ipc.TrackingState(state=ipc.TrackingState.State.Start):
-                    self._startup_tracking_processes()
+                case ipc.TrackingState():
+                    self.state = message.state
+
+                    if self.state == ipc.TrackingState.State.Start:
+                        self._startup_tracking_processes()
 
                 case ipc.Exit():
                     raise ExitRequest
@@ -195,14 +210,33 @@ class Hub:
         else:
             self._q_main.put(ipc.InvalidConsole())
 
-    def run(self, launch_gui: bool = True) -> None:
+    def _test_components(self) -> None:
+        """Check that all components are running.
+        If this fails an error will be raised.
+        """
+        current_time = time.time()
+        if self._previous_component_check + CHECK_COMPONENT_FREQUENCY > current_time:
+            return
+
+        if self.state == ipc.TrackingState.State.Start:
+            if not self._p_tracking.is_alive():
+                raise RuntimeError('[Hub] Unexpected shutdown of Tracking component')
+            if not self._p_processing.is_alive():
+                raise RuntimeError('[Hub] Unexpected shutdown of Processing component')
+            if not self._p_app_detection.is_alive():
+                raise RuntimeError('[Hub] Unexpected shutdown of Application Detection component')
+            if self.use_gui and not self._p_gui.is_alive():
+                raise RuntimeError('[Hub] Unexpected shutdown of GUI component')
+        self._previous_component_check = current_time
+
+    def run(self) -> None:
         """Setup the tracking."""
         running = True
         error_occurred = False
         try:
             # Start the app
             print('[Hub] Launching application...')
-            if launch_gui:
+            if self.use_gui:
                 if IS_EXE:
                     self._toggle_console(False)
                 self.splash = SplashScreen.standalone()
@@ -213,6 +247,7 @@ class Hub:
             # Listen for events
             print('[Hub] Queue handler started.')
             while running or not self._q_main.empty():
+                self._test_components()
                 try:
                     self._process_message(self._q_main.get())
 
@@ -245,3 +280,5 @@ class Hub:
         if error_occurred:
             print('The above traceback has caused the application to shut down, please consider reporting it.')
             input('Press enter to exit...')
+
+        print('[Hub] Application exit')

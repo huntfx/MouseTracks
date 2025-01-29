@@ -52,7 +52,6 @@ class Processing(Component):
         self.previous_mouse_click: PreviousMouseClick | None = None
         self.monitor_data = monitor_locations()
         self.previous_monitor = None
-        self.state = ipc.TrackingState.State.Pause
 
         # Load in the default profile
         self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
@@ -513,7 +512,6 @@ class Processing(Component):
                         self.profile.cursor_map.position = cursor_position()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
-                self.state = message.state
 
             case ipc.ApplicationDetected():
                 self.current_application = Application(message.name, message.rect)

@@ -48,3 +48,6 @@ This is to avoid blocking Windows from shutting down.
 The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
 20 seconds, so don't exceed 25 seconds or it may get terminated.
 """
+
+CHECK_COMPONENT_FREQUENCY = 1.0
+"""How often in seconds to check if all components are running."""

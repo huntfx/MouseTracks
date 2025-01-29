@@ -1,13 +1,12 @@
 [MVP]
 - ctypes app detection
 - [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
-- Detect spawned processes closed via task manager (currently not detected)
 - Store last size for use with resize timer and only update+draw if not none and changed
 - [Config] Enable / disable each type of tracking
 
 [Bugs]
 - disable.mtk2 is being saved
-- [GUI] Stopped updating after sleep but processing was still printing out, failed with elapsed check
+- Start tracking after stopped, RuntimeError: "no tick data received" in Processing.profile_age_days
 
 [QOL]
 - Store previous render in case of background thread busy, show blank image if not
@@ -23,7 +22,6 @@
 - User friendly API (eg. from mousetracks2.api import profile, render; render(profile('main'), type='mouse clicks'))
 - When attempting to save while unable to, make sure messages are sent back so that the process doesn't close
 - Gamepad rendering
-- [GUI] Option to show console
 - Option to run as elevated
 
 [Future Ideas]
