@@ -83,7 +83,6 @@ class GUI(Component):
         win.exception_raised.connect(self.exception_raised)
 
         # Start the application
-        win.start_tracking()
         self.receiver_thread.start()
 
         # Trigger the splash screen to close

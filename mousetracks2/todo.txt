@@ -25,7 +25,6 @@
 - Gamepad rendering
 - [GUI] Option to show console
 - Option to run as elevated
-- Move start tracking signal to hub instead of GUI
 
 [Future Ideas]
 - Per button click heatmaps

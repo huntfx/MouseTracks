@@ -208,10 +208,9 @@ class Hub:
                 self.splash = SplashScreen.standalone()
                 self._p_gui.start()
 
-            else:
-                self.start_tracking()
+            self.start_tracking()
 
-            # Listen for
+            # Listen for events
             print('[Hub] Queue handler started.')
             while running or not self._q_main.empty():
                 try:
