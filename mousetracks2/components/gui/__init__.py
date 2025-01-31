@@ -75,10 +75,8 @@ class GUI(Component):
 
         # Setup the window
         win = MainWindow(self)
-        if GlobalConfig().minimise_on_start:
-            win.minimise()
-        else:
-            win.maximise()
+        if not GlobalConfig().minimise_on_start:
+            win.show()
         self.receiver_worker.message_received.connect(win.process_message)
         win.exception_raised.connect(self.exception_raised)
 

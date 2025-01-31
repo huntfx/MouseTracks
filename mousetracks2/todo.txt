@@ -3,16 +3,18 @@
 - [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
 - Store last size for use with resize timer and only update+draw if not none and changed
 - [Config] Enable / disable each type of tracking
+- F11 to toggle fullscreen: isFullScreen | showFullScreen | showNormal
 
 [Bugs]
 - disable.mtk2 is being saved
 - Start tracking after stopped, RuntimeError: "no tick data received" in Processing.profile_age_days
 
 [QOL]
-- Store previous render in case of background thread busy, show blank image if not
+- Show initial blank image when switching render type
 - Queue multiple render requests
 
 [Low Priority]
+- Check if the main hub is running, and if not close down the process
 - Option to disable multi monitor handling, track both separately
 - Export CSV
 - Handle multiple windows from the same process if they have the same PID (eg. HP Anyware/Teradici)

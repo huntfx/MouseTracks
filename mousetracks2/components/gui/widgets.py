@@ -40,6 +40,14 @@ class ResizableImage(QtWidgets.QLabel):
             self._pixmap.convertFromImage(pixmap)
         super().setPixmap(self._scaledPixmap())
 
+    def clearPixmap(self) -> None:
+        """Clear the pixmap without setting a new one.
+        This should only be used to unload from memory.
+        """
+        self._pixmap = QtGui.QPixmap()
+        self._image = self._pixmap.toImage()
+        super().setPixmap(self._pixmap)
+
     def _scaledPixmap(self, aspectRatio=QtCore.Qt.AspectRatioMode.KeepAspectRatio):
         """Scale the pixmap to the correct size."""
         if self._pixmap.isNull():

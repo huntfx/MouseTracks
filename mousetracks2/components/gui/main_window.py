@@ -89,6 +89,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self._is_loading_profile = 0
+        self._is_closing = False
 
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -130,11 +131,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('[Gamepad] Thumbstick Time', ipc.RenderType.Thumbstick_Time)
         self.ui.map_type.addItem('[Gamepad] Thumbstick Heatmap', ipc.RenderType.Thumbstick_Heatmap)
         self.ui.map_type.addItem('[Gamepad] Thumbstick Speed', ipc.RenderType.Thumbstick_Speed)
-
-        # Thumbnail pixmap
-        pixmap = QtGui.QPixmap(1, 1)
-        pixmap.fill(QtCore.Qt.GlobalColor.transparent)
-        self.ui.thumbnail.setPixmap(pixmap)
 
         self.cursor_data = MapData(cursor_position())
         self.thumbstick_l_data = MapData((0, 0))
@@ -180,8 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_network.clicked.connect(self.delete_network)
         self.ui.autosave.stateChanged.connect(self.toggle_autosave)
         self.ui.file_save.triggered.connect(self.manual_save)
-        self.ui.tray_show.triggered.connect(self.maximise)
-        self.ui.tray_hide.triggered.connect(self.minimise)
+        self.ui.tray_show.triggered.connect(self.load_from_tray)
+        self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
@@ -627,9 +623,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             raise NotImplementedError(channels)
 
                     if failed:
-                        pixmap = self.ui.thumbnail.pixmap()
-                        pixmap.fill(QtCore.Qt.GlobalColor.transparent)
-                        self.ui.thumbnail.setPixmap(pixmap)
+                        self.ui.thumbnail.setPixmap(QtGui.QPixmap())
 
                     else:
                         stride = channels * width
@@ -894,40 +888,101 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def shut_down(self) -> None:
         """Trigger a safe shutdown of the application."""
+        self._is_closing = True
+
         # If invisible then the close event does not end the QApplication
         if not self.isVisible():
             self.show()
 
         self.close()
 
+        self._is_closing = False
+
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
         """What to do when the tray icon is double clicked."""
         if reason == QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
-            self.maximise()
+            self.load_from_tray()
 
-    @QtCore.Slot()
-    def maximise(self):
-        """Maximise the window."""
-        if not self.isVisible():
-            self.setWindowState(self.windowState() & ~QtCore.Qt.WindowState.WindowMinimized)
-            self.show()
-            self.resize(self.geometry().width(), self.geometry().height())
-            self.request_thumbnail(force=True)
-            self.timer_activity.start(100)
-        self.raise_()
-        self.activateWindow()
+    def hide_to_tray(self) -> None:
+        """Minimise the window to the tray."""
+        if self.tray is None or not self.ui.menu_allow_minimise.isChecked():
+            self.showMinimized()
 
-    @QtCore.Slot()
-    def minimise(self) -> None:
-        """Minimise the window."""
-        if self.tray is None:
-            return
-        self.timer_activity.stop()
-
-        if self.isVisible():
+        elif self.isVisible():
             self.hide()
+            self.ui.thumbnail.clearPixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
+
+    def load_from_tray(self):
+        """Load the window from the tray icon.
+        If the window is only minimised to the taskbar, then `show()`
+        will be ignored.
+        """
+        if self.isMinimized():
+            self.setWindowState(QtCore.Qt.WindowState.WindowActive)
+        self.show()
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        """What to do when showing the window.
+        The thumbnail is updated and the update timer is resumed.
+
+        Window events are "spontaneous", and internal events are not.
+
+        When the window is first shown, it is not spontaneous.
+
+        When the window is loaded by double clicking the tray icon, or
+        by selecting exit (which also calls `.show()`), then it fires
+        off a non spontaneous event followed by a spontaneous event.
+
+        When the window is loaded by choosing the option in the tray
+        icon, then it is not spontaneous.
+
+        If the window is only minimised to the tray, then it will fire
+        off a spontaneous event when shown.
+
+        Based on that information, all the necessary logic should be
+        limited to the non spontaneous events.
+        """
+        if not event.spontaneous():
+            self.timer_activity.start(100)
+            self.request_thumbnail(force=True)
+            self.setWindowState(QtCore.Qt.WindowState.WindowActive)
+
+        event.accept()
+
+    def hideEvent(self, event: QtGui.QHideEvent) -> None:
+        """Intercept hide events.
+        The update timer stops updating widgets, and the render preview
+        is cleared from memory.
+
+        User events are "spontaneous", and application events are not.
+
+        If the user clicks the minimise button, or the taskbar icon,
+        then a spontaneous event will be sent to minimise the window.
+        The `changeEvent` override will catch this and fire off another
+        event to hide the window, which is not spontaneous.
+
+        If the user chooses the tray icon option to minimise, then
+        because it originates from the application, it is not
+        spontaneous.
+
+        Based on that information, any spontaneous events are simply the
+        user manually minimising the application, so a hide needs to be
+        triggered. Likewise, any non spontaneous events are for hiding
+        the window, so all the code related to that can be put here.
+        """
+        if event.spontaneous():
+            # The application has only been minimised, so fully hide it
+            if self.isMinimized() and self.ui.menu_allow_minimise.isChecked():
+                self.hide()
+
+        elif not self._is_closing:
+            self.timer_activity.stop()
+            self.ui.thumbnail.clearPixmap()
+            self.notify(f'{self.windowTitle()} is now running in the background.')
+
+        event.accept()
 
     def ask_to_save(self, timeout: float = SHUTDOWN_TIMEOUT, accuracy: int = 1) -> bool:
         """Ask the user to save.
@@ -968,12 +1023,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.component.send_data(ipc.Save())
         return True
 
-    def changeEvent(self, event: QtCore.QEvent) -> None:
-        if event.type() == QtCore.QEvent.Type.WindowStateChange:
-            if self.isMinimized() and self.ui.menu_allow_minimise.isChecked():
-                self.minimise()
-        super().changeEvent(event)
-
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle what to do when the GUI is closed."""
         event.accept() if self.ask_to_save() else event.ignore()
@@ -1000,7 +1049,7 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if not self.isVisible() or not self.is_live:
+        if not self.isVisible() or not self.is_live or not self._is_closing:
             return
 
         unique_pixels = set()
