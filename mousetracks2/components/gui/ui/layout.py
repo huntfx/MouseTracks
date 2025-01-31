@@ -20,10 +20,10 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QListWidget,
     QListWidgetItem, QMainWindow, QMenu, QMenuBar,
     QPushButton, QScrollArea, QScrollBar, QSizePolicy,
-    QSlider, QSpacerItem, QSpinBox, QSplitter,
-    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
+    QSlider, QSpacerItem, QSpinBox, QStatusBar,
+    QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.components.gui.widgets import ResizableImage
+from mousetracks2.components.gui.widgets import (ResizableImage, Splitter)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -135,13 +135,13 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.main_layout = QVBoxLayout(self.centralwidget)
         self.main_layout.setObjectName(u"main_layout")
-        self.splitter_2 = QSplitter(self.centralwidget)
-        self.splitter_2.setObjectName(u"splitter_2")
-        self.splitter_2.setOrientation(Qt.Orientation.Vertical)
-        self.splitter = QSplitter(self.splitter_2)
-        self.splitter.setObjectName(u"splitter")
-        self.splitter.setOrientation(Qt.Orientation.Horizontal)
-        self.widget = QWidget(self.splitter)
+        self.vertical_splitter = Splitter(self.centralwidget)
+        self.vertical_splitter.setObjectName(u"vertical_splitter")
+        self.vertical_splitter.setOrientation(Qt.Orientation.Vertical)
+        self.horizontal_splitter = Splitter(self.vertical_splitter)
+        self.horizontal_splitter.setObjectName(u"horizontal_splitter")
+        self.horizontal_splitter.setOrientation(Qt.Orientation.Horizontal)
+        self.widget = QWidget(self.horizontal_splitter)
         self.widget.setObjectName(u"widget")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(2)
@@ -170,8 +170,8 @@ class Ui_MainWindow(object):
 
         self.render_layout.addWidget(self.save_render)
 
-        self.splitter.addWidget(self.widget)
-        self.tab_options = QTabWidget(self.splitter)
+        self.horizontal_splitter.addWidget(self.widget)
+        self.tab_options = QTabWidget(self.horizontal_splitter)
         self.tab_options.setObjectName(u"tab_options")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         sizePolicy3.setHorizontalStretch(0)
@@ -816,9 +816,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_10.addWidget(self.scrollArea_3)
 
         self.tab_options.addTab(self.tab_4, "")
-        self.splitter.addWidget(self.tab_options)
-        self.splitter_2.addWidget(self.splitter)
-        self.output_logs = QTabWidget(self.splitter_2)
+        self.horizontal_splitter.addWidget(self.tab_options)
+        self.vertical_splitter.addWidget(self.horizontal_splitter)
+        self.output_logs = QTabWidget(self.vertical_splitter)
         self.output_logs.setObjectName(u"output_logs")
         self.output_logs.setEnabled(False)
         self.tab_6 = QWidget()
@@ -854,9 +854,9 @@ class Ui_MainWindow(object):
         self.tab_7 = QWidget()
         self.tab_7.setObjectName(u"tab_7")
         self.output_logs.addTab(self.tab_7, "")
-        self.splitter_2.addWidget(self.output_logs)
+        self.vertical_splitter.addWidget(self.output_logs)
 
-        self.main_layout.addWidget(self.splitter_2)
+        self.main_layout.addWidget(self.vertical_splitter)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)

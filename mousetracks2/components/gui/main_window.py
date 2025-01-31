@@ -168,6 +168,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
+        self.ui.thumbnail.resized.connect(self.thumbnail_resize)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -529,10 +530,26 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         self.pause_redraw += 1
 
-        # Request size at the current height, since it's likely width > height
-        self.component.send_data(ipc.RenderRequest(self.render_type, self.ui.thumbnail.width(), self.ui.thumbnail.height(),
-                                                   self.render_colour, 1, self.ui.current_profile.currentData(), True))
+        width = self.ui.thumbnail.width()
+        height = self.ui.thumbnail.height()
+        profile = self.ui.current_profile.currentData()
+
+        # Account for collapsed splitters
+        if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.isHandleVisible():
+            width += self.ui.horizontal_splitter.handleWidth()
+        if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.isHandleVisible():
+            height += self.ui.vertical_splitter.handleWidth()
+
+        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour, 1, profile, True))
         return True
+
+    @QtCore.Slot(QtCore.QSize)
+    def thumbnail_resize(self, size) -> None:
+        """Start the resize timer when the thumbnail changes size.
+        This prevents constant render requests as it will only trigger
+        after resizing has finished.
+        """
+        self.timer_resize.start(100)
 
     def request_render(self) -> None:
         """Send a render request."""
@@ -1062,7 +1079,7 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if not self.isVisible() or not self.is_live or not self._is_closing:
+        if not self.isVisible() or not self.is_live or self._is_closing:
             return
 
         unique_pixels = set()
@@ -1099,15 +1116,10 @@ class MainWindow(QtWidgets.QMainWindow):
             redraw_queue, self.redraw_queue = self.redraw_queue, []
             self.ui.thumbnail.updatePixels(*redraw_queue)
 
-    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        """Start a timer to trigger after resizing has finished."""
-        self.timer_resize.start(100)
-        super().resizeEvent(event)
-
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
         self.ui.thumbnail.freezeScale()
-        self.request_thumbnail()
+        self.request_thumbnail(force=True)
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""
@@ -1282,7 +1294,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.statusbar.setVisible(not full_screen)
         self.ui.menubar.setVisible(not full_screen)
         self.ui.save_render.setVisible(not full_screen)
-        self.ui.splitter.setSizes([1, int(not full_screen)])
+        self.ui.horizontal_splitter.setSizes([1, int(not full_screen)])
 
         self.ui.main_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_main)
         self.ui.render_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_render)

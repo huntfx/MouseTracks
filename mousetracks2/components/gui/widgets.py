@@ -18,6 +18,7 @@ class ResizableImage(QtWidgets.QLabel):
 
     clicked = QtCore.Signal()
     doubleClicked = QtCore.Signal()
+    resized = QtCore.Signal(QtCore.QSize)
 
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -75,8 +76,9 @@ class ResizableImage(QtWidgets.QLabel):
         self._pixmap.convertFromImage(self._image)
         super().setPixmap(self._scaledPixmap())
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QtGui.QResizeEvent):
         """Update the pixmap while resizing."""
+        self.resized.emit(event.size())
         super().resizeEvent(event)
         self.setPixmap(self._pixmap)
 
@@ -89,3 +91,14 @@ class ResizableImage(QtWidgets.QLabel):
         """Emit a signal when the label is double clicked."""
         self.doubleClicked.emit()
         super().mouseDoubleClickEvent(event)
+
+
+class Splitter(QtWidgets.QSplitter):
+    """Add extra methods to the QSplitter."""
+
+    def isHandleVisible(self) -> bool:
+        """Determine if any handle is visible."""
+        for child in self.children():
+            if isinstance(child, QtWidgets.QSplitterHandle) and child.isVisible():
+                return True
+        return False
