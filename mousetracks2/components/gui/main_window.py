@@ -530,7 +530,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_redraw += 1
 
         # Request size at the current height, since it's likely width > height
-        self.component.send_data(ipc.RenderRequest(self.render_type, None, self.ui.thumbnail.height(),
+        self.component.send_data(ipc.RenderRequest(self.render_type, self.ui.thumbnail.width(), self.ui.thumbnail.height(),
                                                    self.render_colour, 1, self.ui.current_profile.currentData(), True))
         return True
 

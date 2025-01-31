@@ -24,14 +24,16 @@ class EmptyRenderError(ValueError):
 
 
 def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None = None,
-                            height: int | None = None) -> tuple[int, int]:
+                            height: int | None = None, keep_aspect: bool = True) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
     The aspect ratio is taken into consideration.
     """
-    if width is not None and height is not None:
+    # If not keeping aspect, return the given width and height
+    if width is not None and height is not None and not keep_aspect:
         return width, height
 
+    # Calculate the most common aspect ratio
     popularity: dict[tuple[int, int], int] = defaultdict(int)
     for array in map(np.asarray, arrays):
         res_y, res_x = array.shape
@@ -40,11 +42,26 @@ def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None
     _width, _height = max(res for res, value in popularity.items() if value >= threshold)
     aspect = _width / _height
 
+    # Calculate the resolutions from the given width / height
+    if width is not None:
+        result_width = width, int(width / aspect)
+    if height is not None:
+        result_height = int(height * aspect), height
+
+    # Handle when only one resolution is given
     if width is None:
         if height is None:
             return _width, _height
-        return int(height * aspect), height
-    return width, int(width / aspect)
+        return result_height
+    if height is None:
+        return result_width
+
+    # Select the smallest if both dimensions are given
+    width_prod = result_width[0] * result_width[1]
+    height_prod = result_height[0] * result_height[1]
+    if height_prod > width_prod:
+        return result_width
+    return result_height
 
 
 def array_to_uint8(array: np.ndarray) -> np.ndarray:
