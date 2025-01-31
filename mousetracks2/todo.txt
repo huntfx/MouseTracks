@@ -3,11 +3,12 @@
 - [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
 - Store last size for use with resize timer and only update+draw if not none and changed
 - [Config] Enable / disable each type of tracking
-- F11 to toggle fullscreen: isFullScreen | showFullScreen | showNormal
 
 [Bugs]
 - disable.mtk2 is being saved
 - Start tracking after stopped, RuntimeError: "no tick data received" in Processing.profile_age_days
+- [GUI] Switching to fullscreen while profile is loading doesn't do a bigger render
+- [GUI] Update render when resizing splitter
 
 [QOL]
 - Show initial blank image when switching render type

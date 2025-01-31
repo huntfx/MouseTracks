@@ -104,6 +104,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
 
+        # Store things for full screen
+        # The `addAction` is required for a hidden menubar
+        self.addAction(self.ui.full_screen)
+        self._margins_main = self.ui.main_layout.contentsMargins()
+        self._margins_render = self.ui.main_layout.contentsMargins()
+
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
         if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
@@ -182,6 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
+        self.ui.full_screen.triggered.connect(self.toggle_full_screen)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -888,15 +895,11 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def shut_down(self) -> None:
         """Trigger a safe shutdown of the application."""
-        self._is_closing = True
-
         # If invisible then the close event does not end the QApplication
         if not self.isVisible():
             self.show()
 
         self.close()
-
-        self._is_closing = False
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
@@ -921,7 +924,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.isMinimized():
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
-        self.show()
+
+        if not self.isVisible():
+            self.show()
+
+            if self.ui.full_screen.isChecked():
+                self.showFullScreen()
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         """What to do when showing the window.
@@ -1025,7 +1033,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle what to do when the GUI is closed."""
-        event.accept() if self.ask_to_save() else event.ignore()
+        self._is_closing = True
+        if self.ask_to_save():
+            event.accept()
+        else:
+            event.ignore()
+            self._is_closing = False
 
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         data.distance += calculate_distance(position, data.position)
@@ -1258,6 +1271,21 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
         self.component.send_data(ipc.ToggleConsole(show))
+
+    @QtCore.Slot(bool)
+    def toggle_full_screen(self, full_screen: bool) -> None:
+        """Set or unset the full screen view."""
+        if full_screen:
+            self.showFullScreen()
+        else:
+            self.showNormal()
+        self.ui.statusbar.setVisible(not full_screen)
+        self.ui.menubar.setVisible(not full_screen)
+        self.ui.save_render.setVisible(not full_screen)
+        self.ui.splitter.setSizes([1, int(not full_screen)])
+
+        self.ui.main_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_main)
+        self.ui.render_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_render)
 
     def notify(self, message: str) -> None:
         """Show a notification.

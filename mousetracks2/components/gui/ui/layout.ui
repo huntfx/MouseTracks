@@ -14,7 +14,7 @@
    <string>MouseTracks</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_6">
+   <layout class="QVBoxLayout" name="main_layout">
     <item>
      <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
@@ -31,7 +31,7 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
+        <layout class="QVBoxLayout" name="render_layout">
          <item>
           <widget class="ResizableImage" name="thumbnail">
            <property name="sizePolicy">
@@ -1238,6 +1238,8 @@
     <addaction name="separator"/>
     <addaction name="menu_allow_minimise"/>
     <addaction name="actionShow_Log"/>
+    <addaction name="separator"/>
+    <addaction name="full_screen"/>
    </widget>
    <widget class="QMenu" name="menu_debug">
     <property name="title">
@@ -1538,6 +1540,17 @@
    </property>
    <property name="text">
     <string>Show Console</string>
+   </property>
+  </action>
+  <action name="full_screen">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Full Screen</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
    </property>
   </action>
  </widget>
