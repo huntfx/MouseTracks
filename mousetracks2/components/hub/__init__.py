@@ -271,11 +271,13 @@ class Hub:
             print('[Hub] Queue handler shut down.')
 
             # Force shut down the GUI
-            if self._p_gui.is_alive():
-                print('[Hub] Terminating GUI...')
-                self._p_gui.terminate()
-                self._p_gui.join()
-                print('[Hub] GUI shut down')
+            if self.use_gui:
+                if self._p_gui.is_alive():
+                    print('[Hub] Terminating GUI...')
+                    self._p_gui.terminate()
+                    self._p_gui.join()
+                    print('[Hub] GUI shut down')
+                self._q_gui.cancel_join_thread()
 
         if error_occurred:
             print('The above traceback has caused the application to shut down, please consider reporting it.')
