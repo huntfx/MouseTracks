@@ -11,7 +11,12 @@ if not exist ".venv" (
 call .venv\Scripts\activate
 
 :: Ensure pyinstaller is installed
-python -m pip install --upgrade pyinstaller
+python -m pip install --upgrade pip pyinstaller
+python -m pip install --upgrade -r requirements.txt
+if errorlevel 1 (
+    echo Failed to install or update modules. Exiting.
+    exit /b 1
+)
 
 :: Buiild the executable
 pyinstaller MouseTracks.spec
