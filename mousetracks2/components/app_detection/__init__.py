@@ -1,13 +1,12 @@
-import multiprocessing
-import traceback
-from typing import TYPE_CHECKING
+import os
+import re
 
-from mousetracks.applications import RunningApplications, WindowFocus
+from mousetracks.applications import AppList, TRACKING_WILDCARD
 from .. import ipc
 from ..abstract import Component
 from ...constants import DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
-from ...utils.win import monitor_locations
+from ...utils.win import WindowHandle, get_window_handle
 
 
 class AppDetection(Component):
@@ -18,15 +17,108 @@ class AppDetection(Component):
     """
 
     def __post_init__(self) -> None:
-        self.running_apps = RunningApplications()
-        self.previous_app: tuple[str, str] | None = None
-        self.last_coordinates = None
-        self.last_resolution = None
-
-        self._previous_focus: tuple[str, str] = '', ''
-        self._current_focus = self.running_apps.focused_exe, self.running_apps.focused_name
-
         self.state = ipc.TrackingState.State.Pause
+
+        self._applist = AppList()
+        self._regex_cache: dict[str, re.Pattern] = {}
+        self._previous_focus: tuple[str, str] = '', ''
+        self._previous_app: tuple[str, str] | None = None
+        self._previous_pos: tuple[int, int, int, int] | None = None
+        self._previous_res: tuple[int, int] | None = None
+
+    def check_running_app(self):
+        hwnd = get_window_handle()
+        handle = WindowHandle(hwnd)
+        exe = handle.exe
+        title = handle.title
+
+        # Display focus changes
+        current_focus: tuple[str, str] = (exe, title)
+        if self._previous_focus != current_focus:
+            self._previous_focus = current_focus
+            print(f'[Application Detection] Focus changed: {exe} ({title})')
+
+        # Use legacy code to detect for anything defined in AppList.txt
+        current_app: tuple[str, str] | None = None
+        try:
+            names: list[str] = self._applist[os.path.basename(handle.exe)]
+        except KeyError:
+            pass
+        else:
+            try:
+                current_app = names[title], exe
+
+            except KeyError:
+                for name in names:
+                    if name is None:
+                        continue
+                    if TRACKING_WILDCARD in name:
+                        if name not in self._regex_cache:
+                            pattern = name.replace(TRACKING_WILDCARD, '(.*)')
+                            self._regex_cache[name] = re.compile(pattern)
+                        if self._regex_cache[name].search(title) is not None:
+                            break
+                    elif name == title:
+                        break
+
+                # If not match then use default profile
+                else:
+                    current_app = names[None], exe
+
+        # Perform checks
+        changed = False
+        position = handle.position
+        resolution = handle.size
+
+        if current_app is not None:
+            if current_app == self._previous_app:
+                if resolution != self._previous_res:
+                    changed = True
+                    print(f'[Application Detection] {current_app[0]} resized: {self._previous_res} -> {resolution}')
+                elif position != self._previous_pos:
+                    changed = True
+                    print(f'[Application Detection] {current_app[0]} moved: {self._previous_pos} -> {position}')
+            else:
+                changed = True
+                print(f'[Application Detection] {current_app[0]} loaded')
+
+        self._previous_pos = position
+        self._previous_res = resolution
+
+        # Somewhat hacky way to detect if the application is full screen spanning multiple monitors
+        # If this is the case, we want to record both monitors as normal
+        # TODO: Find an application to test this with before enabling
+        app_is_windowed = True
+        # if app_resolution is not None:
+        #     x_min = x_max = y_min = y_max = 0
+        #     for x1, y1, x2, y2 in monitor_locations():
+        #         x_min = min(x_min, x1)
+        #         x_max = max(x_max, x2)
+        #         y_min = min(y_min, y1)
+        #         y_max = max(y_max, y2)
+        #     if (x_max - x_min, y_max - y_min) == app_resolution:
+        #         app_is_windowed = False
+
+        if current_app != self._previous_app:
+            if self._previous_app is not None:
+                print(f'[Application Detection] {self._previous_app[0]} lost focus')
+                changed = True
+            if current_app is not None:
+                print(f'[Application Detection] {current_app[0]} gained focus')
+                changed = True
+
+        if changed:
+            if current_app is None:
+                print(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
+                self.send_data(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
+            elif app_is_windowed:
+                print(ipc.ApplicationDetected(current_app[0], handle.pid, handle.rect))
+                self.send_data(ipc.ApplicationDetected(current_app[0], handle.pid, handle.rect))
+            else:
+                print(ipc.ApplicationDetected(current_app[0], handle.pid, None))
+                self.send_data(ipc.ApplicationDetected(current_app[0], handle.pid, None))
+
+        self._previous_app = current_app
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
@@ -36,85 +128,8 @@ class AppDetection(Component):
                 if self.state == ipc.TrackingState.State.Stop:
                     raise ExitRequest
 
-            # This is using the legacy app detection for the time being
             case ipc.RequestRunningAppCheck():
-                self.running_apps.refresh()
-
-                # Display the current focus for easier debugging
-                self._current_focus = (self.running_apps.focused_exe, self.running_apps.focused_name)
-                if self._previous_focus != self._current_focus:
-                    self._previous_focus = self._current_focus
-                    print(f'[Application Detection] Focus changed: {self._current_focus[0]} ({self._current_focus[1]})')
-
-                current_app: tuple[str, str] | None = None
-                focused = self.running_apps.focus
-
-                app_position = app_resolution = None
-                process_id: int | None = None
-                app_is_windowed = False
-                changed = False
-                if focused is not None:
-                    current_app = self.running_apps.check()  # (name, exe)
-                    process_id = focused.pid
-
-                    if current_app is not None:
-                        app_position = focused.rect
-                        app_resolution = focused.resolution
-
-                        if current_app == self.previous_app:
-                            if app_resolution != self.last_resolution:
-                                changed = True
-                                print(f'[Application Detection] {current_app[0]} resized: {self.last_resolution} -> {app_resolution}')
-                            elif app_position != self.last_coordinates:
-                                changed = True
-                                print(f'[Application Detection] {current_app[0]} moved: {self.last_coordinates} -> {app_position}')
-                        else:
-                            changed = True
-                            print(f'[Application Detection] {current_app[0]} loaded')
-
-                        self.last_coordinates = app_position
-                        self.last_resolution = app_resolution
-
-                        # Somewhat hacky way to detect if the application is full screen spanning multiple monitors
-                        # If this is the case, we want to record both monitors as normal
-                        app_is_windowed = True
-                        if app_resolution is not None:
-                            x_min = x_max = y_min = y_max = 0
-                            for x1, y1, x2, y2 in monitor_locations():
-                                x_min = min(x_min, x1)
-                                x_max = max(x_max, x2)
-                                y_min = min(y_min, y1)
-                                y_max = max(y_max, y2)
-                            if (x_max - x_min, y_max - y_min) == app_resolution:
-                                app_is_windowed = False
-
-                if current_app != self.previous_app:
-                    if focused is None:
-                        if current_app is None:
-                            if TYPE_CHECKING: assert self.previous_app is not None
-                            print(f'[Application Detection] {self.previous_app[0]} ended')
-                            changed = True
-                        else:
-                            print(f'[Application Detection] {current_app[0]} started')
-                            changed = True
-
-                    else:
-                        if self.previous_app is not None:
-                            print(f'[Application Detection] {self.previous_app[0]} lost focus')
-                            changed = True
-                        elif current_app is not None:
-                            print(f'[Application Detection] {current_app[0]} gained focus')
-                            changed = True
-
-                if changed:
-                    if current_app is None:
-                        self.send_data(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
-                    elif app_is_windowed:
-                        self.send_data(ipc.ApplicationDetected(current_app[0], process_id, app_position))
-                    else:
-                        self.send_data(ipc.ApplicationDetected(current_app[0], process_id, None))
-
-                self.previous_app = current_app
+                self.check_running_app()
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[Application Detection] Test Exception')
