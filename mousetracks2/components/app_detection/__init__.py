@@ -1,5 +1,6 @@
 import os
 import re
+from contextlib import suppress
 
 from mousetracks.applications import AppList, TRACKING_WILDCARD
 from .. import ipc
@@ -63,7 +64,8 @@ class AppDetection(Component):
 
                 # If not match then use default profile
                 else:
-                    current_app = names[None], exe
+                    with suppress(KeyError):
+                        current_app = names[None], exe
 
         # Perform checks
         changed = False
