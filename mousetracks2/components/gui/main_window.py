@@ -549,7 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
         This prevents constant render requests as it will only trigger
         after resizing has finished.
         """
-        self.timer_resize.start(100)
+        self.timer_resize.start(10)
 
     def request_render(self) -> None:
         """Send a render request."""
@@ -1118,8 +1118,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        self.ui.thumbnail.freezeScale()
-        self.request_thumbnail(force=True)
+        if self.ui.thumbnail.freezeScale():
+            self.request_thumbnail(force=True)
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""

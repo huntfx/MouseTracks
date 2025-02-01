@@ -49,7 +49,7 @@ class ResizableImage(QtWidgets.QLabel):
         self._image = self._pixmap.toImage()
         super().setPixmap(self._pixmap)
 
-    def _scaledPixmap(self, aspectRatio=QtCore.Qt.AspectRatioMode.KeepAspectRatio):
+    def _scaledPixmap(self, aspectRatio=QtCore.Qt.AspectRatioMode.KeepAspectRatio) -> QtGui.QPixmap:
         """Scale the pixmap to the correct size."""
         if self._pixmap.isNull():
             return self._pixmap
@@ -57,9 +57,17 @@ class ResizableImage(QtWidgets.QLabel):
             return self._pixmap
         return self._pixmap.scaled(self.size(), aspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
 
-    def freezeScale(self):
-        """Set the current size to the scaled size."""
-        self.setPixmap(self._scaledPixmap())
+    def freezeScale(self) -> bool:
+        """Set the current size to the scaled size.
+        Returns if the size has changed.
+        """
+        size = self._pixmap.size()
+        scaled = self._scaledPixmap()
+        if size == scaled.size():
+            return False
+
+        self.setPixmap(scaled)
+        return True
 
     def updatePixels(self, *pixels: Pixel) -> None:
         """Update pixels on the image.
