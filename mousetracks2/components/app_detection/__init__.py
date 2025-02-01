@@ -24,10 +24,10 @@ class AppDetection(Component):
         self._regex_cache: dict[str, re.Pattern] = {}
         self._previous_focus: tuple[str, str] = '', ''
         self._previous_app: tuple[str, str] | None = None
-        self._previous_pos: tuple[int, int, int, int] | None = None
+        self._previous_pos: tuple[int, int] | None = None
         self._previous_res: tuple[int, int] | None = None
 
-    def check_running_app(self):
+    def check_running_app(self) -> None:
         hwnd = get_window_handle()
         handle = WindowHandle(hwnd)
         exe = handle.exe
@@ -39,10 +39,11 @@ class AppDetection(Component):
             self._previous_focus = current_focus
             print(f'[Application Detection] Focus changed: {exe} ({title})')
 
-        # Use legacy code to detect for anything defined in AppList.txt
+        # Use legacy code to detect anything defined in AppList.txt
+        # TODO: Replace with new code
         current_app: tuple[str, str] | None = None
         try:
-            names: list[str] = self._applist[os.path.basename(handle.exe)]
+            names: dict[str | None, str] = self._applist[os.path.basename(handle.exe)]
         except KeyError:
             pass
         else:

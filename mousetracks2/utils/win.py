@@ -93,7 +93,7 @@ def check_key_press(key: int) -> bool:
 
 
 def get_window_handle(console: bool = False) -> int:
-    """Get a window handle"""
+    """Get a window handle."""
     if console:
         return kernel32.GetConsoleWindow()
 
@@ -102,7 +102,6 @@ def get_window_handle(console: bool = False) -> int:
     while parent := user32.GetParent(hwnd):
         hwnd = parent
     return hwnd
-
 
 class WindowHandle:
     """Class to manage a window handle and retrieve relevant information."""
