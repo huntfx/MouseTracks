@@ -18,7 +18,7 @@ from .. import ipc, app_detection, tracking, processing, gui
 from ..gui.splash import SplashScreen
 from ...constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
 from ...exceptions import ExitRequest
-from mousetracks.utils.os.windows.ctypes import WindowHandle
+from ...utils.win import WindowHandle, get_window_handle
 
 
 class Hub:
@@ -204,9 +204,10 @@ class Hub:
 
     def _toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
-        hwnd = WindowHandle(parent=False, console=True)
-        if hwnd.pid:
-            hwnd.restore() if show else hwnd.hide()
+        hwnd = get_window_handle(console=True)
+        handle = WindowHandle(hwnd)
+        if handle.pid:
+            handle.show() if show else handle.hide()
         else:
             self._q_main.put(ipc.InvalidConsole())
 
@@ -233,6 +234,7 @@ class Hub:
         """Setup the tracking."""
         running = True
         error_occurred = False
+
         try:
             # Start the app
             print('[Hub] Launching application...')

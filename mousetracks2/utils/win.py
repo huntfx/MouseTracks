@@ -18,9 +18,19 @@ from ..constants import IS_EXE
 
 user32 = ctypes.windll.user32
 
+kernel32 = ctypes.windll.kernel32
+
+psapi = ctypes.windll.psapi
+
 SM_CXSCREEN = 0
 
 SM_CYSCREEN = 1
+
+SW_HIDE = 0
+
+SW_RESTORE = 9
+
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 MONITORINFOEX = ctypes.wintypes.RECT
 
@@ -80,6 +90,96 @@ def check_key_press(key: int) -> bool:
         True/False if the selected key has been pressed or not.
     """
     return user32.GetKeyState(key) < 0
+
+
+def get_window_handle(console: bool = False) -> int:
+    """Get a window handle"""
+    if console:
+        return kernel32.GetConsoleWindow()
+
+    # Walk through the parent windows
+    hwnd = user32.GetForegroundWindow()
+    while parent := user32.GetParent(hwnd):
+        hwnd = parent
+    return hwnd
+
+
+class WindowHandle:
+    """Class to manage a window handle and retrieve relevant information."""
+
+    def __init__(self, hwnd: int) -> None:
+        self.hwnd = hwnd
+
+        # Get Process ID
+        process_id = ctypes.wintypes.DWORD()
+        self.thread_id = user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
+        self.pid = process_id.value
+
+    @property
+    def rect(self) -> tuple[int, int, int, int]:
+        """Get the window's rect coordinates."""
+        rect = ctypes.wintypes.RECT()
+        if user32.GetWindowRect(self.hwnd, ctypes.byref(rect)):
+            return rect.left, rect.top, rect.right, rect.bottom
+        return 0, 0, 0, 0
+
+    @property
+    def position(self) -> tuple[int, int]:
+        """Get the position of the window."""
+        x1, y1, x2, y2 = self.rect
+        return x1, y1
+
+    @property
+    def size(self) -> tuple[int, int]:
+        """Get the size of the window."""
+        x1, y1, x2, y2 = self.rect
+        return x2 - x1, y2 - y1
+
+    @property
+    def title(self) -> str:
+        """Get the window's title."""
+        length = user32.GetWindowTextLengthW(self.hwnd)
+        if not length:
+            return ''
+        buff = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(self.hwnd, buff, length + 1)
+        return buff.value
+
+    @title.setter
+    def title(self, title: str) -> None:
+        """Set the window title."""
+        user32.SetWindowTextW(self.hwnd, title)
+
+    @property
+    def exe(self) -> str:
+        """Get the executable file path of the process owning this window."""
+        h_process = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, self.pid)
+        if not h_process:
+            return ''
+        buffer = ctypes.create_unicode_buffer(512)
+        psapi.GetModuleFileNameExW(h_process, None, buffer, len(buffer))
+        kernel32.CloseHandle(h_process)
+        return buffer.value.strip()
+
+    @property
+    def visible(self) -> bool:
+        """Check if the window is visible."""
+        return bool(user32.IsWindowVisible(self.hwnd))
+
+    @property
+    def enabled(self) -> bool:
+        """Check if the window is enabled."""
+        return bool(user32.IsWindowEnabled(self.hwnd))
+
+    def show(self, foreground: bool = False) -> None:
+        """Restore a window from being minimised."""
+        user32.ShowWindow(self.hwnd, SW_RESTORE)
+        if foreground:
+            user32.SetForegroundWindow(self.hwnd)
+
+    def hide(self) -> None:
+        """Hide a window from the task bar."""
+        user32.ShowWindow(self.hwnd, SW_HIDE)
 
 
 class AutoRun:
