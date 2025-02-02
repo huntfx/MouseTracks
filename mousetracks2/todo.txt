@@ -8,7 +8,6 @@
 
 [QOL]
 - Show initial blank image when switching render type
-- Queue multiple render requests
 
 [Low Priority]
 - Check if the main hub is running, and if not close down the process

@@ -382,15 +382,15 @@ class Processing(Component):
 
             case ipc.RenderRequest():
                 print('[Processing] Render request received...')
-                if message.application:
-                    profile = self.all_profiles[message.application]
+                if message.profile:
+                    profile = self.all_profiles[message.profile]
                 else:
                     profile = self.profile
 
                 if message.type == ipc.RenderType.Keyboard:
                     # Double the sampling, since the default render is too small
                     sampling = message.sampling
-                    if not message.thumbnail:
+                    if message.file_path is not None:
                         sampling *= 2
                     image = self._render_keyboard(profile, message.colour_map, sampling)
 

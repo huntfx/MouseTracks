@@ -540,7 +540,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.isHandleVisible():
             height += self.ui.vertical_splitter.handleWidth()
 
-        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour, 1, profile, True))
+        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour, 1, profile, None))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -553,9 +553,41 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def request_render(self) -> None:
         """Send a render request."""
-        app = self.ui.current_profile.currentData() if self.ui.current_profile.currentIndex() else ''
-        self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
-                                                   self.render_colour, self.ui.render_samples.value(), app, False))
+        profile = self.ui.current_profile.currentData()
+
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['PNG Files (*.png)"'])
+        dialog.setDefaultSuffix('png')
+
+        match self.render_type:
+            case ipc.RenderType.Time:
+                name = 'Mouse Tracks'
+            case ipc.RenderType.TimeHeatmap:
+                name = 'Mouse Heatmap'
+            case ipc.RenderType.Speed:
+                name = 'Mouse Speed'
+            case ipc.RenderType.SingleClick:
+                name = 'Mouse Clicks'
+            case ipc.RenderType.DoubleClick:
+                name = 'Mouse Double Clicks'
+            case ipc.RenderType.HeldClick:
+                name = 'Mouse Held Clicks'
+            case ipc.RenderType.Thumbstick_Time:
+                name = 'Gamepad Thumbstick Tracks'
+            case ipc.RenderType.Thumbstick_Heatmap:
+                name = 'Gamepad Thumbstick Heatmap'
+            case ipc.RenderType.Thumbstick_Speed:
+                name = 'Gamepad Thumbstick Speed'
+            case _:
+                name = 'Tracks'
+        filename = f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile} - {name}.png'
+        file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
+
+        if accept:
+            self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
+                                                       self.render_colour, self.ui.render_samples.value(),
+                                                       profile, file_path))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -634,7 +666,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 target_width = int(width / message.request.sampling)
 
                 # Draw the new pixmap
-                if message.request.thumbnail:
+                if message.request.file_path is None:
                     self._last_thumbnail_time = time.time()
                     match channels:
                         case 1:
@@ -669,40 +701,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     msg.exec_()
 
                 else:
-                    dialog = QtWidgets.QFileDialog()
-                    dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-                    dialog.setNameFilters(['PNG Files (*.png)"'])
-                    dialog.setDefaultSuffix('png')
-
-                    match message.request.type:
-                        case ipc.RenderType.Time:
-                            name = 'Mouse Tracks'
-                        case ipc.RenderType.TimeHeatmap:
-                            name = 'Mouse Heatmap'
-                        case ipc.RenderType.Speed:
-                            name = 'Mouse Speed'
-                        case ipc.RenderType.SingleClick:
-                            name = 'Mouse Clicks'
-                        case ipc.RenderType.DoubleClick:
-                            name = 'Mouse Double Clicks'
-                        case ipc.RenderType.HeldClick:
-                            name = 'Mouse Held Clicks'
-                        case ipc.RenderType.Thumbstick_Time:
-                            name = 'Gamepad Thumbstick Tracks'
-                        case ipc.RenderType.Thumbstick_Heatmap:
-                            name = 'Gamepad Thumbstick Heatmap'
-                        case ipc.RenderType.Thumbstick_Speed:
-                            name = 'Gamepad Thumbstick Speed'
-                        case _:
-                            name = 'Tracks'
-                    filename = f'[{format_ticks(self.elapsed_time)}][{message.request.colour_map}] {name}.png'
-                    file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
-
-                    if accept:
-                        im = Image.fromarray(message.array)
-                        im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
-                        im.save(file_path)
-                        os.startfile(file_path)
+                    im = Image.fromarray(message.array)
+                    im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                    im.save(message.request.file_path)
+                    os.startfile(message.request.file_path)
 
             case ipc.MouseHeld() if self.is_live and self.ui.track_mouse.isChecked():
                 self.mouse_held_count += 1

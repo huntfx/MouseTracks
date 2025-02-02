@@ -171,7 +171,11 @@ class MonitorsChanged(Message):
 
 @dataclass
 class RenderRequest(Message):
-    """Request a render."""
+    """Request a render.
+
+    If profile is None then the currently loaded profile will be
+    rendered.
+    """
 
     target: int = field(default=Target.Processing, init=False)
     type: RenderType
@@ -179,8 +183,8 @@ class RenderRequest(Message):
     height: int | None
     colour_map: str
     sampling: int
-    application: str | None
-    thumbnail: bool = field(default=False)
+    profile: str | None
+    file_path: str | None
 
 
 @dataclass
