@@ -157,6 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity = QtCore.QTimer(self)
         self.timer_resize = QtCore.QTimer(self)
         self.timer_resize.setSingleShot(True)
+        self.timer_rendering = QtCore.QTimer(self)
+        self.timer_rendering.setSingleShot(True)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -195,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_activity.timeout.connect(self.update_queue_size)
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
+        self.timer_rendering.timeout.connect(self.ui.thumbnail.showRenderingText)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
         self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
@@ -483,6 +486,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Request loading profile data."""
         self.component.send_data(ipc.ProfileDataRequest(profile_name))
         self._is_loading_profile += 1
+        self.start_rendering_timer()
 
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
@@ -517,6 +521,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 return result
         return None
 
+    def start_rendering_timer(self):
+        """Start the timer to display rendering text.
+
+        If a render is not completed within 1 second, then text will be
+        drawn to the preview to update the user.
+        """
+        if not self.timer_rendering.isActive():
+            self.timer_rendering.start(1000)
+
+
     def request_thumbnail(self, force: bool = False) -> bool:
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
@@ -540,7 +554,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.isHandleVisible():
             height += self.ui.vertical_splitter.handleWidth()
 
-        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour, 1, profile, None))
+        self.start_rendering_timer()
+        self.component.send_data(ipc.RenderRequest(self.render_type, width, height,
+                                                   self.render_colour, 1, profile, None))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -667,6 +683,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Draw the new pixmap
                 if message.request.file_path is None:
+                    self.timer_rendering.stop()
+                    self.ui.thumbnail.hideRenderingText()
+
                     self._last_thumbnail_time = time.time()
                     match channels:
                         case 1:
