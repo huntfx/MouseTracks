@@ -1322,9 +1322,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def notify(self, message: str) -> None:
         """Show a notification.
-        If the tray icon is not available, a popup will be shown.
+        If the tray messages are not available, a popup will be shown.
         """
-        if self.tray is None:
+        if self.tray is None or not self.tray.supportsMessages():
             msg = QtWidgets.QMessageBox(self)
             msg.setWindowTitle(self.windowTitle())
             msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
