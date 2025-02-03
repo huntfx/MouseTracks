@@ -171,6 +171,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
         self.ui.thumbnail.resized.connect(self.thumbnail_resize)
+        self.ui.thumbnail.clicked.connect(self.thumbnail_click)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -197,7 +198,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_activity.timeout.connect(self.update_queue_size)
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
-        self.timer_rendering.timeout.connect(self.ui.thumbnail.showRenderingText)
+        self.timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
 
         self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
         self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
@@ -549,9 +550,9 @@ class MainWindow(QtWidgets.QMainWindow):
         profile = self.ui.current_profile.currentData()
 
         # Account for collapsed splitters
-        if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.isHandleVisible():
+        if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
             width += self.ui.horizontal_splitter.handleWidth()
-        if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.isHandleVisible():
+        if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
             height += self.ui.vertical_splitter.handleWidth()
 
         self.start_rendering_timer()
@@ -566,6 +567,14 @@ class MainWindow(QtWidgets.QMainWindow):
         after resizing has finished.
         """
         self.timer_resize.start(10)
+
+    @QtCore.Slot(bool)
+    def thumbnail_click(self, state: bool) -> None:
+        """Handle what to do when the thumbnail is clicked."""
+        if state:
+            self.start_tracking()
+        else:
+            self.pause_tracking()
 
     def request_render(self) -> None:
         """Send a render request."""
@@ -684,7 +693,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Draw the new pixmap
                 if message.request.file_path is None:
                     self.timer_rendering.stop()
-                    self.ui.thumbnail.hideRenderingText()
+                    self.ui.thumbnail.hide_rendering_text()
 
                     self._last_thumbnail_time = time.time()
                     match channels:
@@ -698,7 +707,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             raise NotImplementedError(channels)
 
                     if failed:
-                        self.ui.thumbnail.setPixmap(QtGui.QPixmap())
+                        self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
 
                     else:
                         stride = channels * width
@@ -706,7 +715,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                         # Scale the QImage to fit the pixmap size
                         scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-                        self.ui.thumbnail.setPixmap(scaled_image)
+                        self.ui.thumbnail.set_pixmap(scaled_image)
 
                     self.pause_redraw -= 1
 
@@ -952,7 +961,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif self.isVisible():
             self.hide()
-            self.ui.thumbnail.clearPixmap()
+            self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
 
     def load_from_tray(self):
@@ -1025,7 +1034,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif not self._is_closing:
             self.timer_activity.stop()
-            self.ui.thumbnail.clearPixmap()
+            self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
 
         event.accept()
@@ -1104,7 +1113,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         unique_pixels = set()
-        size = self.ui.thumbnail.pixmapSize()
+        size = self.ui.thumbnail.pixmap_size()
         for pixel in calculate_line(old_position, new_position):
             # Refresh data per pixel
             if force_monitor:
@@ -1127,7 +1136,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_pixmap_pixels(self, *pixels: Pixel) -> None:
         """Update a specific pixel in the QImage and refresh the display."""
-        self.ui.thumbnail.updatePixels(*pixels)
+        self.ui.thumbnail.update_pixels(*pixels)
 
         # Queue commands if redrawing is paused
         # This allows them to be resubmitted after an update
@@ -1135,11 +1144,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.redraw_queue.extend(pixels)
         elif self.redraw_queue:
             redraw_queue, self.redraw_queue = self.redraw_queue, []
-            self.ui.thumbnail.updatePixels(*redraw_queue)
+            self.ui.thumbnail.update_pixels(*redraw_queue)
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        if self.ui.thumbnail.freezeScale():
+        if self.ui.thumbnail.freeze_scale():
             self.request_thumbnail(force=True)
 
     def delete_mouse(self) -> None:
