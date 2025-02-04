@@ -1,6 +1,6 @@
 # MouseTracks
 
-MouseTracks is an application designed to track and visualize mouse movements, clicks, keyboard activity, and gamepad inputs over time. It's designed to be unobtrusive, allowing you to leave it running indefinitely - even for years - and return later to render high-quality, colorful visualisations of the data.
+MouseTracks is an application designed to track and visualize mouse movements, clicks, keyboard activity, and gamepad inputs over time. It's designed to be unobtrusive, allowing you to leave it running indefinitely - even for years - and return later to render colourful visualisations of the data.
 
 ## Features
 
@@ -12,7 +12,7 @@ MouseTracks is an application designed to track and visualize mouse movements, c
 - ### Live Preview
   The GUI includes a real-time preview of tracking data, combining thumbnail renders with live input.
 
-- ### High-Quality Rendering:
+- ### Image Rendering:
   Renders are generated at full quality, regardless of resolution changes. Each input type is tracked independently and merged during the render process.
 
   - Mouse and gamepad thumbsticks: Track maps and position heatmaps.
@@ -23,23 +23,25 @@ MouseTracks is an application designed to track and visualize mouse movements, c
 
   - _(Gamepad button rendering is not yet supported.)_
 
-- ### Colourful Customisation:
+- ### Colourful Renders:
   Includes predefined and customizable color maps for all render types.
 
 - ### Application Tracking:
-  Use separate tracking profiles when different applications (as defined in `AppList.txt`) are detected.
+  Use separate tracking profiles when different applications (defined in `AppList.txt`) are detected.
 
-  _(Manual updates required for new applications.)_
+  _(New applications must be added manually.)_
 
 - ### Multi-Monitor Support:
   Tracks activity across multiple monitors. If linked to a specific application, the rendering bounds will automatically adjust to the application's window geometry.
 
 - ### Unobtrusive:
-  Designed to run silently in the background. Closing the GUI will minimise it to the System Tray.
+  Designed to run silently in the background. Closing the GUI will minimise it to the System Tray, which also reduces the processing overhead.
 
 - ### Modular Design:
   The application was designed with multiple components that communicate but run independenantly of each other, ensuring the live tracking remains fully stable, even during resource-intensive tasks like rendering or waiting on GUI operations.
 
+- ### Stability
+  Will happily keep running for years without any issues.
 ---
 
 ## Installation (v2.0)
@@ -70,7 +72,7 @@ Ensure all modules in [requirements.txt](requirements.txt) are installed.
 
 ## Installation (v1.0 - Deprecated)
 
-_The 1.0 version is no longer supported. However it may receive minor updates to the launch process to bring it in line with v2.0._
+_The v1.0 version is no longer supported. However it may receive minor updates to the launch process to bring it in line with v2.0._
 
 
 - `start_tracking.py`: Run this to start recording data.

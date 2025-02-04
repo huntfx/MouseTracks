@@ -4,7 +4,6 @@ import glob
 import os
 from scipy import __file__ as scipy_path
 
-
 a = Analysis(
     ['launch.py'],
     pathex=[],
@@ -82,5 +81,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    version='build\\version.rc',
     icon=['resources\\images\\icon.ico'],
 )
