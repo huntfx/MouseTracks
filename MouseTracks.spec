@@ -19,7 +19,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['scipy'],
+    excludes=['scipy', 'markupsafe'],
     noarchive=False,
     optimize=0,
 )
@@ -43,12 +43,15 @@ binaries = [
         ))
         or name in (
             r'PySide6\opengl32sw.dll',  # 20157 kb
-            'libcrypto-3.dll',  # 5071 kb
             'python27.dll',  # 3352 kb
-            'libssl-3.dll',  # 769 kb
             '_decimal.pyd',  # 248 kb
             '_lzma.pyd',  # 156 kb
         )
+        or name.startswith('libcrypto-3') and name.endswith('.dll')  # 5071 kb
+        or name.startswith('libssl-3') and name.endswith('.dll')  # 5071 kb
+
+        # Extra files added by Github Actions
+        or name == 'ucrtbase.dll' or name.startswith('api-ms-win-')
     )
 ]
 
@@ -60,6 +63,7 @@ binaries.extend((f'resources/build/scipy/ndimage/{os.path.basename(filepath)}', 
 datas = [
     (name, path, type) for name, path, type in a.datas
     if not name.startswith(r'PySide6\translations')  # 6037 kb
+    and not name.startswith('MarkupSafe')
 ]
 
 exe = EXE(

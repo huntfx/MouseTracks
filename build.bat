@@ -19,17 +19,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Retrieve the version from the Python module
-for /f "delims=" %%V in ('python -c "from mousetracks2 import __version__; print(__version__)"') do set VERSION=%%V
+:: Retrieve the version from the latest Git tag
+for /f "delims=" %%V in ('git describe --tags --abbrev=0 2^>nul') do set VERSION=%%V
 
-:: Check if the version was retrieved successfully
-if not defined VERSION (
-    echo Failed to retrieve version. Exiting.
-    exit /b 1
-)
+:: If no tag is found, default to 0.0
+if not defined VERSION set VERSION=0.0
 
 :: Write out the executable version info
-pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --language 0x0809
+pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
 :: Build the executable
 pyinstaller MouseTracks.spec
