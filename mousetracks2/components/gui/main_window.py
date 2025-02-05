@@ -6,6 +6,7 @@ import sys
 import time
 from contextlib import suppress
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from PIL import Image
@@ -19,7 +20,7 @@ from .. import ipc
 from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
-from ...file import get_profile_names
+from ...file import PROFILE_DIR, get_profile_names, get_filename
 from ...utils import keycodes
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.win import cursor_position, monitor_locations, AutoRun
@@ -194,6 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
+        self.ui.file_import.triggered.connect(self.import_legacy_profile)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -909,6 +911,12 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.CloseSplashScreen():
                 self.close_splash_screen.emit()
 
+            # Load a legacy profile and switch to it
+            case ipc.LoadLegacyProfile():
+                self._profile_names.append(message.name)
+                self._redraw_profile_combobox()
+                self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the script."""
@@ -1362,3 +1370,44 @@ class MainWindow(QtWidgets.QMainWindow):
             msg.exec_()
         else:
             self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
+
+    @QtCore.Slot()
+    def import_legacy_profile(self):
+        """Prompt the user to import a legacy profile.
+        A check is done to avoid name clashes.
+        """
+         # Get the default legacy location
+        documents_path = Path(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.StandardLocation.DocumentsLocation))
+        default_dir = documents_path / 'Mouse Tracks' / 'Data'
+        if not default_dir.exists():
+            default_dir = documents_path
+
+        # Select the profile
+        path, accept = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
+                                                             str(default_dir), 'MouseTracks Profile (*.mtk)')
+        if not accept:
+            return
+
+        # Ask for the profile name
+        filename = QtCore.QFileInfo(path).baseName()
+        while True:
+            name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
+                                                          QtWidgets.QLineEdit.EchoMode.Normal, filename)
+            if not accept:
+                return
+
+            # Check if the profile exists
+            name = name.strip() or filename
+            if os.path.basename(get_filename(name)) not in os.listdir(PROFILE_DIR):
+                break
+
+            # Show a warning
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+            msg.setWindowTitle('Error')
+            msg.setText('This profile already exists.\n\n'
+                        'To avoid accidental overwrites, please delete the existing profile or choose a new name.')
+            msg.exec_()
+
+        # Send the request
+        self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))

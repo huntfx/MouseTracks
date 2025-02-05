@@ -416,3 +416,13 @@ class CloseSplashScreen(Message):
     """
 
     target: int = field(default=Target.Hub, init=False)
+
+
+@dataclass
+class LoadLegacyProfile(Message):
+    """Send a request to load an old profile."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+
+    name: str
+    path: str

@@ -1204,7 +1204,7 @@
     <addaction name="file_tracking_pause"/>
     <addaction name="separator"/>
     <addaction name="file_save"/>
-    <addaction name="actionImport"/>
+    <addaction name="file_import"/>
     <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionRestart"/>
@@ -1309,10 +1309,7 @@
     <string>Export</string>
    </property>
   </action>
-  <action name="actionImport">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="file_import">
    <property name="text">
     <string>Import</string>
    </property>

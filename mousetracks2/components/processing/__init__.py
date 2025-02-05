@@ -619,6 +619,10 @@ class Processing(Component):
                 profile.daily_upload = profile.daily_upload.as_zero()
                 profile.daily_download = profile.daily_download.as_zero()
 
+            case ipc.LoadLegacyProfile():
+                self.all_profiles[message.name] = TrackingProfile(message.name)
+                self.all_profiles[message.name].import_legacy(message.path)
+
             case _:
                 raise NotImplementedError(message)
 
