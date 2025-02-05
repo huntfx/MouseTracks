@@ -611,7 +611,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 257, 556))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -211, 257, 556))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -704,48 +704,47 @@ class Ui_MainWindow(object):
 
         self.groupBox_13 = QGroupBox(self.scrollAreaWidgetContents_3)
         self.groupBox_13.setObjectName(u"groupBox_13")
-        self.groupBox_13.setEnabled(False)
         self.gridLayout_8 = QGridLayout(self.groupBox_13)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.stat_tracking_state = QLabel(self.groupBox_13)
         self.stat_tracking_state.setObjectName(u"stat_tracking_state")
 
-        self.gridLayout_8.addWidget(self.stat_tracking_state, 0, 1, 1, 1)
-
-        self.label_34 = QLabel(self.groupBox_13)
-        self.label_34.setObjectName(u"label_34")
-
-        self.gridLayout_8.addWidget(self.label_34, 0, 0, 1, 1)
-
-        self.label_36 = QLabel(self.groupBox_13)
-        self.label_36.setObjectName(u"label_36")
-
-        self.gridLayout_8.addWidget(self.label_36, 2, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.stat_tracking_state, 1, 1, 1, 1)
 
         self.label_39 = QLabel(self.groupBox_13)
         self.label_39.setObjectName(u"label_39")
 
-        self.gridLayout_8.addWidget(self.label_39, 1, 0, 1, 1)
-
-        self.stat_app_state = QLabel(self.groupBox_13)
-        self.stat_app_state.setObjectName(u"stat_app_state")
-
-        self.gridLayout_8.addWidget(self.stat_app_state, 3, 1, 1, 1)
-
-        self.stat_hub_state = QLabel(self.groupBox_13)
-        self.stat_hub_state.setObjectName(u"stat_hub_state")
-
-        self.gridLayout_8.addWidget(self.stat_hub_state, 2, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.label_39, 2, 0, 1, 1)
 
         self.stat_processing_state = QLabel(self.groupBox_13)
         self.stat_processing_state.setObjectName(u"stat_processing_state")
 
-        self.gridLayout_8.addWidget(self.stat_processing_state, 1, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.stat_processing_state, 2, 1, 1, 1)
+
+        self.label_34 = QLabel(self.groupBox_13)
+        self.label_34.setObjectName(u"label_34")
+
+        self.gridLayout_8.addWidget(self.label_34, 1, 0, 1, 1)
 
         self.label_40 = QLabel(self.groupBox_13)
         self.label_40.setObjectName(u"label_40")
 
-        self.gridLayout_8.addWidget(self.label_40, 3, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.label_40, 4, 0, 1, 1)
+
+        self.stat_app_state = QLabel(self.groupBox_13)
+        self.stat_app_state.setObjectName(u"stat_app_state")
+
+        self.gridLayout_8.addWidget(self.stat_app_state, 4, 1, 1, 1)
+
+        self.label_36 = QLabel(self.groupBox_13)
+        self.label_36.setObjectName(u"label_36")
+
+        self.gridLayout_8.addWidget(self.label_36, 0, 0, 1, 1)
+
+        self.stat_hub_state = QLabel(self.groupBox_13)
+        self.stat_hub_state.setObjectName(u"stat_hub_state")
+
+        self.gridLayout_8.addWidget(self.stat_hub_state, 0, 1, 1, 1)
 
 
         self.verticalLayout.addWidget(self.groupBox_13)
@@ -1061,13 +1060,13 @@ class Ui_MainWindow(object):
         self.autosave.setText(QCoreApplication.translate("MainWindow", u"Autosave", None))
         self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
         self.stat_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.label_34.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
-        self.label_36.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
         self.label_39.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
-        self.stat_app_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.stat_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.stat_processing_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.label_34.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
         self.label_40.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
+        self.stat_app_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.label_36.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
+        self.stat_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Command Backlog", None))
         self.stat_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.stat_processing_queue.setText(QCoreApplication.translate("MainWindow", u"12", None))

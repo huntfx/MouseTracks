@@ -90,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = False
         self._is_loading_profile = 0
         self._is_closing = False
+        self.state = ipc.TrackingState.State.Pause
 
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -679,6 +680,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.Inactive() if self.is_live:
                 self.inactive_time += message.ticks
 
+            case ipc.TrackingState():
+                self.state = message.state
+
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
@@ -881,12 +885,23 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
 
+            # Update the GUI with the component statuses
             case ipc.QueueSize():
                 self.ui.stat_hub_queue.setText(str(message.hub))
                 self.ui.stat_tracking_queue.setText(str(message.tracking))
                 self.ui.stat_processing_queue.setText(str(message.processing))
                 self.ui.stat_gui_queue.setText(str(message.gui))
                 self.ui.stat_app_detection_queue.setText(str(message.app_detection))
+
+                if self.state == ipc.TrackingState.State.Start:
+                    self.ui.stat_tracking_state.setText('Running' if message.tracking <= 1 else 'Busy')
+                    self.ui.stat_processing_state.setText('Running' if message.processing <= 1 else 'Busy')
+                    self.ui.stat_hub_state.setText('Running' if message.hub <= 1 else 'Busy')
+                    self.ui.stat_app_state.setText('Running' if message.app_detection <= 1 else 'Busy')
+                else:
+                    for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
+                                   self.ui.stat_hub_state, self.ui.stat_app_state):
+                        widget.setText('Paused' if self.state == ipc.TrackingState.State.Pause else 'Stopped')
 
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)

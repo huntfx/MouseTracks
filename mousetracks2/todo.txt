@@ -2,6 +2,7 @@
 - [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
 - [Config] Enable / disable each type of tracking
 - Legacy import
+- Better handling of stop state
 
 [Bugs]
 - disable.mtk2 is being saved
