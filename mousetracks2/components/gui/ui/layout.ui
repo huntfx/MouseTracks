@@ -762,17 +762,14 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-154</y>
+               <y>0</y>
                <width>257</width>
-               <height>516</height>
+               <height>556</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
               <item>
                <widget class="QGroupBox" name="groupBox_11">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
                 <property name="title">
                  <string>Current Application</string>
                 </property>
@@ -806,9 +803,12 @@
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QLabel" name="stat_app_window_name">
+                  <widget class="QLabel" name="stat_app_title">
                    <property name="text">
                     <string>Qt Widgets Designer</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>

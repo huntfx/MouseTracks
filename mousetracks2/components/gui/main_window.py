@@ -788,11 +788,17 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.ButtonPress() if self.is_live and self.ui.track_gamepad.isChecked():
                 self.button_press_count += 1
 
-            case ipc.ApplicationDetected():
+            # Update the selected profile
+            case ipc.TrackedApplicationDetected():
                 self.current_profile = Profile(message.name, message.rect)
 
                 if self.is_live:
                     self.request_profile_data(message.name)
+
+            case ipc.ApplicationFocusChanged():
+                self.ui.stat_app_exe.setText(os.path.basename(message.exe))
+                self.ui.stat_app_title.setText(message.title)
+                self.ui.stat_app_tracked.setText('Yes' if message.tracked else 'No')
 
             # Show the correct distance
             case ipc.ProfileData():

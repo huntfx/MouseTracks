@@ -611,12 +611,11 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -154, 257, 516))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 257, 556))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
         self.groupBox_11.setObjectName(u"groupBox_11")
-        self.groupBox_11.setEnabled(False)
         self.gridLayout_5 = QGridLayout(self.groupBox_11)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.label_6 = QLabel(self.groupBox_11)
@@ -639,10 +638,11 @@ class Ui_MainWindow(object):
 
         self.gridLayout_5.addWidget(self.stat_app_exe, 0, 1, 1, 1)
 
-        self.stat_app_window_name = QLabel(self.groupBox_11)
-        self.stat_app_window_name.setObjectName(u"stat_app_window_name")
+        self.stat_app_title = QLabel(self.groupBox_11)
+        self.stat_app_title.setObjectName(u"stat_app_title")
+        self.stat_app_title.setWordWrap(True)
 
-        self.gridLayout_5.addWidget(self.stat_app_window_name, 1, 1, 1, 1)
+        self.gridLayout_5.addWidget(self.stat_app_title, 1, 1, 1, 1)
 
         self.stat_app_tracked = QLabel(self.groupBox_11)
         self.stat_app_tracked.setObjectName(u"stat_app_tracked")
@@ -1049,7 +1049,7 @@ class Ui_MainWindow(object):
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Window Name", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Executable", None))
         self.stat_app_exe.setText(QCoreApplication.translate("MainWindow", u"designer.exe", None))
-        self.stat_app_window_name.setText(QCoreApplication.translate("MainWindow", u"Qt Widgets Designer", None))
+        self.stat_app_title.setText(QCoreApplication.translate("MainWindow", u"Qt Widgets Designer", None))
         self.stat_app_tracked.setText(QCoreApplication.translate("MainWindow", u"No", None))
         self.groupBox_10.setTitle(QCoreApplication.translate("MainWindow", u"Time Since", None))
         self.time_since_thumbnail.setText(QCoreApplication.translate("MainWindow", u"5.4 s", None))

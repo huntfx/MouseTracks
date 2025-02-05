@@ -205,13 +205,28 @@ class RequestRunningAppCheck(Message):
 
 
 @dataclass
-class ApplicationDetected(Message):
-    """Update data about an application."""
+class TrackedApplicationDetected(Message):
+    """Trigger a profile change.
+    This is sent from the application detection thread.
+    """
 
     target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
     process_id: int | None
     rect: tuple[int, int, int, int] | None
+
+
+@dataclass
+class ApplicationFocusChanged(Message):
+    """Send a notification whenever a new application is focused.
+    This is for debugging and is not used for logic.
+    """
+
+    target: int = field(default=Target.GUI, init=False)
+    exe: str
+    title: str
+    tracked: bool
+
 
 
 @dataclass

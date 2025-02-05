@@ -80,7 +80,8 @@ class Tracking(Component):
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
 
-                case ipc.ApplicationDetected():
+                # Update the current profile
+                case ipc.TrackedApplicationDetected():
                     if message.name != self.profile_name:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()

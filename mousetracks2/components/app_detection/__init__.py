@@ -32,12 +32,14 @@ class AppDetection(Component):
         handle = WindowHandle(hwnd)
         exe = handle.exe
         title = handle.title
+        focus_changed = False
 
         # Display focus changes
         current_focus: tuple[str, str] = (exe, title)
         if self._previous_focus != current_focus:
             self._previous_focus = current_focus
             print(f'[Application Detection] Focus changed: {exe} ({title})')
+            focus_changed = True
 
         # Use legacy code to detect anything defined in AppList.txt
         # TODO: Replace with new code
@@ -112,16 +114,16 @@ class AppDetection(Component):
 
         if changed:
             if current_app is None:
-                print(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
-                self.send_data(ipc.ApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
+                self.send_data(ipc.TrackedApplicationDetected(DEFAULT_PROFILE_NAME, None, None))
             elif app_is_windowed:
-                print(ipc.ApplicationDetected(current_app[0], handle.pid, handle.rect))
-                self.send_data(ipc.ApplicationDetected(current_app[0], handle.pid, handle.rect))
+                self.send_data(ipc.TrackedApplicationDetected(current_app[0], handle.pid, handle.rect))
             else:
-                print(ipc.ApplicationDetected(current_app[0], handle.pid, None))
-                self.send_data(ipc.ApplicationDetected(current_app[0], handle.pid, None))
+                self.send_data(ipc.TrackedApplicationDetected(current_app[0], handle.pid, None))
 
         self._previous_app = current_app
+
+        if focus_changed:
+            self.send_data(ipc.ApplicationFocusChanged(exe, title, current_app is not None))
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""

@@ -513,7 +513,8 @@ class Processing(Component):
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
 
-            case ipc.ApplicationDetected():
+            # Store the data for the newly detected application
+            case ipc.TrackedApplicationDetected():
                 self.current_application = Application(message.name, message.rect)
 
             case ipc.Save():
