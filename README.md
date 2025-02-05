@@ -2,6 +2,8 @@
 
 MouseTracks is an application designed to track and visualize mouse movements, clicks, keyboard activity, and gamepad inputs over time. It's designed to be unobtrusive, allowing you to leave it running indefinitely - even for years - and return later to render colourful visualisations of the data.
 
+<img src="media/gui.jpg">
+
 ## Features
 
 - ### Live Tracking:
