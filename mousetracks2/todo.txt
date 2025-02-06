@@ -1,6 +1,5 @@
 [MVP]
 - Remove reliance on legacy `mousetracks.image.colours`
-- Remove reliance on legacy `mousetracks.applications`
 - [Config] Enable / disable each type of tracking
 
 [Bugs]

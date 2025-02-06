@@ -3,12 +3,10 @@
 import math
 import sys
 
-from ...constants import UPDATES_PER_SECOND
+from ...constants import UPDATES_PER_SECOND, REPO_DIR
 
 
-ICON_PATH = 'resources/images/icon.png'
-if hasattr(sys, '_MEIPASS'):
-    ICON_PATH = f'{sys._MEIPASS}/{ICON_PATH}'
+ICON_PATH = str(REPO_DIR / 'resources' / 'images' / 'icon.png')
 
 
 def format_distance(pixels: float, ppi: float = 96.0) -> str:

@@ -1,26 +1,21 @@
-import os
 import re
-from contextlib import suppress
 
-from mousetracks.applications import AppList, TRACKING_WILDCARD
 from .. import ipc
 from ..abstract import Component
+from ...applications import AppList
 from ...constants import DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
 from ...utils.system.win32 import WindowHandle, get_window_handle
 
 
-class AppDetection(Component):
-    """Application detection component.
 
-    This is using legacy code for the time being, just to get an inital
-    version out the door. I plan to improve it at some point.
-    """
+class AppDetection(Component):
+    """Application detection component."""
 
     def __post_init__(self) -> None:
         self.state = ipc.TrackingState.State.Pause
 
-        self._applist = AppList()
+        self.applist = AppList()
         self._regex_cache: dict[str, re.Pattern] = {}
         self._previous_focus: tuple[str, str] = '', ''
         self._previous_app: tuple[str, str] | None = None
@@ -41,34 +36,11 @@ class AppDetection(Component):
             print(f'[Application Detection] Focus changed: {exe} ({title})')
             focus_changed = True
 
-        # Use legacy code to detect anything defined in AppList.txt
-        # TODO: Replace with new code
-        current_app: tuple[str, str] | None = None
-        try:
-            names: dict[str | None, str] = self._applist[os.path.basename(handle.exe)]
-        except KeyError:
-            pass
+        current_app_name = self.applist.match(handle.exe, title)
+        if current_app_name is None:
+            current_app = None
         else:
-            try:
-                current_app = names[title], exe
-
-            except KeyError:
-                for name in names:
-                    if name is None:
-                        continue
-                    if TRACKING_WILDCARD in name:
-                        if name not in self._regex_cache:
-                            pattern = name.replace(TRACKING_WILDCARD, '(.*)')
-                            self._regex_cache[name] = re.compile(pattern)
-                        if self._regex_cache[name].search(title) is not None:
-                            break
-                    elif name == title:
-                        break
-
-                # If not match then use default profile
-                else:
-                    with suppress(KeyError):
-                        current_app = names[None], exe
+            current_app = current_app_name, exe
 
         # Perform checks
         changed = False
