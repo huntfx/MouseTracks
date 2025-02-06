@@ -9,16 +9,6 @@ Source: https://github.com/Peter92/MouseTracks
 from AppKit import NSEvent, NSScreen
 
 
-def cursor_position():
-    """Get the current mouse position.
-
-    Returns:
-        Tuple of the x and y coordinates of the mouse cursor.
-    """
-    d = NSEvent.mouseLocation()
-    return (d.x, d.y)
-
-
 def main_monitor_resolution():
     """Get the main screen resolution.
     Any secondary screens will be ignored.

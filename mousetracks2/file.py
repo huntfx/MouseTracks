@@ -476,7 +476,7 @@ class TrackingProfile:
             profile._load_from_zip(zf)
         return profile
 
-    def import_legacy(self, path: str) -> Self:
+    def import_legacy(self, path: str) -> None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.

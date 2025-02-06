@@ -12,10 +12,10 @@ from .. import ipc
 from ..abstract import Component
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
-from ...utils import keycodes
+from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
-from ...utils.win import cursor_position, monitor_locations
+from ...utils.win import monitor_locations
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
 from ...render import render, EmptyRenderError
 
@@ -509,7 +509,7 @@ class Processing(Component):
             case ipc.TrackingState():
                 match message.state:
                     case ipc.TrackingState.State.Start:
-                        self.profile.cursor_map.position = cursor_position()
+                        self.profile.cursor_map.position = get_cursor_pos()
                     case ipc.TrackingState.State.Stop:
                         raise ExitRequest
 

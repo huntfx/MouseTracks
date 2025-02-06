@@ -21,9 +21,9 @@ from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
 from ...file import PROFILE_DIR, get_profile_names, get_filename
-from ...utils import keycodes
+from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import cursor_position, monitor_locations, AutoRun
+from ...utils.win import monitor_locations, AutoRun
 
 if TYPE_CHECKING:
     from . import GUI
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MapData:
-    position: tuple[int, int] | None = field(default_factory=cursor_position)
+    position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
 
@@ -140,7 +140,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('[Gamepad] Thumbstick Heatmap', ipc.RenderType.Thumbstick_Heatmap)
         self.ui.map_type.addItem('[Gamepad] Thumbstick Speed', ipc.RenderType.Thumbstick_Speed)
 
-        self.cursor_data = MapData(cursor_position())
+        self.cursor_data = MapData(get_cursor_pos())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
 
@@ -920,7 +920,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the script."""
-        self.cursor_data.position = cursor_position()  # Prevent erroneous line jumps
+        self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
         self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
 
     @QtCore.Slot()

@@ -1,6 +1,4 @@
-import multiprocessing
 import time
-import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Iterator
@@ -13,9 +11,10 @@ from . import utils
 from .. import ipc
 from ..abstract import Component
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
-from ...utils.keycodes import CLICK_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT
+from ...utils import get_cursor_pos
+from ...utils.keycodes import CLICK_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
 from ...utils.network import Interfaces
-from ...utils.win import cursor_position, monitor_locations, check_key_press
+from ...utils.win import monitor_locations
 
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
@@ -33,7 +32,7 @@ class DataState:
     tick_modified: int | None = field(default=None)
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
-    mouse_position: tuple[int, int] | None = field(default_factory=cursor_position)
+    mouse_position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
@@ -46,6 +45,7 @@ class DataState:
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
     bytes_recv: dict[str, int] = field(default_factory=dict)
+    pynput_opcodes: set = field(default_factory=set)
 
     def __post_init__(self):
         self.tick_previous = self.tick_current - 1
@@ -62,9 +62,11 @@ class Tracking(Component):
         self.autosave = True
 
         # Setup pynput listeners
-        # TODO: link up the other callbacks
-        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None, on_click=None, on_scroll=self._pynput_mouse_scroll)
-        self._pynput_keyboard_listener = pynput.keyboard.Listener(on_press=None, on_release=None)
+        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
+                                                            on_click=self._pynput_mouse_click,
+                                                            on_scroll=self._pynput_mouse_scroll)
+        self._pynput_keyboard_listener = pynput.keyboard.Listener(on_press=self._pynput_key_press,
+                                                                  on_release=self._pynput_key_release)
 
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
@@ -176,6 +178,17 @@ class Tracking(Component):
             print('[Tracking] Monitor change detected')
             self.send_data(ipc.MonitorsChanged(self.data.monitors))
 
+    def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
+        """Triggers on mouse click."""
+        if self.state != ipc.TrackingState.State.Start:
+            return
+
+        opcode = CLICK_CODES[('left', 'middle', 'right').index(button.name)]
+        if pressed:
+            self.data.pynput_opcodes.add(opcode)
+        else:
+            self.data.pynput_opcodes.discard(opcode)
+
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
         The scroll vector is mostly -1, 0 or 1, but support has been
@@ -197,10 +210,35 @@ class Tracking(Component):
             for _ in range(-dy):
                 self._key_press(VK_SCROLL_DOWN)
 
-    def _key_press(self, keycode: int) -> None:
+    def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
+        """Handle when a key is pressed."""
+        if self.state != ipc.TrackingState.State.Start or key is None:
+            return
+
+        if isinstance(key, pynput.keyboard.KeyCode):
+            name = key.char
+            vk = key.vk
+        else:
+            name = key.name
+            vk = key.value.vk
+        self.data.pynput_opcodes.add(vk)
+
+    def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
+        """Handle when a key is released."""
+        if self.state != ipc.TrackingState.State.Start or key is None:
+            return
+
+        if isinstance(key, pynput.keyboard.KeyCode):
+            name = key.char
+            vk = key.vk
+        else:
+            name = key.name
+            vk = key.value.vk
+        self.data.pynput_opcodes.discard(vk)
+
+    def _key_press(self, keycode: int | KeyCode) -> None:
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
-
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
 
         # Handle all standard keypresses
@@ -208,14 +246,14 @@ class Tracking(Component):
             # First press
             if press_latest != self.data.tick_current - 1:
                 if keycode in CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseClick(keycode, self.data.mouse_position))
-                self.send_data(ipc.KeyPress(keycode))
+                    self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
+                self.send_data(ipc.KeyPress(int(keycode)))
 
             # Being held
             else:
                 if keycode in CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseHeld(keycode, self.data.mouse_position))
-                self.send_data(ipc.KeyHeld(keycode))
+                    self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
+                self.send_data(ipc.KeyHeld(int(keycode)))
 
         # Special case for scroll events
         # It is being sent to the "held" array instead of "pressed"
@@ -236,7 +274,7 @@ class Tracking(Component):
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
-            mouse_position = cursor_position()
+            mouse_position = get_cursor_pos()
 
             # Check if mouse position is inactive (such as a screensaver)
             if mouse_position is None:
@@ -249,7 +287,7 @@ class Tracking(Component):
                 data.mouse_inactive = False
 
             # Check resolution and update if required
-            if tick and not tick % 60:
+            if tick and not tick % UPDATES_PER_SECOND:
                 self._refresh_monitor_data()
                 self.send_data(ipc.RequestRunningAppCheck())
 
@@ -261,8 +299,8 @@ class Tracking(Component):
                 self.send_data(ipc.MouseMove(mouse_position))
 
             # Record key presses / mouse clicks
-            for keycode in filter(check_key_press, range(0x01, 0xFF)):
-                self._key_press(keycode)
+            for opcode in self.data.pynput_opcodes:
+                self._key_press(opcode)
 
             # Determine which gamepads are connected
             if not tick % 60 or data.gamepad_force_recheck:

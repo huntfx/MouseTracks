@@ -8,6 +8,8 @@ elif platform.system() == 'Linux':
 elif platform.system() == 'Darwin':
     from .mac import *
 
+import pynput
+
 
 T = TypeVar('T')
 
@@ -122,3 +124,15 @@ class DefaultList(list[T], Generic[T]):
             except IndexError:
                 self._missing(idx)
                 super().__setitem__(idx, value)
+
+
+def get_cursor_pos() -> tuple[int, int] | None:
+    """Get the current cursor position.
+
+    This is only used for switching profiles, as the mouse move listener
+    can handle all other events.
+    """
+    x, y = pynput.mouse.Controller().position
+    if x is y is None:
+        return None
+    return x, y

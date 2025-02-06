@@ -43,19 +43,6 @@ LPARAM = ctypes.wintypes.LPARAM
 MonitorEnumProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, HMONITOR, HDC, ctypes.POINTER(MONITORINFOEX), LPARAM)
 
 
-def cursor_position() -> tuple[int, int] | None:
-    """Get the current mouse position.
-
-    Returns:
-        (x, y) as integers
-        None in the case of any error
-    """
-    point = ctypes.wintypes.POINT()
-    if user32.GetCursorPos(ctypes.byref(point)):
-        return point.x, point.y
-    return None
-
-
 def main_monitor_resolution() -> tuple[int, int]:
     """Get the main screen resolution.
     Any secondary screens will be ignored.
