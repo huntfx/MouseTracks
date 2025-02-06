@@ -1,8 +1,4 @@
-"""Windows specific functions.
-
-This is part of the Mouse Tracks Python application.
-Source: https://github.com/Peter92/MouseTracks
-"""
+"""Windows specific functions."""
 
 from __future__ import annotations
 
@@ -13,7 +9,7 @@ import sys
 
 import winreg
 
-from ..constants import IS_EXE
+from ...constants import IS_EXE
 
 
 user32 = ctypes.windll.user32
@@ -42,13 +38,7 @@ LPARAM = ctypes.wintypes.LPARAM
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, HMONITOR, HDC, ctypes.POINTER(MONITORINFOEX), LPARAM)
 
-
-def main_monitor_resolution() -> tuple[int, int]:
-    """Get the main screen resolution.
-    Any secondary screens will be ignored.
-    """
-    return (user32.GetSystemMetrics(SM_CXSCREEN),
-            user32.GetSystemMetrics(SM_CYSCREEN))
+REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 
 
 def monitor_locations() -> list[tuple[int, int, int, int]]:
@@ -69,16 +59,6 @@ def monitor_locations() -> list[tuple[int, int, int, int]]:
     return monitors
 
 
-def check_key_press(key: int) -> bool:
-    """Check if a key is being pressed.
-    This also supports mouse clicks using win32con.VK_[L/M/R]BUTTON.
-
-    Returns:
-        True/False if the selected key has been pressed or not.
-    """
-    return user32.GetKeyState(key) < 0
-
-
 def get_window_handle(console: bool = False) -> int:
     """Get a window handle."""
     if console:
@@ -89,6 +69,7 @@ def get_window_handle(console: bool = False) -> int:
     while parent := user32.GetParent(hwnd):
         hwnd = parent
     return hwnd
+
 
 class WindowHandle:
     """Class to manage a window handle and retrieve relevant information."""
@@ -168,40 +149,26 @@ class WindowHandle:
         user32.ShowWindow(self.hwnd, SW_HIDE)
 
 
-class AutoRun:
-    """Handle running the application on startup."""
-
-    PATH = r'Software\Microsoft\Windows\CurrentVersion\Run'
-
-    def __init__(self, executable: str = os.path.abspath(sys.argv[0]), name: str = 'MouseTracks'):
-        self.executable = executable
-        if not IS_EXE:
-           raise ValueError('running on startup not supported when running as a script')
-        self.name = name
-
-    def __bool__(self) -> bool:
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.PATH, 0, winreg.KEY_READ) as key:
-                winreg.QueryValueEx(key, self.name)
-                return True
-        except OSError:
-            return False
-
-    def __call__(self, enable: bool) -> None:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.PATH, 0, winreg.KEY_WRITE) as key:
-            if enable:
-                winreg.SetValueEx(key, self.name, 0, winreg.REG_SZ, self.executable)
-            else:
-                winreg.DeleteValue(key, self.name)
-
-    @classmethod
-    def from_name(cls, name: str) -> str | None:
-        """Get the executable for a given name if it exists."""
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, cls.PATH, 0, winreg.KEY_READ) as key:
-                exe = winreg.QueryValueEx(key, name)[0]
-                if os.path.exists(exe):
-                    return exe
-                return None
-        except OSError:
+def get_autorun(name: str) -> str | None:
+    """Determine if running on startup."""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_READ) as key:
+            if os.path.exists(exe := winreg.QueryValueEx(key, name)[0]):
+                return exe
             return None
+    except OSError:
+        return None
+
+
+def set_autorun(name: str, executable: str) -> None:
+    """Set an executable to run on startup."""
+    if os.path.splitext(executable) != '.exe':
+        raise ValueError('running on startup not supported when running as a script')
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, executable)
+
+
+def remove_autorun(name: str) -> None:
+    """Stop an executable running on startup."""
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
+        winreg.DeleteValue(key, name)

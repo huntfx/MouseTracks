@@ -7,7 +7,7 @@ from .. import ipc
 from ..abstract import Component
 from ...constants import DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
-from ...utils.win import WindowHandle, get_window_handle
+from ...utils.system.win32 import WindowHandle, get_window_handle
 
 
 class AppDetection(Component):

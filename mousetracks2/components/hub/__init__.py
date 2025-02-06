@@ -7,18 +7,16 @@ Components:
     - cli
 """
 
-import sys
 import time
 import traceback
 import multiprocessing
 import queue
-from contextlib import suppress
 
 from .. import ipc, app_detection, tracking, processing, gui
 from ..gui.splash import SplashScreen
 from ...constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
 from ...exceptions import ExitRequest
-from ...utils.win import WindowHandle, get_window_handle
+from ...utils.system.win32 import WindowHandle, get_window_handle
 
 
 class Hub:

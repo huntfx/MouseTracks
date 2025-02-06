@@ -15,7 +15,7 @@ from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_fi
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
-from ...utils.win import monitor_locations
+from ...utils.system import monitor_locations
 from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
 from ...render import render, EmptyRenderError
 

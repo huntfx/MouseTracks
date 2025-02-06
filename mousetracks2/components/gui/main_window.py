@@ -23,7 +23,7 @@ from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIM
 from ...file import PROFILE_DIR, get_profile_names, get_filename
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.win import monitor_locations, AutoRun
+from ...utils.system import monitor_locations, get_autorun, set_autorun, remove_autorun
 
 if TYPE_CHECKING:
     from . import GUI
@@ -99,10 +99,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set initial widget states
         self.ui.output_logs.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        try:
-            self.ui.prefs_autorun.setChecked(bool(AutoRun()))
-        except ValueError:
-            self.ui.prefs_autorun.setEnabled(False)
+        autorun_exe = get_autorun('MouseTracks')
+        self.ui.prefs_autorun.setChecked(autorun_exe == os.path.abspath(sys.argv[0]))
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
 
@@ -1327,7 +1325,18 @@ class MainWindow(QtWidgets.QMainWindow):
         registry. If the executable is moved then it will need to be
         re-added.
         """
-        AutoRun()(value)
+        if not self.ui.prefs_autorun.isEnabled():
+            return
+
+        if value:
+            try:
+                set_autorun('MouseTracks', os.path.abspath(sys.argv[0]))
+            except ValueError:
+                self.ui.prefs_autorun.setEnabled(False)
+                self.ui.prefs_autorun.setChecked(False)
+                return
+        else:
+            remove_autorun('MouseTracks')
         self.notify(f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.')
 
     @QtCore.Slot(bool)
