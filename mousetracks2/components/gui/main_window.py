@@ -1307,10 +1307,10 @@ class MainWindow(QtWidgets.QMainWindow):
         processing is not waiting to delete. Deleting a profile is only
         allowed once all tracking is disabled as a safety measure.
         """
-        delete_mouse = self.ui.track_mouse.isEnabled() and not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
-        delete_keyboard = self.ui.track_keyboard.isEnabled() and not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
-        delete_gamepad = self.ui.track_gamepad.isEnabled() and not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
-        delete_network = self.ui.track_network.isEnabled() and not self.ui.track_network.isChecked() and not self._delete_network_pressed
+        delete_mouse = not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
+        delete_keyboard = not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
+        delete_gamepad = not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
+        delete_network = not self.ui.track_network.isChecked() and not self._delete_network_pressed
 
         self.ui.delete_mouse.setEnabled(delete_mouse)
         self.ui.delete_keyboard.setEnabled(delete_keyboard)

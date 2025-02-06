@@ -9,7 +9,6 @@
 - [Tracking] Errors raised in `pynput` are not handled
 
 [QOL]
-- [GUI] Delete data option is disabled on load even if tracking is disabled
 - [GUI] Stop updates when stop state signal is sent
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
 - [GUI] Shift + right click on tray for debug options
