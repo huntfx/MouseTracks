@@ -1,19 +1,22 @@
 [MVP]
-- [GUI] reworked map types  - cursor[sequential|density|speed] click[L|M|R][single|double|held|] thumb[L|R][seq|den|spd] keyboard[pres|held]
+- Remove reliance on legacy `mousetracks.image.colours`
+- Remove reliance on legacy `mousetracks.applications`
 - [Config] Enable / disable each type of tracking
-- Legacy import
-- Better handling of stop state
 
 [Bugs]
 - disable.mtk2 is being saved
-- Start tracking after stopped, RuntimeError: "no tick data received" in Processing.profile_age_days
-- [GUI] Delete data disabled on load even if tracking is disabled
-- pynput errors aren't raised
+- When starting tracking after stopped, got `RuntimeError: "no tick data received"` in `Processing.profile_age_days`
+- [Tracking] Errors raised in `pynput` are not handled
 
 [QOL]
+- [GUI] Delete data option is disabled on load even if tracking is disabled
+- [GUI] Stop updates when stop state signal is sent
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
+- [GUI] Shift + right click on tray for debug options
 
 [Low Priority]
+- [GUI] Choose which mouse buttons from render
+- [GUI] Window always on top option for debugging
 - Check if the main hub is running, and if not close down the process
 - Option to disable multi monitor handling, track both separately
 - Export CSV
