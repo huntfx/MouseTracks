@@ -12,7 +12,7 @@ from .. import ipc
 from ..abstract import Component
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ...utils import get_cursor_pos
-from ...utils.keycodes import CLICK_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
+from ...utils.keycodes import CLICK_CODES, MOUSE_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
 from ...utils.network import Interfaces
 from ...utils.win import monitor_locations
 
@@ -183,11 +183,17 @@ class Tracking(Component):
         if self.state != ipc.TrackingState.State.Start:
             return
 
-        opcode = CLICK_CODES[('left', 'middle', 'right').index(button.name)]
+        try:
+            idx = ('left', 'middle', 'right', 'x1', 'x2').index(button.name)
+
+        # Ignore anything unknown
+        except ValueError:
+            return
+
         if pressed:
-            self.data.pynput_opcodes.add(opcode)
+            self.data.pynput_opcodes.add(MOUSE_CODES[idx])
         else:
-            self.data.pynput_opcodes.discard(opcode)
+            self.data.pynput_opcodes.discard(MOUSE_CODES[idx])
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
