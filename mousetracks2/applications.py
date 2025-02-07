@@ -36,14 +36,17 @@ APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
 def _parse_data(f: TextIO) -> dict[str, dict[str | None, str]]:
     """Parse data from a file."""
-    result = defaultdict(dict)
+    result: dict[str, dict[str | None, str]] = defaultdict(dict)
     for line in filter(bool, map(str.strip, f)):
 
         # Skip comments
         if line.startswith('//'):
             continue
+        match = APP_PATTERN.match(line)
+        if not match:
+            continue
 
-        exe, title, name = APP_PATTERN.match(line).groups()
+        exe, title, name = match.groups()
         if name is None:
             if title is None:
                 name = exe.replace(TRACKING_WILDCARD, '').strip()
@@ -56,11 +59,14 @@ def _parse_data(f: TextIO) -> dict[str, dict[str | None, str]]:
 
 def _prepare_data(data: dict[str, dict[str | None, str]]) -> Iterator[str]:
     """Prepare data to be saved to the file."""
+    name: str | None
+    title: str | None
+
     yield DEFAULT_TEXT
     yield ''
 
-    for exe, data in sorted(data.items(), key=lambda kv: kv[0].lower()):
-        for title, name in sorted(data.items(), key=lambda kv: (kv[0] is not None, kv[0])):
+    for exe, titles in sorted(data.items(), key=lambda kv: kv[0].lower()):
+        for title, name in sorted(titles.items(), key=lambda kv: (kv[0] is not None, kv[0])):
             if title is None:
                 if name == exe:
                     name = None
@@ -146,7 +152,7 @@ class AppList:
         with open(LOCAL_PATH, 'w', encoding='utf-8') as f:
             f.write('\n'.join(_prepare_data(self.data)))
 
-    def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str] | None]:
+    def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str]]:
         """Find all matches for an executable."""
         # Direct match
         if exe in self.data:

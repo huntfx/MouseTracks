@@ -29,9 +29,9 @@ class Hub:
         self.splash: SplashScreen | None = None
         self._previous_component_check: float = 0.0
 
-        self._q_main = multiprocessing.Queue()
+        self._q_main: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
 
-        self._q_gui = multiprocessing.Queue()
+        self._q_gui: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
         self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
         self._create_tracking_processes()
@@ -111,17 +111,17 @@ class Hub:
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
-        self._q_tracking = multiprocessing.Queue()
+        self._q_tracking: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
         self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
 
-        self._q_processing = multiprocessing.Queue()
+        self._q_processing: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
         self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
 
-        self._q_app_detection = multiprocessing.Queue()
+        self._q_app_detection: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
         self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
