@@ -270,8 +270,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Load previous colour if available, otherwise revert to default
         if previous_text and previous_text != self.ui.colour_option.currentText():
-            if idx := self.ui.colour_option.findText(previous_text) < -1:
-                self.ui.colour_option.setCurrentIndex(idx)
+            previous_idx = self.ui.colour_option.findText(previous_text)
+            if previous_idx > -1:
+                self.ui.colour_option.setCurrentIndex(previous_idx)
             self.render_colour = self.ui.colour_option.currentText()
 
         self.pause_colour_change = False
