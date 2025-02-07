@@ -9,6 +9,7 @@ class Component:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         self.q_send = q_send
         self.q_receive = q_receive
+        self.name = type(self).__name__
         self.__post_init__()
 
     def __post_init__(self) -> None:
@@ -17,7 +18,12 @@ class Component:
     @property
     def name(self) -> str:
         """Get the component name."""
-        return type(self).__name__
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        """Set the component name."""
+        self._name = name
 
     @property
     def target(self) -> int:
@@ -41,35 +47,47 @@ class Component:
     def receive_data(self):
         return self.q_receive.get()
 
-    def run(self):
+    def run(self) -> None:
         """Run the component."""
 
-    def on_exit(self):
+    def on_exit(self) -> None:
         """Clean up any threads on exit."""
 
     @classmethod
     def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
-        self = cls(q_send, q_receive)
-
-        print(f'[{self.name}] Loaded.')
-
+        # Attempt to initialise the class
         try:
-            self.run()
+            self = cls(q_send, q_receive)
 
-        except ExitRequest:
-            print(f'[{self.name}] Shut down.')
-
-        # Catch error after KeyboardInterrupt
-        except EOFError:
-            print(f'[{self.name}] Force shut down.')
-            return
-
+        # If an error happens on load, then stop here
+        # A shutdown is triggered for all other components
         except Exception as e:
-            self.send_data(ipc.Traceback(e, traceback.format_exc()))
+            q_send.put(ipc.Traceback(e, traceback.format_exc()))
+            self = Component(q_send, q_receive)
+            self.name = cls.__name__
             print(f'[{self.name}] Error shut down: {e}')
 
-        finally:
-            self.on_exit()
+        # Run the component with extra error handling
+        else:
+            print(f'[{self.name}] Loaded.')
 
-        self.send_data(ipc.ProcessShutDownNotification(self.target))
+            try:
+                self.run()
+
+            except ExitRequest:
+                print(f'[{self.name}] Shut down.')
+
+            # Catch error after KeyboardInterrupt
+            except EOFError:
+                print(f'[{self.name}] Force shut down.')
+                return
+
+            except Exception as e:
+                q_send.put(ipc.Traceback(e, traceback.format_exc()))
+                print(f'[{self.name}] Error shut down: {e}')
+
+            finally:
+                self.on_exit()
+
+        q_send.put(ipc.ProcessShutDownNotification(self.target))
         print(f'[{self.name}] Sent process closed notification.')

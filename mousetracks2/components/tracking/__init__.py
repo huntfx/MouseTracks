@@ -379,7 +379,7 @@ class Tracking(Component):
             if self.autosave and tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
                 self.send_data(ipc.Save())
 
-    def on_exit(self):
+    def on_exit(self) -> None:
         """Close threads on exit."""
         self._pynput_mouse_listener.stop()
         self._pynput_keyboard_listener.stop()
