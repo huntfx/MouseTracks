@@ -91,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = False
         self._is_loading_profile = 0
         self._is_closing = False
+        self._pixel_colour_cache: dict[str, QtGui.QColor] = {}
         self.state = ipc.TrackingState.State.Pause
 
         self.ui = layout.Ui_MainWindow()
@@ -146,8 +147,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
+        self._render_colour_tracks = 'Ice'
+        self._render_colour_heatmap = 'Jet'
+        self._render_colour_keyboard = 'Aqua'
         self.render_type = ipc.RenderType.Time
-        self.render_colour = 'BlackToRedToWhite'
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
         self.save_request_sent = False
@@ -214,31 +217,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.profile_changed(0)
 
     @property
-    def render_colour(self) -> str:
-        """Get the render colour."""
-        return self._render_colour
-
-    @render_colour.setter
-    def render_colour(self, colour: str) -> None:
-        """Set the render colour.
-        This will update the current pixel colour too.
-        """
-        self._render_colour = colour
-        try:
-            self.pixel_colour = QtGui.QColor(*colours.calculate_colour_map(colour)[-1])
-        except Exception:  # Old code - just fallback to tranparent
-            self._render_colour = 'TransparentBlack'
-            self.pixel_colour = QtGui.QColor(QtCore.Qt.GlobalColor.black)
-
-    @property
     def pixel_colour(self) -> QtGui.QColor:
         """Get the pixel colour to draw with."""
-        return self._pixel_colour
+        colour_map = self.render_colour
+        if colour_map not in self._pixel_colour_cache:
+            try:
+                generated_map = colours.calculate_colour_map(self.render_colour)
 
-    @pixel_colour.setter
-    def pixel_colour(self, colour: QtGui.QColor):
-        """Set the pixel colour to draw with."""
-        self._pixel_colour = colour
+            # This is legacy code with bad error handling
+            # If any error occurs, just show a transparent image
+            except Exception:
+                self._pixel_colour_cache[colour_map] = None
+
+            else:
+                self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1])
+
+        if self._pixel_colour_cache[colour_map] is None:
+            return QtGui.QColor(QtCore.Qt.GlobalColor.transparent)
+        return self._pixel_colour_cache[colour_map]
 
     @property
     def render_type(self) -> ipc.RenderType:
@@ -254,10 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Add items to render colour input
         self.pause_colour_change = True
-        previous_text = self.ui.colour_option.currentText()
 
         self.ui.colour_option.clear()
-        self.ui.colour_option.addItem('BlackToRedToWhite')
 
         colour_maps = colours.get_map_matches(
             tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.Speed,
@@ -268,14 +262,41 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.ui.colour_option.addItems(colour_maps)
 
-        # Load previous colour if available, otherwise revert to default
-        if previous_text and previous_text != self.ui.colour_option.currentText():
-            previous_idx = self.ui.colour_option.findText(previous_text)
-            if previous_idx > -1:
-                self.ui.colour_option.setCurrentIndex(previous_idx)
-            self.render_colour = self.ui.colour_option.currentText()
-
+        # Set it back to the previous colour selection
+        self.ui.colour_option.setCurrentText(self.render_colour)
         self.pause_colour_change = False
+
+    @property
+    def render_colour(self) -> str:
+        """Get the render colour for the current render type."""
+        match self.render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Speed
+                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
+                return self._render_colour_tracks
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                return self._render_colour_heatmap
+            case ipc.RenderType.Keyboard:
+                return self._render_colour_keyboard
+            case _:
+                raise NotImplementedError(self.render_type)
+
+    @render_colour.setter
+    def render_colour(self, colour: str) -> None:
+        """Set the render colour for the current render type.
+        This will update the current pixel colour too.
+        """
+        match self.render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Speed
+                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
+                self._render_colour_tracks = colour
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                self._render_colour_heatmap = colour
+            case ipc.RenderType.Keyboard:
+                self._render_colour_keyboard = colour
+            case _:
+                raise NotImplementedError(self.render_type)
 
     @property
     def mouse_click_count(self) -> int:
