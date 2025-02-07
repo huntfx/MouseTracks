@@ -7,11 +7,11 @@ match sys.platform:
 
     case 'darwin':
         from .darwin import monitor_locations
-        from .abstract import get_autorun, set_autorun, remove_autorun
+        from .placeholders import get_autorun, set_autorun, remove_autorun
 
     case _:
         from .linux import monitor_locations
-        from .abstract import get_autorun, set_autorun, remove_autorun
+        from .placeholders import get_autorun, set_autorun, remove_autorun
 
 __all__ = [
     'monitor_locations',
