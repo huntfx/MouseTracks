@@ -6,6 +6,7 @@
 - disable.mtk2 is being saved
 - When starting tracking after stopped, got `RuntimeError: "no tick data received"` in `Processing.profile_age_days`
 - [Tracking] Errors raised in `pynput` are not handled
+- [App Detection] If AppList error it doesn't shut down
 
 [QOL]
 - [GUI] Stop updates when stop state signal is sent
