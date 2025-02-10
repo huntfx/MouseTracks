@@ -4,14 +4,14 @@
 // You may also limit it to a certain window name, for example if the game uses a generic executable name.
 // This would work like "Play.exe[MyGame]: Game Name". You may use "<*>" at the start or end of "MyGame" as a wildcard.
 // If the executable or window name is the same as the game name, providing the game name is not required.
-// To turn off tracking for a particular application, use "<disable>" as its name.
+// To turn off individual tracking for a particular application, just use "Untracked" as its name.
 // To ignore tracking when a window name is a match (such as a splash screen), use "<ignore>" as its name.
 
 100orange.exe: 100% Orange Juice
 2000  to 1 A Space Felony.exe: 2000:1: A Space Felony
 20XX.exe
 3DfxCarm.exe: Carmageddon
-3DMark.exe: <disable>
+3DMark.exe: Untracked
 4D Miner.exe
 6kinoko.exe: New Super Marisa Land
 7DaysToDie.exe: 7 Days to Die
@@ -193,7 +193,7 @@ Borderlands.exe
 Borderlands2.exe: Borderlands 2
 BorderlandsPreSequel.exe: Borderlands: the Pre-Sequel
 braid.exe: Braid
-BranchingPassTheGame.exe: <disable>
+BranchingPassTheGame.exe: Untracked
 brawlhalla.app: Brawlhalla
 Brawlhalla.exe
 Breach-Win64-Shipping.exe: Breach
@@ -233,7 +233,7 @@ Chronicle.Exe: Chronicle - Runescape Legends
 Chronicon.exe
 Chunk Stories.exe
 Cities.exe: Cities: Skylines
-CitySample.exe: <disable>
+CitySample.exe: Untracked
 CivilizationBE_DX11.exe: Sid Meier's Civilization: Beyond Earth
 CivilizationBE_Mantle.exe: Sid Meier's Civilization: Beyond Earth
 CivilizationV.exe: Sid Meier's Civilization V
@@ -254,7 +254,7 @@ CMW.exe: Chivalry: Medieval
 CoD2MP_s.exe: Call of Duty 2
 CoD2SP_s.exe: Call of Duty 2
 Code.exe: Visual Studio Code
-CodeWalker.exe: <disable>
+CodeWalker.exe: Untracked
 CoDWaw.exe: Call of Duty: World at War
 CoDWaWmp.exe: Call of Duty: World at War
 CoJ.exe: Call of Juarez
@@ -328,9 +328,9 @@ deadspace2.exe: Dead Space 2
 dearesther.exe: Dear Esther
 DefenseGrid2_Release.exe: Defense Grid 2
 Defiance.exe
-DemoCitadel.exe: <disable>
+DemoCitadel.exe: Untracked
 DemonsNeverLieDemo.exe: Demons Never Lie Demo
-DemoToonVillage.exe: <disable>
+DemoToonVillage.exe: Untracked
 Demul.exe
 DepressionQuest.exe: Depression Quest
 DepthGame.exe: Depth
@@ -448,7 +448,7 @@ DXHRDC.exe: Deus Ex: Human Revolution
 DyingLightGame.exe: Dying Light
 ed6_win.exe: The Legend of Heroes: Trails in the Sky
 ed6_win2.exe: Trails in the Sky SC
-Editor.exe: <disable>
+Editor.exe: Untracked
 EDLaunch.exe: Elite: Dangerous
 EEE.exe: Ed, Edd n Eddy: The Mis-Edventures
 Egg.exe
@@ -468,7 +468,7 @@ Entropia.exe: Entropia Universe
 EoCApp.exe: Divinity: Original Sin
 Epsxe.exe: Sony Playstation Emulator
 eqgame.exe: EverQuest
-es.scr: <disable>
+es.scr: Untracked
 Escape Factory.exe
 eso.exe: The Elder Scrolls Online
 eso64.exe: The Elder Scrolls Online
@@ -484,7 +484,7 @@ event0.exe: Event[0]
 Everlasting Summer.app
 Everlasting%20Summer.app: Everlasting Summer
 EverQuest2.exe: EverQuest 2
-Everything.exe: <disable>
+Everything.exe: Untracked
 Evoland2.exe: Evoland 2
 Evolve.exe
 exefile.exe: Eve Online
@@ -563,14 +563,14 @@ FWChaos.exe: Concord
 Gahkthun.exe: Gahkthun of the Golden Lightning
 GalCiv2.exe: Galactic Civilization 2
 GalCiv3.exe: Galactic Civilization 3
-Game.exe: <disable>
+Game.exe: Untracked
 Game.exe[DOLL EYE - CHAPTER <*>]: DOLL EYE
 Game.exe[Warface]
-game.exe: <disable>
+game.exe: Untracked
 game.exe[ - The Longest Journey - Build <*>]: The Longest Journey
-game.exe[Application error]: <disable>
+game.exe[Application error]: Untracked
 game.exe[The Longest Journey]
-game_Release.exe: <disable>
+game_Release.exe: Untracked
 GameClientApp.exe: Overwatch
 GameLauncher.exe[SNOW]
 gamemd.exe: Command & Conquer: Red Alert 2
@@ -578,7 +578,7 @@ GameWin32RetailSteam.exe: Riptide GP2
 garden.exe: Garden
 GASP.exe
 ge.exe: Granado Espada
-GeForceNOW.exe: <disable>
+GeForceNOW.exe: Untracked
 GeForceNOW.exe[Apex Legends™ on GeForce NOW]: Apex Legends
 GeForceNOW.exe[Control on GeForce NOW]: Control
 GeForceNOW.exe[Counter-Strike: Global Offensive on GeForce NOW]: Counter-Strike: Global Offensive
@@ -678,7 +678,7 @@ HawkenGame-Win32-Shipping.exe: Hawken
 HCB.exe: Hyper Color Ball
 Hearthstone.app
 Hearthstone.exe
-Heaven.exe: <disable>
+Heaven.exe: Untracked
 HeavyRain.exe: Heavy Rain
 HeavyWeapon.exe: Heavy Weapon
 HellbladeGame-Win64-Shipping.exe: Hellblade: Senua's Sacrifice
@@ -800,8 +800,8 @@ King's Quest 6 Win.exe: King's Quest VI
 King's Quest 7.exe: King's Quest VII
 Kingdom.exe
 KingOfFighters2002UM.exe: The King Of Fighters 2002 Unlimited Match
-KiteDemo-Win64-Shipping.exe: <disable>
-KiteDemo.exe: <disable>
+KiteDemo-Win64-Shipping.exe: Untracked
+KiteDemo.exe: Untracked
 kofxiii.exe: The King of Fighters XIII
 kopp2.exe: Knights of Pen & Paper II
 Krosmaster Arena.exe
@@ -868,7 +868,7 @@ MagicDuels.exe: Magic Duels
 magicite.exe: Magicite
 Magicka.exe
 Maine-Win64-Shipping.exe: Grounded
-Mandelbulb3D.exe: <disable>
+Mandelbulb3D.exe: Untracked
 Maneater-Win64-Shipping.exe: Maneater
 Maneater.exe
 ManiaPlanet.exe
@@ -889,7 +889,7 @@ MaxPayne3.exe: Max Payne 3
 maya.exe: Autodesk Maya
 maya.exe[]: <ignore>
 maya.exe[Maya-*]: <ignore>
-maya.exe[Output Window]: <disable>
+maya.exe[Output Window]: Untracked
 MBA.exe: Magical Battle Arena
 MBAA.exe: Melty Blood Actress Again: Current Code
 MBAN_F.exe: Magical Battle Arena NEXT
@@ -902,7 +902,7 @@ MediocreMapAssistant2.exe: Mediocre Map Assistant 2
 METAL GEAR RISING REVENGEANCE.exe: Metal Gear Rising: Revengeance
 metro.exe: Metro: 2033 Redux
 metro2033.exe: Metro 2033
-metro_benchmark.exe: <disable>
+metro_benchmark.exe: Untracked
 MetroLL.exe: Metro Last Light
 mgs2_sse.exe: Metal Gear Solid 2: Substance
 MgsGroundZeroes.exe: Metal Gear Solid V: Ground Zeroes
@@ -926,7 +926,7 @@ MiscATinyTale.exe: Misc. A Tiny Tale
 misstake.exe: The Marvellous Miss Take
 MK10.exe: Mortal Kombat 10
 MKKE.exe: Mortal Kombat Komplete Edition
-MKT-Win64-Shipping.exe: <disable>
+MKT-Win64-Shipping.exe: Untracked
 MKT.exe: Meerkat Demo
 mm.exe: Dark Messiah of Might & Magic
 MN9Game.exe: Mighty Number 9
@@ -942,7 +942,7 @@ morrowind.exe: Morrowind
 Mountain.exe
 mow_assualt_squad.exe: Men Of War: Assault Squad
 mowas2.exe: Men Of War: Assault Squad 2
-MSI-Kombustor-x64.exe: <disable>
+MSI-Kombustor-x64.exe: Untracked
 mspaint.exe: Paint
 mstsc.exe[<*> Remote Desktop Connection]: Remote Desktop
 mstsc.exe[<*>Remote Desktop Connection]: Remote Desktop
@@ -951,8 +951,8 @@ mugen.exe: M.U.G.E.N
 MugenSouls.exe: Mugen Souls
 Multi Theft Auto.exe: Multi Theft Auto San Andreas
 Murdered.exe: Murdered: Soul Suspect
-MWBurnedDeadForestBiome-Win64-Shipping.exe: <disable>
-MWBurnedDeadForestBiome.exe: <disable>
+MWBurnedDeadForestBiome-Win64-Shipping.exe: Untracked
+MWBurnedDeadForestBiome.exe: Untracked
 MWOClient.exe: MechWarrior Online
 mwoclient.exe: MechWarrior Online
 MXMClient.bin: Master X Master
@@ -970,7 +970,7 @@ NEOScavenger.exe: NERO Scavenger
 NeptuniaReBirth1.exe: Hyperdimension Neptunia Re;Birth1
 NeptuniaReBirth2.exe: Hyperdimension Neptunia Re;Birth2
 NeptuniaReBirth3.exe: Hyperdimension Neptunia Re;Birth3
-NewSca.exe: <disable>
+NewSca.exe: Untracked
 nexonplay.exe: Kart Rider
 Nexuiz.exe
 NFS14.exe: Need for Speed Rivals
@@ -998,7 +998,7 @@ nw.exe: SORE
 nwmain.exe: Neverwinter Nights
 Oblivion.exe: The Elder Scrolls 4: Oblivion
 Observer-Win64-Shipping.exe: Pneuma: Breath of Life
-Octerrain.exe: <disable>
+Octerrain.exe: Untracked
 OctodadDadliestCatch.exe: Octodad: Deadliest Catch
 Offspring Fling.exe
 OfOrcsAndMen_Steam.exe: Of Orcs and Men
@@ -1038,7 +1038,7 @@ Paladins.exe
 Pandora.exe: Pandora: Eclipse of Nashira
 PapersPlease.exe: Papers, Please
 ParadiseIsland.exe: Paradise Island
-pass-the-project-2023.exe: <disable>
+pass-the-project-2023.exe: Untracked
 PathOfExile.exe: Path of Exile
 PathOfExile_x64Steam.exe: Path of Exile
 PathOfExileSteam.exe: Path of Exile
@@ -1349,7 +1349,7 @@ starwarsbattlefront.exe: Star Wars: Battlefront
 starwarsbattlefrontii.exe: Star Wars Battlefront II
 starwarsbattlefrontii_trial.exe: Star Wars Battlefront II
 starwarsjedifallenorder.exe: STAR WARS Jedi: Fallen Order
-SteamworksExample.exe: <disable>
+SteamworksExample.exe: Untracked
 STEINSGATE.exe: STEINS;GATE
 stellaris.exe: Stellaris
 stepmania-sse2.exe: StepMania
@@ -1378,7 +1378,7 @@ SuperliminalSteam.exe: Superliminal
 SuperMeatBoy.exe: Super Meat Boy
 SuperMNCGameClient.exe: Super Monday Night Combat
 Supernova.exe
-superposition.exe: <disable>
+superposition.exe: Untracked
 SupremeCommander.exe: Supreme Commander: Forged Alliance
 survivor.exe: Shadowgrounds: Survivor
 swarm.exe: Alien Swarm
@@ -1554,18 +1554,18 @@ Turbo Overkill.exe
 TurboSloths-Win64-Shipping.exe: Turbo Slots
 TurboSloths.exe: Turbo Slots
 UDK.exe: Unreal Development Kit
-UDK.exe[Unreal Development Kit (32-bit, DX9)]: <disable>
-UDK.exe[Unreal Development Kit (64-bit, DX9)]: <disable>
-UDK.exe[Unreal Development Kit Editor Preview (32-bit, DX9)]: <disable>
-UDK.exe[Unreal Development Kit Editor Preview (64-bit, DX9)]: <disable>
-UDK.exe[UnrealEngine3]: <disable>
+UDK.exe[Unreal Development Kit (32-bit, DX9)]: Untracked
+UDK.exe[Unreal Development Kit (64-bit, DX9)]: Untracked
+UDK.exe[Unreal Development Kit Editor Preview (32-bit, DX9)]: Untracked
+UDK.exe[Unreal Development Kit Editor Preview (64-bit, DX9)]: Untracked
+UDK.exe[UnrealEngine3]: Untracked
 UDK.exe[Viscera Cleanup Detail <*>]: Viscera Cleanup Detail
 UE4-Win64-Shipping.exe: Unreal Tournament 4
 UE4-Win64-Test.exe: Unreal Tournament 4
 UE4Editor.exe: Unreal Editor
 UE4Editor.exe[Unreal Editor - <*>]: <ignore>
 UE4Editor.exe[Unreal Project Browser]: <ignore>
-UE4Game-Win64-Shipping.exe: <disable>
+UE4Game-Win64-Shipping.exe: Untracked
 UE4Game-Win64-Shipping.exe[Red Trigger]
 UNDERTALE.app: Undertale
 UNDERTALE.exe: Undertale
@@ -1576,7 +1576,7 @@ Unravel.exe
 Unravel_trial.exe: Unravel
 Unreal.exe
 Unreal.exe[]: <ignore>
-Unreal.exe[Critical Error]: <disable>
+Unreal.exe[Critical Error]: Untracked
 Unreal.exe[Initial Configuration]: <ignore>
 Unreal.exe[Unreal First-Time Configuration]: <ignore>
 UnrealEd.exe: Unreal Editor
@@ -1595,10 +1595,10 @@ Uplink.exe
 UrbanTrialFreestyle.exe: Urban Trial Freestyle
 UT2004.exe: Unreal Tournament 2004
 UT3.exe: Unreal Tournament 3
-uTerrainsDemo.exe: <disable>
+uTerrainsDemo.exe: Untracked
 v2game.exe: Victoria II
 Valkyria.exe: Valkyria Chronicles
-Valley.exe: <disable>
+Valley.exe: Untracked
 Vampire.exe: Vampire: The Masquerade - Bloodlines
 VampireSurvivors.exe: Vampire Survivors
 Verdun.exe

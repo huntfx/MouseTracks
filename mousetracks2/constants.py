@@ -57,7 +57,7 @@ The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
 CHECK_COMPONENT_FREQUENCY = 1.0
 """How often in seconds to check if all components are running."""
 
-TRACKING_DISABLE = '<disable>'
+TRACKING_DISABLE = 'Untracked'
 """Turn off tracking for any applications with this name."""
 
 TRACKING_IGNORE = '<ignore>'

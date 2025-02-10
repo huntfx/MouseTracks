@@ -7,8 +7,6 @@ from typing import Iterator, TextIO
 from .constants import BASE_DIR, REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 
 
-RECOGNISED_EXTENSIONS = ['exe', 'bin', 'app', 'scr', 'com']
-
 DEFAULT_TEXT = (
     '// Add any applications you want to be tracked here.\n'
     '// Two separate applications can have the same name, '
