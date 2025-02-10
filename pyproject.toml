@@ -1,0 +1,3 @@
+[[tool.mypy.overrides]]
+module = "mousetracks.*"
+ignore_errors = true

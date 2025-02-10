@@ -24,7 +24,7 @@ if errorlevel 1 (
 )
 
 :: Run mypy on the entry point
-python -m mypy launch.py
+python -m mypy mousetracks2
 
 :: Exit the virtual environment
 call deactivate

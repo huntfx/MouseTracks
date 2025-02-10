@@ -2,7 +2,7 @@
 These are untested and may not work.
 """
 
-import Quartz
+import Quartz  # type: ignore
 
 
 def monitor_locations() -> list[tuple[int, int, int, int]]:
