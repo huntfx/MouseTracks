@@ -154,21 +154,15 @@ class AppList:
 
     def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str]]:
         """Find all matches for an executable."""
-        # Direct match
-        if exe in self.data:
-            yield self.data[exe], exe
         exe = exe.replace('\\', '/')
 
-        if '/' in exe:
-            basename = os.path.basename(exe)
-            # Direct match (without path)
-            if basename in self.data:
-                yield self.data[basename], exe
-        else:
-            basename = exe
+        if '/' not in exe:
+            # Direct match
+            if exe in self.data:
+                yield self.data[exe], exe
 
         # Path match
-        for path in self._path_executables.get(basename, []):
+        for path in self._path_executables.get(os.path.basename(exe), []):
             if exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower()):
                 yield self.data[path], exe
                 break
@@ -178,6 +172,13 @@ class AppList:
             if pattern.match(exe):
                 yield self.data[exe_], exe_
                 break
+
+        # Direct match
+        if '/' in exe:
+            if exe in self.data:
+                yield self.data[exe], exe
+            if os.path.basename(exe) in self.data:
+                yield self.data[os.path.basename(exe)], exe
 
 
     def match(self, exe: str, title: str | None = None) -> str | None:
@@ -228,6 +229,10 @@ if __name__ == '__main__':
     applist.data['<*>paint.exe'] = {None: 'MS Paint'}
     applist._wildcard_executables['<*>paint.exe'] = re.compile(_to_pattern('<*>paint.exe'))
 
+    applist.data['Tales from the Borderlands/Borderlands.exe'] = {None: 'Tales from the Borderlands'}
+    applist.data['Borderlands.exe'] = {None: 'Borderlands'}
+    applist._path_executables['Borderlands.exe'].append('Tales from the Borderlands/Borderlands.exe')
+
     assert applist.match('notepad.exe') == 'Notepad'
     assert applist.match('notepad.exe', '') == 'Notepad'
     assert applist.match('notepad.exe', 'AppList.txt - Notepad') == 'AppList'
@@ -238,6 +243,9 @@ if __name__ == '__main__':
     assert applist.match('path/test/myapp.exe') == 'Test App'
     assert applist.match('other/myapp.exe') == None
     assert applist.match('mspaint.exe') == 'MS Paint'
+    assert applist.match('Borderlands.exe') == 'Borderlands'
+    assert applist.match('C:/Tales from the Borderlands/Borderlands.exe') == 'Tales from the Borderlands'
+    assert applist.match('C:/Steam/Borderlands.exe') == 'Borderlands'
 
     # # Not supported
     # applist.data['Firefox/Firefox.<*>.exe'] = {None: 'Firefox'}

@@ -71,6 +71,7 @@ Anno2205.exe: Anno 2205
 anno5.exe: Anno 2070
 anowor.exe: Another World
 AnthemDemo.exe: Anthem
+Antichamber/Binaries/Win32/UDK.exe: Antichamber
 AoK HD.exe: Age Of Empires 2
 APB.exe: APB Reloaded
 APGame.exe: Alpha Protocol
@@ -278,6 +279,7 @@ Crimsonland.exe
 CrowdControl.exe: Crowd Control
 CrowfallClient.exe: Crowfall
 Cryptark.exe: CRYPTARK
+cryptic studios/neverwinter/live/gameclient.exe: Neverwinter Online
 Crysis.exe
 Crysis2.exe: Crysis 2
 Crysis3.exe: Crysis 3
@@ -357,6 +359,7 @@ dfuw.exe: Darkfall: Unholy Wars
 DH-Win64-Shipping.exe: Destroy All Humans!
 DH.exe: Destroy All Humans!
 diablo ii.exe: Diablo II
+Diablo II/Game.exe: Diablo II
 Diablo III.app
 Diablo III.exe
 Diablo III64.exe: Diablo III
@@ -431,6 +434,7 @@ dungeon.exe: Soda Dungeon
 dungeon.exe[Soda Dungeon]
 dungeonland.exe: Dungeonland
 DungeonoftheEndless.exe: Dungeon of the Endless
+Dungeons and Dragons Online/TurbineLauncher.exe: Dungeons & Dragons Online
 DungeonSiege.exe: Dungeon Siege
 DungeonSiege2.exe: Dungeon Siege 2
 DungeonSouls.exe
@@ -452,6 +456,7 @@ ElectronicObserver.exe: Kantai Collection
 EliteDangerous32.exe: Elite: Dangerous
 EliteDangerous64.exe: Elite: Dangerous
 Elma12.exe: Elasto Mania
+Eloa/Client2.0.exe: Elite Lord of Alliance
 elsword.exe: Elsword
 Empire.exe: Empire: Total War
 empires2.exe: Age of Empires 2
@@ -872,6 +877,7 @@ MapleRoyals.exe
 MapleStory.exe
 MapleStory2.exe: MapleStory 2
 MarbleMarcher.exe: Marble Marcher
+mark_of_the_ninja/bin/game.exe: Mark of the Ninja
 MarvelHeroes2015.exe: Marvel Heroes 2015
 MarvelHeroes2016.exe: Marvel Heroes 2016
 MassEffect.exe: Mass Effect
@@ -931,6 +937,7 @@ MonkeyIsland102.exe: Tales of Monkey Island
 MonkeyIsland103.exe: Tales of Monkey Island
 MonkeyIsland104.exe: Tales of Monkey Island
 MonkeyIsland105.exe: Tales of Monkey Island
+Monster Hunter Online/TCLS/Client.exe: Monster Hunter Online
 morrowind.exe: Morrowind
 Mountain.exe
 mow_assualt_squad.exe: Men Of War: Assault Squad
@@ -951,6 +958,7 @@ mwoclient.exe: MechWarrior Online
 MXMClient.bin: Master X Master
 MXReflex.exe: MX vs. ATV Reflex
 Napoleon.exe: Napoleon: Total War
+NCSOFT/BnS/bin/Client.exe: Blade & Soul
 NecroDancer.exe: Crypt of the NecroDancer
 NeedForSpeedHeat.exe: Need for Speed: Heat
 NeedForSpeedHeatTrial.exe: Need for Speed: Heat
@@ -1322,6 +1330,7 @@ sshock.exe: System Shock
 sspace.exe: Shaddow Space
 Stalker-COP.exe: S.T.A.L.K.E.R.: Call of Pripyat
 stanley.exe: The Stanley Parable
+Star Trek Online/Live/GameClient.exe: Star Trek Online
 Star_Trek_Online.exe: Star Trek Online
 Starbound.app
 starbound.exe: Starbound
@@ -1391,6 +1400,7 @@ System40.exe: Sengoku Rance
 t-engine.exe: Tales of Maj'Eyal
 t6sp.exe: Call of Duty: Black Ops
 Tabletop Simulator.exe
+Tales from the Borderlands/Borderlands.exe: Tales from the Borderlands
 Tales of Zesteria.exe: Tales of Zestiria
 Tales of Zestiria.exe
 Talisman.exe: Talisman: Digital Edition
