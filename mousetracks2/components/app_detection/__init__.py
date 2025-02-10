@@ -3,7 +3,7 @@ import re
 from .. import ipc
 from ..abstract import Component
 from ...applications import AppList
-from ...constants import DEFAULT_PROFILE_NAME
+from ...constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ...exceptions import ExitRequest
 from ...utils.system.win32 import WindowHandle, get_window_handle
 
@@ -37,7 +37,7 @@ class AppDetection(Component):
             focus_changed = True
 
         current_app_name = self.applist.match(handle.exe, title)
-        if current_app_name is None:
+        if current_app_name in (None, TRACKING_IGNORE):
             current_app = None
         else:
             current_app = current_app_name, exe
