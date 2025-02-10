@@ -4,3 +4,4 @@ types-pywin32==308.*
 types-pynput==1.7.*
 types-PyYAML==6.0.*
 scipy-stubs==1.14.*
+types-python-xlib==0.33.*
