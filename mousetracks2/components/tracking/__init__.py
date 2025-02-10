@@ -10,6 +10,7 @@ import XInput  # type: ignore
 from . import utils
 from .. import ipc
 from ..abstract import Component
+from ...config import GlobalConfig
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ...utils import get_cursor_pos
 from ...utils.keycodes import CLICK_CODES, MOUSE_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
@@ -61,6 +62,12 @@ class Tracking(Component):
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True
 
+        config = GlobalConfig()
+        self.track_mouse = config.track_mouse
+        self.track_keyboard = config.track_keyboard
+        self.track_gamepad = config.track_gamepad
+        self.track_network = config.track_network
+
         # Setup pynput listeners
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
                                                             on_click=self._pynput_mouse_click,
@@ -92,6 +99,22 @@ class Tracking(Component):
                 case ipc.Autosave():
                     self.autosave = message.enabled
                     print(f'[Tracking] Autosave Enabled: {message.enabled}')
+
+                case ipc.SetGlobalMouseTracking():
+                    print(f'[Tracking] Tracking mouse data: {message.enable}')
+                    self.track_mouse = message.enable
+
+                case ipc.SetGlobalKeyboardTracking():
+                    print(f'[Tracking] Tracking keyboard data: {message.enable}')
+                    self.track_keyboard = message.enable
+
+                case ipc.SetGlobalGamepadTracking():
+                    print(f'[Tracking] Tracking gamepad data: {message.enable}')
+                    self.track_gamepad = message.enable
+
+                case ipc.SetGlobalNetworkTracking():
+                    print(f'[Tracking] Tracking network data: {message.enable}')
+                    self.track_network = message.enable
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
@@ -180,7 +203,7 @@ class Tracking(Component):
 
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
-        if self.state != ipc.TrackingState.State.Start:
+        if self.state != ipc.TrackingState.State.Start or not self.track_mouse:
             return
 
         try:
@@ -200,7 +223,7 @@ class Tracking(Component):
         The scroll vector is mostly -1, 0 or 1, but support has been
         added in case it can go outside this range.
         """
-        if self.state != ipc.TrackingState.State.Start:
+        if self.state != ipc.TrackingState.State.Start or not self.track_mouse:
             return
 
         if dx > 0:
@@ -218,7 +241,7 @@ class Tracking(Component):
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
-        if self.state != ipc.TrackingState.State.Start or key is None:
+        if self.state != ipc.TrackingState.State.Start or key is None or not self.track_keyboard:
             return
 
         if isinstance(key, pynput.keyboard.KeyCode):
@@ -280,86 +303,89 @@ class Tracking(Component):
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
-            mouse_position = get_cursor_pos()
+            if self.track_mouse:
+                mouse_position = get_cursor_pos()
 
-            # Check if mouse position is inactive (such as a screensaver)
-            if mouse_position is None:
-                if not data.mouse_inactive:
-                    print('[Tracking] Mouse Undetected.')
-                    data.mouse_inactive = True
-                continue
-            if data.mouse_inactive:
-                print('[Tracking] Mouse detected.')
-                data.mouse_inactive = False
+                # Check if mouse position is inactive (such as a screensaver)
+                # If so then pause everything
+                if mouse_position is None:
+                    if not data.mouse_inactive:
+                        print('[Tracking] Mouse Undetected.')
+                        data.mouse_inactive = True
+                    continue
+                if data.mouse_inactive:
+                    print('[Tracking] Mouse detected.')
+                    data.mouse_inactive = False
+
+                # Update mouse movement
+                if mouse_position != data.mouse_position:
+                    self.data.tick_modified = self.data.tick_current
+                    self.data.mouse_position = mouse_position
+                    self._check_monitor_data(mouse_position)
+                    self.send_data(ipc.MouseMove(mouse_position))
 
             # Check resolution and update if required
             if tick and not tick % UPDATES_PER_SECOND:
                 self._refresh_monitor_data()
                 self.send_data(ipc.RequestRunningAppCheck())
 
-            # Update mouse movement
-            if mouse_position != data.mouse_position:
-                self.data.tick_modified = self.data.tick_current
-                self.data.mouse_position = mouse_position
-                self._check_monitor_data(mouse_position)
-                self.send_data(ipc.MouseMove(mouse_position))
-
             # Record key presses / mouse clicks
             for opcode in self.data.pynput_opcodes:
                 self._key_press(opcode)
 
             # Determine which gamepads are connected
-            if not tick % 60 or data.gamepad_force_recheck:
-                data.gamepads_current = XInput.get_connected()
-                data.gamepad_force_recheck = False
+            if self.track_gamepad:
+                if not tick % 60 or data.gamepad_force_recheck:
+                    data.gamepads_current = XInput.get_connected()
+                    data.gamepad_force_recheck = False
 
-                if data.gamepads_current != data.gamepads_previous:
-                    print('[Tracking] Gamepad change detected')
-                    data.gamepads_previous = data.gamepads_current
+                    if data.gamepads_current != data.gamepads_previous:
+                        print('[Tracking] Gamepad change detected')
+                        data.gamepads_previous = data.gamepads_current
 
-            for gamepad, active in enumerate(data.gamepads_current):
-                if not active:
-                    continue
-
-                # Get a snapshot of the current gamepad state
-                try:
-                    state = XInput.get_state(gamepad)
-                except XInput.XInputNotConnectedError:
-                    data.gamepad_force_recheck = True
-                    continue
-
-                stick_l, stick_r = XInput.get_thumb_values(state)
-                trig_l, trig_r = XInput.get_trigger_values(state)
-                buttons = XInput.get_button_values(state)
-
-                buttons['TRIGGER_LEFT'] = trig_l * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
-                buttons['TRIGGER_RIGHT'] = trig_r * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
-
-                for button, state in buttons.items():
-                    if not state:
+                for gamepad, active in enumerate(data.gamepads_current):
+                    if not active:
                         continue
-                    self.data.tick_modified = self.data.tick_current
-                    if button not in XINPUT_OPCODES:
-                        button = f'BUTTON_{button}'
-                    keycode = XINPUT_OPCODES[button]
 
-                    press_start, press_latest = data.button_presses.get(keycode, (0, 0))
-                    if press_latest != tick - 1:
-                        self.send_data(ipc.ButtonPress(gamepad, keycode))
-                        data.button_presses[keycode] = (tick, tick)
-                    else:
-                        self.send_data(ipc.ButtonHeld(gamepad, keycode))
-                        data.button_presses[keycode] = (press_start, tick)
+                    # Get a snapshot of the current gamepad state
+                    try:
+                        state = XInput.get_state(gamepad)
+                    except XInput.XInputNotConnectedError:
+                        data.gamepad_force_recheck = True
+                        continue
 
-                if stick_l != data.gamepad_stick_l_position.get(gamepad):
-                    self.data.tick_modified = self.data.tick_current
-                    data.gamepad_stick_l_position[gamepad] = stick_l
-                    self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, stick_l))
+                    stick_l, stick_r = XInput.get_thumb_values(state)
+                    trig_l, trig_r = XInput.get_trigger_values(state)
+                    buttons = XInput.get_button_values(state)
 
-                if stick_r != data.gamepad_stick_r_position.get(gamepad):
-                    self.data.tick_modified = self.data.tick_current
-                    data.gamepad_stick_r_position[gamepad] = stick_r
-                    self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
+                    buttons['TRIGGER_LEFT'] = trig_l * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
+                    buttons['TRIGGER_RIGHT'] = trig_r * 100 >= XInput.XINPUT_GAMEPAD_TRIGGER_THRESHOLD
+
+                    for button, state in buttons.items():
+                        if not state:
+                            continue
+                        self.data.tick_modified = self.data.tick_current
+                        if button not in XINPUT_OPCODES:
+                            button = f'BUTTON_{button}'
+                        keycode = XINPUT_OPCODES[button]
+
+                        press_start, press_latest = data.button_presses.get(keycode, (0, 0))
+                        if press_latest != tick - 1:
+                            self.send_data(ipc.ButtonPress(gamepad, keycode))
+                            data.button_presses[keycode] = (tick, tick)
+                        else:
+                            self.send_data(ipc.ButtonHeld(gamepad, keycode))
+                            data.button_presses[keycode] = (press_start, tick)
+
+                    if stick_l != data.gamepad_stick_l_position.get(gamepad):
+                        self.data.tick_modified = self.data.tick_current
+                        data.gamepad_stick_l_position[gamepad] = stick_l
+                        self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, stick_l))
+
+                    if stick_r != data.gamepad_stick_r_position.get(gamepad):
+                        self.data.tick_modified = self.data.tick_current
+                        data.gamepad_stick_r_position[gamepad] = stick_r
+                        self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
             if not tick % 60:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():

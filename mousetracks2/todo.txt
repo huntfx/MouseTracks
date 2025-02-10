@@ -1,5 +1,4 @@
 [MVP]
-- [Config] Enable / disable each type of tracking
 
 [Bugs]
 - disable.mtk2 is being saved

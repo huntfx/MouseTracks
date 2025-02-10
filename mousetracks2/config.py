@@ -15,6 +15,10 @@ class GlobalConfig:
     """Settings to save to disk."""
 
     minimise_on_start: bool = False
+    track_mouse: bool = True
+    track_keyboard: bool = True
+    track_gamepad: bool = True
+    track_network: bool = True
 
     def __post_init__(self) -> None:
         self.load()

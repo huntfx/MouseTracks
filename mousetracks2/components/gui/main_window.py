@@ -104,6 +104,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_autorun.setChecked(autorun_exe == os.path.abspath(sys.argv[0]))
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
+        self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
+        self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
+        self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
+        self.ui.prefs_track_network.setChecked(self.config.track_network)
 
         # Store things for full screen
         # The `addAction` is required for a hidden menubar
@@ -195,6 +199,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
+        self.ui.prefs_track_mouse.triggered.connect(self.set_mouse_tracking_enabled)
+        self.ui.prefs_track_keyboard.triggered.connect(self.set_keyboard_tracking_enabled)
+        self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
+        self.ui.prefs_track_network.triggered.connect(self.set_network_tracking_enabled)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
         self.ui.file_import.triggered.connect(self.import_legacy_profile)
         self.timer_activity.timeout.connect(self.update_activity_preview)
@@ -761,10 +769,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     im.save(message.request.file_path)
                     os.startfile(message.request.file_path)
 
-            case ipc.MouseHeld() if self.is_live and self.ui.track_mouse.isChecked():
+            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled:
                 self.mouse_held_count += 1
 
-            case ipc.MouseMove() if self.is_live and self.ui.track_mouse.isChecked():
+            case ipc.MouseMove() if self.is_live and self.mouse_tracking_enabled:
                 if self.render_type == ipc.RenderType.Time:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
@@ -1153,6 +1161,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Determine if the visible data is live."""
         return self.ui.current_profile.currentData() == self.current_profile.name
 
+    @property
+    def mouse_tracking_enabled(self) -> bool:
+        """Determine if mouse tracking is enabled."""
+        return self.ui.track_mouse.isChecked() and self.ui.prefs_track_mouse.isChecked()
+
     def draw_pixmap_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
                          force_monitor: tuple[int, int] | None = None):
         """When an object moves, draw it.
@@ -1322,6 +1335,30 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
         self.component.send_data(ipc.SetProfileNetworkTracking(selected_profile, enable))
+
+    @QtCore.Slot(bool)
+    def set_mouse_tracking_enabled(self, value: bool) -> None:
+        self.config.track_mouse = value
+        self.config.save()
+        self.component.send_data(ipc.SetGlobalMouseTracking(value))
+
+    @QtCore.Slot(bool)
+    def set_keyboard_tracking_enabled(self, value: bool) -> None:
+        self.config.track_keyboard = value
+        self.config.save()
+        self.component.send_data(ipc.SetGlobalKeyboardTracking(value))
+
+    @QtCore.Slot(bool)
+    def set_gamepad_tracking_enabled(self, value: bool) -> None:
+        self.config.track_gamepad = value
+        self.config.save()
+        self.component.send_data(ipc.SetGlobalGamepadTracking(value))
+
+    @QtCore.Slot(bool)
+    def set_network_tracking_enabled(self, value: bool) -> None:
+        self.config.track_network = value
+        self.config.save()
+        self.component.send_data(ipc.SetGlobalNetworkTracking(value))
 
     def handle_delete_button_visibility(self, _: Any = None) -> None:
         """Toggle the delete button visibility.

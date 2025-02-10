@@ -326,29 +326,53 @@ class Inactive(Message):
 
 @dataclass
 class SetProfileMouseTracking(Message):
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing, init=False)
     profile_name: str
     enable: bool
 
 
 @dataclass
 class SetProfileKeyboardTracking(Message):
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing, init=False)
     profile_name: str
     enable: bool
 
 
 @dataclass
 class SetProfileGamepadTracking(Message):
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing, init=False)
     profile_name: str
     enable: bool
 
 
 @dataclass
 class SetProfileNetworkTracking(Message):
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Processing, init=False)
     profile_name: str
+    enable: bool
+
+
+@dataclass
+class SetGlobalMouseTracking(Message):
+    target: int = field(default=Target.Tracking, init=False)
+    enable: bool
+
+
+@dataclass
+class SetGlobalKeyboardTracking(Message):
+    target: int = field(default=Target.Tracking, init=False)
+    enable: bool
+
+
+@dataclass
+class SetGlobalGamepadTracking(Message):
+    target: int = field(default=Target.Tracking, init=False)
+    enable: bool
+
+
+@dataclass
+class SetGlobalNetworkTracking(Message):
+    target: int = field(default=Target.Tracking, init=False)
     enable: bool
 
 
