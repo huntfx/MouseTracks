@@ -12,7 +12,6 @@ from typing import Any, TYPE_CHECKING
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
-from mousetracks.image import colours
 from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .widgets import Pixel
@@ -21,6 +20,7 @@ from ...config import GlobalConfig
 from ...constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
 from ...file import PROFILE_DIR, get_profile_names, get_filename
+from ...legacy import colours
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.system import monitor_locations, get_autorun, set_autorun, remove_autorun
@@ -91,7 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = False
         self._is_loading_profile = 0
         self._is_closing = False
-        self._pixel_colour_cache: dict[str, QtGui.QColor] = {}
+        self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
         self.state = ipc.TrackingState.State.Pause
 
         self.ui = layout.Ui_MainWindow()
@@ -232,9 +232,10 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1])
 
-        if self._pixel_colour_cache[colour_map] is None:
+        colour = self._pixel_colour_cache[colour_map]
+        if colour is None:
             return QtGui.QColor(QtCore.Qt.GlobalColor.transparent)
-        return self._pixel_colour_cache[colour_map]
+        return colour
 
     @property
     def render_type(self) -> ipc.RenderType:
@@ -260,7 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                    ipc.RenderType.Thumbstick_Heatmap, ipc.RenderType.TimeHeatmap),
             keyboard=render_type == ipc.RenderType.Keyboard,
         )
-        self.ui.colour_option.addItems(colour_maps)
+        self.ui.colour_option.addItems(sorted(colour_maps))
 
         # Set it back to the previous colour selection
         self.ui.colour_option.setCurrentText(self.render_colour)

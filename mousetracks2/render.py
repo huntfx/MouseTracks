@@ -9,7 +9,7 @@ except ModuleNotFoundError:
     sys.path.append('resources/build')
     from scipy import ndimage
 
-from mousetracks.image import colours
+from .legacy import colours
 
 
 class EmptyRenderError(ValueError):
@@ -101,7 +101,7 @@ def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: 
     return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
 
 
-def generate_colour_lookup(*colours: tuple[int, int, int, int], steps: int = 256) -> np.ndarray:
+def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.ndarray:
     """Generate a color lookup table transitioning smoothly between given colors."""
     lookup = np.zeros((steps, 4), dtype=np.uint8)
 

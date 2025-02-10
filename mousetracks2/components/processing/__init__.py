@@ -1,10 +1,6 @@
 import math
-import multiprocessing
-import traceback
 from collections import defaultdict
 from dataclasses import dataclass
-from importlib import reload
-from typing import Any
 
 import numpy as np
 
@@ -12,6 +8,7 @@ from .. import ipc
 from ..abstract import Component
 from ...exceptions import ExitRequest
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ...legacy import keyboard
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ...utils.network import Interfaces
@@ -291,24 +288,12 @@ class Processing(Component):
 
     def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render a keyboard image."""
-        from mousetracks.config.settings import CONFIG
-        CONFIG['GenerateKeyboard']['ColourProfile'] = colour_map
-        CONFIG['GenerateKeyboard']['SizeMultiplier'] = sampling
+        keyboard.GLOBALS.colour_map = colour_map
+        keyboard.GLOBALS.multiplier = sampling
 
-        # The legacy keyboard module sets constants based on the multiplier, so reload
-        from mousetracks.image import keyboard
-        reload(keyboard)
-
-        # Recreate the legacy data
-        data: dict[str, Any] = {
-            'Keys': {'All': {'Pressed': {i: profile.key_presses[i] for i in keycodes.KEYBOARD_CODES},
-                             'Held': {i: profile.key_held[i] for i in keycodes.KEYBOARD_CODES}}},
-            'Ticks': {'Total': profile.active}
-        }
-
-        # Generate the image
-        kb = keyboard.DrawKeyboard(profile.name, data)
-        image = kb.draw_image()
+        pressed = {i: profile.key_presses[i] for i in map(int, keycodes.KEYBOARD_CODES)}
+        held = {i: profile.key_held[i] for i in map(int, keycodes.KEYBOARD_CODES)}
+        image = keyboard.DrawKeyboard(profile.name, profile.active, pressed, held).draw_image()
 
         # Convert back to array to send to GUI
         return np.asarray(image)

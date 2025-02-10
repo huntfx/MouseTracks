@@ -496,7 +496,7 @@ class TrackingProfile:
         """
         # Attempt to import the legacy libraries
         try:
-            from mousetracks.files import CustomOpen, decode_file, upgrade_version  # type: ignore
+            from mousetracks.files import CustomOpen, decode_file, upgrade_version
 
         # Manually load the data
         except ImportError:

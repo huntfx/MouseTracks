@@ -1,8 +1,4 @@
-"""General math functions.
-
-This is part of the Mouse Tracks Python application.
-Source: https://github.com/Peter92/MouseTracks
-"""
+"""General math functions."""
 
 
 def calculate_distance(p1: tuple[int, int] | None, p2: tuple[int, int] | None) -> float:
@@ -44,39 +40,18 @@ def calculate_line(start: tuple[int, int] | None, end: tuple[int, int] | None) -
     return result
 
 
-def calculate_circle(radius, segments=(True, True, True, True)):
+def calculate_circle(radius: int, segments: tuple[bool, bool, bool, bool] = (True, True, True, True)
+                     ) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
     """Get the area and outline of a circle as pixels.
     Optionally pass in which segment is needed, as a tuple or number.
 
     Modified the bresenham complete circle algorithm from
-    daniweb.com/programming/software-development/threads/321181
+    https://daniweb.com/programming/software-development/threads/321181
     """
-    if isinstance(segments, int):
-        segments = [i == segments for i in range(4)]
-
-    # Parse text input
-    elif isinstance(segments, str):
-        option = segments.lower()
-        count = [0, 0, 0, 0]
-        if 'top' in option:
-            count[0] += 1
-            count[3] += 1
-        if 'bottom' in option:
-            count[1] += 1
-            count[2] += 1
-        if 'left' in option:
-            count[2] += 1
-            count[3] += 1
-        if 'right' in option:
-            count[0] += 1
-            count[1] += 1
-        count_max = max(count)
-        segments = [i == count_max for i in count]
-
     # Calculate the circle
     switch = 3 - (2 * radius)
-    outline = set()
-    area = set()
+    outline: set[tuple[int, int]] = set()
+    area: set[tuple[int, int]] = set()
     x = 0
     y = radius
     last_y = None
