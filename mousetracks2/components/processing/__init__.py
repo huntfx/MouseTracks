@@ -273,8 +273,8 @@ class Processing(Component):
         return arrays
 
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
-                      width: int | None, height: int | None,
-                      colour_map: str, sampling: int = 1, padding: int = 0) -> np.ndarray:
+                      width: int | None, height: int | None, colour_map: str,
+                      sampling: int = 1, padding: int = 0, heatmap_contrast: float = 1.0) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
@@ -289,18 +289,21 @@ class Processing(Component):
 
         # Do the render
         try:
-            image = render(colour_map, positional_arrays, width, height, sampling, linear=is_heatmap or is_speed, blur=is_heatmap)
+            image = render(colour_map, positional_arrays, width, height, sampling,
+                           linear=is_heatmap or is_speed, blur=is_heatmap, contrast=heatmap_contrast)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
         return image
 
-    def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1) -> np.ndarray:
+    def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1,
+                         contrast: float = 1.0) -> np.ndarray:
         """Render a keyboard image."""
         keyboard.GLOBALS.colour_map = colour_map
         keyboard.GLOBALS.multiplier = sampling
 
         pressed = {i: profile.key_presses[i] for i in map(int, keycodes.KEYBOARD_CODES)}
         held = {i: profile.key_held[i] for i in map(int, keycodes.KEYBOARD_CODES)}
+
         image = keyboard.DrawKeyboard(profile.name, profile.active, pressed, held).draw_image()
 
         # Convert back to array to send to GUI
@@ -385,11 +388,12 @@ class Processing(Component):
                     sampling = message.sampling
                     if message.file_path is not None:
                         sampling *= 2
-                    image = self._render_keyboard(profile, message.colour_map, sampling)
+                    image = self._render_keyboard(profile, message.colour_map, sampling, message.contrast)
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height,
-                                               message.colour_map, message.sampling, message.padding)
+                                               message.colour_map, message.sampling,
+                                               message.padding, message.contrast)
                 self.send_data(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')

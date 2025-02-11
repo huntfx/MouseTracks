@@ -154,6 +154,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._render_colour_tracks = 'Ice'
         self._render_colour_heatmap = 'Jet'
         self._render_colour_keyboard = 'Aqua'
+        self._contrast_tracks = 1.0
+        self._contrast_heatmap = 1.0
+        self._contrast_keyboard = 1.0
         self.render_type = ipc.RenderType.Time
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
@@ -180,6 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.resized.connect(self.thumbnail_resize)
         self.ui.thumbnail.clicked.connect(self.thumbnail_click)
         self.ui.render_padding.valueChanged.connect(self.render_padding_changed)
+        self.ui.contrast.valueChanged.connect(self.contrast_changed)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -274,6 +278,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set it back to the previous colour selection
         self.ui.colour_option.setCurrentText(self.render_colour)
+
+        self.ui.contrast.setValue(self.contrast)
+        self.ui.contrast.setVisible(render_type != ipc.RenderType.Keyboard)
+        self.ui.contrast_label.setVisible(render_type != ipc.RenderType.Keyboard)
+
         self.pause_colour_change = False
 
     @property
@@ -305,6 +314,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._render_colour_heatmap = colour
             case ipc.RenderType.Keyboard:
                 self._render_colour_keyboard = colour
+            case _:
+                raise NotImplementedError(self.render_type)
+
+    @property
+    def contrast(self) -> float:
+        """Get the contrast for the current render type."""
+        match self.render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Speed
+                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
+                return self._contrast_tracks
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                return self._contrast_heatmap
+            case ipc.RenderType.Keyboard:
+                return self._contrast_keyboard
+            case _:
+                raise NotImplementedError(self.render_type)
+
+    @contrast.setter
+    def contrast(self, value: float) -> None:
+        """Set a new constrast value for the current render type."""
+        match self.render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Speed
+                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
+                self._contrast_tracks = value
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                self._contrast_heatmap = value
+            case ipc.RenderType.Keyboard:
+                self._contrast_keyboard = value
             case _:
                 raise NotImplementedError(self.render_type)
 
@@ -537,8 +576,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.request_thumbnail(force=True)
 
     @QtCore.Slot(int)
-    def render_padding_changed(self):
+    def render_padding_changed(self, value: int) -> None:
         """Update the render when the padding is changed."""
+        self.request_thumbnail(force=True)
+
+    @QtCore.Slot(int)
+    def contrast_changed(self, value: int) -> None:
+        """Update the render when the contrast is changed."""
+        if self.pause_colour_change:
+            return
+        self.contrast = value
         self.request_thumbnail(force=True)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
@@ -595,7 +642,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_rendering_timer()
         self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
-                                                   1, profile, None, self.ui.render_padding.value()))
+                                                   1, profile, None, self.ui.render_padding.value(),
+                                                   self.contrast))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -650,7 +698,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if accept:
             self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
                                                        self.render_colour, self.ui.render_samples.value(),
-                                                       profile, file_path, self.ui.render_padding.value()))
+                                                       profile, file_path, self.ui.render_padding.value(),
+                                                       self.contrast))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -747,7 +796,6 @@ class MainWindow(QtWidgets.QMainWindow):
                         case _:
                             raise NotImplementedError(channels)
 
-                    print(failed, message.request.file_path)
                     if failed:
                         self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
 

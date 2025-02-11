@@ -134,7 +134,7 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1,
-           linear: bool = False, blur: bool = False) -> np.ndarray:
+           linear: bool = False, blur: bool = False, contrast: float = 1.0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -188,12 +188,6 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         combined_arrays = {pos: ndimage.gaussian_filter(array.astype(np.float64), sigma=blur_amount)
                            for pos, array in combined_arrays.items()}
 
-        # TODO: Reimplement the heatmap range clipping
-        # It will be easier to test once saving works and a heavier heatmap can be used
-        # min_value = np.min(heatmap)
-        # all_values = np.sort(heatmap.ravel(), unique=True)
-        # max_value = all_values[int(round(len(unique_values) * 0.005))]
-
     # Equalise the max values
     if len(combined_arrays) > 1:
         max_values = {pos: max(1, np.max(array)) for pos, array in combined_arrays.items()}
@@ -203,6 +197,17 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
 
     # Combine all positional arrays into one big array
     combined_array = combine_array_grid(combined_arrays, scale_width, scale_height)
+
+    # Update the contrast
+    if contrast != 1.0:
+
+        # Prevent overflow errors
+        max_value = np.log(np.max(combined_array))
+        limit = np.log(np.finfo(combined_array.dtype).max)
+        if contrast * max_value > limit:
+            contrast = limit / int(max_value)  # The int conversion is to slightly lower the value
+
+        combined_array **= contrast
 
     # Convert the array to 0-255 and map to a colour lookup table
     try:

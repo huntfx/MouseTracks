@@ -16,12 +16,12 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
-    QGroupBox, QHBoxLayout, QLabel, QListWidget,
-    QListWidgetItem, QMainWindow, QMenu, QMenuBar,
-    QPushButton, QScrollArea, QScrollBar, QSizePolicy,
-    QSlider, QSpacerItem, QSpinBox, QStatusBar,
-    QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
+    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+    QListWidget, QListWidgetItem, QMainWindow, QMenu,
+    QMenuBar, QPushButton, QScrollArea, QScrollBar,
+    QSizePolicy, QSlider, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
 from mousetracks2.components.gui.widgets import (ResizableImage, Splitter)
 
@@ -191,7 +191,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 257, 492))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 257, 494))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -231,16 +231,43 @@ class Ui_MainWindow(object):
 
         self.groupBox_4 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        self.horizontalLayout_2 = QHBoxLayout(self.groupBox_4)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.verticalLayout_6 = QVBoxLayout(self.groupBox_4)
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.horizontalLayout_8 = QHBoxLayout()
+        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
         self.colour_option = QComboBox(self.groupBox_4)
         self.colour_option.addItem("")
         self.colour_option.addItem("")
         self.colour_option.addItem("")
         self.colour_option.setObjectName(u"colour_option")
+        sizePolicy2.setHeightForWidth(self.colour_option.sizePolicy().hasHeightForWidth())
+        self.colour_option.setSizePolicy(sizePolicy2)
         self.colour_option.setEditable(True)
 
-        self.horizontalLayout_2.addWidget(self.colour_option)
+        self.horizontalLayout_8.addWidget(self.colour_option)
+
+        self.contrast_label = QLabel(self.groupBox_4)
+        self.contrast_label.setObjectName(u"contrast_label")
+
+        self.horizontalLayout_8.addWidget(self.contrast_label)
+
+        self.contrast = QDoubleSpinBox(self.groupBox_4)
+        self.contrast.setObjectName(u"contrast")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.contrast.sizePolicy().hasHeightForWidth())
+        self.contrast.setSizePolicy(sizePolicy4)
+        self.contrast.setDecimals(3)
+        self.contrast.setMinimum(0.050000000000000)
+        self.contrast.setMaximum(99.000000000000000)
+        self.contrast.setSingleStep(0.050000000000000)
+        self.contrast.setValue(1.000000000000000)
+
+        self.horizontalLayout_8.addWidget(self.contrast)
+
+
+        self.verticalLayout_6.addLayout(self.horizontalLayout_8)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_4)
@@ -1015,11 +1042,12 @@ class Ui_MainWindow(object):
 
         self.auto_switch_profile.setText(QCoreApplication.translate("MainWindow", u"Keep currently loaded selected", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Map Type", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Colour Options", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Colour Map", None))
         self.colour_option.setItemText(0, QCoreApplication.translate("MainWindow", u"Default", None))
         self.colour_option.setItemText(1, QCoreApplication.translate("MainWindow", u"Citrus", None))
         self.colour_option.setItemText(2, QCoreApplication.translate("MainWindow", u"Sunburst", None))
 
+        self.contrast_label.setText(QCoreApplication.translate("MainWindow", u"Contrast:", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Stats", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Total Upload:", None))
         self.stat_download_total.setText(QCoreApplication.translate("MainWindow", u"1.32 TB", None))
