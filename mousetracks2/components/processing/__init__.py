@@ -504,12 +504,11 @@ class Processing(Component):
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
-            case ipc.TrackingState():
-                match message.state:
-                    case ipc.TrackingState.State.Start:
-                        self.profile.cursor_map.position = get_cursor_pos()
-                    case ipc.TrackingState.State.Stop:
-                        raise ExitRequest
+            case ipc.TrackingStarted():
+                self.profile.cursor_map.position = get_cursor_pos()
+
+            case ipc.StopTracking():
+                raise ExitRequest
 
             # Store the data for the newly detected application
             case ipc.TrackedApplicationDetected():

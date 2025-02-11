@@ -92,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_loading_profile = 0
         self._is_closing = False
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
-        self.state = ipc.TrackingState.State.Pause
+        self.state = ipc.TrackingState.Paused
 
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -766,8 +766,14 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.Inactive() if self.is_live:
                 self.inactive_time += message.ticks
 
-            case ipc.TrackingState():
-                self.state = message.state
+            case ipc.TrackingStarted():
+                self.state = ipc.TrackingState.Running
+
+            case ipc.PauseTracking():
+                self.state = ipc.TrackingState.Paused
+
+            case ipc.StopTracking():
+                self.state = ipc.TrackingState.Stopped
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -979,7 +985,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.stat_gui_queue.setText(str(message.gui))
                 self.ui.stat_app_detection_queue.setText(str(message.app_detection))
 
-                if self.state == ipc.TrackingState.State.Start:
+                if self.state == ipc.TrackingState.Running:
                     self.ui.stat_tracking_state.setText('Running' if message.tracking <= 1 else 'Busy')
                     self.ui.stat_processing_state.setText('Running' if message.processing <= 1 else 'Busy')
                     self.ui.stat_hub_state.setText('Running' if message.hub <= 1 else 'Busy')
@@ -987,7 +993,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
                                    self.ui.stat_hub_state, self.ui.stat_app_state):
-                        widget.setText('Paused' if self.state == ipc.TrackingState.State.Pause else 'Stopped')
+                        widget.setText('Paused' if self.state == ipc.TrackingState.Paused else 'Stopped')
 
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)
@@ -1005,17 +1011,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_tracking(self) -> None:
         """Start/unpause the script."""
         self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
-        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
+        self.component.send_data(ipc.StartTracking())
 
     @QtCore.Slot()
     def pause_tracking(self) -> None:
         """Pause/unpause the script."""
-        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Pause))
+        self.component.send_data(ipc.PauseTracking())
 
     @QtCore.Slot()
     def stop_tracking(self) -> None:
         """Stop the script."""
-        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Stop))
+        self.component.send_data(ipc.StopTracking())
 
     @QtCore.Slot()
     def raise_tracking(self) -> None:
@@ -1169,7 +1175,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.accept()
 
         # Pause the tracking
-        self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Pause))
+        self.component.send_data(ipc.PauseTracking())
 
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
@@ -1184,7 +1190,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                self.component.send_data(ipc.TrackingState(ipc.TrackingState.State.Start))
+                self.component.send_data(ipc.StartTracking())
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:

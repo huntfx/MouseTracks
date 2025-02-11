@@ -58,7 +58,7 @@ class DataState:
 
 class Tracking(Component):
     def __post_init__(self) -> None:
-        self.state = ipc.TrackingState.State.Pause
+        self.state = ipc.TrackingState.Paused
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True
 
@@ -83,8 +83,15 @@ class Tracking(Component):
             message = self.q_receive.get()
 
             match message:
-                case ipc.TrackingState():
-                    self.state = message.state
+                case ipc.StartTracking():
+                    self.state = ipc.TrackingState.Running
+                    self.send_data(ipc.TrackingStarted())
+
+                case ipc.PauseTracking():
+                    self.state = ipc.TrackingState.Paused
+
+                case ipc.StopTracking():
+                    self.state = ipc.TrackingState.Stopped
 
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
@@ -126,7 +133,7 @@ class Tracking(Component):
             match self.state:
 
                 # When tracking is started, reset the data
-                case ipc.TrackingState.State.Start:
+                case ipc.TrackingState.Running:
                     if state_changed:
                         print('[Tracking] Started.')
                         self.data = DataState(tick)
@@ -145,14 +152,14 @@ class Tracking(Component):
                     yield tick, self.data
 
                 # When tracking is paused then stop here
-                case ipc.TrackingState.State.Pause:
+                case ipc.TrackingState.Paused:
                     if state_changed:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()
                         print('[Tracking] Paused.')
 
                 # Exit the loop when tracking is stopped
-                case ipc.TrackingState.State.Stop:
+                case ipc.TrackingState.Stopped:
                     self.data.tick_modified = self.data.tick_current
                     self._calculate_inactivity()
                     print('[Tracking] Shut down.')
@@ -203,7 +210,7 @@ class Tracking(Component):
 
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
-        if self.state != ipc.TrackingState.State.Start or not self.track_mouse:
+        if self.state != ipc.TrackingState.Running or not self.track_mouse:
             return
 
         try:
@@ -223,7 +230,7 @@ class Tracking(Component):
         The scroll vector is mostly -1, 0 or 1, but support has been
         added in case it can go outside this range.
         """
-        if self.state != ipc.TrackingState.State.Start or not self.track_mouse:
+        if self.state != ipc.TrackingState.Running or not self.track_mouse:
             return
 
         if dx > 0:
@@ -241,7 +248,7 @@ class Tracking(Component):
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
-        if self.state != ipc.TrackingState.State.Start or key is None or not self.track_keyboard:
+        if self.state != ipc.TrackingState.Running or key is None or not self.track_keyboard:
             return
 
         if isinstance(key, pynput.keyboard.KeyCode):
@@ -254,7 +261,7 @@ class Tracking(Component):
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
-        if self.state != ipc.TrackingState.State.Start or key is None:
+        if self.state != ipc.TrackingState.Running or key is None:
             return
 
         if isinstance(key, pynput.keyboard.KeyCode):

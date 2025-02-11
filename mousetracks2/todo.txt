@@ -1,7 +1,6 @@
 [MVP]
 
 [Bugs]
-- When starting tracking after stopped, got `RuntimeError: "no tick data received"` in `Processing.profile_age_days`
 - [Tracking] Errors raised in `pynput` are not handled
 
 [QOL]

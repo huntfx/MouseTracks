@@ -13,8 +13,6 @@ class AppDetection(Component):
     """Application detection component."""
 
     def __post_init__(self) -> None:
-        self.state = ipc.TrackingState.State.Pause
-
         self.applist = AppList()
         self._regex_cache: dict[str, re.Pattern] = {}
         self._previous_focus: tuple[str, str] = '', ''
@@ -100,10 +98,8 @@ class AppDetection(Component):
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
-            case ipc.TrackingState():
-                self.state = message.state
-                if self.state == ipc.TrackingState.State.Stop:
-                    raise ExitRequest
+            case ipc.StopTracking():
+                raise ExitRequest
 
             case ipc.RequestRunningAppCheck():
                 self.check_running_app()

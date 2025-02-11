@@ -32,6 +32,20 @@ class RenderType(Enum):
     Keyboard = auto()
 
 
+class TrackingState(Enum):
+    """Current state of the application.
+
+    If paused, then the components are still running and just skip
+    executing certain commands. Messages may still be sent.
+    If stopped, then all processes have been fully shut down, and
+    can only be restarted by the hub.
+    """
+
+    Running = auto()
+    Paused = auto()
+    Stopped = auto()
+
+
 @dataclass
 class Message:
     """Represents an item to be passed through a communication queue.
@@ -149,16 +163,29 @@ class Traceback(Message):
 
 
 @dataclass
-class TrackingState(Message):
-    """Set a tracking state."""
+class StartTracking(Message):
+    """Send a request to start tracking.
+    Once this is processed, the `TrackingStarted` message will be sent.
+    """
+    target: int = field(default=Target.Tracking | Target.Hub, init=False)
 
-    class State(Enum):
-        Start = auto()
-        Pause = auto()
-        Stop = auto()
 
+@dataclass
+class TrackingStarted(Message):
+    """Send a message after tracking has started."""
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+
+
+@dataclass
+class PauseTracking(Message):
+    """Send a request to pause tracking."""
+    target: int = field(default=Target.Hub | Target.Tracking | Target.GUI, init=False)
+
+
+@dataclass
+class StopTracking(Message):
+    """Send a request to stop tracking."""
     target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
-    state: State
 
 
 @dataclass

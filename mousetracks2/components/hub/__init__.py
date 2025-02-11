@@ -24,7 +24,7 @@ class Hub:
 
     def __init__(self, use_gui: bool = True):
         """Initialise the hub with queues and processes."""
-        self.state = ipc.TrackingState.State.Pause
+        self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
         self.splash: SplashScreen | None = None
         self._previous_component_check: float = 0.0
@@ -41,7 +41,7 @@ class Hub:
         This will load the threads and send a signal to them.
         """
         print('[Hub] Sending start tracking signal...')
-        self._process_message(ipc.TrackingState(ipc.TrackingState.State.Start))
+        self._process_message(ipc.StartTracking())
 
     def stop_tracking(self):
         """Stop the tracking processes.
@@ -59,7 +59,7 @@ class Hub:
         all data and allow the application to close.
         """
         print('[Hub] Sending stop tracking signal...')
-        self._process_message(ipc.TrackingState(ipc.TrackingState.State.Stop))
+        self._process_message(ipc.StopTracking())
 
         print('[Hub] Waiting for close notification from processes...')
         tracking_running = self._p_tracking.is_alive()
@@ -155,11 +155,15 @@ class Hub:
         # Process messages meant for the hub
         if message.target & ipc.Target.Hub:
             match message:
-                case ipc.TrackingState():
-                    self.state = message.state
+                case ipc.StartTracking():
+                    self.state = ipc.TrackingState.Running
+                    self._startup_tracking_processes()
 
-                    if self.state == ipc.TrackingState.State.Start:
-                        self._startup_tracking_processes()
+                case ipc.PauseTracking():
+                    self.state = ipc.TrackingState.Paused
+
+                case ipc.StopTracking():
+                    self.state = ipc.TrackingState.Stopped
 
                 case ipc.Exit():
                     raise ExitRequest
@@ -217,7 +221,7 @@ class Hub:
         if self._previous_component_check + CHECK_COMPONENT_FREQUENCY > current_time:
             return
 
-        if self.state == ipc.TrackingState.State.Start:
+        if self.state == ipc.TrackingState.Running:
             if not self._p_tracking.is_alive():
                 raise RuntimeError('[Hub] Unexpected shutdown of Tracking component')
             if not self._p_processing.is_alive():
