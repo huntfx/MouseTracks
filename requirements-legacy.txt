@@ -1,0 +1,9 @@
+numpy
+Pillow
+psutil
+scipy
+flask
+pywin32; sys_platform=='win32'
+AppKit; sys_platform=='darwin'
+python-xlib; sys_platform!='win32' and sys_platform!='darwin'
+pxhook; sys_platform!='win32' and sys_platform!='darwin'

@@ -12,7 +12,7 @@ MouseTracks is an application designed to track and visualize mouse movements, c
   Keyboard heatmaps and gamepad inputs are also supported.
 
 - ### Live Preview
-  The GUI includes a real-time preview of tracking data, combining thumbnail renders with live input.
+  The GUI includes an optimised real-time preview of tracking data, combining thumbnail renders with live input.
 
 - ### Image Rendering:
   Renders are generated at full quality, regardless of resolution changes. Each input type is tracked independently and merged during the render process.
@@ -74,26 +74,23 @@ Ensure all modules in [requirements.txt](requirements.txt) are installed.
 
 ## Installation (v1.0 - Deprecated)
 
-_The v1.0 version is no longer supported. However it may receive minor updates to the launch process to bring it in line with v2.0._
+_The v1.0 version is no longer supported, but the launch process has been updated to bring it in line with v2.0._
+
+You will be prompted with a choice to start tracking or generate images. This can be skipped by passing the `--start-tracking` or `--generate-images` flags.
+
+### Virtual Environment
+
+Recommended if running the code locally.
+
+1. Run `python -m venv .venv-legacy` to create the virtual environment with any version of Python.
+2. Run `launch-legacy.bat`.
 
 
-- `start_tracking.py`: Run this to start recording data.
-- `generate_images.py`: Script for rendering visualisations from the saved data.
+### Without a Virtual Environment
 
-### Requirements for v1.0
-- #### Core Modules:
-  Python 2.7+, [Numpy](https://pypi.python.org/pypi/numpy), [psutil](https://pypi.python.org/pypi/psutil), [scipy](https://pypi.python.org/pypi/scipy), [Pillow](https://pypi.python.org/pypi/Pillow), [Flask](http://flask.pocoo.org/) ([optional](# "Used for the API")), [PyCrypto](https://pypi.python.org/pypi/pycrypto) ([optional](# "Used to encrypt API messages")), [pyglet](https://pypi.python.org/pypi/pyglet/1.3.0) (included)
+Run `launch-legacy.py`.
 
-
-- #### Windows Extras:
-  [pywin32](https://sourceforge.net/projects/pywin32/files/pywin32) ([optional](# "Used for the tray icon")), [xinput](https://github.com/r4dian/Xbox-360-Controller-for-Python/blob/master/xinput.py) (included)
-
-
-- ##### Linux Extras (WIP):
-  [xlib](https://pypi.python.org/pypi/python-xlib), [pyxhook](https://pypi.org/project/pyxhook/)
-
-- ##### Mac Extras (WIP):
-  [AppKit](https://pypi.python.org/pypi/AppKit/0.2.8)
+Ensure all modules in [requirements-legacy.txt](requirements-legacy.txt) are installed.
 
 ---
 

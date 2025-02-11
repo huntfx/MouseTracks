@@ -112,11 +112,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# Added bits for Mouse Tracks
-wip/
-env*/
-.vs/
-.vscode/
-*.lnk
-*.code-workspace
