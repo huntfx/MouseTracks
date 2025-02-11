@@ -1452,9 +1452,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if value:
             try:
                 set_autorun('MouseTracks', os.path.abspath(sys.argv[0]))
-            except ValueError:
+
+            except RuntimeError as e:
                 self.ui.prefs_autorun.setEnabled(False)
                 self.ui.prefs_autorun.setChecked(False)
+
+                msg = QtWidgets.QMessageBox()
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setWindowTitle('Error')
+                msg.setText(str(e))
+                msg.exec_()
+
                 return
         else:
             remove_autorun('MouseTracks')

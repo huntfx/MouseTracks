@@ -26,6 +26,7 @@ for /f "delims=" %%V in ('git describe --tags --abbrev=0 2^>nul') do set VERSION
 if not defined VERSION set VERSION=0.0
 
 :: Write out the executable version info
+mkdir build
 pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
 :: Build the executable

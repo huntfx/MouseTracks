@@ -162,8 +162,8 @@ def get_autorun(name: str) -> str | None:
 
 def set_autorun(name: str, executable: str) -> None:
     """Set an executable to run on startup."""
-    if os.path.splitext(executable) != '.exe':
-        raise ValueError('running on startup not supported when running as a script')
+    if os.path.splitext(executable)[1] != '.exe':
+        raise RuntimeError('Running on startup is only supported by the executable build of MouseTracks.')
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.SetValueEx(key, name, 0, winreg.REG_SZ, executable)
 
