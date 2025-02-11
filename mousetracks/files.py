@@ -11,6 +11,7 @@ import os
 import sys
 import zipfile
 from operator import itemgetter
+from pickle import Unpickler  # cPickle.Unpickler in Py 2.7 is not inheritable
 from tempfile import gettempdir
 
 from .utils import numpy
@@ -44,7 +45,7 @@ LOCK_FILE = '{}/mousetrack-{}.lock'.format(TEMPORARY_PATH, format_name(DATA_FOLD
 #LOCK_FILE = '{}/mousetrack-{}.lock'.format(DATA_FOLDER, 1)   #Data folder (for testing)
 
 
-class RenameUnpickler(pickle.Unpickler):
+class RenameUnpickler(Unpickler):
     """Any data saved before file version 34 will also have the "core.files.LoadData" class saved.
     This will remap it
 
