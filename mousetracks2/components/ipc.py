@@ -185,6 +185,7 @@ class RenderRequest(Message):
     sampling: int
     profile: str | None
     file_path: str | None
+    padding: int = 0
 
 
 @dataclass

@@ -562,6 +562,20 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addWidget(self.groupBox_5)
 
+        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.groupBox.setObjectName(u"groupBox")
+        self.verticalLayout_4 = QVBoxLayout(self.groupBox)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.render_padding = QSpinBox(self.groupBox)
+        self.render_padding.setObjectName(u"render_padding")
+        self.render_padding.setMaximum(4096)
+        self.render_padding.setSingleStep(8)
+
+        self.verticalLayout_4.addWidget(self.render_padding)
+
+
+        self.verticalLayout_7.addWidget(self.groupBox)
+
         self.record_history = QGroupBox(self.scrollAreaWidgetContents_4)
         self.record_history.setObjectName(u"record_history")
         self.record_history.setEnabled(False)
@@ -1048,6 +1062,8 @@ class Ui_MainWindow(object):
         self.custom_resolution.setTitle(QCoreApplication.translate("MainWindow", u"Custom Render Resolution", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Render Sampling", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"4", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Render Padding", None))
+        self.render_padding.setSuffix(QCoreApplication.translate("MainWindow", u"px", None))
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Advanced", None))

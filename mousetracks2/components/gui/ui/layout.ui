@@ -414,8 +414,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>230</width>
-               <height>274</height>
+               <width>274</width>
+               <height>345</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -584,8 +584,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>235</height>
+               <width>274</width>
+               <height>345</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -681,6 +681,28 @@
                </widget>
               </item>
               <item>
+               <widget class="QGroupBox" name="groupBox">
+                <property name="title">
+                 <string>Render Padding</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_4">
+                 <item>
+                  <widget class="QSpinBox" name="render_padding">
+                   <property name="suffix">
+                    <string>px</string>
+                   </property>
+                   <property name="maximum">
+                    <number>4096</number>
+                   </property>
+                   <property name="singleStep">
+                    <number>8</number>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
                <widget class="QGroupBox" name="record_history">
                 <property name="enabled">
                  <bool>false</bool>
@@ -763,7 +785,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>242</width>
+               <width>257</width>
                <height>556</height>
               </rect>
              </property>

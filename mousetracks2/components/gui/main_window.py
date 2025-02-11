@@ -179,6 +179,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
         self.ui.thumbnail.resized.connect(self.thumbnail_resize)
         self.ui.thumbnail.clicked.connect(self.thumbnail_click)
+        self.ui.render_padding.valueChanged.connect(self.render_padding_changed)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -535,6 +536,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_colour = colour
         self.request_thumbnail(force=True)
 
+    @QtCore.Slot(int)
+    def render_padding_changed(self):
+        """Update the render when the padding is changed."""
+        self.request_thumbnail(force=True)
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
         """Switch to the current profile when auto switch is checked."""
@@ -588,8 +594,8 @@ class MainWindow(QtWidgets.QMainWindow):
             height += self.ui.vertical_splitter.handleWidth()
 
         self.start_rendering_timer()
-        self.component.send_data(ipc.RenderRequest(self.render_type, width, height,
-                                                   self.render_colour, 1, profile, None))
+        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
+                                                   1, profile, None, self.ui.render_padding.value()))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -644,7 +650,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if accept:
             self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
                                                        self.render_colour, self.ui.render_samples.value(),
-                                                       profile, file_path))
+                                                       profile, file_path, self.ui.render_padding.value()))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -741,6 +747,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         case _:
                             raise NotImplementedError(channels)
 
+                    print(failed, message.request.file_path)
                     if failed:
                         self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
 
