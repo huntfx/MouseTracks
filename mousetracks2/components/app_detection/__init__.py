@@ -37,7 +37,7 @@ class AppDetection(Component):
             focus_changed = True
 
         current_app_name = self.applist.match(handle.exe, title)
-        if current_app_name in (None, TRACKING_IGNORE):
+        if current_app_name is None or current_app_name == TRACKING_IGNORE:
             current_app = None
         else:
             current_app = current_app_name, exe
