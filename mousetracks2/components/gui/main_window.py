@@ -770,12 +770,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.TrackingStarted():
                 self.state = ipc.TrackingState.Running
+                self.ui.thumbnail.playback_overlay.playback_state = True
 
             case ipc.PauseTracking():
                 self.state = ipc.TrackingState.Paused
+                self.ui.thumbnail.playback_overlay.playback_state = False
 
             case ipc.StopTracking():
                 self.state = ipc.TrackingState.Stopped
+                self.ui.thumbnail.playback_overlay.playback_state = False
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
