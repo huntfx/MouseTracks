@@ -219,9 +219,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_resize.timeout.connect(self.update_thumbnail_size)
         self.timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
 
-        self.ui.debug_tracking_start.triggered.connect(self.start_tracking)
-        self.ui.debug_tracking_pause.triggered.connect(self.pause_tracking)
-        self.ui.debug_tracking_stop.triggered.connect(self.stop_tracking)
+        self.ui.debug_state_running.triggered.connect(self.start_tracking)
+        self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
+        self.ui.debug_state_stopped.triggered.connect(self.stop_tracking)
         self.ui.debug_raise_app.triggered.connect(self.raise_app_detection)
         self.ui.debug_raise_tracking.triggered.connect(self.raise_tracking)
         self.ui.debug_raise_processing.triggered.connect(self.raise_processing)
@@ -1072,8 +1072,15 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
         """What to do when the tray icon is double clicked."""
-        if reason == QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
-            self.load_from_tray()
+        match reason:
+            case QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+                self.load_from_tray()
+
+            # Determine if the debug menu should be visible
+            case QtWidgets.QSystemTrayIcon.ActivationReason.Context:
+                modifiers = QtWidgets.QApplication.keyboardModifiers()
+                shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
+                self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
 
     def hide_to_tray(self) -> None:
         """Minimise the window to the tray."""

@@ -1300,37 +1300,39 @@
     <addaction name="always_on_top"/>
     <addaction name="full_screen"/>
    </widget>
-   <widget class="QMenu" name="menu_debug">
-    <property name="title">
-     <string>Debug</string>
-    </property>
-    <widget class="QMenu" name="menu_debug_tracking">
-     <property name="title">
-      <string>Set Tracking State</string>
-     </property>
-     <addaction name="debug_tracking_start"/>
-     <addaction name="debug_tracking_pause"/>
-     <addaction name="debug_tracking_stop"/>
-    </widget>
-    <widget class="QMenu" name="menu_debug_exception">
-     <property name="title">
-      <string>Raise Exception</string>
-     </property>
-     <addaction name="debug_raise_tracking"/>
-     <addaction name="debug_raise_processing"/>
-     <addaction name="debug_raise_hub"/>
-     <addaction name="debug_raise_gui"/>
-     <addaction name="debug_raise_app"/>
-    </widget>
-    <addaction name="menu_debug_tracking"/>
-    <addaction name="menu_debug_exception"/>
-   </widget>
    <widget class="QMenu" name="tray_context_menu">
     <property name="title">
      <string>_Tray_</string>
     </property>
+    <widget class="QMenu" name="menu_debug">
+     <property name="title">
+      <string>Debug</string>
+     </property>
+     <widget class="QMenu" name="menu_debug_state">
+      <property name="title">
+       <string>Set Tracking State</string>
+      </property>
+      <addaction name="debug_state_running"/>
+      <addaction name="debug_state_paused"/>
+      <addaction name="debug_state_stopped"/>
+     </widget>
+     <widget class="QMenu" name="menu_debug_raise">
+      <property name="title">
+       <string>Raise Exception</string>
+      </property>
+      <addaction name="debug_raise_hub"/>
+      <addaction name="debug_raise_tracking"/>
+      <addaction name="debug_raise_processing"/>
+      <addaction name="debug_raise_gui"/>
+      <addaction name="debug_raise_app"/>
+     </widget>
+     <addaction name="menu_debug_state"/>
+     <addaction name="menu_debug_raise"/>
+    </widget>
     <addaction name="tray_show"/>
     <addaction name="tray_hide"/>
+    <addaction name="separator"/>
+    <addaction name="menu_debug"/>
     <addaction name="separator"/>
     <addaction name="tray_exit"/>
    </widget>
@@ -1347,7 +1349,6 @@
    <addaction name="menuPreferences"/>
    <addaction name="menuTracking"/>
    <addaction name="menuHelp"/>
-   <addaction name="menu_debug"/>
    <addaction name="tray_context_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -1428,72 +1429,12 @@
     <string>Pause</string>
    </property>
   </action>
-  <action name="debug_tracking_start">
-   <property name="text">
-    <string>Start</string>
-   </property>
-  </action>
-  <action name="debug_tracking_pause">
-   <property name="text">
-    <string>Pause</string>
-   </property>
-  </action>
-  <action name="debug_tracking_stop">
-   <property name="text">
-    <string>Stop</string>
-   </property>
-  </action>
-  <action name="debug_raise_tracking">
-   <property name="text">
-    <string>Tracking</string>
-   </property>
-  </action>
-  <action name="debug_raise_processing">
-   <property name="text">
-    <string>Processing</string>
-   </property>
-  </action>
-  <action name="debug_raise_hub">
-   <property name="text">
-    <string>Hub</string>
-   </property>
-  </action>
-  <action name="debug_raise_gui">
-   <property name="text">
-    <string>GUI</string>
-   </property>
-  </action>
-  <action name="debug_raise_app">
-   <property name="text">
-    <string>App Detection</string>
-   </property>
-  </action>
   <action name="actionRestart">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
     <string>Restart</string>
-   </property>
-  </action>
-  <action name="actionSave_Image">
-   <property name="text">
-    <string>Save Image</string>
-   </property>
-  </action>
-  <action name="actionVisit_Website">
-   <property name="text">
-    <string>Visit Website</string>
-   </property>
-  </action>
-  <action name="actionVisit_Reddit">
-   <property name="text">
-    <string>Reddit</string>
-   </property>
-  </action>
-  <action name="actionVisit_Facebook">
-   <property name="text">
-    <string>Facebook</string>
    </property>
   </action>
   <action name="actionWebsite">
@@ -1533,19 +1474,6 @@
   <action name="tray_hide">
    <property name="text">
     <string>Minimise to Tray</string>
-   </property>
-  </action>
-  <action name="actionTrack_Cursor_Movement">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Track Cursor Movement</string>
-   </property>
-  </action>
-  <action name="actionTrack_Mouse_Clicks">
-   <property name="text">
-    <string>Track Mouse Clicks</string>
    </property>
   </action>
   <action name="prefs_track_keyboard">
@@ -1636,6 +1564,46 @@
    </property>
    <property name="text">
     <string>Always on Top</string>
+   </property>
+  </action>
+  <action name="debug_raise_hub">
+   <property name="text">
+    <string>Hub</string>
+   </property>
+  </action>
+  <action name="debug_state_running">
+   <property name="text">
+    <string>Running</string>
+   </property>
+  </action>
+  <action name="debug_state_paused">
+   <property name="text">
+    <string>Paused</string>
+   </property>
+  </action>
+  <action name="debug_state_stopped">
+   <property name="text">
+    <string>Stopped</string>
+   </property>
+  </action>
+  <action name="debug_raise_tracking">
+   <property name="text">
+    <string>Tracking</string>
+   </property>
+  </action>
+  <action name="debug_raise_processing">
+   <property name="text">
+    <string>Processing</string>
+   </property>
+  </action>
+  <action name="debug_raise_gui">
+   <property name="text">
+    <string>GUI</string>
+   </property>
+  </action>
+  <action name="debug_raise_app">
+   <property name="text">
+    <string>Application Detection</string>
    </property>
   </action>
  </widget>
