@@ -456,8 +456,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>274</width>
-               <height>345</height>
+               <width>230</width>
+               <height>274</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -626,8 +626,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>274</width>
-               <height>345</height>
+               <width>261</width>
+               <height>299</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -827,7 +827,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>257</width>
+               <width>242</width>
                <height>556</height>
               </rect>
              </property>
@@ -1297,6 +1297,7 @@
     <addaction name="menu_allow_minimise"/>
     <addaction name="actionShow_Log"/>
     <addaction name="separator"/>
+    <addaction name="always_on_top"/>
     <addaction name="full_screen"/>
    </widget>
    <widget class="QMenu" name="menu_debug">
@@ -1627,6 +1628,14 @@
    </property>
    <property name="text">
     <string>Track Network</string>
+   </property>
+  </action>
+  <action name="always_on_top">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Always on Top</string>
    </property>
   </action>
  </widget>

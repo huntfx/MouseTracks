@@ -91,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = False
         self._is_loading_profile = 0
         self._is_closing = False
+        self._is_changing_state = False
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
         self.state = ipc.TrackingState.Paused
 
@@ -204,6 +205,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_autorun.triggered.connect(self.set_autorun)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
+        self.ui.always_on_top.triggered.connect(self.set_always_on_top)
         self.ui.prefs_track_mouse.triggered.connect(self.set_mouse_tracking_enabled)
         self.ui.prefs_track_keyboard.triggered.connect(self.set_keyboard_tracking_enabled)
         self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
@@ -1080,8 +1082,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif self.isVisible():
             self.hide()
-            self.ui.thumbnail.clear_pixmap()
-            self.notify(f'{self.windowTitle()} is now running in the background.')
 
     def load_from_tray(self):
         """Load the window from the tray icon.
@@ -1151,7 +1151,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.isMinimized() and self.ui.menu_allow_minimise.isChecked():
                 self.hide()
 
-        elif not self._is_closing:
+        elif not self._is_closing and not self._is_changing_state:
             self.timer_activity.stop()
             self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
@@ -1475,6 +1475,19 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
+
+    @QtCore.Slot(bool)
+    def set_always_on_top(self, value: bool) -> None:
+        """Set if the window is always on top."""
+        self._is_changing_state = True
+        flags = self.windowFlags()
+        if value:
+            flags |= QtCore.Qt.WindowType.WindowStaysOnTopHint.value
+        else:
+            flags &= ~QtCore.Qt.WindowType.WindowStaysOnTopHint.value
+        self.setWindowFlags(flags)
+        self.show()
+        self._is_changing_state = False
 
     @QtCore.Slot(bool)
     def toggle_console(self, show: bool) -> None:
