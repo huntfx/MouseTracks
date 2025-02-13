@@ -1289,10 +1289,16 @@
     <property name="title">
      <string>Preferences</string>
     </property>
-    <addaction name="prefs_autorun"/>
-    <addaction name="prefs_automin"/>
+    <widget class="QMenu" name="menuStartup">
+     <property name="title">
+      <string>Startup</string>
+     </property>
+     <addaction name="prefs_autostart"/>
+     <addaction name="prefs_automin"/>
+    </widget>
     <addaction name="prefs_console"/>
     <addaction name="separator"/>
+    <addaction name="menuStartup"/>
     <addaction name="separator"/>
     <addaction name="menu_allow_minimise"/>
     <addaction name="actionShow_Log"/>
@@ -1509,7 +1515,7 @@
     <string>Track Mouse</string>
    </property>
   </action>
-  <action name="prefs_autorun">
+  <action name="prefs_autostart">
    <property name="checkable">
     <bool>true</bool>
    </property>

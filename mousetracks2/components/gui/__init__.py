@@ -38,6 +38,15 @@ class QueueWorker(QtCore.QObject):
         self.running = False
 
 
+def should_minimise_on_start() -> bool:
+    """Determine if the app should minimise on startup."""
+    if '--minimise' in sys.argv or '--minimize' in sys.argv:
+        return True
+    if '--autostart' in sys.argv and GlobalConfig().minimise_on_start:
+        return True
+    return False
+
+
 class GUI(Component):
     def __post_init__(self) -> None:
         """Setup the threads."""
@@ -75,7 +84,7 @@ class GUI(Component):
 
         # Setup the window
         win = MainWindow(self)
-        if not GlobalConfig().minimise_on_start:
+        if not should_minimise_on_start():
             win.show()
         self.receiver_worker.message_received.connect(win.process_message)
         win.exception_raised.connect(self.exception_raised)

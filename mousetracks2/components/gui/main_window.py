@@ -23,7 +23,7 @@ from ...file import PROFILE_DIR, get_profile_names, get_filename
 from ...legacy import colours
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.system import monitor_locations, get_autorun, set_autorun, remove_autorun
+from ...utils.system import monitor_locations, get_autostart, set_autostart, remove_autostart
 
 if TYPE_CHECKING:
     from . import GUI
@@ -101,8 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set initial widget states
         self.ui.output_logs.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        autorun_exe = get_autorun('MouseTracks')
-        self.ui.prefs_autorun.setChecked(autorun_exe == os.path.abspath(sys.argv[0]))
+        self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks') is not None)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
@@ -202,7 +201,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
-        self.ui.prefs_autorun.triggered.connect(self.set_autorun)
+        self.ui.prefs_autostart.triggered.connect(self.set_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.ui.always_on_top.triggered.connect(self.set_always_on_top)
@@ -1450,22 +1449,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
 
     @QtCore.Slot(bool)
-    def set_autorun(self, value: bool) -> None:
+    def set_autostart(self, value: bool) -> None:
         """Set if the application runs on startup.
         This only works on the built executable as it adds it to the
         registry. If the executable is moved then it will need to be
         re-added.
         """
-        if not self.ui.prefs_autorun.isEnabled():
+        if not self.ui.prefs_autostart.isEnabled():
             return
 
         if value:
             try:
-                set_autorun('MouseTracks', os.path.abspath(sys.argv[0]))
+                set_autostart('MouseTracks', os.path.abspath(sys.argv[0]), '--autostart')
 
             except RuntimeError as e:
-                self.ui.prefs_autorun.setEnabled(False)
-                self.ui.prefs_autorun.setChecked(False)
+                self.ui.prefs_autostart.setEnabled(False)
+                self.ui.prefs_autostart.setChecked(False)
 
                 msg = QtWidgets.QMessageBox()
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
@@ -1475,7 +1474,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 return
         else:
-            remove_autorun('MouseTracks')
+            remove_autostart('MouseTracks')
         self.notify(f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.')
 
     @QtCore.Slot(bool)

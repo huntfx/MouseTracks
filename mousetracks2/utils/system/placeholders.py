@@ -2,13 +2,13 @@
 These are used when code hasn't yet been written for an OS.
 """
 
-def get_autorun(name: str) -> str | None:
+def get_autostart(name: str) -> str | None:
     """Determine if running on startup."""
 
 
-def set_autorun(name: str, executable: str) -> None:
+def set_autostart(name: str, executable: str, *args: str) -> None:
     """Set to run on startup."""
 
 
-def remove_autorun(name: str) -> None:
+def remove_autostart(name: str) -> None:
     """Stop running on startup."""

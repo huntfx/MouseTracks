@@ -149,26 +149,30 @@ class WindowHandle:
         user32.ShowWindow(self.hwnd, SW_HIDE)
 
 
-def get_autorun(name: str) -> str | None:
+def get_autostart(name: str) -> str | None:
     """Determine if running on startup."""
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_READ) as key:
-            if os.path.exists(exe := winreg.QueryValueEx(key, name)[0]):
-                return exe
+            exe: str = winreg.QueryValueEx(key, name)[0]
+            flag_idx = exe.index(' -')
+            if flag_idx > 0:
+                exe = exe[:flag_idx].rstrip(' ')
+            if os.path.exists(exe):
+                return os.path.abspath(exe)
             return None
     except OSError:
         return None
 
 
-def set_autorun(name: str, executable: str) -> None:
+def set_autostart(name: str, executable: str, *args: str) -> None:
     """Set an executable to run on startup."""
     if os.path.splitext(executable)[1] != '.exe':
         raise RuntimeError('Running on startup is only supported by the executable build of MouseTracks.')
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, executable)
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, ' '.join([executable] + list(args)))
 
 
-def remove_autorun(name: str) -> None:
+def remove_autostart(name: str) -> None:
     """Stop an executable running on startup."""
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.DeleteValue(key, name)
