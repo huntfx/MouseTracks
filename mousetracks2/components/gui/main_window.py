@@ -108,6 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
+        self.ui.contrast.setMaximum(float('inf'))
 
         # Store things for full screen
         # The `addAction` is required for a hidden menubar

@@ -201,11 +201,22 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     # Update the contrast
     if contrast != 1.0:
 
-        # Prevent overflow errors
-        max_value = np.log(np.max(combined_array))
+        max_value = np.max(combined_array)
+        max_value_log = np.log(max_value)
         limit = np.log(np.finfo(combined_array.dtype).max)
-        if contrast * max_value > limit:
-            contrast = int(limit) / max_value  # The int conversion is to slightly lower the value
+
+        # Prevent overflow errors by reducing the array range
+        if True:
+            target = limit / contrast
+            if np.log(max_value) > target:
+                new_max = int(np.exp(target))  # int conversion to round down
+                combined_array /= (max_value / new_max)
+
+        # Prevent overflow errors by limiting the contrast value
+        # This is less preferable as it sets a hard limit
+        else:
+            if contrast * max_value_log > limit:
+                contrast = int(limit) / max_value_log  # int conversion to round down
 
         combined_array **= contrast
 
