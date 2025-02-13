@@ -215,9 +215,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_keyboard.clicked.connect(self.delete_keyboard)
         self.ui.delete_gamepad.clicked.connect(self.delete_gamepad)
         self.ui.delete_network.clicked.connect(self.delete_network)
+        self.ui.delete_profile.clicked.connect(self.delete_profile)
         self.ui.autosave.stateChanged.connect(self.toggle_autosave)
         self.ui.file_save.triggered.connect(self.manual_save_all)
-        self.ui.profile_save.pressed.connect(self.manual_save_profile)
+        self.ui.profile_save.clicked.connect(self.manual_save_profile)
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
@@ -1479,6 +1480,28 @@ class MainWindow(QtWidgets.QMainWindow):
             self.mark_profiles_unsaved(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
+
+    def delete_profile(self) -> None:
+        """Delete the selected profile."""
+        profile = self.ui.current_profile.currentData()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+        msg.setWindowTitle('Delete Profile')
+        msg.setText(f'Are you sure you want to delete all data for {profile}?\n'
+                    'This action cannot be undone.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.component.send_data(ipc.DeleteProfile(profile))
+            self.mark_profiles_saved(profile)
+            del self._profile_names[self._profile_names.index(profile)]
+            self._unsaved_profiles.discard(profile)
+
+            self._redraw_profile_combobox()
+            self.profile_changed(0)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:

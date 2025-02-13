@@ -432,6 +432,12 @@ class DeleteNetworkData(Message):
 
 
 @dataclass
+class DeleteProfile(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile_name: str
+
+
+@dataclass
 class Autosave(Message):
     target: int = field(default=Target.Tracking, init=False)
     enabled: bool

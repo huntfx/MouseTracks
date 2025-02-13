@@ -885,7 +885,10 @@ Note that this may take a few seconds to complete.</string>
                    <item row="0" column="1">
                     <widget class="QPushButton" name="delete_mouse">
                      <property name="toolTip">
-                      <string>Delete all mouse data for the current profile.</string>
+                      <string>Delete all mouse data for the current profile.
+
+As a safety precaution,this option is disabled while
+mouse tracking is enabled.</string>
                      </property>
                      <property name="text">
                       <string>Delete Data</string>
@@ -908,7 +911,10 @@ Note that this may take a few seconds to complete.</string>
                    <item row="1" column="1">
                     <widget class="QPushButton" name="delete_keyboard">
                      <property name="toolTip">
-                      <string>Delete all keyboard data for the current profile.</string>
+                      <string>Delete all keyboard data for the current profile.
+
+As a safety precaution,this option is disabled while
+keyboard tracking is enabled.</string>
                      </property>
                      <property name="text">
                       <string>Delete Data</string>
@@ -931,7 +937,10 @@ Note that this may take a few seconds to complete.</string>
                    <item row="2" column="1">
                     <widget class="QPushButton" name="delete_gamepad">
                      <property name="toolTip">
-                      <string>Delete all gamepad data for the current profile.</string>
+                      <string>Delete all gamepad data for the current profile.
+
+As a safety precaution,this option is disabled while
+gamepad tracking is enabled.</string>
                      </property>
                      <property name="text">
                       <string>Delete Data</string>
@@ -954,7 +963,10 @@ Note that this may take a few seconds to complete.</string>
                    <item row="3" column="1">
                     <widget class="QPushButton" name="delete_network">
                      <property name="toolTip">
-                      <string>Delete all network data for the current profile.</string>
+                      <string>Delete all network data for the current profile.
+
+As a safety precaution,this option is disabled while
+network tracking is enabled.</string>
                      </property>
                      <property name="text">
                       <string>Delete Data</string>
@@ -965,6 +977,13 @@ Note that this may take a few seconds to complete.</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="delete_profile">
+                   <property name="toolTip">
+                    <string>Delete the entire profile from disk.
+
+As a safety precaution,this option is disabled while
+any tracking is enabled.
+</string>
+                   </property>
                    <property name="text">
                     <string>Delete Profile</string>
                    </property>

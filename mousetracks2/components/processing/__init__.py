@@ -1,5 +1,7 @@
 import math
+import os
 from collections import defaultdict
+from contextlib import suppress
 from dataclasses import dataclass
 
 import numpy as np
@@ -631,6 +633,12 @@ class Processing(Component):
                 profile.data_download.clear()
                 profile.daily_upload = profile.daily_upload.as_zero()
                 profile.daily_download = profile.daily_download.as_zero()
+
+            case ipc.DeleteProfile():
+                print(f'[Processing] Deleting profile {message.profile_name}...')
+                del self.all_profiles[message.profile_name]
+                with suppress(FileNotFoundError):
+                    os.remove(get_filename(message.profile_name))
 
             case ipc.LoadLegacyProfile():
                 self.all_profiles[message.name] = TrackingProfile(message.name)

@@ -1,5 +1,4 @@
 [MVP]
-- Link up delete profile option
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled
