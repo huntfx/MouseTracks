@@ -214,6 +214,7 @@ class RenderRequest(Message):
     file_path: str | None
     padding: int = 0
     contrast: float = 1.0
+    lock_aspect: bool = True
 
 
 @dataclass

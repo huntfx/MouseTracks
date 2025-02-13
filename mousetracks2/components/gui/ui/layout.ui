@@ -460,8 +460,8 @@ If no data exists, then a blank image will be shown.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>274</width>
-               <height>299</height>
+               <width>261</width>
+               <height>285</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -471,7 +471,7 @@ If no data exists, then a blank image will be shown.</string>
                  <string>Options</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_7">
-                 <item row="2" column="0">
+                 <item row="3" column="0">
                   <widget class="QLabel" name="label_15">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -493,7 +493,7 @@ If no data exists, then a blank image will be shown.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="1">
+                 <item row="4" column="1">
                   <widget class="QSpinBox" name="render_padding">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -525,15 +525,86 @@ Note that the edges of heatmaps may not remain at the same intensity.</string>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
+                   <property name="toolTip">
+                    <string>!inherits custom_width</string>
+                   </property>
                    <property name="text">
-                    <string>Custom Width:</string>
+                    <string>Width Override:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="0">
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_17">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="toolTip">
+                    <string>!inherits custom_height</string>
+                   </property>
+                   <property name="text">
+                    <string>Height Override:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
+                   <item>
+                    <widget class="QSpinBox" name="custom_height">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set an override to render at a specific height.
+
+If the aspect ratio is locked and a width override is set,
+then the render may end up smaller than this override.</string>
+                     </property>
+                     <property name="suffix">
+                      <string notr="true">px</string>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>999999</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>9</number>
+                     </property>
+                     <property name="value">
+                      <number>1080</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="enable_custom_height">
+                     <property name="toolTip">
+                      <string>Enable the height override.
+If this is disabled, the height will be set based on the available data.</string>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="4" column="0">
                   <widget class="QLabel" name="label_16">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -568,6 +639,12 @@ Note that the edges of heatmaps may not remain at the same intensity.</string>
                        <verstretch>0</verstretch>
                       </sizepolicy>
                      </property>
+                     <property name="toolTip">
+                      <string>Set an override to render at a specific width.
+
+If the aspect ratio is locked and a height override is set,
+then the render may end up smaller than this override.</string>
+                     </property>
                      <property name="suffix">
                       <string notr="true">px</string>
                      </property>
@@ -586,7 +663,11 @@ Note that the edges of heatmaps may not remain at the same intensity.</string>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QCheckBox" name="checkBox">
+                    <widget class="QCheckBox" name="enable_custom_width">
+                     <property name="toolTip">
+                      <string>Enable the width override.
+If this is disabled, the width will be set based on the available data.</string>
+                     </property>
                      <property name="text">
                       <string/>
                      </property>
@@ -594,7 +675,7 @@ Note that the edges of heatmaps may not remain at the same intensity.</string>
                    </item>
                   </layout>
                  </item>
-                 <item row="2" column="1">
+                 <item row="3" column="1">
                   <widget class="QSpinBox" name="render_samples">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -619,60 +700,18 @@ The effect is more important for the track maps, and may be set to 1 for heatmap
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_17">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
+                 <item row="2" column="1">
+                  <widget class="QCheckBox" name="lock_aspect">
+                   <property name="toolTip">
+                    <string>Set if the aspect ratio should be locked to the recommended value.</string>
                    </property>
                    <property name="text">
-                    <string>Custom Height:</string>
+                    <string>Lock Aspect Ratio</string>
                    </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   <property name="checked">
+                    <bool>true</bool>
                    </property>
                   </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <layout class="QHBoxLayout" name="horizontalLayout_3">
-                   <item>
-                    <widget class="QSpinBox" name="custom_height">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="suffix">
-                      <string notr="true">px</string>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>999999</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>9</number>
-                     </property>
-                     <property name="value">
-                      <number>1080</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="checkBox_2">
-                     <property name="text">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
                  </item>
                 </layout>
                </widget>
@@ -778,7 +817,7 @@ Note that this may take a few seconds to complete.</string>
                <x>0</x>
                <y>0</y>
                <width>274</width>
-               <height>329</height>
+               <height>312</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -1812,34 +1851,34 @@ Clicking the button will trigger a manual update.</string>
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>enable_custom_width</sender>
    <signal>toggled(bool)</signal>
    <receiver>custom_width</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1011</x>
-     <y>157</y>
+     <y>115</y>
     </hint>
     <hint type="destinationlabel">
      <x>932</x>
-     <y>159</y>
+     <y>117</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>checkBox_2</sender>
+   <sender>enable_custom_height</sender>
    <signal>toggled(bool)</signal>
    <receiver>custom_height</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1006</x>
-     <y>186</y>
+     <y>144</y>
     </hint>
     <hint type="destinationlabel">
      <x>967</x>
-     <y>183</y>
+     <y>141</y>
     </hint>
    </hints>
   </connection>

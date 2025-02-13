@@ -273,8 +273,8 @@ class Processing(Component):
         return arrays
 
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
-                      width: int | None, height: int | None, colour_map: str,
-                      sampling: int = 1, padding: int = 0, heatmap_contrast: float = 1.0) -> np.ndarray:
+                      width: int | None, height: int | None, colour_map: str, sampling: int = 1,
+                      padding: int = 0, heatmap_contrast: float = 1.0, lock_aspect: bool = True) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
@@ -287,9 +287,14 @@ class Processing(Component):
             for position, arrays in positional_arrays.items():
                 positional_arrays[position] = [np.pad(array, padding) for array in arrays]
 
+        # Adjust width/height if not locking the aspect ratio
+        if not lock_aspect and width is not None and height is not None:
+            width //= max(x for x, y in positional_arrays) - min(x for x, y in positional_arrays) + 1
+            height //= max(y for x, y in positional_arrays) - min(y for x, y in positional_arrays) + 1
+
         # Do the render
         try:
-            image = render(colour_map, positional_arrays, width, height, sampling,
+            image = render(colour_map, positional_arrays, width, height, sampling, lock_aspect=lock_aspect,
                            linear=is_heatmap or is_speed, blur=is_heatmap, contrast=heatmap_contrast)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
@@ -393,7 +398,7 @@ class Processing(Component):
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height,
                                                message.colour_map, message.sampling,
-                                               message.padding, message.contrast)
+                                               message.padding, message.contrast, message.lock_aspect)
                 self.send_data(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')

@@ -198,6 +198,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.clicked.connect(self.thumbnail_click)
         self.ui.render_padding.valueChanged.connect(self.render_padding_changed)
         self.ui.contrast.valueChanged.connect(self.contrast_changed)
+        self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
+        self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
+        self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
+        self.ui.enable_custom_width.stateChanged.connect(self.render_resolution_state_changed)
+        self.ui.enable_custom_height.stateChanged.connect(self.render_resolution_state_changed)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -604,6 +609,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.request_thumbnail(force=True)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
+    def lock_aspect_changed(self, state: QtCore.Qt.CheckState) -> None:
+        """Update the thumbnail when the aspect ratio is locked or unlocked."""
+        self.request_thumbnail(force=True)
+
+    @QtCore.Slot(int)
+    def render_resolution_value_changed(self, value: int) -> None:
+        """Update the thumbnail when a custom resolution is set.
+        This is only enabled when both resolution values are set.
+        """
+        if not self.ui.lock_aspect.isChecked() and self.ui.custom_width.isEnabled() and self.ui.custom_height.isEnabled():
+            self.request_thumbnail(force=True)
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def render_resolution_state_changed(self, state: QtCore.Qt.CheckState) -> None:
+        """Update the thumbnail when a custom resolution is set.
+        This is limited to when the aspect is unlocked, otherwise it
+        would have no affect.
+        """
+        if not self.ui.lock_aspect.isChecked():
+            self.request_thumbnail(force=True)
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
         """Switch to the current profile when auto switch is checked."""
         if state == QtCore.Qt.CheckState.Checked.value:
@@ -631,7 +658,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.timer_rendering.isActive():
             self.timer_rendering.start(1000)
 
-
     def request_thumbnail(self, force: bool = False) -> bool:
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
@@ -656,9 +682,16 @@ class MainWindow(QtWidgets.QMainWindow):
             height += self.ui.vertical_splitter.handleWidth()
 
         self.start_rendering_timer()
+
+        aspect = self.thumbnail_aspect
+        if aspect is not None:
+            if aspect > width / height:
+                height = round(width / aspect)
+            else:
+                width = round(height * aspect)
         self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
                                                    1, profile, None, self.ui.render_padding.value(),
-                                                   self.contrast))
+                                                   self.contrast, aspect is None))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -711,10 +744,12 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
 
         if accept:
-            self.component.send_data(ipc.RenderRequest(self.render_type, None, None,
+            width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
+            height = self.ui.custom_width.value() if self.ui.custom_height.isEnabled() else None
+            self.component.send_data(ipc.RenderRequest(self.render_type, width, height,
                                                        self.render_colour, self.ui.render_samples.value(),
                                                        profile, file_path, self.ui.render_padding.value(),
-                                                       self.contrast))
+                                                       self.contrast, self.ui.lock_aspect.isChecked()))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -1293,10 +1328,31 @@ class MainWindow(QtWidgets.QMainWindow):
             redraw_queue, self.redraw_queue = self.redraw_queue, []
             self.ui.thumbnail.update_pixels(*redraw_queue)
 
+    @property
+    def thumbnail_aspect(self) -> float | None:
+        """Determine the aspect ratio of the thumbnail.
+        If the aspect is automatically calculated it will return None.
+        """
+        if self.ui.lock_aspect.isChecked():
+            return None
+
+        width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
+        height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
+
+        if width is None or height is None:
+            return self.ui.thumbnail.width() / self.ui.thumbnail.height()
+        return width / height
+
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        if self.ui.thumbnail.freeze_scale():
+        if self.thumbnail_aspect is None:
+            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
+        else:
+            aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
+
+        if self.ui.thumbnail.freeze_scale(aspect_mode):
             self.request_thumbnail(force=True)
+            return
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""

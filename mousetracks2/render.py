@@ -24,13 +24,13 @@ class EmptyRenderError(ValueError):
 
 
 def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None = None,
-                            height: int | None = None, keep_aspect: bool = True) -> tuple[int, int]:
+                            height: int | None = None, lock_aspect: bool = False) -> tuple[int, int]:
     """Calculate a target resolution.
     If width or height is given, then it will be used.
-    The aspect ratio is taken into consideration.
+    The aspect ratio can be taken into consideration.
     """
     # If not keeping aspect, return the given width and height
-    if width is not None and height is not None and not keep_aspect:
+    if width is not None and height is not None and not lock_aspect:
         return width, height
 
     # Calculate the most common aspect ratio
@@ -133,7 +133,7 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
-           width: int | None = None, height: int | None = None, sampling: int = 1,
+           width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
            linear: bool = False, blur: bool = False, contrast: float = 1.0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
@@ -152,6 +152,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
             target resolution.
             It ensures a more accurate representation when combining
             different resolutions together.
+        lock_aspect: Force the aspect ratio to its recommended value.
         linear: Remap the array to linear values.
             This will ensure a smooth gradient.
         blur: Blur the array, for example for a heatmap.
@@ -161,8 +162,8 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     for arrays in positional_arrays.values():
         all_arrays.extend(arrays)
     if all_arrays:
-        width, height = array_target_resolution(all_arrays, width, height)
-    elif width is None or height is None:
+        width, height = array_target_resolution(all_arrays, width, height, lock_aspect)
+    if not width or not height:
         raise EmptyRenderError
 
     scale_width = width * sampling
