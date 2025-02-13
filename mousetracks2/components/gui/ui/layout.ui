@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1060</width>
-    <height>664</height>
+    <height>613</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,23 +51,6 @@ combat aliasing.</string>
            </property>
            <property name="text">
             <string>&lt;image&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="save_render">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Save a full quality render to disk.
-Note that this may take a few seconds to complete.</string>
-           </property>
-           <property name="text">
-            <string>Save Render</string>
            </property>
           </widget>
          </item>
@@ -165,7 +148,7 @@ When a new profile is recorded to, the GUI will immediately update.</string>
               <item>
                <widget class="QGroupBox" name="groupBox_3">
                 <property name="title">
-                 <string>Map Type</string>
+                 <string>Data Type</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_6">
                  <item row="0" column="0">
@@ -460,223 +443,11 @@ If no data exists, then a blank image will be shown.</string>
             </widget>
            </widget>
           </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
-             <widget class="QPushButton" name="tracking_start">
-              <property name="text">
-               <string>Start / Unpause</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="tracking_pause">
-              <property name="text">
-               <string>Pause</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_profile_options">
-         <attribute name="title">
-          <string>Profile Options</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_15">
-          <item>
-           <widget class="QScrollArea" name="scrollArea_2">
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="scrollAreaWidgetContents_2">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>274</width>
-               <height>345</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_13">
-              <item>
-               <widget class="QGroupBox" name="groupBox_7">
-                <property name="title">
-                 <string>Status</string>
-                </property>
-                <layout class="QGridLayout" name="gridLayout">
-                 <item row="1" column="1">
-                  <layout class="QHBoxLayout" name="horizontalLayout_6">
-                   <item>
-                    <widget class="QLabel" name="label_14">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="text">
-                      <string>Yes</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="pushButton_4">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="text">
-                      <string>Save</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_13">
-                   <property name="text">
-                    <string>Modified:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="groupBox_6">
-                <property name="title">
-                 <string>Data</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_11">
-                 <item>
-                  <layout class="QGridLayout" name="gridLayout_2">
-                   <item row="0" column="0">
-                    <widget class="QCheckBox" name="track_mouse">
-                     <property name="toolTip">
-                      <string>Enable or disable mouse tracking for the selected profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Track Mouse</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QPushButton" name="delete_mouse">
-                     <property name="toolTip">
-                      <string>Delete all mouse data for the current profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Delete Data</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QCheckBox" name="track_keyboard">
-                     <property name="toolTip">
-                      <string>Enable or disable keyboard tracking for the selected profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Track Keyboard</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QPushButton" name="delete_keyboard">
-                     <property name="toolTip">
-                      <string>Delete all keyboard data for the current profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Delete Data</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0">
-                    <widget class="QCheckBox" name="track_gamepad">
-                     <property name="toolTip">
-                      <string>Enable or disable gamepad tracking for the selected profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Track Gamepads</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QPushButton" name="delete_gamepad">
-                     <property name="toolTip">
-                      <string>Delete all gamepad data for the current profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Delete Data</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QCheckBox" name="track_network">
-                     <property name="toolTip">
-                      <string>Enable or disable network tracking for the selected profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Track Network</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QPushButton" name="delete_network">
-                     <property name="toolTip">
-                      <string>Delete all network data for the current profile.</string>
-                     </property>
-                     <property name="text">
-                      <string>Delete Data</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="delete_profile">
-                   <property name="text">
-                    <string>Delete Profile</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <spacer name="verticalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
-           </widget>
-          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
-          <string>Advanced</string>
+          <string>Render</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_8">
           <item>
@@ -690,14 +461,14 @@ If no data exists, then a blank image will be shown.</string>
                <x>0</x>
                <y>0</y>
                <width>274</width>
-               <height>345</height>
+               <height>299</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7">
               <item>
                <widget class="QGroupBox" name="groupBox_8">
                 <property name="title">
-                 <string>Render Options</string>
+                 <string>Options</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_7">
                  <item row="2" column="0">
@@ -964,6 +735,217 @@ The effect is more important for the track maps, and may be set to 1 for heatmap
                  <size>
                   <width>20</width>
                   <height>226</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="save_render">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Save a full quality render to disk.
+Note that this may take a few seconds to complete.</string>
+            </property>
+            <property name="text">
+             <string>Save Render</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_profile_options">
+         <attribute name="title">
+          <string>Profile Options</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_15">
+          <item>
+           <widget class="QScrollArea" name="scrollArea_2">
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents_2">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>274</width>
+               <height>329</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_13">
+              <item>
+               <widget class="QGroupBox" name="groupBox_7">
+                <property name="title">
+                 <string>Status</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout">
+                 <item row="1" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <item>
+                    <widget class="QLabel" name="label_14">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>Yes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="pushButton_4">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>Save</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_13">
+                   <property name="text">
+                    <string>Modified:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_6">
+                <property name="title">
+                 <string>Data</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_11">
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_2">
+                   <item row="0" column="0">
+                    <widget class="QCheckBox" name="track_mouse">
+                     <property name="toolTip">
+                      <string>Enable or disable mouse tracking for the selected profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Track Mouse</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QPushButton" name="delete_mouse">
+                     <property name="toolTip">
+                      <string>Delete all mouse data for the current profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QCheckBox" name="track_keyboard">
+                     <property name="toolTip">
+                      <string>Enable or disable keyboard tracking for the selected profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Track Keyboard</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QPushButton" name="delete_keyboard">
+                     <property name="toolTip">
+                      <string>Delete all keyboard data for the current profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QCheckBox" name="track_gamepad">
+                     <property name="toolTip">
+                      <string>Enable or disable gamepad tracking for the selected profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Track Gamepads</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QPushButton" name="delete_gamepad">
+                     <property name="toolTip">
+                      <string>Delete all gamepad data for the current profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QCheckBox" name="track_network">
+                     <property name="toolTip">
+                      <string>Enable or disable network tracking for the selected profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Track Network</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QPushButton" name="delete_network">
+                     <property name="toolTip">
+                      <string>Delete all network data for the current profile.</string>
+                     </property>
+                     <property name="text">
+                      <string>Delete Data</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="delete_profile">
+                   <property name="text">
+                    <string>Delete Profile</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
                  </size>
                 </property>
                </spacer>
