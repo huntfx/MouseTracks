@@ -7,7 +7,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import Any, Iterable, TYPE_CHECKING
 
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -99,6 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # Set initial widget states
+        self.ui.statusbar.setVisible(False)
         self.ui.output_logs.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
         self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks') is not None)
@@ -109,6 +110,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
+
+        # Copy tooltips to labels
+        # This is done by adding an `inherit_tooltip` property
+        labels: Iterable[QtWidgets.QWidget] = self.findChildren(QtWidgets.QWidget)
+        for label in labels:
+            tooltip = label.toolTip()
+            if not tooltip.startswith('!inherit'):
+                continue
+            inherits_from = tooltip.split(' ')[1]
+            source_widget: QtWidgets.QWidget | None = self.findChild(QtWidgets.QWidget, inherits_from)
+            if source_widget is not None:
+                label.setToolTip(source_widget.toolTip())
 
         # Store things for full screen
         # The `addAction` is required for a hidden menubar
