@@ -174,7 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type = ipc.RenderType.Time
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
-        self.save_request_sent = False
+        self.save_all_request_sent = self.save_profile_request_sent = False
         self._bytes_sent = self.bytes_sent = 0
         self._bytes_recv = self.bytes_recv = 0
 
@@ -216,7 +216,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_gamepad.clicked.connect(self.delete_gamepad)
         self.ui.delete_network.clicked.connect(self.delete_network)
         self.ui.autosave.stateChanged.connect(self.toggle_autosave)
-        self.ui.file_save.triggered.connect(self.manual_save)
+        self.ui.file_save.triggered.connect(self.manual_save_all)
+        self.ui.profile_save.pressed.connect(self.manual_save_profile)
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
@@ -432,18 +433,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self._inactive_time = ticks
 
     @property
-    def save_request_sent(self) -> bool:
+    def save_all_request_sent(self) -> bool:
         """If waiting on a save request."""
-        return self._save_request_sent
+        return self._save_all_request_sent
 
-    @save_request_sent.setter
-    def save_request_sent(self, value: bool) -> None:
+    @save_all_request_sent.setter
+    def save_all_request_sent(self, value: bool) -> None:
         """Set when waiting on a save request.
         This blocks the save action from triggering.
         """
-        self._save_request_sent = value
+        self._save_all_request_sent = value
         self.ui.save.setEnabled(not value)
         self.ui.file_save.setEnabled(not value)
+
+    @property
+    def save_profile_request_sent(self) -> bool:
+        """If waiting on a save request."""
+        return self._save_profile_request_sent
+
+    @save_profile_request_sent.setter
+    def save_profile_request_sent(self, value: bool) -> None:
+        """Set when waiting on a save request.
+        This blocks the save action from triggering.
+        """
+        self._save_profile_request_sent = value
+        self.ui.profile_save.setEnabled(not value)
 
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
@@ -520,7 +534,7 @@ class MainWindow(QtWidgets.QMainWindow):
         with suppress(ValueError):
             del self._profile_names[self._profile_names.index(profile.name)]
         self._profile_names.insert(0, profile.name)
-        self._unsaved_profiles.add(profile.name)
+        self.mark_profiles_unsaved(profile.name)
         self._redraw_profile_combobox()
 
     def _redraw_profile_combobox(self) -> None:
@@ -553,12 +567,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = False
 
     @QtCore.Slot()
-    def manual_save(self) -> None:
-        """Trigger a manual save request."""
-        if self.save_request_sent:
+    def manual_save_all(self) -> None:
+        """Trigger a manual save request for all profiles."""
+        if self.save_all_request_sent:
             return
-        self.save_request_sent = True
+        self.save_all_request_sent = True
         self.component.send_data(ipc.Save())
+
+    @QtCore.Slot()
+    def manual_save_profile(self) -> None:
+        """Trigger a manual save request for a profile."""
+        if self.save_profile_request_sent:
+            return
+        self.save_profile_request_sent = True
+        self.component.send_data(ipc.Save(self.ui.current_profile.currentData()))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_autosave(self, state: QtCore.Qt.CheckState) -> None:
@@ -574,6 +596,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.request_profile_data(self.ui.current_profile.itemData(idx))
             if idx:
                 self.ui.auto_switch_profile.setChecked(False)
+            self.set_profile_modified_text()
 
     def request_profile_data(self, profile_name: str) -> None:
         """Request loading profile data."""
@@ -1003,13 +1026,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.SaveComplete():
                 self._last_save_time = time.time()
-                self._unsaved_profiles -= set(message.succeeded)
-                self._unsaved_profiles.add(self.current_profile.name)
+                self.mark_profiles_saved(*message.succeeded)
+                self.mark_profiles_unsaved(self.current_profile.name)
                 self._redraw_profile_combobox()
 
                 # Notify when complete
-                if self.save_request_sent:
-                    self.save_request_sent = False
+                if self.save_all_request_sent:
+                    self.save_all_request_sent = False
 
                     msg = QtWidgets.QMessageBox(self)
                     msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
@@ -1024,6 +1047,23 @@ class MainWindow(QtWidgets.QMainWindow):
                         msg.setWindowTitle('Successful')
                         msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                         msg.setText('All profiles have been saved.')
+
+                if self.save_profile_request_sent:
+                    self.save_profile_request_sent = False
+
+                    msg = QtWidgets.QMessageBox(self)
+                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+                    if message.failed:
+                        msg.setWindowTitle('Save Failed')
+                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                        msg.setText(f'Profile "{message.failed[0]}" failed to save.')
+                    elif message.succeeded:
+                        msg.setWindowTitle('Successful')
+                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                        msg.setText(f'Profile "{message.succeeded[0]}" has been saved.')
+                    else:
+                        raise RuntimeError('incorrect message format')
 
                     msg.exec_()
 
@@ -1372,7 +1412,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._delete_mouse_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteMouseData(profile))
-            self._unsaved_profiles.add(profile)
+            self.mark_profiles_unsaved(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
 
@@ -1393,7 +1433,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._delete_keyboard_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteKeyboardData(profile))
-            self._unsaved_profiles.add(profile)
+            self.mark_profiles_unsaved(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
 
@@ -1415,7 +1455,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._delete_gamepad_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteGamepadData(profile))
-            self._unsaved_profiles.add(profile)
+            self.mark_profiles_unsaved(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
 
@@ -1436,7 +1476,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._delete_network_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteNetworkData(profile))
-            self._unsaved_profiles.add(profile)
+            self.mark_profiles_unsaved(profile)
             self._redraw_profile_combobox()
             self.request_profile_data(profile)
 
@@ -1499,6 +1539,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config.track_network = value
         self.config.save()
         self.component.send_data(ipc.SetGlobalNetworkTracking(value))
+
+    def mark_profiles_saved(self, *profile_names: str) -> None:
+        """Mark profiles as saved."""
+        self._unsaved_profiles -= set(profile_names)
+        self.set_profile_modified_text()
+
+    def mark_profiles_unsaved(self, *profile_names: str) -> None:
+        """Mark profiles as unsaved."""
+        self._unsaved_profiles |= set(profile_names)
+        self.set_profile_modified_text()
+
+    def set_profile_modified_text(self):
+        """Set the text if the profile has been modified."""
+        if self.ui.current_profile.currentData() in self._unsaved_profiles:
+            self.ui.profile_modified.setText('Yes')
+            self.ui.profile_save.setEnabled(True)
+        else:
+            self.ui.profile_modified.setText('No')
+            self.ui.profile_save.setEnabled(False)
 
     def handle_delete_button_visibility(self, _: Any = None) -> None:
         """Toggle the delete button visibility.

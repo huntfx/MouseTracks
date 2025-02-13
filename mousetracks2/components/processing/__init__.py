@@ -523,17 +523,28 @@ class Processing(Component):
                 # Keep track of what saved and what didn't
                 succeeded = []
                 failed = []
-                for name, profile in tuple(self.all_profiles.items()):
+
+                profile_names = []
+                if message.profile_name is not None:
+                    if message.profile_name in self.all_profiles:
+                        profile_names.append(message.profile_name)
+                else:
+                    profile_names.extend(self.all_profiles)
+
+                for profile_name in profile_names:
+                    profile = self.all_profiles[profile_name]
+
                     # If not modified since last time, unload it from memory
                     if not profile.modified:
-                        print(f'[Processing] Unloading profile: {name}')
-                        del self.all_profiles[name]
+                        print(f'[Processing] Unloading profile: {profile_name}')
+                        del self.all_profiles[profile_name]
 
                     # Attempt the save
-                    elif self._save(name):
-                        succeeded.append(name)
+                    elif self._save(profile_name):
+                        succeeded.append(profile_name)
+
                     else:
-                        failed.append(name)
+                        failed.append(profile_name)
                 self.send_data(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():

@@ -817,7 +817,7 @@ Note that this may take a few seconds to complete.</string>
                <x>0</x>
                <y>0</y>
                <width>274</width>
-               <height>312</height>
+               <height>311</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -830,20 +830,14 @@ Note that this may take a few seconds to complete.</string>
                  <item row="1" column="1">
                   <layout class="QHBoxLayout" name="horizontalLayout_6">
                    <item>
-                    <widget class="QLabel" name="label_14">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
+                    <widget class="QLabel" name="profile_modified">
                      <property name="text">
                       <string>Yes</string>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QPushButton" name="pushButton_4">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
+                    <widget class="QPushButton" name="profile_save">
                      <property name="text">
                       <string>Save</string>
                      </property>
@@ -853,6 +847,9 @@ Note that this may take a few seconds to complete.</string>
                  </item>
                  <item row="1" column="0">
                   <widget class="QLabel" name="label_13">
+                   <property name="toolTip">
+                    <string>!inherit profile_modified</string>
+                   </property>
                    <property name="text">
                     <string>Modified:</string>
                    </property>

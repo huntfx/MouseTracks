@@ -283,6 +283,7 @@ class Save(Message):
     """Once a save is ready to be done."""
 
     target: int = field(default=Target.Processing, init=False)
+    profile_name: str | None = None
 
 
 @dataclass
