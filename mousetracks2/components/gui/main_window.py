@@ -844,13 +844,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.state = ipc.TrackingState.Running
                 self.ui.thumbnail.playback_overlay.playback_state = True
 
+                self.request_thumbnail(force=True)
+                self.ui.save.setEnabled(True)
+                self.ui.thumbnail_refresh.setEnabled(True)
+                self.set_profile_modified_text()
+
             case ipc.PauseTracking():
                 self.state = ipc.TrackingState.Paused
                 self.ui.thumbnail.playback_overlay.playback_state = False
 
+                self.ui.save.setEnabled(True)
+                self.ui.thumbnail_refresh.setEnabled(True)
+                self.set_profile_modified_text()
+
             case ipc.StopTracking():
                 self.state = ipc.TrackingState.Stopped
                 self.ui.thumbnail.playback_overlay.playback_state = False
+
+                self.ui.save.setEnabled(False)
+                self.ui.thumbnail_refresh.setEnabled(False)
+                self.set_profile_modified_text()
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -1083,6 +1096,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.stat_tracking_state.setText('Running' if message.tracking <= 1 else 'Busy')
                     self.ui.stat_processing_state.setText('Running' if message.processing <= 1 else 'Busy')
                     self.ui.stat_hub_state.setText('Running' if message.hub <= 1 else 'Busy')
+                    self.ui.stat_hub_state.setToolTip(str(message.processing))
                     self.ui.stat_app_state.setText('Running' if message.app_detection <= 1 else 'Busy')
                 else:
                     for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
@@ -1106,11 +1120,17 @@ class MainWindow(QtWidgets.QMainWindow):
         """Start/unpause the script."""
         self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
         self.component.send_data(ipc.StartTracking())
+        self.ui.save.setEnabled(True)
+        self.ui.thumbnail_refresh.setEnabled(True)
+        self.set_profile_modified_text()
 
     @QtCore.Slot()
     def pause_tracking(self) -> None:
         """Pause/unpause the script."""
         self.component.send_data(ipc.PauseTracking())
+        self.ui.save.setEnabled(True)
+        self.ui.thumbnail_refresh.setEnabled(True)
+        self.set_profile_modified_text()
 
     @QtCore.Slot()
     def stop_tracking(self) -> None:
@@ -1577,7 +1597,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Set the text if the profile has been modified."""
         if self.ui.current_profile.currentData() in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
-            self.ui.profile_save.setEnabled(True)
+            self.ui.profile_save.setEnabled(self.state != ipc.TrackingState.Stopped)
         else:
             self.ui.profile_modified.setText('No')
             self.ui.profile_save.setEnabled(False)
