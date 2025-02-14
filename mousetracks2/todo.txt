@@ -10,7 +10,6 @@
 - Check if the main hub is running, and if not close down the process
 - Option to disable multi monitor handling, track both separately
 - Export CSV
-- Handle multiple windows from the same process if they have the same PID (eg. HP Anyware/Teradici)
 - [Config] Choose network interfaces to show
 - When attempting to save while unable to, make sure messages are sent back so that the process doesn't close
 - Gamepad rendering

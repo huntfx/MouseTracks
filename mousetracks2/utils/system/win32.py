@@ -5,7 +5,7 @@ from __future__ import annotations
 import ctypes
 import ctypes.wintypes
 import os
-import sys
+from typing import Any
 
 import winreg
 
@@ -71,16 +71,108 @@ def get_window_handle(console: bool = False) -> int:
     return hwnd
 
 
-class WindowHandle:
-    """Class to manage a window handle and retrieve relevant information."""
+class PID:
+    """Class to manage a process ID."""
 
-    def __init__(self, hwnd: int) -> None:
+    def __init__(self, pid: int) -> None:
+        self.pid = pid
+
+    def __int__(self) -> int:
+        return self.pid
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, int):
+            return self.pid == other
+        if isinstance(other, PID):
+            return self.pid == other.pid
+        return False
+
+    @property
+    def hwnds(self) -> list[int]:
+        """Find all window handles for the given process ID.
+
+        This shouldn't be required often, but certain applications such as
+        "HP Anyware Client" have multiple windows with different hwnds.
+        """
+        hwnds: list[int] = []
+        if not self.pid:
+            return hwnds
+
+        def enum_windows_callback(hwnd, lparam):
+            process_id = ctypes.wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
+            if process_id.value == self.pid:
+                hwnds.append(hwnd)
+            return True  # Continue enumeration
+
+        EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+        user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
+
+        return [hwnd for hwnd in sorted(hwnds) if user32.IsWindowVisible(hwnd)]
+
+    @property
+    def executable(self) -> str:
+        """Get the executable file path of the process."""
+        h_process = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, self.pid)
+        if not h_process:
+            return ''
+        buffer = ctypes.create_unicode_buffer(512)
+        psapi.GetModuleFileNameExW(h_process, None, buffer, len(buffer))
+        kernel32.CloseHandle(h_process)
+        return buffer.value.strip()
+
+    @property
+    def rect(self) -> tuple[int, int, int, int]:
+        """Get the bounding rectangle of all windows belonging to this process."""
+        left = top = 2 << 31
+        right = bottom = -2 << 31
+
+        valid = False
+        for hwnd in self.hwnds:
+            rect = ctypes.wintypes.RECT()
+            if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+                valid = True
+                left = min(left, rect.left)
+                top = min(top, rect.top)
+                right = max(right, rect.right)
+                bottom = max(bottom, rect.bottom)
+
+        if valid:
+            return left, top, right, bottom
+        return 0, 0, 0, 0
+
+    @property
+    def rects(self) -> list[tuple[int, int, int, int]]:
+        """Get the rects of each window handle."""
+        return [handle.rect for handle in map(WindowHandle, self.hwnds)]
+
+    @property
+    def position(self) -> tuple[int, int]:
+        """Get the position of the window."""
+        x1, y1, x2, y2 = self.rect
+        return x1, y1
+
+    @property
+    def size(self) -> tuple[int, int]:
+        """Get the size of the window."""
+        x1, y1, x2, y2 = self.rect
+        return x2 - x1, y2 - y1
+
+
+class WindowHandle:
+    """Class to manage a window handle and retrieve relevant information.
+    Note that a PID may have multiple window handles.
+    """
+
+    def __init__(self, hwnd: int, pid: int | None = None) -> None:
         self.hwnd = hwnd
 
         # Get Process ID
-        process_id = ctypes.wintypes.DWORD()
-        self.thread_id = user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
-        self.pid = process_id.value
+        if pid is None:
+            process_id = ctypes.wintypes.DWORD()
+            self.thread_id = user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
+            pid = process_id.value
+        self.pid = PID(pid)
 
     @property
     def rect(self) -> tuple[int, int, int, int]:
@@ -116,17 +208,6 @@ class WindowHandle:
     def title(self, title: str) -> None:
         """Set the window title."""
         user32.SetWindowTextW(self.hwnd, title)
-
-    @property
-    def exe(self) -> str:
-        """Get the executable file path of the process owning this window."""
-        h_process = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, self.pid)
-        if not h_process:
-            return ''
-        buffer = ctypes.create_unicode_buffer(512)
-        psapi.GetModuleFileNameExW(h_process, None, buffer, len(buffer))
-        kernel32.CloseHandle(h_process)
-        return buffer.value.strip()
 
     @property
     def visible(self) -> bool:

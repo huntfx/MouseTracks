@@ -246,7 +246,7 @@ class TrackedApplicationDetected(Message):
     target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
     name: str
     process_id: int | None
-    rect: tuple[int, int, int, int] | None
+    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
 
 
 @dataclass

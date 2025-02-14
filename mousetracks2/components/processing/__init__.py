@@ -2,7 +2,7 @@ import math
 import os
 from collections import defaultdict
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -40,7 +40,7 @@ class PreviousMouseClick:
 @dataclass
 class Application:
     name: str
-    rect: tuple[int, int, int, int] | None
+    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
 
 
 class Processing(Component):
@@ -54,8 +54,8 @@ class Processing(Component):
 
         # Load in the default profile
         self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
-        self._current_application = Application('', None)
-        self.current_application = Application(DEFAULT_PROFILE_NAME, None)
+        self._current_application = Application('', [])
+        self.current_application = Application(DEFAULT_PROFILE_NAME, [])
 
     @property
     def timestamp(self) -> int:
@@ -152,9 +152,8 @@ class Processing(Component):
         """Detect which monitor the pixel is on."""
         monitor_data = self.monitor_data
         if self.current_application is not None:
-            rect = self.current_application.rect
-            if rect is not None:
-                monitor_data = [rect]
+            if self.current_application.rects is not None:
+                monitor_data = self.current_application.rects
 
         for x1, y1, x2, y2 in monitor_data:
             result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
@@ -543,7 +542,7 @@ class Processing(Component):
 
             # Store the data for the newly detected application
             case ipc.TrackedApplicationDetected():
-                self.current_application = Application(message.name, message.rect)
+                self.current_application = Application(message.name, message.rects)
 
             case ipc.Save():
                 # Keep track of what saved and what didn't

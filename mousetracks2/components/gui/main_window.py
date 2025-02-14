@@ -7,7 +7,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import cast, Any, Iterable, TYPE_CHECKING
 
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -41,7 +41,7 @@ class Profile:
     """Hold data related to the currently running profile."""
 
     name: str
-    rect: tuple[int, int, int, int] | None = None
+    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
     track_mouse: bool = True
     track_keyboard: bool = True
     track_gamepad: bool = True
@@ -647,7 +647,7 @@ class MainWindow(QtWidgets.QMainWindow):
         }
 
         if shift_held:
-            sender: QtWidgets.QCheckBox = self.sender()
+            sender = cast(QtWidgets.QCheckBox, self.sender())
             checkboxes.discard(sender)
             if state == QtCore.Qt.CheckState.Checked.value:
                 for checkbox in checkboxes:
@@ -711,10 +711,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        if self.current_profile.rect is not None:
-            monitor_data = [self.current_profile.rect]
-        else:
-            monitor_data = self.monitor_data
+        monitor_data = self.monitor_data
+        if self.current_profile.rects is not None:
+            monitor_data = self.current_profile.rects
 
         for x1, y1, x2, y2 in monitor_data:
             result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
@@ -1045,7 +1044,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Update the selected profile
             case ipc.TrackedApplicationDetected():
-                self.current_profile = Profile(message.name, message.rect)
+                self.current_profile = Profile(message.name, message.rects)
 
                 if self.is_live:
                     self.request_profile_data(message.name)
