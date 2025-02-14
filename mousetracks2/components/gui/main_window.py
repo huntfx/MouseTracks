@@ -1189,8 +1189,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.load_from_tray()
 
             # Determine if the debug menu should be visible
+            # Note that `QtWidgets.QApplication.keyboardModifiers` fails on the first run
             case QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-                modifiers = QtWidgets.QApplication.keyboardModifiers()
+                modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
                 shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
                 self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
 
