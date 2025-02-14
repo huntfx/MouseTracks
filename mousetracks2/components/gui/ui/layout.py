@@ -171,7 +171,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 257, 494))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 257, 522))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -208,6 +208,29 @@ class Ui_MainWindow(object):
         self.map_type.setObjectName(u"map_type")
 
         self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
+
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.show_left_clicks = QCheckBox(self.groupBox_3)
+        self.show_left_clicks.setObjectName(u"show_left_clicks")
+        self.show_left_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_left_clicks)
+
+        self.show_middle_clicks = QCheckBox(self.groupBox_3)
+        self.show_middle_clicks.setObjectName(u"show_middle_clicks")
+        self.show_middle_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_middle_clicks)
+
+        self.show_right_clicks = QCheckBox(self.groupBox_3)
+        self.show_right_clicks.setObjectName(u"show_right_clicks")
+        self.show_right_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_right_clicks)
+
+
+        self.gridLayout_6.addLayout(self.horizontalLayout_4, 1, 0, 1, 1)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_3)
@@ -1086,6 +1109,9 @@ class Ui_MainWindow(object):
         self.map_type.setToolTip(QCoreApplication.translate("MainWindow", u"Select which dataset to render.\n"
 "If no data exists, then a blank image will be shown.", None))
 #endif // QT_CONFIG(tooltip)
+        self.show_left_clicks.setText(QCoreApplication.translate("MainWindow", u"Left", None))
+        self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
+        self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Colour Map", None))
         self.colour_option.setItemText(0, QCoreApplication.translate("MainWindow", u"Default", None))
         self.colour_option.setItemText(1, QCoreApplication.translate("MainWindow", u"Citrus", None))
@@ -1200,7 +1226,10 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.track_mouse.setText(QCoreApplication.translate("MainWindow", u"Track Mouse", None))
 #if QT_CONFIG(tooltip)
-        self.delete_mouse.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all mouse data for the current profile.", None))
+        self.delete_mouse.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all mouse data for the current profile.\n"
+"\n"
+"As a safety precaution,this option is disabled while\n"
+"mouse tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_mouse.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
 #if QT_CONFIG(tooltip)
@@ -1208,7 +1237,10 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.track_keyboard.setText(QCoreApplication.translate("MainWindow", u"Track Keyboard", None))
 #if QT_CONFIG(tooltip)
-        self.delete_keyboard.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all keyboard data for the current profile.", None))
+        self.delete_keyboard.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all keyboard data for the current profile.\n"
+"\n"
+"As a safety precaution,this option is disabled while\n"
+"keyboard tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_keyboard.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
 #if QT_CONFIG(tooltip)
@@ -1216,7 +1248,10 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.track_gamepad.setText(QCoreApplication.translate("MainWindow", u"Track Gamepads", None))
 #if QT_CONFIG(tooltip)
-        self.delete_gamepad.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all gamepad data for the current profile.", None))
+        self.delete_gamepad.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all gamepad data for the current profile.\n"
+"\n"
+"As a safety precaution,this option is disabled while\n"
+"gamepad tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_gamepad.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
 #if QT_CONFIG(tooltip)
@@ -1224,9 +1259,19 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.track_network.setText(QCoreApplication.translate("MainWindow", u"Track Network", None))
 #if QT_CONFIG(tooltip)
-        self.delete_network.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all network data for the current profile.", None))
+        self.delete_network.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all network data for the current profile.\n"
+"\n"
+"As a safety precaution,this option is disabled while\n"
+"network tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_network.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
+#if QT_CONFIG(tooltip)
+        self.delete_profile.setToolTip(QCoreApplication.translate("MainWindow", u"Delete the entire profile from disk.\n"
+"\n"
+"As a safety precaution,this option is disabled while\n"
+"any tracking is enabled.\n"
+"", None))
+#endif // QT_CONFIG(tooltip)
         self.delete_profile.setText(QCoreApplication.translate("MainWindow", u"Delete Profile", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_profile_options), QCoreApplication.translate("MainWindow", u"Profile Options", None))
 #if QT_CONFIG(tooltip)

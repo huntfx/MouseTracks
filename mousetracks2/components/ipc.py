@@ -215,6 +215,9 @@ class RenderRequest(Message):
     padding: int = 0
     contrast: float = 1.0
     lock_aspect: bool = True
+    show_left_clicks: bool = True
+    show_middle_clicks: bool = True
+    show_right_clicks: bool = True
 
 
 @dataclass

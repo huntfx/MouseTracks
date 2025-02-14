@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>257</width>
-               <height>494</height>
+               <height>522</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -158,6 +158,40 @@ When a new profile is recorded to, the GUI will immediately update.</string>
 If no data exists, then a blank image will be shown.</string>
                    </property>
                   </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <item>
+                    <widget class="QCheckBox" name="show_left_clicks">
+                     <property name="text">
+                      <string>Left</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_middle_clicks">
+                     <property name="text">
+                      <string>Middle</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_right_clicks">
+                     <property name="text">
+                      <string>Right</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>
@@ -816,8 +850,8 @@ Note that this may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>274</width>
-               <height>311</height>
+               <width>230</width>
+               <height>274</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -1026,7 +1060,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>257</width>
+               <width>242</width>
                <height>556</height>
               </rect>
              </property>

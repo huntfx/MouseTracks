@@ -93,6 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_closing = False
         self._is_changing_state = False
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
+        self._is_setting_click_state =False
         self.state = ipc.TrackingState.Paused
 
         self.ui = layout.Ui_MainWindow()
@@ -179,10 +180,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._bytes_recv = self.bytes_recv = 0
 
         self.timer_activity = QtCore.QTimer(self)
-        self.timer_resize = QtCore.QTimer(self)
-        self.timer_resize.setSingleShot(True)
-        self.timer_rendering = QtCore.QTimer(self)
-        self.timer_rendering.setSingleShot(True)
+        self._timer_thumbnail_update = QtCore.QTimer(self)
+        self._timer_thumbnail_update.setSingleShot(True)
+        self._timer_resize = QtCore.QTimer(self)
+        self._timer_resize.setSingleShot(True)
+        self._timer_rendering = QtCore.QTimer(self)
+        self._timer_rendering.setSingleShot(True)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -191,6 +194,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
+        self.ui.show_left_clicks.stateChanged.connect(self.show_clicks_changed)
+        self.ui.show_middle_clicks.stateChanged.connect(self.show_clicks_changed)
+        self.ui.show_right_clicks.stateChanged.connect(self.show_clicks_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
@@ -236,8 +242,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_activity.timeout.connect(self.update_queue_size)
-        self.timer_resize.timeout.connect(self.update_thumbnail_size)
-        self.timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
+        self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
+        self._timer_resize.timeout.connect(self.update_thumbnail_size)
+        self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
 
         self.ui.debug_state_running.triggered.connect(self.start_tracking)
         self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
@@ -306,6 +313,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.contrast_label.setVisible(render_type != ipc.RenderType.Keyboard)
 
         self.pause_colour_change = False
+
+        # Set visiblity of left/middle/right click checkboxes
+        is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
+        self.ui.show_left_clicks.setVisible(is_click)
+        self.ui.show_middle_clicks.setVisible(is_click)
+        self.ui.show_right_clicks.setVisible(is_click)
 
     @property
     def render_colour(self) -> str:
@@ -609,7 +622,43 @@ class MainWindow(QtWidgets.QMainWindow):
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
         self.render_type = self.ui.map_type.itemData(idx)
-        self.request_thumbnail(force=True)
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def show_clicks_changed(self, state: QtCore.Qt.CheckState):
+        """Update the render when the click visibility options change.
+
+        Using a shift click is a quick way to check/uncheck all options.
+        If shift clicking on a checked option, all other options will be
+        unchecked. If shift clicking on an unchecked option, then all
+        options will be checked.
+        """
+        if self._is_setting_click_state:
+            return
+        self._is_setting_click_state = True
+
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
+
+        checkboxes = {
+            self.ui.show_left_clicks,
+            self.ui.show_middle_clicks,
+            self.ui.show_right_clicks,
+        }
+
+        if shift_held:
+            sender: QtWidgets.QCheckBox = self.sender()
+            checkboxes.discard(sender)
+            if state == QtCore.Qt.CheckState.Checked.value:
+                for checkbox in checkboxes:
+                    checkbox.setChecked(True)
+            else:
+                for checkbox in checkboxes:
+                    checkbox.setChecked(False)
+                sender.setChecked(True)
+
+        self.request_thumbnail()
+        self._is_setting_click_state = False
 
     @QtCore.Slot(str)
     def render_colour_changed(self, colour: str) -> None:
@@ -617,12 +666,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_colour_change:
             return
         self.render_colour = colour
-        self.request_thumbnail(force=True)
+        self.request_thumbnail()
 
     @QtCore.Slot(int)
     def render_padding_changed(self, value: int) -> None:
         """Update the render when the padding is changed."""
-        self.request_thumbnail(force=True)
+        self.request_thumbnail()
 
     @QtCore.Slot(int)
     def contrast_changed(self, value: int) -> None:
@@ -630,12 +679,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_colour_change:
             return
         self.contrast = value
-        self.request_thumbnail(force=True)
+        self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def lock_aspect_changed(self, state: QtCore.Qt.CheckState) -> None:
         """Update the thumbnail when the aspect ratio is locked or unlocked."""
-        self.request_thumbnail(force=True)
+        self.request_thumbnail()
 
     @QtCore.Slot(int)
     def render_resolution_value_changed(self, value: int) -> None:
@@ -643,7 +692,7 @@ class MainWindow(QtWidgets.QMainWindow):
         This is only enabled when both resolution values are set.
         """
         if not self.ui.lock_aspect.isChecked() and self.ui.custom_width.isEnabled() and self.ui.custom_height.isEnabled():
-            self.request_thumbnail(force=True)
+            self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def render_resolution_state_changed(self, state: QtCore.Qt.CheckState) -> None:
@@ -652,7 +701,7 @@ class MainWindow(QtWidgets.QMainWindow):
         would have no affect.
         """
         if not self.ui.lock_aspect.isChecked():
-            self.request_thumbnail(force=True)
+            self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
@@ -679,10 +728,22 @@ class MainWindow(QtWidgets.QMainWindow):
         If a render is not completed within 1 second, then text will be
         drawn to the preview to update the user.
         """
-        if not self.timer_rendering.isActive():
-            self.timer_rendering.start(1000)
+        if not self._timer_rendering.isActive():
+            self._timer_rendering.start(1000)
 
-    def request_thumbnail(self, force: bool = False) -> bool:
+    def request_thumbnail(self) -> bool:
+        """Trigger a request to draw a thumbnail.
+        This uses a timer to prevent multiple simulaneous requests at
+        the same time.
+        """
+        # Block when minimised
+        if not self.isVisible():
+            return False
+
+        self._timer_thumbnail_update.start(10)
+        return True
+
+    def _request_thumbnail(self) -> bool:
         """Send a request to draw a thumbnail.
         This will start pooling mouse move data to be redrawn after.
         """
@@ -690,9 +751,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
-        # If already redrawing then prevent building up duplicate commands
-        if self.pause_redraw and not force:
-            return False
+        # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
 
         width = self.ui.thumbnail.width()
@@ -715,7 +774,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 width = round(height * aspect)
         self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
                                                    1, profile, None, self.ui.render_padding.value(),
-                                                   self.contrast, aspect is None))
+                                                   self.contrast, aspect is None,
+                                                   show_left_clicks=self.ui.show_left_clicks.isChecked(),
+                                                   show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+                                                   show_right_clicks=self.ui.show_right_clicks.isChecked()))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -724,7 +786,7 @@ class MainWindow(QtWidgets.QMainWindow):
         This prevents constant render requests as it will only trigger
         after resizing has finished.
         """
-        self.timer_resize.start(10)
+        self._timer_resize.start(10)
 
     @QtCore.Slot(bool)
     def thumbnail_click(self, state: bool) -> None:
@@ -773,7 +835,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.RenderRequest(self.render_type, width, height,
                                                        self.render_colour, self.ui.render_samples.value(),
                                                        profile, file_path, self.ui.render_padding.value(),
-                                                       self.contrast, self.ui.lock_aspect.isChecked()))
+                                                       self.contrast, self.ui.lock_aspect.isChecked(),
+                                                       show_left_clicks=self.ui.show_left_clicks.isChecked(),
+                                                       show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+                                                       show_right_clicks=self.ui.show_right_clicks.isChecked()))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -816,6 +881,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if (self.render_type, count) == self.last_render:
             return
 
+        # Skip if already rendering
+        if self.pause_redraw:
+            return
+
         if self.request_thumbnail():
             self.last_render = (self.render_type, count)
 
@@ -844,7 +913,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.state = ipc.TrackingState.Running
                 self.ui.thumbnail.playback_overlay.playback_state = True
 
-                self.request_thumbnail(force=True)
+                self.request_thumbnail()
                 self.ui.save.setEnabled(True)
                 self.ui.thumbnail_refresh.setEnabled(True)
                 self.set_profile_modified_text()
@@ -878,7 +947,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Draw the new pixmap
                 if message.request.file_path is None:
-                    self.timer_rendering.stop()
+                    self._timer_rendering.stop()
                     self.ui.thumbnail.hide_rendering_text()
 
                     self._last_thumbnail_time = time.time()
@@ -1014,7 +1083,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_recv = message.bytes_recv
 
                 if finished_loading:
-                    self.request_thumbnail(force=True)
+                    self.request_thumbnail()
 
                 self.ui.track_mouse.setChecked(message.config.track_mouse)
                 self.ui.track_keyboard.setChecked(message.config.track_keyboard)
@@ -1240,7 +1309,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if not event.spontaneous():
             self.timer_activity.start(100)
-            self.request_thumbnail(force=True)
+            self.request_thumbnail()
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
 
         event.accept()
@@ -1413,7 +1482,7 @@ class MainWindow(QtWidgets.QMainWindow):
             aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
 
         if self.ui.thumbnail.freeze_scale(aspect_mode):
-            self.request_thumbnail(force=True)
+            self.request_thumbnail()
             return
 
     def delete_mouse(self) -> None:

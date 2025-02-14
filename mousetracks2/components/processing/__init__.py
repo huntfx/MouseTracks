@@ -219,7 +219,8 @@ class Processing(Component):
 
         return distance
 
-    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType
+    def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType,
+                              left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
                               ) -> dict[tuple[int, int], list[np.typing.ArrayLike]]:
         """Get a list of arrays to use for a render."""
         arrays: dict[tuple[int, int], list[np.typing.ArrayLike]] = defaultdict(list)
@@ -234,15 +235,33 @@ class Processing(Component):
                 arrays[0, 0].extend(profile.cursor_map.speed_arrays.values())
 
             case ipc.RenderType.SingleClick:
-                for map in profile.mouse_single_clicks.values():
+                for keycode, map in profile.mouse_single_clicks.items():
+                    if keycode == keycodes.VK_LBUTTON and not left_clicks:
+                        continue
+                    if keycode == keycodes.VK_MBUTTON and not middle_clicks:
+                        continue
+                    if keycode == keycodes.VK_RBUTTON and not right_clicks:
+                        continue
                     arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.DoubleClick:
-                for map in profile.mouse_double_clicks.values():
+                for keycode, map in profile.mouse_double_clicks.items():
+                    if keycode == keycodes.VK_LBUTTON and not left_clicks:
+                        continue
+                    if keycode == keycodes.VK_MBUTTON and not middle_clicks:
+                        continue
+                    if keycode == keycodes.VK_RBUTTON and not right_clicks:
+                        continue
                     arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.HeldClick:
-                for map in profile.mouse_held_clicks.values():
+                for keycode, map in profile.mouse_held_clicks.items():
+                    if keycode == keycodes.VK_LBUTTON and not left_clicks:
+                        continue
+                    if keycode == keycodes.VK_MBUTTON and not middle_clicks:
+                        continue
+                    if keycode == keycodes.VK_RBUTTON and not right_clicks:
+                        continue
                     arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_Time:
@@ -276,13 +295,15 @@ class Processing(Component):
 
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
                       width: int | None, height: int | None, colour_map: str, sampling: int = 1,
-                      padding: int = 0, heatmap_contrast: float = 1.0, lock_aspect: bool = True) -> np.ndarray:
+                      padding: int = 0, heatmap_contrast: float = 1.0, lock_aspect: bool = True,
+                      left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         is_heatmap = render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
                                      ipc.RenderType.TimeHeatmap, ipc.RenderType.Thumbstick_Heatmap)
         is_speed = render_type in (ipc.RenderType.Speed, ipc.RenderType.Thumbstick_Speed)
-        positional_arrays = self._arrays_for_rendering(profile, render_type)
+        positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
+                                                       middle_clicks=middle_clicks, right_clicks=right_clicks)
 
         # Add extra padding
         if padding is not None:
@@ -400,7 +421,10 @@ class Processing(Component):
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height,
                                                message.colour_map, message.sampling,
-                                               message.padding, message.contrast, message.lock_aspect)
+                                               message.padding, message.contrast, message.lock_aspect,
+                                               left_clicks=message.show_left_clicks,
+                                               middle_clicks=message.show_middle_clicks,
+                                               right_clicks=message.show_right_clicks)
                 self.send_data(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')

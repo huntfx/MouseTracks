@@ -5,10 +5,8 @@
 
 [QOL]
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
-- [GUI] Shift + right click on tray for debug options
 
 [Low Priority]
-- [GUI] Choose which mouse buttons from render
 - Check if the main hub is running, and if not close down the process
 - Option to disable multi monitor handling, track both separately
 - Export CSV
