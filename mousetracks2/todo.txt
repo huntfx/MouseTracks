@@ -2,7 +2,6 @@
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled
-- [Tracking] If click occurs before tracking starts, self.data is not set - `self.data.pynput_opcodes.discard(MOUSE_CODES[idx])`
 
 [QOL]
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data

@@ -47,7 +47,6 @@ class DataState:
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
     bytes_recv: dict[str, int] = field(default_factory=dict)
-    pynput_opcodes: set = field(default_factory=set)
 
     def __post_init__(self):
         self.tick_previous = self.tick_current - 1
@@ -70,6 +69,7 @@ class Tracking(Component):
         self.track_network = config.track_network
 
         # Setup pynput listeners
+        self._pynput_opcodes: set[KeyCode] = set()
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
@@ -223,9 +223,9 @@ class Tracking(Component):
             return
 
         if pressed:
-            self.data.pynput_opcodes.add(MOUSE_CODES[idx])
+            self._pynput_opcodes.add(MOUSE_CODES[idx])
         else:
-            self.data.pynput_opcodes.discard(MOUSE_CODES[idx])
+            self._pynput_opcodes.discard(MOUSE_CODES[idx])
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
@@ -259,7 +259,7 @@ class Tracking(Component):
         else:
             name = key.name
             vk = key.value.vk
-        self.data.pynput_opcodes.add(vk)
+        self._pynput_opcodes.add(vk)
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
@@ -272,7 +272,7 @@ class Tracking(Component):
         else:
             name = key.name
             vk = key.value.vk
-        self.data.pynput_opcodes.discard(vk)
+        self._pynput_opcodes.discard(vk)
 
     def _key_press(self, keycode: int | KeyCode) -> None:
         """Handle key presses."""
@@ -339,7 +339,7 @@ class Tracking(Component):
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Record key presses / mouse clicks
-            for opcode in self.data.pynput_opcodes:
+            for opcode in self._pynput_opcodes:
                 self._key_press(opcode)
 
             # Determine which gamepads are connected
