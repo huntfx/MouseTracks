@@ -152,7 +152,7 @@ class Processing(Component):
         """Detect which monitor the pixel is on."""
         monitor_data = self.monitor_data
         if self.current_application is not None:
-            if self.current_application.rects is not None:
+            if self.current_application.rects:
                 monitor_data = self.current_application.rects
 
         for x1, y1, x2, y2 in monitor_data:

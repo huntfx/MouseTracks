@@ -712,7 +712,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         monitor_data = self.monitor_data
-        if self.current_profile.rects is not None:
+        if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
         for x1, y1, x2, y2 in monitor_data:
