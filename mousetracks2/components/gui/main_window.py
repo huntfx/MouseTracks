@@ -93,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_closing = False
         self._is_changing_state = False
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
-        self._is_setting_click_state =False
+        self._is_setting_click_state = False
         self._force_close = False
         self.state = ipc.TrackingState.Paused
 
@@ -317,9 +317,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set visiblity of left/middle/right click checkboxes
         is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
-        self.ui.show_left_clicks.setVisible(is_click)
+        is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
+        self.ui.show_left_clicks.setVisible(is_click or is_thumbstick)
         self.ui.show_middle_clicks.setVisible(is_click)
-        self.ui.show_right_clicks.setVisible(is_click)
+        self.ui.show_right_clicks.setVisible(is_click or is_thumbstick)
 
     @property
     def render_colour(self) -> str:

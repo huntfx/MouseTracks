@@ -264,28 +264,34 @@ class Processing(Component):
                     arrays[0, 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_Time:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.sequential_arrays
-                    arrays[0, 0].extend(map.values())
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.sequential_arrays
-                    arrays[1, 0].extend(map.values())
+                if left_clicks:
+                    for gamepad_maps in profile.thumbstick_l_map.values():
+                        map = gamepad_maps.sequential_arrays
+                        arrays[0, 0].extend(map.values())
+                if right_clicks:
+                    for gamepad_maps in profile.thumbstick_r_map.values():
+                        map = gamepad_maps.sequential_arrays
+                        arrays[int(left_clicks), 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_Speed:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.speed_arrays
-                    arrays[0, 0].extend(map.values())
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.speed_arrays
-                    arrays[1, 0].extend(map.values())
+                if left_clicks:
+                    for gamepad_maps in profile.thumbstick_l_map.values():
+                        map = gamepad_maps.speed_arrays
+                        arrays[0, 0].extend(map.values())
+                if right_clicks:
+                    for gamepad_maps in profile.thumbstick_r_map.values():
+                        map = gamepad_maps.speed_arrays
+                        arrays[int(left_clicks), 0].extend(map.values())
 
             case ipc.RenderType.Thumbstick_Heatmap:
-                for gamepad_maps in profile.thumbstick_l_map.values():
-                    map = gamepad_maps.density_arrays
-                    arrays[0, 0].extend(map.values())
-                for gamepad_maps in profile.thumbstick_r_map.values():
-                    map = gamepad_maps.density_arrays
-                    arrays[1, 0].extend(map.values())
+                if left_clicks:
+                    for gamepad_maps in profile.thumbstick_l_map.values():
+                        map = gamepad_maps.density_arrays
+                        arrays[0, 0].extend(map.values())
+                if right_clicks:
+                    for gamepad_maps in profile.thumbstick_r_map.values():
+                        map = gamepad_maps.density_arrays
+                        arrays[int(left_clicks), 0].extend(map.values())
 
             case _:
                 raise NotImplementedError(render_type)
