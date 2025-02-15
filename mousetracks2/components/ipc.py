@@ -266,7 +266,7 @@ class ApplicationFocusChanged(Message):
 class Exit(Message):
     """Quit the whole application."""
 
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass

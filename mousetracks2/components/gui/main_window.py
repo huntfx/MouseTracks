@@ -94,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_changing_state = False
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
         self._is_setting_click_state =False
+        self._force_close = False
         self.state = ipc.TrackingState.Paused
 
         self.ui = layout.Ui_MainWindow()
@@ -933,9 +934,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.thumbnail_refresh.setEnabled(False)
                 self.set_profile_modified_text()
 
-            # Force exit
             case ipc.Exit():
-                QtCore.QCoreApplication.exit()
+                self.shut_down(force=True)
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
@@ -1245,12 +1245,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.DebugRaiseError(ipc.Target.GUI))
 
     @QtCore.Slot()
-    def shut_down(self) -> None:
+    def shut_down(self, force: bool = False) -> None:
         """Trigger a safe shutdown of the application."""
         # If invisible then the close event does not end the QApplication
         if not self.isVisible():
             self.show()
 
+        self._force_close = force
         self.close()
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
@@ -1392,7 +1393,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle what to do when the GUI is closed."""
         self._is_closing = True
-        if self.ask_to_save():
+        if self._force_close or self.ask_to_save():
             event.accept()
         else:
             event.ignore()

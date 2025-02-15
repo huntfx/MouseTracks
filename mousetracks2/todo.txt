@@ -2,12 +2,12 @@
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled
+- [Tracking] If click occurs before tracking starts, self.data is not set - `self.data.pynput_opcodes.discard(MOUSE_CODES[idx])`
 
 [QOL]
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
 
 [Low Priority]
-- Check if the main hub is running, and if not close down the process
 - Option to disable multi monitor handling, track both separately
 - Export CSV
 - [Config] Choose network interfaces to show

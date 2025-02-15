@@ -1,5 +1,10 @@
 import multiprocessing
+import os
+import time
 import traceback
+from typing import Iterator
+
+import psutil
 
 from . import ipc
 from ..exceptions import ExitRequest
@@ -7,8 +12,8 @@ from ..exceptions import ExitRequest
 
 class Component:
     def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
-        self.q_send = q_send
-        self.q_receive = q_receive
+        self._q_send = q_send
+        self._q_recv = q_receive
         self.name = type(self).__name__
         self.__post_init__()
 
@@ -41,17 +46,58 @@ class Component:
             case _:
                 raise NotImplementedError(self.name)
 
-    def send_data(self, message: ipc.Message) -> None:
-        self.q_send.put(message)
+    def is_hub_running(self):
+        """Determine if the Hub is still running.
+        If it is not running, then attempting to read from a queue will
+        lock the entire process.
+        """
+        return psutil.pid_exists(os.getppid())
 
-    def receive_data(self):
-        return self.q_receive.get()
+    def send_data(self, message: ipc.Message) -> None:
+        self._q_send.put(message)
+
+    def receive_data(self, blocking: bool = True) -> Iterator[ipc.Message]:
+        """Receive any available data as an iterator.
+
+        Parameters:
+            blocking: Wait for more data instead of returning.
+                Use blocking if this is the main loop of the component.
+                Disable it to grab what's available from within a loop.
+
+        This does not use timeouts, as the Hub process shutting down
+        would cause locks if a read was mid-timeout. Instead, a check
+        is first done to ensure the Hub is still running, then a check
+        is done if the queue is empty or not. The Hub check is done per
+        queue item so that a backlog of commands won't cause issues.
+        """
+        while True:
+            # Trigger an emergecy shutdown if the hub is not running
+            if not self.is_hub_running():
+                print(f'[{self.name}] Hub not detected, triggering force shutdown...')
+                self._q_send.close()
+                self._q_recv.close()
+                self._q_send.cancel_join_thread()
+                self._q_recv.cancel_join_thread()
+                yield ipc.Exit()
+                return
+
+            # Check if the queue is empty
+            if self._q_recv.empty():
+                if not blocking:
+                    return
+                time.sleep(0.1)
+                continue
+
+            # Read from the queue
+            yield self._q_recv.get()
 
     def run(self) -> None:
         """Run the component."""
 
     def on_exit(self) -> None:
-        """Clean up any threads on exit."""
+        """Clean up any threads on exit.
+        If force is set, then just emergency shut down everything.
+        """
 
     @classmethod
     def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
@@ -83,11 +129,14 @@ class Component:
                 return
 
             except Exception as e:
-                q_send.put(ipc.Traceback(e, traceback.format_exc()))
                 print(f'[{self.name}] Error shut down: {e}')
+                q_send.put(ipc.Traceback(e, traceback.format_exc()))
 
             finally:
                 self.on_exit()
 
-        q_send.put(ipc.ProcessShutDownNotification(self.target))
-        print(f'[{self.name}] Sent process closed notification.')
+        if self.is_hub_running():
+            q_send.put(ipc.ProcessShutDownNotification(self.target))
+            print(f'[{self.name}] Sent process closed notification.')
+        else:
+            print(f'[{self.name}] Process closed due to Hub not running.')

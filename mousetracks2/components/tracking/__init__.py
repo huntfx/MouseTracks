@@ -12,6 +12,7 @@ from .. import ipc
 from ..abstract import Component
 from ...config import GlobalConfig
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ...exceptions import ExitRequest
 from ...utils import get_cursor_pos
 from ...utils.keycodes import CLICK_CODES, MOUSE_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
 from ...utils.network import Interfaces
@@ -79,9 +80,7 @@ class Tracking(Component):
         self._pynput_keyboard_listener.start()
 
     def _receive_data(self):
-        while not self.q_receive.empty():
-            message = self.q_receive.get()
-
+        for message in self.receive_data(blocking=False):
             match message:
                 case ipc.StartTracking():
                     self.state = ipc.TrackingState.Running
@@ -92,6 +91,9 @@ class Tracking(Component):
 
                 case ipc.StopTracking():
                     self.state = ipc.TrackingState.Stopped
+
+                case ipc.Exit():
+                    raise ExitRequest
 
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')

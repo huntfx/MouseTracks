@@ -537,7 +537,7 @@ class Processing(Component):
             case ipc.TrackingStarted():
                 self.profile.cursor_map.position = get_cursor_pos()
 
-            case ipc.StopTracking():
+            case ipc.StopTracking() | ipc.Exit():
                 raise ExitRequest
 
             # Store the data for the newly detected application
@@ -672,5 +672,5 @@ class Processing(Component):
 
     def run(self):
         """Listen for events to process."""
-        while True:
-            self._process_message(self.receive_data())
+        for message in self.receive_data(blocking=True):
+            self._process_message(message)

@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import queue
 import sys
+import time
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -10,6 +11,7 @@ from .main_window import MainWindow
 from .. import ipc
 from ..abstract import Component
 from ...config import GlobalConfig
+from ...exceptions import ExitRequest
 
 
 class QueueWorker(QtCore.QObject):
@@ -17,21 +19,22 @@ class QueueWorker(QtCore.QObject):
 
     message_received = QtCore.Signal(ipc.Message)
 
-    def __init__(self, queue: multiprocessing.Queue) -> None:
+    def __init__(self, component: Component) -> None:
         super().__init__()
-        self.queue = queue
+        self.component = component
         self.running = True
 
     def run(self) -> None:
         """Continuously poll the queue for messages."""
         while True:
-            try:
-                message = self.queue.get(timeout=1)
-            except queue.Empty:
-                if self.running:
-                    continue
+            for message in self.component.receive_data(blocking=False):
+                self.message_received.emit(message)
+                if isinstance(message, ipc.Exit):
+                    return
+            time.sleep(1)
+
+            if not self.running:
                 break
-            self.message_received.emit(message)
 
     def stop(self) -> None:
         """Stop the worker."""
@@ -53,7 +56,7 @@ class GUI(Component):
         self.error: Exception | None = None
 
         self.receiver_thread = QtCore.QThread()
-        self.receiver_worker = QueueWorker(self.q_receive)
+        self.receiver_worker = QueueWorker(self)
         self.receiver_worker.moveToThread(self.receiver_thread)
         self.receiver_thread.started.connect(self.receiver_worker.run)
         self.receiver_thread.finished.connect(self.receiver_worker.deleteLater)
@@ -88,21 +91,23 @@ class GUI(Component):
             win.show()
         self.receiver_worker.message_received.connect(win.process_message)
         win.exception_raised.connect(self.exception_raised)
-
-        # Start the application
         self.receiver_thread.start()
 
         # Trigger the splash screen to close
         self.send_data(ipc.CloseSplashScreen())
 
+        # Run the application
         retcode = app.exec()
-        self.send_data(ipc.ToggleConsole(True))
-        match retcode:
-            case 0:
-                self.send_data(ipc.Exit())
-            case 1:
-                if self.error is not None:
-                    raise self.error
-                raise RuntimeError('[GUI] Unexpected shutdown.')
-            case _:
-                raise RuntimeError('[GUI] Unknown exit code.')
+
+        # Trigger a shutdown of all the other components
+        if self.is_hub_running():
+            self.send_data(ipc.ToggleConsole(True))
+            match retcode:
+                case 0:
+                    self.send_data(ipc.Exit())
+                case 1:
+                    if self.error is not None:
+                        raise self.error
+                    raise RuntimeError('[GUI] Unexpected shutdown.')
+                case _:
+                    raise RuntimeError('[GUI] Unknown exit code.')

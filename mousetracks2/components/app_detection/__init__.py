@@ -94,7 +94,7 @@ class AppDetection(Component):
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
-            case ipc.StopTracking():
+            case ipc.StopTracking() | ipc.Exit():
                 raise ExitRequest
 
             case ipc.RequestRunningAppCheck():
@@ -105,5 +105,5 @@ class AppDetection(Component):
 
     def run(self):
         """Listen for events to process."""
-        while True:
-            self._process_message(self.receive_data())
+        for message in self.receive_data(blocking=True):
+            self._process_message(message)
