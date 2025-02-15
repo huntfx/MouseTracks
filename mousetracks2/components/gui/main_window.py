@@ -933,6 +933,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.thumbnail_refresh.setEnabled(False)
                 self.set_profile_modified_text()
 
+            # Force exit
+            case ipc.Exit():
+                QtCore.QCoreApplication.exit()
+
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
                 self.monitor_data = message.data
