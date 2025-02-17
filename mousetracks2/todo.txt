@@ -10,7 +10,6 @@
 - Option to disable multi monitor handling, track both separately
 - Export CSV
 - [Config] Choose network interfaces to show
-- When attempting to save while unable to, make sure messages are sent back so that the process doesn't close
 - Gamepad rendering
 - Option to run as elevated
 

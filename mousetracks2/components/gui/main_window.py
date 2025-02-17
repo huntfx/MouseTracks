@@ -95,6 +95,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
         self._is_setting_click_state = False
         self._force_close = False
+        self._waiting_on_save = False
+        self._last_save_message: ipc.SaveComplete | None
         self.state = ipc.TrackingState.Paused
 
         self.ui = layout.Ui_MainWindow()
@@ -1112,6 +1114,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_recv += message.bytes_recv
 
             case ipc.SaveComplete():
+                self._last_save_message = message
                 self._last_save_time = time.time()
                 self.mark_profiles_saved(*message.succeeded)
                 self.mark_profiles_unsaved(self.current_profile.name)
@@ -1153,6 +1156,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         raise RuntimeError('incorrect message format')
 
                     msg.exec_()
+
+                # Continue shutdown now save message has been received
+                if self._is_closing:
+                    self.shut_down(force=True)
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
@@ -1354,7 +1361,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def ask_to_save(self, timeout: float = SHUTDOWN_TIMEOUT, accuracy: int = 1) -> bool:
         """Ask the user to save.
-        Returns False if the save was cancelled.
+        Returns True if the close event should proceed.
         """
         target_timeout = time.time() + timeout
 
@@ -1375,6 +1382,8 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Cancel)
         update_message()
 
         # Use a QTimer to update the countdown
@@ -1389,16 +1398,69 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
                 self.component.send_data(ipc.Save())
+                self._waiting_on_save = True
         return True
 
+    def _handle_close_event(self):
+        """Handle saving as part of the close event."""
+        is_closing, self._is_closing = self._is_closing, True
+
+        # Allow the user to cancel
+        if not self._force_close:
+
+            # Prevent closing again while a save is being attempted
+            if is_closing:
+                return False
+
+            # Reset flags
+            self._waiting_on_save = False
+            self._last_save_message = None
+            if not self.ask_to_save():
+                self._is_closing = False
+                return False
+
+        # If the flag is not set, then no save was requested
+        if not self._waiting_on_save:
+            return True
+
+        # Ignore the event if no save message has been received
+        if self._last_save_message is None:
+            return False
+
+        # All profiles saved successfully
+        if not self._last_save_message.failed:
+            return True
+
+        # Ask the user to discard unsaved data
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle('Save Failed')
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg.setText('Not all profiles were saved.\n'
+                    f'  Successful: {", ".join(self._last_save_message.succeeded)}\n'
+                    f'  Failed: {", ".join(self._last_save_message.failed)}\n'
+                    '\n'
+                    'Do you want to continue shutting down?\n'
+                    'All unsaved data will be lost.')
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
+        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
+
+        # Proceed with shutdown
+        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+            return True
+
+        # Reset flags
+        self._waiting_on_save = False
+        self._is_closing = False
+        self._force_close = False
+        return False
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        """Handle what to do when the GUI is closed."""
-        self._is_closing = True
-        if self._force_close or self.ask_to_save():
+        """Handle when the GUI is closed."""
+        if self._handle_close_event():
             event.accept()
         else:
             event.ignore()
-            self._is_closing = False
 
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         data.distance += calculate_distance(position, data.position)
