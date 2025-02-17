@@ -1,4 +1,6 @@
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import IO
 
 import yaml
@@ -23,15 +25,21 @@ class GlobalConfig:
     def __post_init__(self) -> None:
         self.load()
 
-    def save(self) -> None:
+    def save(self, path: str | Path = GLOBAL_CONFIG_PATH) -> None:
         """Save the config to a YAML file."""
-        with open(GLOBAL_CONFIG_PATH, "w", encoding="utf-8") as f:
+        # Ensure the folder exists
+        base_dir = os.path.dirname(path)
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+
+        # Save the data
+        with open(path, 'w', encoding='utf-8') as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
 
-    def load(self) -> None:
+    def load(self, path: str | Path = GLOBAL_CONFIG_PATH) -> None:
         """Load the config from a YAML file, if it exists."""
-        if GLOBAL_CONFIG_PATH.exists():
-            with open(GLOBAL_CONFIG_PATH, 'r', encoding='utf-8') as f:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
                 self.__dict__.update(yaml.safe_load(f))
 
         # Create the config file if it doesn't exist
