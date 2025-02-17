@@ -678,5 +678,5 @@ class Processing(Component):
 
     def run(self):
         """Listen for events to process."""
-        for message in self.receive_data(blocking=True):
+        for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
             self._process_message(message)

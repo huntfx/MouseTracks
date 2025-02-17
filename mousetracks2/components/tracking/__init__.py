@@ -80,7 +80,7 @@ class Tracking(Component):
         self._pynput_keyboard_listener.start()
 
     def _receive_data(self):
-        for message in self.receive_data(blocking=False):
+        for message in self.receive_data():
             match message:
                 case ipc.StartTracking():
                     self.state = ipc.TrackingState.Running

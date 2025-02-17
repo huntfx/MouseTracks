@@ -27,11 +27,11 @@ class QueueWorker(QtCore.QObject):
     def run(self) -> None:
         """Continuously poll the queue for messages."""
         while True:
-            for message in self.component.receive_data(blocking=False):
+            for message in self.component.receive_data():
                 self.message_received.emit(message)
                 if isinstance(message, ipc.Exit):
                     return
-            time.sleep(1)
+            time.sleep(0.01)
 
             if not self.running:
                 break

@@ -128,5 +128,5 @@ class AppDetection(Component):
 
     def run(self):
         """Listen for events to process."""
-        for message in self.receive_data(blocking=True):
+        for message in self.receive_data(polling_rate=0.25):
             self._process_message(message)

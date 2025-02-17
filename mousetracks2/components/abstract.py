@@ -16,6 +16,7 @@ class Component:
         self._q_recv = q_receive
         self.name = type(self).__name__
         self.__post_init__()
+        self._parent_pid = os.getppid()
 
     def __post_init__(self) -> None:
         """Call this after running `__init__`."""
@@ -51,18 +52,19 @@ class Component:
         If it is not running, then attempting to read from a queue will
         lock the entire process.
         """
-        return psutil.pid_exists(os.getppid())
+        return psutil.pid_exists(self._parent_pid)
 
     def send_data(self, message: ipc.Message) -> None:
         self._q_send.put(message)
 
-    def receive_data(self, blocking: bool = True) -> Iterator[ipc.Message]:
+    def receive_data(self, polling_rate: float = 0.0) -> Iterator[ipc.Message]:
         """Receive any available data as an iterator.
 
         Parameters:
-            blocking: Wait for more data instead of returning.
-                Use blocking if this is the main loop of the component.
-                Disable it to grab what's available from within a loop.
+            polling_rate: Wait for more data instead of returning.
+                If this is set, then the loop will continue, waiting for
+                this amount of time before checking for more items.
+                If not set, then the loop will run once.
 
         This does not use timeouts, as the Hub process shutting down
         would cause locks if a read was mid-timeout. Instead, a check
@@ -83,9 +85,9 @@ class Component:
 
             # Check if the queue is empty
             if self._q_recv.empty():
-                if not blocking:
+                if not polling_rate:
                     return
-                time.sleep(0.1)
+                time.sleep(polling_rate)
                 continue
 
             # Read from the queue
