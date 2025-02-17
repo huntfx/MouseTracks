@@ -1,11 +1,13 @@
 import re
 
+import psutil
+
 from .. import ipc
 from ..abstract import Component
 from ...applications import AppList
 from ...constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ...exceptions import ExitRequest
-from ...utils.system.win32 import WindowHandle, get_window_handle
+from ...utils.system.win32 import PID, WindowHandle, get_window_handle
 
 
 
@@ -21,11 +23,32 @@ class AppDetection(Component):
         self._previous_res: tuple[int, int] | None = None
         self._previous_rects: list[tuple[int, int, int, int]] = []
 
+    def _pid_fallback(self, title: str) -> PID:
+        """Guess the PID of the selected application.
+        This is only for when the PID returns 0.
+
+        See the `WindowHandle` class for more details on how it occurs,
+        but if the PID is 0 then the executable can't be determined.
+        From testing, the correct PID will return no window handles.
+        So given this, checking for any executable matches and ignoring
+        any with window handles should give a relatively accurate guess.
+        """
+        for proc in psutil.process_iter(attrs=['pid', 'exe']):
+            pid = PID(proc.info['pid'])
+            if proc.info['exe'] is None or pid.hwnds:
+                continue
+            if self.applist.match(proc.info['exe'], title):
+                return pid
+        return PID(0)
+
     def check_running_app(self) -> None:
         hwnd = get_window_handle()
         handle = WindowHandle(hwnd)
-        exe = handle.pid.executable
         title = handle.title
+        if handle.pid == 0:
+            handle.pid = self._pid_fallback(title)
+
+        exe = handle.pid.executable
         focus_changed = False
 
         # Display focus changes

@@ -91,8 +91,13 @@ class PID:
     def hwnds(self) -> list[int]:
         """Find all window handles for the given process ID.
 
-        This shouldn't be required often, but certain applications such as
-        "HP Anyware Client" have multiple windows with different hwnds.
+        This shouldn't be required often, but certain applications such
+        as "HP Anyware Client" have multiple windows with different
+        handles.
+
+        In some cases, if reading the PID from the hwnd returns 0, then
+        directly querying the window handles from the PID will return an
+        empty list. See the `WindowHandle` class for details.
         """
         hwnds: list[int] = []
         if not self.pid:
@@ -162,6 +167,12 @@ class PID:
 class WindowHandle:
     """Class to manage a window handle and retrieve relevant information.
     Note that a PID may have multiple window handles.
+
+    In some cases, the PID will be 0. This seems to be an issue with the
+    built executable, as it will work correctly when running as a Python
+    script. From within this class there's nothing that can really be
+    done, querying the PID for its window handles will just return an
+    empty list. One such example is Helldivers 2.
     """
 
     def __init__(self, hwnd: int, pid: int | None = None) -> None:
