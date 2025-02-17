@@ -169,6 +169,11 @@ class TrackingIntArray(TrackingArray):
 
         super().__setitem__(item, value)
 
+    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
+        """Load data and update the internal max value."""
+        super()._load_from_zip(zf, path)
+        self.max_value = np.iinfo(self.array.dtype).max
+
 
 class ArrayResolutionMap(dict):
     """Store multiple arrays for different resolutions.
