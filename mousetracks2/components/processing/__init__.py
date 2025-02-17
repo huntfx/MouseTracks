@@ -95,9 +95,8 @@ class Processing(Component):
 
         # Count total clicks
         clicks = 0
-        for resolution_maps in profile.mouse_single_clicks.values():
-            for array in resolution_maps.values():
-                clicks += np.sum(array)
+        for keycode in keycodes.MOUSE_CODES:
+            clicks += profile.key_presses[keycode]
 
         # Count scrolls
         scrolls = 0
