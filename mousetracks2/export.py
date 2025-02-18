@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Any, Iterator
 
 from .constants import UPDATES_PER_SECOND
@@ -10,7 +11,7 @@ from .utils.keycodes import KEYBOARD_CODES, MOUSE_CODES, SCROLL_CODES
 class Export:
     """Handle the export of data for a profile."""
 
-    def __init__(self, profile: TrackingProfile):
+    def __init__(self, profile: TrackingProfile) -> None:
         self.profile = profile
 
     def _daily_stats(self) -> Iterator[tuple[Any, ...]]:
@@ -18,13 +19,22 @@ class Export:
         creation_day = self.profile.created // 86400
         modified_day = self.profile.modified // 86400
 
-        yield ('Ticks (total)', 'Ticks (active)', 'Ticks (inactive)',
-               'Cursor Distance', 'Mouse Clicks', 'Mouse Scrolls',
+        yield ('Date', 'Time (seconds)', 'Active (seconds)', 'Inactive (seconds)',
+               'Cursor Distance (pixels)', 'Mouse Clicks', 'Mouse Scrolls',
                'Keyboard Presses', 'Gamepad Presses', 'Download (bytes)', 'Upload (bytes)')
-        for i in range(2 + modified_day - creation_day):
-            yield (self.profile.daily_ticks[i, 0],
-                   self.profile.daily_ticks[i, 1],
-                   self.profile.daily_ticks[i, 2],
+        for i in reversed(range(2 + modified_day - creation_day)):
+            # Skip if no data
+            if not self.profile.daily_ticks[i, 0]:
+                continue
+
+            # Get the date
+            timestamp = self.profile.created + i * 86400
+            dt = datetime(1970, 1, 1) + timedelta(seconds=timestamp)
+
+            yield (dt.strftime('%Y-%m-%d'),
+                   round(self.profile.daily_ticks[i, 0] / UPDATES_PER_SECOND, 2),
+                   round(self.profile.daily_ticks[i, 1] / UPDATES_PER_SECOND, 2),
+                   round(self.profile.daily_ticks[i, 2] / UPDATES_PER_SECOND, 2),
                    self.profile.daily_distance[i],
                    self.profile.daily_clicks[i],
                    self.profile.daily_scrolls[i],
