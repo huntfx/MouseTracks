@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes
+import re
 import os
 from typing import Any
 
@@ -241,27 +242,33 @@ class WindowHandle:
         user32.ShowWindow(self.hwnd, SW_HIDE)
 
 
-def get_autostart(name: str) -> str | None:
+def _parse_args(cmd: str) -> list[str]:
+    """Parse the command line args to get each item"""
+    return [m.group(1) or m.group(2)
+            for m in re.finditer(r'"([^"]+)"|(\S+)', cmd)]
+
+
+def get_autostart(name: str) -> bool:
     """Determine if running on startup."""
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_READ) as key:
-            exe: str = winreg.QueryValueEx(key, name)[0]
-            flag_idx = exe.index(' -')
-            if flag_idx > 0:
-                exe = exe[:flag_idx].rstrip(' ')
-            if os.path.exists(exe):
-                return os.path.abspath(exe)
-            return None
+            for arg in _parse_args(winreg.QueryValueEx(key, name)[0]):
+                if not arg.startswith('-') and not os.path.exists(arg):
+                    return False
+            return True
     except OSError:
-        return None
+        return False
 
 
 def set_autostart(name: str, executable: str, *args: str) -> None:
     """Set an executable to run on startup."""
-    if os.path.splitext(executable)[1] != '.exe':
-        raise RuntimeError('Running on startup is only supported by the executable build of MouseTracks.')
+    def escape(text: str) -> str:
+        if ' ' in text:
+            return f'"{text}"'
+        return text
+
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, ' '.join([executable] + list(args)))
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, ' '.join(map(escape, [executable] + list(args))))
 
 
 def remove_autostart(name: str) -> None:

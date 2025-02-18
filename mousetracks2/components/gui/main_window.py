@@ -1779,23 +1779,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.prefs_autostart.isEnabled():
             return
 
+        launch = []
+
         if value:
-            try:
-                set_autostart('MouseTracks', os.path.abspath(sys.argv[0]), '--autostart')
+            launch: list[str] = sys.argv[:]
+            if launch[0] != sys.executable:
+                launch.insert(0, sys.executable)
+            set_autostart('MouseTracks', *launch, '--autostart')
 
-            except RuntimeError as e:
-                self.ui.prefs_autostart.setEnabled(False)
-                self.ui.prefs_autostart.setChecked(False)
-
-                msg = QtWidgets.QMessageBox()
-                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-                msg.setWindowTitle('Error')
-                msg.setText(str(e))
-                msg.exec_()
-
-                return
         else:
             remove_autostart('MouseTracks')
+
         self.notify(f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.')
 
     @QtCore.Slot(bool)
