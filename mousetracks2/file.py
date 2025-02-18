@@ -411,6 +411,7 @@ class TrackingProfile:
                 mac_address = path.split('/')[3]
                 self.data_download[mac_address] = int(zf.read(path))
             elif path.startswith('data/network/interfaces/'):
+                mac_address = path.split('/')[3]
                 self.data_interfaces[mac_address] = zf.read(path).decode('utf-8')
                 if not self.data_interfaces[mac_address]:
                     self.data_interfaces[mac_address] = None
