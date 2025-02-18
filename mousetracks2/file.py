@@ -286,7 +286,8 @@ class TrackingProfile:
     config: ProfileConfig = field(default_factory=ProfileConfig, init=False)
 
     created: int = field(default_factory=lambda: int(time.time()), init=False)
-    modified: bool = field(default=False, init=False)
+    modified: int = field(default_factory=lambda: int(time.time()), init=False)
+    is_modified: bool = field(default=False, init=False)
     elapsed: int = field(default=0, init=False)
     active: int = field(default=0, init=False)
     inactive: int = field(default=0, init=False)
@@ -378,6 +379,7 @@ class TrackingProfile:
                 self.config.load(f)
 
         self.created = int(zf.read('metadata/time/created'))
+        self.modified = int(zf.read('metadata/time/modified'))
         self.elapsed = int(zf.read('metadata/ticks/elapsed'))
         self.active = int(zf.read('metadata/ticks/active'))
         self.inactive = int(zf.read('metadata/ticks/inactive'))
@@ -429,7 +431,7 @@ class TrackingProfile:
             assert (self.active + self.inactive) == self.elapsed
 
     def save(self, path: str) -> bool:
-        self.modified = False
+        self.is_modified = False
 
         # Ensure the folder exists
         base_dir = os.path.dirname(path)
@@ -461,7 +463,7 @@ class TrackingProfile:
                         break
                 else:
                     print(f'[File] Unable to overwrite {path}, saving failed!')
-                    self.modified = True
+                    self.is_modified = True
                     return False
 
             os.rename(temp_file, path)

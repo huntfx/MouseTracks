@@ -1,4 +1,5 @@
 [MVP]
+- Gamepad button names in both export and print messages
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled

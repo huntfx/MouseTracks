@@ -9,6 +9,7 @@ import numpy as np
 from .. import ipc
 from ..abstract import Component
 from ...exceptions import ExitRequest
+from ...export import Export
 from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...legacy import keyboard
 from ...utils import keycodes, get_cursor_pos
@@ -351,6 +352,32 @@ class Processing(Component):
         profile.inactive += ticks
         profile.daily_ticks[self.profile_age_days, 2] += ticks
 
+    def _export_stats(self, message: ipc.ExportStats):
+        """Export a stats TSV file."""
+        export = Export(self.all_profiles[message.profile])
+
+        match message:
+            case ipc.ExportMouseStats():
+                export.mouse_stats(message.path)
+
+            case ipc.ExportKeyboardStats():
+                export.keyboard_stats(message.path)
+
+            case ipc.ExportGamepadStats():
+                export.gamepad_stats(message.path)
+
+            case ipc.ExportNetworkStats():
+                export.network_stats(message.path)
+
+            case ipc.ExportDailyStats():
+                export.daily_stats(message.path)
+
+            case _:
+                raise NotImplementedError(message)
+
+        self.send_data(ipc.ExportStatsSuccessful(message))
+
+
     def _save(self, profile_name: str) -> bool:
         """Save a profile to disk.
         See `ipc.SaveReady` for information on why the `inactivity`
@@ -358,7 +385,7 @@ class Processing(Component):
         """
         print(f'[Processing] Saving {profile_name}...')
         profile = self.all_profiles[profile_name]
-        if not profile.modified:
+        if not profile.is_modified:
             print('[Processing] Skipping save, not modified')
             return False
 
@@ -400,7 +427,7 @@ class Processing(Component):
                 self.profile.daily_ticks[self.profile_age_days, 0] += 1
 
                 # This message triggers once per tick, so the current profile is always "modified"
-                self.profile.modified = True
+                self.profile.is_modified = True
 
             case ipc.Active():
                 self._record_active_tick(message.profile_name, message.ticks)
@@ -565,7 +592,7 @@ class Processing(Component):
                     profile = self.all_profiles[profile_name]
 
                     # If not modified since last time, unload it from memory
-                    if not profile.modified:
+                    if not profile.is_modified:
                         print(f'[Processing] Unloading profile: {profile_name}')
                         del self.all_profiles[profile_name]
 
@@ -597,31 +624,31 @@ class Processing(Component):
             case ipc.SetProfileMouseTracking():
                 print(f'[Processing] Setting mouse tracking state on {message.profile_name}: {message.enable}')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.config.track_mouse = message.enable
 
             case ipc.SetProfileKeyboardTracking():
                 print(f'[Processing] Setting keyboard tracking state on {message.profile_name}: {message.enable}')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.config.track_keyboard = message.enable
 
             case ipc.SetProfileGamepadTracking():
                 print(f'[Processing] Setting gamepad tracking state on {message.profile_name}: {message.enable}')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.config.track_gamepad = message.enable
 
             case ipc.SetProfileNetworkTracking():
                 print(f'[Processing] Setting network tracking state on {message.profile_name}: {message.enable}')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.config.track_network = message.enable
 
             case ipc.DeleteMouseData():
                 print(f'[Processing] Deleting all mouse data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.cursor_map = type(profile.cursor_map)()
                 profile.mouse_single_clicks.clear()
                 profile.mouse_double_clicks.clear()
@@ -636,7 +663,7 @@ class Processing(Component):
             case ipc.DeleteKeyboardData():
                 print(f'[Processing] Deleting all keyboard data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.daily_keys = profile.daily_keys.as_zero()
                 for code in keycodes.KEYBOARD_CODES:
                     profile.key_presses[code] = 0
@@ -645,7 +672,7 @@ class Processing(Component):
             case ipc.DeleteGamepadData():
                 print(f'[Processing] Deleting all gamepad data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.thumbstick_l_map.clear()
                 profile.thumbstick_r_map.clear()
                 profile.button_presses.clear()
@@ -655,7 +682,7 @@ class Processing(Component):
             case ipc.DeleteNetworkData():
                 print(f'[Processing] Deleting all network data for {message.profile_name}...')
                 profile = self.all_profiles[message.profile_name]
-                profile.modified = True
+                profile.is_modified = True
                 profile.data_interfaces.clear()
                 profile.data_upload.clear()
                 profile.data_download.clear()
@@ -671,6 +698,9 @@ class Processing(Component):
             case ipc.LoadLegacyProfile():
                 self.all_profiles[message.name] = TrackingProfile(message.name)
                 self.all_profiles[message.name].import_legacy(message.path)
+
+            case ipc.ExportStats():
+                self._export_stats(message)
 
             case _:
                 raise NotImplementedError(message)

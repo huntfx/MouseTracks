@@ -850,8 +850,8 @@ Note that this may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>230</width>
-               <height>274</height>
+               <width>274</width>
+               <height>311</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -1060,7 +1060,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>242</width>
+               <width>257</width>
                <height>556</height>
               </rect>
              </property>
@@ -1520,12 +1520,22 @@ Clicking the button will trigger a manual update.</string>
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="export_mouse_stats"/>
+     <addaction name="export_keyboard_stats"/>
+     <addaction name="export_network_stats"/>
+     <addaction name="export_gamepad_stats"/>
+     <addaction name="export_daily_stats"/>
+    </widget>
     <addaction name="file_tracking_start"/>
     <addaction name="file_tracking_pause"/>
     <addaction name="separator"/>
     <addaction name="file_save"/>
     <addaction name="file_import"/>
-    <addaction name="actionExport"/>
+    <addaction name="menuExport"/>
     <addaction name="separator"/>
     <addaction name="actionRestart"/>
     <addaction name="menu_exit"/>
@@ -1634,14 +1644,6 @@ Clicking the button will trigger a manual update.</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="actionExport">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Export</string>
    </property>
   </action>
   <action name="file_import">
@@ -1866,6 +1868,31 @@ Clicking the button will trigger a manual update.</string>
   <action name="debug_raise_app">
    <property name="text">
     <string>Application Detection</string>
+   </property>
+  </action>
+  <action name="export_mouse_stats">
+   <property name="text">
+    <string>Mouse Stats</string>
+   </property>
+  </action>
+  <action name="export_keyboard_stats">
+   <property name="text">
+    <string>Keyboard Stats</string>
+   </property>
+  </action>
+  <action name="export_network_stats">
+   <property name="text">
+    <string>Network Stats</string>
+   </property>
+  </action>
+  <action name="export_gamepad_stats">
+   <property name="text">
+    <string>Gamepad Stats</string>
+   </property>
+  </action>
+  <action name="export_daily_stats">
+   <property name="text">
+    <string>Daily Stats</string>
    </property>
   </action>
  </widget>

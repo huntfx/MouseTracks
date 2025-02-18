@@ -487,6 +487,45 @@ class LoadLegacyProfile(Message):
     """Send a request to load an old profile."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
-
     name: str
     path: str
+
+
+@dataclass
+class ExportStats(Message):
+    target: int = field(default=Target.Processing, init=False)
+    profile: str
+    path: str
+
+
+@dataclass
+class ExportMouseStats(ExportStats):
+    """Export the mouse statistics."""
+
+
+@dataclass
+class ExportKeyboardStats(ExportStats):
+    """Export the keyboard statistics."""
+
+
+@dataclass
+class ExportGamepadStats(ExportStats):
+    """Export the gamepad statistics."""
+
+
+@dataclass
+class ExportNetworkStats(ExportStats):
+    """Export the network statistics."""
+
+
+@dataclass
+class ExportDailyStats(ExportStats):
+    """Export the daily statistics."""
+
+
+@dataclass
+class ExportStatsSuccessful(Message):
+    """Send a message when the export was successful."""
+
+    target: int = field(default=Target.GUI, init=False)
+    source: ExportStats

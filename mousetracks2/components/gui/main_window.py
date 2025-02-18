@@ -241,6 +241,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_network.triggered.connect(self.set_network_tracking_enabled)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
         self.ui.file_import.triggered.connect(self.import_legacy_profile)
+        self.ui.export_mouse_stats.triggered.connect(self.export_mouse_stats)
+        self.ui.export_keyboard_stats.triggered.connect(self.export_keyboard_stats)
+        self.ui.export_gamepad_stats.triggered.connect(self.export_gamepad_stats)
+        self.ui.export_network_stats.triggered.connect(self.export_network_stats)
+        self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -1195,6 +1200,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._redraw_profile_combobox()
                 self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
 
+            case ipc.ExportStatsSuccessful():
+                msg = QtWidgets.QMessageBox(self)
+                msg.setWindowTitle(f'Export Successful')
+                msg.setText(f'Export was successful.\nFile was saved to "{message.source.path}".')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                msg.exec_()
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the script."""
@@ -1880,3 +1892,59 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Send the request
         self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))
+
+    @QtCore.Slot()
+    def export_mouse_stats(self):
+        """Export the mouse statistics."""
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['TSV Files (*.tsv)"'])
+        dialog.setDefaultSuffix('tsv')
+        file_path, accept = dialog.getSaveFileName(None, 'Save Mouse Stats', 'mouse_stats.tsv', 'TSV Files (*.tsv)')
+        if accept:
+            self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
+
+    @QtCore.Slot()
+    def export_keyboard_stats(self):
+        """Export the keyboard statistics."""
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['TSV Files (*.tsv)"'])
+        dialog.setDefaultSuffix('tsv')
+        file_path, accept = dialog.getSaveFileName(None, 'Save Keyboard Stats', 'keyboard_stats.tsv', 'TSV Files (*.tsv)')
+        if accept:
+            self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
+
+    @QtCore.Slot()
+    def export_gamepad_stats(self):
+        """Export the gamepad statistics."""
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['TSV Files (*.tsv)"'])
+        dialog.setDefaultSuffix('tsv')
+        file_path, accept = dialog.getSaveFileName(None, 'Save Gamepad Stats', 'gamepad_stats.tsv', 'TSV Files (*.tsv)')
+        if accept:
+            self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
+
+    @QtCore.Slot()
+    def export_network_stats(self):
+        """Export the network statistics."""
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['TSV Files (*.tsv)"'])
+        dialog.setDefaultSuffix('tsv')
+        file_path, accept = dialog.getSaveFileName(None, 'Save Network Stats', 'network_stats.tsv', 'TSV Files (*.tsv)')
+        if accept:
+            self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
+
+    @QtCore.Slot()
+    def export_daily_stats(self):
+        """Export the daily statistics."""
+        dialog = QtWidgets.QFileDialog()
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setNameFilters(['TSV Files (*.tsv)"'])
+        dialog.setDefaultSuffix('tsv')
+        file_path, accept = dialog.getSaveFileName(None, 'Save Daily Stats', 'daily_stats.tsv', 'TSV Files (*.tsv)')
+        if accept:
+            self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
+
