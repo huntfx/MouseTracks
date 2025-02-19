@@ -12,10 +12,10 @@ match sys.platform:
     case _:
         APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser("~/.local/share")))
 
-REPO_DIR = Path()
-
 if hasattr(sys, '_MEIPASS'):
-    REPO_DIR = Path(sys._MEIPASS) / REPO_DIR
+    REPO_DIR = Path(sys._MEIPASS)
+else:
+    REPO_DIR = Path(__file__).parent.parent
 
 BASE_DIR = APPDATA / 'MouseTracks'
 
