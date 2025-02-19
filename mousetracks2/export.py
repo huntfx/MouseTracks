@@ -73,10 +73,8 @@ class Export:
         for keycode in KEYBOARD_CODES:
             presses = self.profile.key_presses[keycode]
             held = round(self.profile.key_held[keycode] / UPDATES_PER_SECOND, 2)
-            # Skip unnamed keys
-            if not presses and not held and not keycode.name:
-                continue
-            yield int(keycode), str(keycode), presses, held
+            if presses or held:
+                yield int(keycode), str(keycode), presses, held
 
     def keyboard_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the keyboard stats."""
