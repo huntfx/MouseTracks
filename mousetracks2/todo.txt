@@ -1,5 +1,4 @@
 [MVP]
-- Gamepad button names in both export and print messages
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled
@@ -8,6 +7,7 @@
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
 
 [Low Priority]
+- Update AppList.txt online, add --offline flag to block
 - Option to disable multi monitor handling, track both separately
 - Gamepad rendering
 - Option to run as elevated

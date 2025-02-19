@@ -1,3 +1,4 @@
+import math
 import os
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -5,7 +6,7 @@ from typing import Any, Iterator
 
 from .constants import UPDATES_PER_SECOND
 from .file import TrackingProfile
-from .utils.keycodes import KEYBOARD_CODES, MOUSE_CODES, SCROLL_CODES
+from .utils.keycodes import KEYBOARD_CODES, MOUSE_CODES, SCROLL_CODES, GAMEPAD_CODES
 
 
 class Export:
@@ -104,21 +105,20 @@ class Export:
                 f.write('\t'.join(map(str, data)))
 
     def _gamepad_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Presses', 'Time (seconds)'
-        keycodes: set[int] = set()
+        yield 'Code', 'Name', 'Presses', 'Time (seconds)'
         presses: dict[int, int] = defaultdict(int)
         held: dict[int, int] = defaultdict(int)
-        for data in self.profile.button_presses.values():
-            for keycode, value in enumerate(data.array):
-                keycodes.add(keycode)
-                presses[keycode] += value
-        for data in self.profile.button_held.values():
-            for keycode, value in enumerate(data.array):
-                keycodes.add(keycode)
-                held[keycode] += value
 
-        for keycode in sorted(keycodes):
-            yield keycode, presses[keycode], round(held[keycode] / UPDATES_PER_SECOND, 2)
+        for keycode in GAMEPAD_CODES:
+            for data in self.profile.button_presses.values():
+                presses[int(keycode)] += data[int(math.log2(int(keycode)))]
+            for data in self.profile.button_held.values():
+                held[int(keycode)] += data[int(math.log2(int(keycode)))]
+
+        for keycode in GAMEPAD_CODES:
+            if presses[keycode] or held[keycode]:
+                yield (int(keycode), str(keycode), presses[keycode],
+                       round(held[keycode] / UPDATES_PER_SECOND, 2))
 
     def gamepad_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the gamepad stats."""

@@ -13,14 +13,13 @@ from ..abstract import Component
 from ...config import GlobalConfig
 from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ...exceptions import ExitRequest
-from ...utils import get_cursor_pos
-from ...utils.keycodes import CLICK_CODES, MOUSE_CODES, SCROLL_CODES, VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT, KeyCode
+from ...utils import get_cursor_pos, keycodes
 from ...utils.network import Interfaces
 from ...utils.system import monitor_locations
 
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
-                  if isinstance(v, int) and k.split('_')[0] in ('BUTTON', 'STICK', 'TRIGGER')}
+                  if isinstance(v, int) and hasattr(keycodes, k)}
 
 
 @dataclass
@@ -69,7 +68,7 @@ class Tracking(Component):
         self.track_network = config.track_network
 
         # Setup pynput listeners
-        self._pynput_opcodes: set[KeyCode] = set()
+        self._pynput_opcodes: set[keycodes.KeyCode] = set()
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
@@ -223,9 +222,9 @@ class Tracking(Component):
             return
 
         if pressed:
-            self._pynput_opcodes.add(MOUSE_CODES[idx])
+            self._pynput_opcodes.add(keycodes.MOUSE_CODES[idx])
         else:
-            self._pynput_opcodes.discard(MOUSE_CODES[idx])
+            self._pynput_opcodes.discard(keycodes.MOUSE_CODES[idx])
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
@@ -237,16 +236,16 @@ class Tracking(Component):
 
         if dx > 0:
             for _ in range(dx):
-                self._key_press(VK_SCROLL_RIGHT)
+                self._key_press(keycodes.VK_SCROLL_RIGHT)
         elif dx < 0:
             for _ in range(-dx):
-                self._key_press(VK_SCROLL_LEFT)
+                self._key_press(keycodes.VK_SCROLL_LEFT)
         if dy > 0:
             for _ in range(dy):
-                self._key_press(VK_SCROLL_UP)
+                self._key_press(keycodes.VK_SCROLL_UP)
         elif dy < 0:
             for _ in range(-dy):
-                self._key_press(VK_SCROLL_DOWN)
+                self._key_press(keycodes.VK_SCROLL_DOWN)
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
@@ -274,7 +273,7 @@ class Tracking(Component):
             vk = key.value.vk
         self._pynput_opcodes.discard(vk)
 
-    def _key_press(self, keycode: int | KeyCode) -> None:
+    def _key_press(self, keycode: int | keycodes.KeyCode) -> None:
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
@@ -283,13 +282,13 @@ class Tracking(Component):
         if keycode <= 0xFF:
             # First press
             if press_latest != self.data.tick_current - 1:
-                if keycode in CLICK_CODES and self.data.mouse_position is not None:
+                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
                     self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
                 self.send_data(ipc.KeyPress(int(keycode)))
 
             # Being held
             else:
-                if keycode in CLICK_CODES and self.data.mouse_position is not None:
+                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
                     self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
                 self.send_data(ipc.KeyHeld(int(keycode)))
 
@@ -297,7 +296,7 @@ class Tracking(Component):
         # It is being sent to the "held" array instead of "pressed"
         # since the events will vastly outnumber individual key presses
         # Also note that multiple events may be sent per tick
-        elif keycode in SCROLL_CODES:
+        elif keycode in keycodes.SCROLL_CODES:
             self.send_data(ipc.KeyHeld(keycode))
 
         else:

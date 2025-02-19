@@ -532,7 +532,7 @@ class Processing(Component):
                 if not self.profile.config.track_gamepad:
                     return
 
-                print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
+                print(f'[Processing] {keycodes.GamepadCode(message.keycode)} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.daily_buttons[self.profile_age_days] += 1

@@ -50,6 +50,10 @@ class KeyCode(int):
         self._name = self._REGISTRY[int(self)] = name
 
 
+class GamepadCode(KeyCode):
+    _REGISTRY: dict[int, str] = {}
+
+
 # Mouse buttons
 VK_LBUTTON = KeyCode(0x01, 'Left mouse button')
 VK_RBUTTON = KeyCode(0x02, 'Right mouse button')
@@ -203,8 +207,32 @@ VK_SCROLL_DOWN = KeyCode(0xFF + 2, 'Scroll down')
 VK_SCROLL_LEFT = KeyCode(0xFF + 3, 'Scroll left')
 VK_SCROLL_RIGHT = KeyCode(0xFF + 4, 'Scroll right')
 
+# Gamepad buttons
+BUTTON_DPAD_UP = GamepadCode(0x000001, '↑')
+BUTTON_DPAD_DOWN = GamepadCode(0x000002, '↓')
+BUTTON_DPAD_LEFT = GamepadCode(0x000004, '←')
+BUTTON_DPAD_RIGHT = GamepadCode(0x000008, '→')
+BUTTON_START = GamepadCode(0x000010, 'Start')
+BUTTON_BACK = GamepadCode(0x000020, 'Select')
+BUTTON_LEFT_THUMB = GamepadCode(0x000040, 'LSB')
+BUTTON_RIGHT_THUMB = GamepadCode(0x000080, 'RSB')
+BUTTON_LEFT_SHOULDER = GamepadCode(0x000100, 'LB')
+BUTTON_RIGHT_SHOULDER = GamepadCode(0x000200, 'RB')
+BUTTON_A = GamepadCode(0x001000, 'A')
+BUTTON_B = GamepadCode(0x002000, 'B')
+BUTTON_X = GamepadCode(0x004000, 'X')
+BUTTON_Y = GamepadCode(0x008000, 'Y')
+TRIGGER_LEFT = GamepadCode(0x040000, 'LT')
+TRIGGER_RIGHT =  GamepadCode(0x080000, 'RT')
+
 # Group codes
 CLICK_CODES = (VK_LBUTTON, VK_MBUTTON, VK_RBUTTON)
 MOUSE_CODES = CLICK_CODES + (VK_XBUTTON1, VK_XBUTTON2)
 SCROLL_CODES = (VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT)
-KEYBOARD_CODES = [KeyCode(i) for i in range(0xFF) if i not in MOUSE_CODES]
+KEYBOARD_CODES = tuple(KeyCode(i) for i in range(0xFF) if i not in MOUSE_CODES)
+GAMEPAD_CODES = (BUTTON_DPAD_UP, BUTTON_DPAD_DOWN, BUTTON_DPAD_LEFT, BUTTON_DPAD_RIGHT,
+                 BUTTON_START, BUTTON_BACK,
+                 BUTTON_LEFT_THUMB, BUTTON_RIGHT_THUMB,
+                 BUTTON_LEFT_SHOULDER, BUTTON_RIGHT_SHOULDER,
+                 BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y,
+                 TRIGGER_LEFT, TRIGGER_RIGHT)
