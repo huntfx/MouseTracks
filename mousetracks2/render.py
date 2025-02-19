@@ -235,7 +235,7 @@ def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
                        scale_width: int, scale_height: int) -> np.ndarray:
     """Combine arrays based on their positions and offsets."""
     if not positional_arrays:
-        return np.zeros((scale_height, scale_width), dtype=np.int8)
+        return np.zeros((scale_height, scale_width), dtype=np.float64)
 
     if len(set(array.shape for array in positional_arrays.values())) != 1:
         raise ValueError('all arrays must be the same size')
