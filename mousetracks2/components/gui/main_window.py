@@ -207,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.clicked.connect(self.thumbnail_click)
         self.ui.render_padding.valueChanged.connect(self.render_padding_changed)
         self.ui.contrast.valueChanged.connect(self.contrast_changed)
+        self.ui.clipping.valueChanged.connect(self.clipping_changed)
         self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
         self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
@@ -690,6 +691,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.contrast = value
         self.request_thumbnail()
 
+    @QtCore.Slot(int)
+    def clipping_changed(self, value: int) -> None:
+        """Update the render when the clipping is changed."""
+        self.request_thumbnail()
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def lock_aspect_changed(self, state: QtCore.Qt.CheckState) -> None:
         """Update the thumbnail when the aspect ratio is locked or unlocked."""
@@ -782,7 +788,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 width = round(height * aspect)
         self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
                                                    1, profile, None, self.ui.render_padding.value(),
-                                                   self.contrast, aspect is None,
+                                                   self.contrast, aspect is None, self.ui.clipping.value(),
                                                    show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                    show_right_clicks=self.ui.show_right_clicks.isChecked()))
@@ -844,6 +850,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        self.render_colour, self.ui.render_samples.value(),
                                                        profile, file_path, self.ui.render_padding.value(),
                                                        self.contrast, self.ui.lock_aspect.isChecked(),
+                                                       self.ui.clipping.value(),
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                        show_right_clicks=self.ui.show_right_clicks.isChecked()))

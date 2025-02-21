@@ -300,7 +300,7 @@ class Processing(Component):
 
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
                       width: int | None, height: int | None, colour_map: str, sampling: int = 1,
-                      padding: int = 0, heatmap_contrast: float = 1.0, lock_aspect: bool = True,
+                      padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True, clipping: float = 0.0,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
@@ -323,9 +323,10 @@ class Processing(Component):
         # Do the render
         try:
             image = render(colour_map, positional_arrays, width, height, sampling, lock_aspect=lock_aspect,
-                           linear=is_heatmap or is_speed, blur=is_heatmap, contrast=heatmap_contrast)
+                           linear=is_heatmap or is_speed, blur=is_heatmap, contrast=contrast, clipping=clipping)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
+
         return image
 
     def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1,
@@ -451,8 +452,9 @@ class Processing(Component):
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height,
-                                               message.colour_map, message.sampling,
-                                               message.padding, message.contrast, message.lock_aspect,
+                                               message.colour_map, sampling=message.sampling,
+                                               padding=message.padding, contrast=message.contrast,
+                                               lock_aspect=message.lock_aspect, clipping=message.clipping,
                                                left_clicks=message.show_left_clicks,
                                                middle_clicks=message.show_middle_clicks,
                                                right_clicks=message.show_right_clicks)

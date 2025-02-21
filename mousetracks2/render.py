@@ -134,7 +134,7 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
-           linear: bool = False, blur: bool = False, contrast: float = 1.0) -> np.ndarray:
+           linear: bool = False, blur: bool = False, contrast: float = 1.0, clipping: float = 0.0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -156,6 +156,11 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         linear: Remap the array to linear values.
             This will ensure a smooth gradient.
         blur: Blur the array, for example for a heatmap.
+        contrast: Adjust the array contrast.
+            This works by spacing out or reducing values.
+        clipping: Clip the upper range to a percentage.
+            This can be used on a heatmap if there's a single hotspot
+            dominating the image.
     """
     # Calculate width / height
     all_arrays = []
@@ -198,6 +203,12 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
 
     # Combine all positional arrays into one big array
     combined_array = combine_array_grid(combined_arrays, scale_width, scale_height)
+
+    # Clip the maximum values
+    if clipping:
+        sorted_values, linear_mapping = np.unique(combined_array, return_inverse=True)
+        max_value = sorted_values[int(np.max(linear_mapping) * (1 - clipping))]
+        combined_array[combined_array > max_value] = max_value
 
     # Update the contrast
     if contrast != 1.0:
