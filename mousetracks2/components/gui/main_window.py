@@ -6,8 +6,9 @@ import sys
 import time
 from contextlib import suppress
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from pathlib import Path
-from typing import cast, Any, Iterable, TYPE_CHECKING
+from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
 
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -29,6 +30,9 @@ if TYPE_CHECKING:
     from . import GUI
 
 
+T = TypeVar('T')
+
+
 @dataclass
 class MapData:
     position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
@@ -46,6 +50,47 @@ class Profile:
     track_keyboard: bool = True
     track_gamepad: bool = True
     track_network: bool = True
+
+
+@dataclass
+class RenderOption(Generic[T]):
+    """Store different values per render type."""
+
+    movement: T
+    speed: T
+    heatmap: T
+    keyboard: T
+
+    def get(self, render_type: ipc.RenderType) -> T:
+        """Get the value for a render type."""
+        match render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
+                return self.movement
+            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
+                return self.speed
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                return self.heatmap
+            case ipc.RenderType.Keyboard:
+                return self.keyboard
+            case _:
+                raise NotImplementedError(f'Unsupported render type: {render_type}')
+
+    def set(self, render_type: ipc.RenderType, value: T) -> None:
+        """Set the value for a render type."""
+        match render_type:
+            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
+                self.movement = value
+            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
+                self.speed = value
+            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
+                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                self.heatmap = value
+            case ipc.RenderType.Keyboard:
+                self.keyboard = value
+            case _:
+                raise NotImplementedError(f'Unsupported render type: {render_type}')
+
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -99,12 +144,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self._last_save_message: ipc.SaveComplete | None
         self.state = ipc.TrackingState.Paused
 
+        # Set default render values
+        self._render_colour = RenderOption('Ice', 'Ice', 'Jet', 'Aqua')
+        self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
+        self._sampling = RenderOption(4, 4, 4, 4)
+        self._padding = RenderOption(0, 0, 0, 0)
+        self._clipping = RenderOption(0.0, 0.0, 0.005, 0.0)
+        self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
+        self._linear = RenderOption(False, True, True, False)
+
+        # Setup UI
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
 
         # Set initial widget states
         self.ui.statusbar.setVisible(False)
         self.ui.output_logs.setVisible(False)
+        self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
         self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks') is not None)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
@@ -115,17 +171,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
 
+        # Cache buddies
+        self._buddies: dict[QtWidgets.QWidget, QtWidgets.QLabel] = {}
+        for label in cast(Iterable[QtWidgets.QLabel], self.findChildren(QtWidgets.QLabel)):
+            buddy = label.buddy()
+            if buddy is not None:
+                self._buddies[buddy] = label
+
         # Copy tooltips to labels
         # This is done by adding an `inherit_tooltip` property
-        labels: Iterable[QtWidgets.QWidget] = self.findChildren(QtWidgets.QWidget)
-        for label in labels:
-            tooltip = label.toolTip()
+        for widget in cast(Iterable[QtWidgets.QWidget], self.findChildren(QtWidgets.QWidget)):
+            tooltip = widget.toolTip()
             if not tooltip.startswith('!inherit'):
                 continue
             inherits_from = tooltip.split(' ')[1]
             source_widget: QtWidgets.QWidget | None = self.findChild(QtWidgets.QWidget, inherits_from)
             if source_widget is not None:
-                label.setToolTip(source_widget.toolTip())
+                widget.setToolTip(source_widget.toolTip())
 
         # Store things for full screen
         # The `addAction` is required for a hidden menubar
@@ -169,12 +231,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
-        self._render_colour_tracks = 'Ice'
-        self._render_colour_heatmap = 'Jet'
-        self._render_colour_keyboard = 'Aqua'
-        self._contrast_tracks = 1.0
-        self._contrast_heatmap = 1.0
-        self._contrast_keyboard = 1.0
         self.render_type = ipc.RenderType.Time
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
@@ -197,17 +253,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
-        self.ui.show_left_clicks.stateChanged.connect(self.show_clicks_changed)
-        self.ui.show_middle_clicks.stateChanged.connect(self.show_clicks_changed)
-        self.ui.show_right_clicks.stateChanged.connect(self.show_clicks_changed)
+        self.ui.show_left_clicks.toggled.connect(self.show_clicks_changed)
+        self.ui.show_middle_clicks.toggled.connect(self.show_clicks_changed)
+        self.ui.show_right_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
         self.ui.thumbnail.resized.connect(self.thumbnail_resize)
         self.ui.thumbnail.clicked.connect(self.thumbnail_click)
-        self.ui.render_padding.valueChanged.connect(self.render_padding_changed)
+        self.ui.padding.valueChanged.connect(self.padding_changed)
         self.ui.contrast.valueChanged.connect(self.contrast_changed)
         self.ui.clipping.valueChanged.connect(self.clipping_changed)
+        self.ui.blur.valueChanged.connect(self.blur_changed)
+        self.ui.linear.toggled.connect(self.linear_changed)
         self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
         self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
@@ -236,6 +294,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.ui.always_on_top.triggered.connect(self.set_always_on_top)
+        self.ui.show_advanced.toggled.connect(self.toggle_advanced_options)
         self.ui.prefs_track_mouse.triggered.connect(self.set_mouse_tracking_enabled)
         self.ui.prefs_track_keyboard.triggered.connect(self.set_keyboard_tracking_enabled)
         self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
@@ -317,80 +376,88 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set it back to the previous colour selection
         self.ui.colour_option.setCurrentText(self.render_colour)
 
+        # Load in other settings
         self.ui.contrast.setValue(self.contrast)
-        self.ui.contrast.setVisible(render_type != ipc.RenderType.Keyboard)
-        self.ui.contrast_label.setVisible(render_type != ipc.RenderType.Keyboard)
+        self.ui.sampling.setValue(self.sampling)
+        self.ui.padding.setValue(self.padding)
+        self.ui.clipping.setValue(self.clipping)
+        self.ui.blur.setValue(self.blur)
+        self.ui.linear.setChecked(self.linear)
+        self._set_advanced_visibility()
 
         self.pause_colour_change = False
-
-        # Set visiblity of left/middle/right click checkboxes
-        is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
-        is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
-        self.ui.show_left_clicks.setVisible(is_click or is_thumbstick)
-        self.ui.show_middle_clicks.setVisible(is_click)
-        self.ui.show_right_clicks.setVisible(is_click or is_thumbstick)
 
     @property
     def render_colour(self) -> str:
         """Get the render colour for the current render type."""
-        match self.render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Speed
-                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
-                return self._render_colour_tracks
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                return self._render_colour_heatmap
-            case ipc.RenderType.Keyboard:
-                return self._render_colour_keyboard
-            case _:
-                raise NotImplementedError(self.render_type)
+        return self._render_colour.get(self.render_type)
 
     @render_colour.setter
     def render_colour(self, colour: str) -> None:
         """Set the render colour for the current render type.
         This will update the current pixel colour too.
         """
-        match self.render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Speed
-                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
-                self._render_colour_tracks = colour
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                self._render_colour_heatmap = colour
-            case ipc.RenderType.Keyboard:
-                self._render_colour_keyboard = colour
-            case _:
-                raise NotImplementedError(self.render_type)
+        self._render_colour.set(self.render_type, colour)
 
     @property
     def contrast(self) -> float:
         """Get the contrast for the current render type."""
-        match self.render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Speed
-                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
-                return self._contrast_tracks
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                return self._contrast_heatmap
-            case ipc.RenderType.Keyboard:
-                return self._contrast_keyboard
-            case _:
-                raise NotImplementedError(self.render_type)
+        return self._contrast.get(self.render_type)
 
     @contrast.setter
     def contrast(self, value: float) -> None:
         """Set a new constrast value for the current render type."""
-        match self.render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Speed
-                  | ipc.RenderType.Thumbstick_Time | ipc.RenderType.Thumbstick_Speed):
-                self._contrast_tracks = value
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                self._contrast_heatmap = value
-            case ipc.RenderType.Keyboard:
-                self._contrast_keyboard = value
-            case _:
-                raise NotImplementedError(self.render_type)
+        self._contrast.set(self.render_type, value)
+
+    @property
+    def sampling(self) -> int:
+        """Get the sampling for the current render type."""
+        return self._sampling.get(self.render_type)
+
+    @sampling.setter
+    def sampling(self, value: int) -> None:
+        """Set a new sampling value for the current render type."""
+        self._sampling.set(self.render_type, value)
+
+    @property
+    def padding(self) -> int:
+        """Get the padding for the current render type."""
+        return self._padding.get(self.render_type)
+
+    @padding.setter
+    def padding(self, value: int) -> None:
+        """Set a new padding value for the current render type."""
+        self._padding.set(self.render_type, value)
+
+    @property
+    def clipping(self) -> float:
+        """Get the clipping for the current render type."""
+        return self._clipping.get(self.render_type)
+
+    @clipping.setter
+    def clipping(self, value: float) -> None:
+        """Set a new clipping value for the current render type."""
+        self._clipping.set(self.render_type, value)
+
+    @property
+    def blur(self) -> float:
+        """Get the blur for the current render type."""
+        return self._blur.get(self.render_type)
+
+    @blur.setter
+    def blur(self, value: float) -> None:
+        """Set a new blur value for the current render type."""
+        self._blur.set(self.render_type, value)
+
+    @property
+    def linear(self) -> bool:
+        """Get if linear mapping is enabled for the current render type."""
+        return self._linear.get(self.render_type)
+
+    @linear.setter
+    def linear(self, value: bool) -> None:
+        """Set if linear mapping is enabled for the current render type."""
+        self._linear.set(self.render_type, value)
 
     @property
     def mouse_click_count(self) -> int:
@@ -634,8 +701,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type = self.ui.map_type.itemData(idx)
         self.request_thumbnail()
 
-    @QtCore.Slot(QtCore.Qt.CheckState)
-    def show_clicks_changed(self, state: QtCore.Qt.CheckState):
+    @QtCore.Slot(bool)
+    def show_clicks_changed(self, enabled: bool):
         """Update the render when the click visibility options change.
 
         Using a shift click is a quick way to check/uncheck all options.
@@ -659,7 +726,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if shift_held:
             sender = cast(QtWidgets.QCheckBox, self.sender())
             checkboxes.discard(sender)
-            if state == QtCore.Qt.CheckState.Checked.value:
+            if enabled:
                 for checkbox in checkboxes:
                     checkbox.setChecked(True)
             else:
@@ -670,30 +737,59 @@ class MainWindow(QtWidgets.QMainWindow):
         self.request_thumbnail()
         self._is_setting_click_state = False
 
+    @QtCore.Slot(int)
+    def sampling_changed(self, value: int) -> None:
+        """Change the sampling."""
+        if self.pause_colour_change:
+            return
+        self.sampling = value
+
     @QtCore.Slot(str)
     def render_colour_changed(self, colour: str) -> None:
-        """Change the render colour and trigger a redraw."""
+        """Update the render when the colour is changed."""
         if self.pause_colour_change:
             return
         self.render_colour = colour
         self.request_thumbnail()
 
     @QtCore.Slot(int)
-    def render_padding_changed(self, value: int) -> None:
+    def padding_changed(self, value: int) -> None:
         """Update the render when the padding is changed."""
+        if self.pause_colour_change:
+            return
+        self.padding = value
         self.request_thumbnail()
 
-    @QtCore.Slot(int)
-    def contrast_changed(self, value: int) -> None:
+    @QtCore.Slot(float)
+    def contrast_changed(self, value: float) -> None:
         """Update the render when the contrast is changed."""
         if self.pause_colour_change:
             return
         self.contrast = value
         self.request_thumbnail()
 
-    @QtCore.Slot(int)
-    def clipping_changed(self, value: int) -> None:
+    @QtCore.Slot(float)
+    def clipping_changed(self, value: float) -> None:
         """Update the render when the clipping is changed."""
+        if self.pause_colour_change:
+            return
+        self.clipping = value
+        self.request_thumbnail()
+
+    @QtCore.Slot(float)
+    def blur_changed(self, value: float) -> None:
+        """Update the render when the blur is changed."""
+        if self.pause_colour_change:
+            return
+        self.blur = value
+        self.request_thumbnail()
+
+    @QtCore.Slot(bool)
+    def linear_changed(self, value: bool) -> None:
+        """Update the render when the linear mapping is changed."""
+        if self.pause_colour_change:
+            return
+        self.linear = value
         self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
@@ -786,12 +882,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 height = round(width / aspect)
             else:
                 width = round(height * aspect)
-        self.component.send_data(ipc.RenderRequest(self.render_type, width, height, self.render_colour,
-                                                   1, profile, None, self.ui.render_padding.value(),
-                                                   self.contrast, aspect is None, self.ui.clipping.value(),
+        self.component.send_data(ipc.RenderRequest(self.render_type,
+                                                   width=width, height=height, lock_aspect=aspect is None,
+                                                   profile=profile, file_path=None,
+                                                   colour_map=self.render_colour, padding=self.padding,
+                                                   contrast=self.contrast, clipping=self.clipping,
+                                                   blur=self.blur, linear=self.linear,
                                                    show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked()))
+                                                   show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                                                   ))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -846,14 +946,16 @@ class MainWindow(QtWidgets.QMainWindow):
         if accept:
             width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
             height = self.ui.custom_width.value() if self.ui.custom_height.isEnabled() else None
-            self.component.send_data(ipc.RenderRequest(self.render_type, width, height,
-                                                       self.render_colour, self.ui.render_samples.value(),
-                                                       profile, file_path, self.ui.render_padding.value(),
-                                                       self.contrast, self.ui.lock_aspect.isChecked(),
-                                                       self.ui.clipping.value(),
+            self.component.send_data(ipc.RenderRequest(self.render_type,
+                                                       width=width, height=height, lock_aspect=False,
+                                                       profile=profile, file_path=file_path,
+                                                       colour_map=self.render_colour, sampling=self.sampling,
+                                                       padding=self.padding, contrast=self.contrast,
+                                                       clipping=self.clipping, blur=self.blur, linear=self.linear,
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked()))
+                                                       show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                                                       ))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -1839,6 +1941,37 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.main_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_main)
         self.ui.render_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_render)
+
+    def _set_advanced_visibility(self):
+        """Set the visibility of render option widgets."""
+        show_advanced = self.ui.show_advanced.isChecked()
+
+        is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
+        is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
+        is_keyboard = self.render_type == ipc.RenderType.Keyboard
+
+        self.ui.show_left_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
+        self.ui.show_middle_clicks.setVisible(show_advanced and is_click)
+        self.ui.show_right_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
+
+        self.ui.contrast.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.contrast].setVisible(show_advanced and not is_keyboard)
+        self.ui.sampling.setVisible(show_advanced)
+        self._buddies[self.ui.sampling].setVisible(show_advanced)
+        self.ui.padding.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.padding].setVisible(show_advanced and not is_keyboard)
+        self.ui.clipping.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.clipping].setVisible(show_advanced and not is_keyboard)
+        self.ui.blur.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.blur].setVisible(show_advanced and not is_keyboard)
+        self.ui.linear.setVisible(show_advanced and not is_keyboard)
+
+        self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
+
+    @QtCore.Slot(bool)
+    def toggle_advanced_options(self, enabled: bool) -> None:
+        """Update visibility of widgets when the advanced button is toggled."""
+        self._set_advanced_visibility()
 
     def notify(self, message: str) -> None:
         """Show a notification.

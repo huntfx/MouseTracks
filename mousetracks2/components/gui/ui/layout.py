@@ -178,7 +178,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 257, 522))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -263, 261, 899))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -211,11 +211,6 @@ class Ui_MainWindow(object):
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.gridLayout_6 = QGridLayout(self.groupBox_3)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.map_type = QComboBox(self.groupBox_3)
-        self.map_type.setObjectName(u"map_type")
-
-        self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
-
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.show_left_clicks = QCheckBox(self.groupBox_3)
@@ -239,32 +234,134 @@ class Ui_MainWindow(object):
 
         self.gridLayout_6.addLayout(self.horizontalLayout_4, 1, 0, 1, 1)
 
+        self.map_type = QComboBox(self.groupBox_3)
+        self.map_type.setObjectName(u"map_type")
+
+        self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
+
 
         self.verticalLayout_3.addWidget(self.groupBox_3)
 
-        self.groupBox_4 = QGroupBox(self.scrollAreaWidgetContents)
-        self.groupBox_4.setObjectName(u"groupBox_4")
-        self.verticalLayout_6 = QVBoxLayout(self.groupBox_4)
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.resolution_group = QGroupBox(self.scrollAreaWidgetContents)
+        self.resolution_group.setObjectName(u"resolution_group")
+        self.gridLayout_7 = QGridLayout(self.resolution_group)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.lock_aspect = QCheckBox(self.resolution_group)
+        self.lock_aspect.setObjectName(u"lock_aspect")
+        self.lock_aspect.setChecked(True)
+
+        self.gridLayout_7.addWidget(self.lock_aspect, 2, 1, 1, 1)
+
+        self.custom_width_label = QLabel(self.resolution_group)
+        self.custom_width_label.setObjectName(u"custom_width_label")
+        sizePolicy1.setHeightForWidth(self.custom_width_label.sizePolicy().hasHeightForWidth())
+        self.custom_width_label.setSizePolicy(sizePolicy1)
+        self.custom_width_label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_7.addWidget(self.custom_width_label, 0, 0, 1, 1)
+
+        self.horizontalLayout_5 = QHBoxLayout()
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.custom_width = QSpinBox(self.resolution_group)
+        self.custom_width.setObjectName(u"custom_width")
+        self.custom_width.setEnabled(False)
+        sizePolicy3.setHeightForWidth(self.custom_width.sizePolicy().hasHeightForWidth())
+        self.custom_width.setSizePolicy(sizePolicy3)
+        self.custom_width.setSuffix(u"px")
+        self.custom_width.setMinimum(1)
+        self.custom_width.setMaximum(999999)
+        self.custom_width.setSingleStep(16)
+        self.custom_width.setValue(1920)
+
+        self.horizontalLayout_5.addWidget(self.custom_width)
+
+        self.enable_custom_width = QCheckBox(self.resolution_group)
+        self.enable_custom_width.setObjectName(u"enable_custom_width")
+
+        self.horizontalLayout_5.addWidget(self.enable_custom_width)
+
+
+        self.gridLayout_7.addLayout(self.horizontalLayout_5, 0, 1, 1, 1)
+
+        self.custom_height_label = QLabel(self.resolution_group)
+        self.custom_height_label.setObjectName(u"custom_height_label")
+        sizePolicy1.setHeightForWidth(self.custom_height_label.sizePolicy().hasHeightForWidth())
+        self.custom_height_label.setSizePolicy(sizePolicy1)
+        self.custom_height_label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_7.addWidget(self.custom_height_label, 1, 0, 1, 1)
+
         self.horizontalLayout_8 = QHBoxLayout()
         self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.colour_option = QComboBox(self.groupBox_4)
-        self.colour_option.addItem("")
-        self.colour_option.addItem("")
-        self.colour_option.addItem("")
-        self.colour_option.setObjectName(u"colour_option")
-        sizePolicy3.setHeightForWidth(self.colour_option.sizePolicy().hasHeightForWidth())
-        self.colour_option.setSizePolicy(sizePolicy3)
-        self.colour_option.setEditable(True)
+        self.custom_height = QSpinBox(self.resolution_group)
+        self.custom_height.setObjectName(u"custom_height")
+        self.custom_height.setEnabled(False)
+        sizePolicy3.setHeightForWidth(self.custom_height.sizePolicy().hasHeightForWidth())
+        self.custom_height.setSizePolicy(sizePolicy3)
+        self.custom_height.setSuffix(u"px")
+        self.custom_height.setMinimum(1)
+        self.custom_height.setMaximum(999999)
+        self.custom_height.setSingleStep(9)
+        self.custom_height.setValue(1080)
 
-        self.horizontalLayout_8.addWidget(self.colour_option)
+        self.horizontalLayout_8.addWidget(self.custom_height)
 
-        self.contrast_label = QLabel(self.groupBox_4)
-        self.contrast_label.setObjectName(u"contrast_label")
+        self.enable_custom_height = QCheckBox(self.resolution_group)
+        self.enable_custom_height.setObjectName(u"enable_custom_height")
 
-        self.horizontalLayout_8.addWidget(self.contrast_label)
+        self.horizontalLayout_8.addWidget(self.enable_custom_height)
 
-        self.contrast = QDoubleSpinBox(self.groupBox_4)
+
+        self.gridLayout_7.addLayout(self.horizontalLayout_8, 1, 1, 1, 1)
+
+
+        self.verticalLayout_3.addWidget(self.resolution_group)
+
+        self.groupBox_5 = QGroupBox(self.scrollAreaWidgetContents)
+        self.groupBox_5.setObjectName(u"groupBox_5")
+        self.verticalLayout_4 = QVBoxLayout(self.groupBox_5)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.gridLayout_12 = QGridLayout()
+        self.gridLayout_12.setObjectName(u"gridLayout_12")
+        self.label_24 = QLabel(self.groupBox_5)
+        self.label_24.setObjectName(u"label_24")
+        self.label_24.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.label_24, 0, 0, 1, 1)
+
+        self.blur = QDoubleSpinBox(self.groupBox_5)
+        self.blur.setObjectName(u"blur")
+        self.blur.setDecimals(8)
+        self.blur.setMaximum(1.000000000000000)
+        self.blur.setSingleStep(0.000500000000000)
+        self.blur.setValue(0.012500000000000)
+
+        self.gridLayout_12.addWidget(self.blur, 11, 1, 1, 1)
+
+        self.sampling_label = QLabel(self.groupBox_5)
+        self.sampling_label.setObjectName(u"sampling_label")
+        sizePolicy1.setHeightForWidth(self.sampling_label.sizePolicy().hasHeightForWidth())
+        self.sampling_label.setSizePolicy(sizePolicy1)
+        self.sampling_label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.sampling_label, 8, 0, 1, 1)
+
+        self.sampling = QSpinBox(self.groupBox_5)
+        self.sampling.setObjectName(u"sampling")
+        sizePolicy3.setHeightForWidth(self.sampling.sizePolicy().hasHeightForWidth())
+        self.sampling.setSizePolicy(sizePolicy3)
+        self.sampling.setMinimum(1)
+        self.sampling.setMaximum(8)
+        self.sampling.setValue(4)
+
+        self.gridLayout_12.addWidget(self.sampling, 8, 1, 1, 1)
+
+        self.linear = QCheckBox(self.groupBox_5)
+        self.linear.setObjectName(u"linear")
+
+        self.gridLayout_12.addWidget(self.linear, 1, 1, 1, 1)
+
+        self.contrast = QDoubleSpinBox(self.groupBox_5)
         self.contrast.setObjectName(u"contrast")
         sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
@@ -277,13 +374,67 @@ class Ui_MainWindow(object):
         self.contrast.setSingleStep(0.050000000000000)
         self.contrast.setValue(1.000000000000000)
 
-        self.horizontalLayout_8.addWidget(self.contrast)
+        self.gridLayout_12.addWidget(self.contrast, 7, 1, 1, 1)
+
+        self.padding = QSpinBox(self.groupBox_5)
+        self.padding.setObjectName(u"padding")
+        sizePolicy3.setHeightForWidth(self.padding.sizePolicy().hasHeightForWidth())
+        self.padding.setSizePolicy(sizePolicy3)
+        self.padding.setMaximum(4096)
+        self.padding.setSingleStep(8)
+
+        self.gridLayout_12.addWidget(self.padding, 9, 1, 1, 1)
+
+        self.clipping = QDoubleSpinBox(self.groupBox_5)
+        self.clipping.setObjectName(u"clipping")
+        self.clipping.setDecimals(8)
+        self.clipping.setMaximum(100.000000000000000)
+        self.clipping.setSingleStep(0.000100000000000)
+
+        self.gridLayout_12.addWidget(self.clipping, 10, 1, 1, 1)
+
+        self.label_16 = QLabel(self.groupBox_5)
+        self.label_16.setObjectName(u"label_16")
+        sizePolicy1.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
+        self.label_16.setSizePolicy(sizePolicy1)
+        self.label_16.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.label_16, 9, 0, 1, 1)
+
+        self.contrast_label = QLabel(self.groupBox_5)
+        self.contrast_label.setObjectName(u"contrast_label")
+        self.contrast_label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.contrast_label, 7, 0, 1, 1)
+
+        self.label_18 = QLabel(self.groupBox_5)
+        self.label_18.setObjectName(u"label_18")
+        self.label_18.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.label_18, 11, 0, 1, 1)
+
+        self.label_14 = QLabel(self.groupBox_5)
+        self.label_14.setObjectName(u"label_14")
+        self.label_14.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_12.addWidget(self.label_14, 10, 0, 1, 1)
+
+        self.colour_option = QComboBox(self.groupBox_5)
+        self.colour_option.addItem("")
+        self.colour_option.addItem("")
+        self.colour_option.addItem("")
+        self.colour_option.setObjectName(u"colour_option")
+        sizePolicy3.setHeightForWidth(self.colour_option.sizePolicy().hasHeightForWidth())
+        self.colour_option.setSizePolicy(sizePolicy3)
+        self.colour_option.setEditable(True)
+
+        self.gridLayout_12.addWidget(self.colour_option, 0, 1, 1, 1)
 
 
-        self.verticalLayout_6.addLayout(self.horizontalLayout_8)
+        self.verticalLayout_4.addLayout(self.gridLayout_12)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_4)
+        self.verticalLayout_3.addWidget(self.groupBox_5)
 
         self.groupBox_9 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_9.setObjectName(u"groupBox_9")
@@ -402,152 +553,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.groupBox_9)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout_3.addItem(self.verticalSpacer)
-
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-
-        self.verticalLayout_2.addWidget(self.scrollArea)
-
-        self.tab_options.addTab(self.tab, "")
-        self.tab_3 = QWidget()
-        self.tab_3.setObjectName(u"tab_3")
-        self.verticalLayout_8 = QVBoxLayout(self.tab_3)
-        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.scrollArea_4 = QScrollArea(self.tab_3)
-        self.scrollArea_4.setObjectName(u"scrollArea_4")
-        self.scrollArea_4.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_4 = QWidget()
-        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 261, 313))
-        self.verticalLayout_7 = QVBoxLayout(self.scrollAreaWidgetContents_4)
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
-        self.groupBox_8 = QGroupBox(self.scrollAreaWidgetContents_4)
-        self.groupBox_8.setObjectName(u"groupBox_8")
-        self.gridLayout_7 = QGridLayout(self.groupBox_8)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.custom_width = QSpinBox(self.groupBox_8)
-        self.custom_width.setObjectName(u"custom_width")
-        self.custom_width.setEnabled(False)
-        sizePolicy3.setHeightForWidth(self.custom_width.sizePolicy().hasHeightForWidth())
-        self.custom_width.setSizePolicy(sizePolicy3)
-        self.custom_width.setSuffix(u"px")
-        self.custom_width.setMinimum(1)
-        self.custom_width.setMaximum(999999)
-        self.custom_width.setSingleStep(16)
-        self.custom_width.setValue(1920)
-
-        self.horizontalLayout_2.addWidget(self.custom_width)
-
-        self.enable_custom_width = QCheckBox(self.groupBox_8)
-        self.enable_custom_width.setObjectName(u"enable_custom_width")
-
-        self.horizontalLayout_2.addWidget(self.enable_custom_width)
-
-
-        self.gridLayout_7.addLayout(self.horizontalLayout_2, 0, 1, 1, 1)
-
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.custom_height = QSpinBox(self.groupBox_8)
-        self.custom_height.setObjectName(u"custom_height")
-        self.custom_height.setEnabled(False)
-        sizePolicy3.setHeightForWidth(self.custom_height.sizePolicy().hasHeightForWidth())
-        self.custom_height.setSizePolicy(sizePolicy3)
-        self.custom_height.setSuffix(u"px")
-        self.custom_height.setMinimum(1)
-        self.custom_height.setMaximum(999999)
-        self.custom_height.setSingleStep(9)
-        self.custom_height.setValue(1080)
-
-        self.horizontalLayout_3.addWidget(self.custom_height)
-
-        self.enable_custom_height = QCheckBox(self.groupBox_8)
-        self.enable_custom_height.setObjectName(u"enable_custom_height")
-
-        self.horizontalLayout_3.addWidget(self.enable_custom_height)
-
-
-        self.gridLayout_7.addLayout(self.horizontalLayout_3, 1, 1, 1, 1)
-
-        self.label_16 = QLabel(self.groupBox_8)
-        self.label_16.setObjectName(u"label_16")
-        sizePolicy1.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
-        self.label_16.setSizePolicy(sizePolicy1)
-        self.label_16.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.label_16, 4, 0, 1, 1)
-
-        self.lock_aspect = QCheckBox(self.groupBox_8)
-        self.lock_aspect.setObjectName(u"lock_aspect")
-        self.lock_aspect.setChecked(True)
-
-        self.gridLayout_7.addWidget(self.lock_aspect, 2, 1, 1, 1)
-
-        self.label_15 = QLabel(self.groupBox_8)
-        self.label_15.setObjectName(u"label_15")
-        sizePolicy1.setHeightForWidth(self.label_15.sizePolicy().hasHeightForWidth())
-        self.label_15.setSizePolicy(sizePolicy1)
-        self.label_15.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.label_15, 3, 0, 1, 1)
-
-        self.render_padding = QSpinBox(self.groupBox_8)
-        self.render_padding.setObjectName(u"render_padding")
-        sizePolicy3.setHeightForWidth(self.render_padding.sizePolicy().hasHeightForWidth())
-        self.render_padding.setSizePolicy(sizePolicy3)
-        self.render_padding.setMaximum(4096)
-        self.render_padding.setSingleStep(8)
-
-        self.gridLayout_7.addWidget(self.render_padding, 4, 1, 1, 1)
-
-        self.label_17 = QLabel(self.groupBox_8)
-        self.label_17.setObjectName(u"label_17")
-        sizePolicy1.setHeightForWidth(self.label_17.sizePolicy().hasHeightForWidth())
-        self.label_17.setSizePolicy(sizePolicy1)
-        self.label_17.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.label_17, 1, 0, 1, 1)
-
-        self.render_samples = QSpinBox(self.groupBox_8)
-        self.render_samples.setObjectName(u"render_samples")
-        sizePolicy3.setHeightForWidth(self.render_samples.sizePolicy().hasHeightForWidth())
-        self.render_samples.setSizePolicy(sizePolicy3)
-        self.render_samples.setMinimum(1)
-        self.render_samples.setMaximum(8)
-        self.render_samples.setValue(4)
-
-        self.gridLayout_7.addWidget(self.render_samples, 3, 1, 1, 1)
-
-        self.label_2 = QLabel(self.groupBox_8)
-        self.label_2.setObjectName(u"label_2")
-        sizePolicy1.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
-        self.label_2.setSizePolicy(sizePolicy1)
-        self.label_2.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.label_2, 0, 0, 1, 1)
-
-        self.label_14 = QLabel(self.groupBox_8)
-        self.label_14.setObjectName(u"label_14")
-        self.label_14.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_7.addWidget(self.label_14, 5, 0, 1, 1)
-
-        self.clipping = QDoubleSpinBox(self.groupBox_8)
-        self.clipping.setObjectName(u"clipping")
-        self.clipping.setDecimals(8)
-        self.clipping.setMaximum(100.000000000000000)
-        self.clipping.setSingleStep(0.000100000000000)
-
-        self.gridLayout_7.addWidget(self.clipping, 5, 1, 1, 1)
-
-
-        self.verticalLayout_7.addWidget(self.groupBox_8)
-
-        self.record_history = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.record_history = QGroupBox(self.scrollAreaWidgetContents)
         self.record_history.setObjectName(u"record_history")
         self.record_history.setEnabled(False)
         self.record_history.setCheckable(True)
@@ -579,24 +585,34 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.addWidget(self.history_current)
 
 
-        self.verticalLayout_7.addWidget(self.record_history)
+        self.verticalLayout_3.addWidget(self.record_history)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 226, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.verticalLayout_7.addItem(self.verticalSpacer_3)
+        self.verticalLayout_3.addItem(self.verticalSpacer)
 
-        self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
-        self.verticalLayout_8.addWidget(self.scrollArea_4)
+        self.verticalLayout_2.addWidget(self.scrollArea)
 
-        self.save_render = QPushButton(self.tab_3)
+        self.horizontalLayout_9 = QHBoxLayout()
+        self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
+        self.save_render = QPushButton(self.tab)
         self.save_render.setObjectName(u"save_render")
         sizePolicy3.setHeightForWidth(self.save_render.sizePolicy().hasHeightForWidth())
         self.save_render.setSizePolicy(sizePolicy3)
 
-        self.verticalLayout_8.addWidget(self.save_render)
+        self.horizontalLayout_9.addWidget(self.save_render)
 
-        self.tab_options.addTab(self.tab_3, "")
+        self.show_advanced = QCheckBox(self.tab)
+        self.show_advanced.setObjectName(u"show_advanced")
+
+        self.horizontalLayout_9.addWidget(self.show_advanced)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_9)
+
+        self.tab_options.addTab(self.tab, "")
         self.tab_profile_options = QWidget()
         self.tab_profile_options.setObjectName(u"tab_profile_options")
         self.verticalLayout_15 = QVBoxLayout(self.tab_profile_options)
@@ -606,7 +622,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 311))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 312))
         self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_13.setObjectName(u"verticalLayout_13")
         self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
@@ -991,9 +1007,12 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
 #if QT_CONFIG(shortcut)
+        self.custom_width_label.setBuddy(self.custom_width)
+        self.custom_height_label.setBuddy(self.custom_height)
+        self.sampling_label.setBuddy(self.sampling)
+        self.label_16.setBuddy(self.padding)
         self.contrast_label.setBuddy(self.contrast)
-        self.label_16.setBuddy(self.render_padding)
-        self.label_15.setBuddy(self.render_samples)
+        self.label_18.setBuddy(self.blur)
         self.label_14.setBuddy(self.clipping)
 #endif // QT_CONFIG(shortcut)
 
@@ -1056,8 +1075,6 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.save.clicked.connect(self.file_save.trigger)
-        self.enable_custom_width.toggled.connect(self.custom_width.setEnabled)
-        self.enable_custom_height.toggled.connect(self.custom_height.setEnabled)
 
         self.tab_options.setCurrentIndex(0)
         self.output_logs.setCurrentIndex(1)
@@ -1068,6 +1085,10 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MouseTracks", None))
+#if QT_CONFIG(tooltip)
+        MainWindow.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
+"This may take a few seconds to complete.", None))
+#endif // QT_CONFIG(tooltip)
         self.actionShow_Log.setText(QCoreApplication.translate("MainWindow", u"Display Output Log", None))
         self.file_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
 #if QT_CONFIG(shortcut)
@@ -1122,6 +1143,11 @@ class Ui_MainWindow(object):
 "combat aliasing.", None))
 #endif // QT_CONFIG(tooltip)
         self.thumbnail.setText(QCoreApplication.translate("MainWindow", u"<image>", None))
+#if QT_CONFIG(tooltip)
+        self.scrollArea.setToolTip(QCoreApplication.translate("MainWindow", u"Set the strength of the gaussian blur.\n"
+"\n"
+"This is primarily designed for use with heatmaps.", None))
+#endif // QT_CONFIG(tooltip)
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Profile Selection", None))
         self.current_profile.setItemText(0, QCoreApplication.translate("MainWindow", u"*Main", None))
         self.current_profile.setItemText(1, QCoreApplication.translate("MainWindow", u"*Path of Exile", None))
@@ -1139,13 +1165,104 @@ class Ui_MainWindow(object):
         self.auto_switch_profile.setText(QCoreApplication.translate("MainWindow", u"Keep currently loaded selected", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Data Type", None))
 #if QT_CONFIG(tooltip)
+        self.show_left_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show left mouse clicks / left thumbstick.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_left_clicks.setText(QCoreApplication.translate("MainWindow", u"Left", None))
+#if QT_CONFIG(tooltip)
+        self.show_middle_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show middle mouse clicks.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
+#if QT_CONFIG(tooltip)
+        self.show_right_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show left mouse clicks / right thumbstick.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
+#if QT_CONFIG(tooltip)
         self.map_type.setToolTip(QCoreApplication.translate("MainWindow", u"Select which dataset to render.\n"
 "If no data exists, then a blank image will be shown.", None))
 #endif // QT_CONFIG(tooltip)
-        self.show_left_clicks.setText(QCoreApplication.translate("MainWindow", u"Left", None))
-        self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
-        self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Colour Map", None))
+        self.resolution_group.setTitle(QCoreApplication.translate("MainWindow", u"Resolution", None))
+#if QT_CONFIG(tooltip)
+        self.lock_aspect.setToolTip(QCoreApplication.translate("MainWindow", u"Set if the aspect ratio should be locked to the recommended value.", None))
+#endif // QT_CONFIG(tooltip)
+        self.lock_aspect.setText(QCoreApplication.translate("MainWindow", u"Lock Aspect Ratio", None))
+#if QT_CONFIG(tooltip)
+        self.custom_width_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_width", None))
+#endif // QT_CONFIG(tooltip)
+        self.custom_width_label.setText(QCoreApplication.translate("MainWindow", u"Width Override:", None))
+#if QT_CONFIG(tooltip)
+        self.custom_width.setToolTip(QCoreApplication.translate("MainWindow", u"Set an override to render at a specific width.\n"
+"\n"
+"If the aspect ratio is locked and a height override is set,\n"
+"then the render may end up smaller than this override.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.enable_custom_width.setToolTip(QCoreApplication.translate("MainWindow", u"Enable the width override.\n"
+"If this is disabled, the width will be set based on the available data.", None))
+#endif // QT_CONFIG(tooltip)
+        self.enable_custom_width.setText("")
+#if QT_CONFIG(tooltip)
+        self.custom_height_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_height", None))
+#endif // QT_CONFIG(tooltip)
+        self.custom_height_label.setText(QCoreApplication.translate("MainWindow", u"Height Override:", None))
+#if QT_CONFIG(tooltip)
+        self.custom_height.setToolTip(QCoreApplication.translate("MainWindow", u"Set an override to render at a specific height.\n"
+"\n"
+"If the aspect ratio is locked and a width override is set,\n"
+"then the render may end up smaller than this override.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.enable_custom_height.setToolTip(QCoreApplication.translate("MainWindow", u"Enable the height override.\n"
+"If this is disabled, the height will be set based on the available data.", None))
+#endif // QT_CONFIG(tooltip)
+        self.enable_custom_height.setText("")
+        self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Render Settings", None))
+        self.label_24.setText(QCoreApplication.translate("MainWindow", u"Colour Map:", None))
+#if QT_CONFIG(tooltip)
+        self.blur.setToolTip(QCoreApplication.translate("MainWindow", u"Set the strength of the gaussian blur.\n"
+"\n"
+"This is primarily designed for use with heatmaps.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.sampling_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_samples", None))
+#endif // QT_CONFIG(tooltip)
+        self.sampling_label.setText(QCoreApplication.translate("MainWindow", u"Sampling:", None))
+#if QT_CONFIG(tooltip)
+        self.sampling.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render sampling level.\n"
+"\n"
+"Higher sampling improves accuracy when combining data from \n"
+"different resolutions, especially for lower-resolution recordings.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.linear.setToolTip(QCoreApplication.translate("MainWindow", u"Use a linear mapping of the data, ensuring a smooth colour range.", None))
+#endif // QT_CONFIG(tooltip)
+        self.linear.setText(QCoreApplication.translate("MainWindow", u"Linear Mapping", None))
+#if QT_CONFIG(tooltip)
+        self.contrast.setToolTip(QCoreApplication.translate("MainWindow", u"Set the contrast of the render.\n"
+"\n"
+"This applies an exponential adjustment to enhance or reduce colour variation.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.padding.setToolTip(QCoreApplication.translate("MainWindow", u"Adjust the padding around the render.\n"
+"\n"
+"Note that this may affect the intensity of heatmap edges.", None))
+#endif // QT_CONFIG(tooltip)
+        self.padding.setSuffix(QCoreApplication.translate("MainWindow", u"px", None))
+#if QT_CONFIG(tooltip)
+        self.clipping.setToolTip(QCoreApplication.translate("MainWindow", u"Define a clipping threshold.\n"
+"\n"
+"Values in the highest percentage range will be clipped to\n"
+"prevent overly bright spots from dominating the image.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.label_16.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_padding", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_16.setText(QCoreApplication.translate("MainWindow", u"Padding:", None))
+#if QT_CONFIG(tooltip)
+        self.contrast_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits contrast", None))
+#endif // QT_CONFIG(tooltip)
+        self.contrast_label.setText(QCoreApplication.translate("MainWindow", u"Contrast:", None))
+        self.label_18.setText(QCoreApplication.translate("MainWindow", u"Blur:", None))
+        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Clipping:", None))
         self.colour_option.setItemText(0, QCoreApplication.translate("MainWindow", u"Default", None))
         self.colour_option.setItemText(1, QCoreApplication.translate("MainWindow", u"Citrus", None))
         self.colour_option.setItemText(2, QCoreApplication.translate("MainWindow", u"Sunburst", None))
@@ -1153,13 +1270,6 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.colour_option.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p>Set the colour map for the render.<br/>The preset maps are shown, but custom maps can be input.</p><p><span style=\" font-weight:700;\">Colours<br/></span>Preset colour names or hex values can be used.<br/>Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.</p><p><span style=\" font-weight:700;\">Groups<br/></span>A group of colours are mixed together to create the final colour.<br/>Combine multiple colours by writing them next to each other.<br/><span style=\" font-style:italic;\">eg. YellowPinkRed will result in a deep orange.</span></p><p><span style=\" font-weight:700;\">Transitions<br/></span>Separate groups with a &quot;To&quot; to create a transition between the two.<br/>eg. BlackTo<span style=\" font-style:italic;\">YellowPinkRed</span> will create a colour map from black to that deep orange.</p><p><span style=\" font-weight:700;\">Modifiers<br/></span>Used as prefixes to modify an individual colour.<br/><span style=\" font-style:italic;\">Supported: dark, light, transparent"
                         ", translucent, opaque<br/>eg. LightYellowOrange will combine orange with light yellow.</span></p><p><span style=\" font-weight:700;\">Duplicates<br/></span>Multiply the effect of the next word.<br/><span style=\" font-style:italic;\">Supported: single, double, triple, quadruple, ...<br/>eg. TripleDarkRed is red with the dark modifier applied 3 times</span></p><p><span style=\" font-weight:700;\">Examples<br/></span>The default <span style=\" font-style:italic;\">Ice</span> colour map is defined as <span style=\" font-style:italic;\">BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite</span>.<br/>The <span style=\" font-style:italic;\">Citrus</span> map is <span style=\" font-style:italic;\">BlackToDarkDarkGreyToDarkGreenToYellow</span>.</p></body></html>", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(tooltip)
-        self.contrast_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits contrast", None))
-#endif // QT_CONFIG(tooltip)
-        self.contrast_label.setText(QCoreApplication.translate("MainWindow", u"Contrast:", None))
-#if QT_CONFIG(tooltip)
-        self.contrast.setToolTip(QCoreApplication.translate("MainWindow", u"Set the contrast of the render.", None))
 #endif // QT_CONFIG(tooltip)
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Stats", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Total Upload:", None))
@@ -1182,75 +1292,18 @@ class Ui_MainWindow(object):
         self.stat_upload_total.setText(QCoreApplication.translate("MainWindow", u"643.16 MB", None))
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"Elapsed Time:", None))
         self.stat_elapsed.setText(QCoreApplication.translate("MainWindow", u"50.30 hours", None))
-        self.tab_options.setTabText(self.tab_options.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Main", None))
-        self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Options", None))
-#if QT_CONFIG(tooltip)
-        self.custom_width.setToolTip(QCoreApplication.translate("MainWindow", u"Set an override to render at a specific width.\n"
-"\n"
-"If the aspect ratio is locked and a height override is set,\n"
-"then the render may end up smaller than this override.", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(tooltip)
-        self.enable_custom_width.setToolTip(QCoreApplication.translate("MainWindow", u"Enable the width override.\n"
-"If this is disabled, the width will be set based on the available data.", None))
-#endif // QT_CONFIG(tooltip)
-        self.enable_custom_width.setText("")
-#if QT_CONFIG(tooltip)
-        self.custom_height.setToolTip(QCoreApplication.translate("MainWindow", u"Set an override to render at a specific height.\n"
-"\n"
-"If the aspect ratio is locked and a width override is set,\n"
-"then the render may end up smaller than this override.", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(tooltip)
-        self.enable_custom_height.setToolTip(QCoreApplication.translate("MainWindow", u"Enable the height override.\n"
-"If this is disabled, the height will be set based on the available data.", None))
-#endif // QT_CONFIG(tooltip)
-        self.enable_custom_height.setText("")
-#if QT_CONFIG(tooltip)
-        self.label_16.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_padding", None))
-#endif // QT_CONFIG(tooltip)
-        self.label_16.setText(QCoreApplication.translate("MainWindow", u"Padding:", None))
-#if QT_CONFIG(tooltip)
-        self.lock_aspect.setToolTip(QCoreApplication.translate("MainWindow", u"Set if the aspect ratio should be locked to the recommended value.", None))
-#endif // QT_CONFIG(tooltip)
-        self.lock_aspect.setText(QCoreApplication.translate("MainWindow", u"Lock Aspect Ratio", None))
-#if QT_CONFIG(tooltip)
-        self.label_15.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_samples", None))
-#endif // QT_CONFIG(tooltip)
-        self.label_15.setText(QCoreApplication.translate("MainWindow", u"Sampling:", None))
-#if QT_CONFIG(tooltip)
-        self.render_padding.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render padding amount.\n"
-"\n"
-"Note that the edges of heatmaps may not remain at the same intensity.", None))
-#endif // QT_CONFIG(tooltip)
-        self.render_padding.setSuffix(QCoreApplication.translate("MainWindow", u"px", None))
-#if QT_CONFIG(tooltip)
-        self.label_17.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_height", None))
-#endif // QT_CONFIG(tooltip)
-        self.label_17.setText(QCoreApplication.translate("MainWindow", u"Height Override:", None))
-#if QT_CONFIG(tooltip)
-        self.render_samples.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render sampling level.\n"
-"\n"
-"This is important when combining multiple resolutions together, and will give more accurate results for any data recorded at lower resolutions.\n"
-"The effect is more important for the track maps, and may be set to 1 for heatmaps without causing much of a difference.", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(tooltip)
-        self.label_2.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_width", None))
-#endif // QT_CONFIG(tooltip)
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Width Override:", None))
-        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Clipping:", None))
-#if QT_CONFIG(tooltip)
-        self.clipping.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render clipping amount.\n"
-"This will clip any value above a certain percentage which can help reduce bright spots.", None))
-#endif // QT_CONFIG(tooltip)
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
 #if QT_CONFIG(tooltip)
         self.save_render.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
-"Note that this may take a few seconds to complete.", None))
+"This may take a few seconds to complete.", None))
 #endif // QT_CONFIG(tooltip)
         self.save_render.setText(QCoreApplication.translate("MainWindow", u"Save Render", None))
-        self.tab_options.setTabText(self.tab_options.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Render", None))
+#if QT_CONFIG(tooltip)
+        self.show_advanced.setToolTip(QCoreApplication.translate("MainWindow", u"Show advanced render settings.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_advanced.setText(QCoreApplication.translate("MainWindow", u"Advanced", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Main", None))
         self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Status", None))
         self.profile_modified.setText(QCoreApplication.translate("MainWindow", u"Yes", None))
         self.profile_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))

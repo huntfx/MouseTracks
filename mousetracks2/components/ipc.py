@@ -206,16 +206,18 @@ class RenderRequest(Message):
 
     target: int = field(default=Target.Processing, init=False)
     type: RenderType
+    profile: str | None
+    file_path: str | None
     width: int | None
     height: int | None
     colour_map: str
-    sampling: int
-    profile: str | None
-    file_path: str | None
+    linear: bool
+    sampling: int = 1
     padding: int = 0
     contrast: float = 1.0
     lock_aspect: bool = True
     clipping: float = 1.0
+    blur: float = 0.0
     show_left_clicks: bool = True
     show_middle_clicks: bool = True
     show_right_clicks: bool = True

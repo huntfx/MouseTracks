@@ -72,9 +72,9 @@ def array_to_uint8(array: np.ndarray) -> np.ndarray:
     return (array.astype(np.float64) * (255 / max_value)).astype(np.uint8)
 
 
-def gaussian_size(width, height, multiplier: float = 1.0, base: float = 0.0125):
+def gaussian_size(width, height, multiplier: float = 0.0125):
     """Choose a gaussian blur amount to use for a given resolution."""
-    return int(round(min(width, height) * base * multiplier))
+    return min(width, height) * multiplier
 
 
 def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: int) -> np.ndarray:
@@ -134,7 +134,8 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
-           linear: bool = False, blur: bool = False, contrast: float = 1.0, clipping: float = 0.0) -> np.ndarray:
+           linear: bool = False, blur: float = 0.0, contrast: float = 1.0,
+           clipping: float = 0.0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -155,7 +156,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         lock_aspect: Force the aspect ratio to its recommended value.
         linear: Remap the array to linear values.
             This will ensure a smooth gradient.
-        blur: Blur the array, for example for a heatmap.
+        blur: Blur the array with a gaussian sigma of this value.
         contrast: Adjust the array contrast.
             This works by spacing out or reducing values.
         clipping: Clip the upper range to a percentage.
@@ -173,7 +174,6 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
 
     scale_width = width * sampling
     scale_height = height * sampling
-    blur_amount = gaussian_size(scale_width, scale_height)
 
     # Rescale the arrays to the target size and combine them
     combined_arrays: dict[tuple[int, int], np.ndarray] = {}
@@ -191,7 +191,8 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
 
     # Apply gaussian blur
     if blur:
-        combined_arrays = {pos: ndimage.gaussian_filter(array.astype(np.float64), sigma=blur_amount)
+        combined_arrays = {pos: ndimage.gaussian_filter(array.astype(np.float64),
+                                                        sigma=gaussian_size(scale_width, scale_height, blur))
                            for pos, array in combined_arrays.items()}
 
     # Equalise the max values
