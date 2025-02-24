@@ -1075,6 +1075,8 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.save.clicked.connect(self.file_save.trigger)
+        self.enable_custom_width.toggled.connect(self.custom_width.setEnabled)
+        self.enable_custom_height.toggled.connect(self.custom_height.setEnabled)
 
         self.tab_options.setCurrentIndex(0)
         self.output_logs.setCurrentIndex(1)

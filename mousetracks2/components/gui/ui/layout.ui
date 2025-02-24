@@ -2017,5 +2017,37 @@ Clicking the button will trigger a manual update.</string>
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>enable_custom_width</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>custom_width</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>991</x>
+     <y>177</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>942</x>
+     <y>174</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enable_custom_height</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>custom_height</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>997</x>
+     <y>206</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>944</x>
+     <y>208</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>
