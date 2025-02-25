@@ -1518,7 +1518,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.accept()
 
         # Pause the tracking
-        self.component.send_data(ipc.PauseTracking())
+        if self.state != ipc.TrackingState.Stopped:
+            self.component.send_data(ipc.PauseTracking())
 
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
@@ -1535,7 +1536,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         match msg.exec_():
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                self.component.send_data(ipc.StartTracking())
+                if self.state != ipc.TrackingState.Stopped:
+                    self.component.send_data(ipc.StartTracking())
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
