@@ -4,7 +4,7 @@
 // You may also limit it to a certain window name, for example if the game uses a generic executable name.
 // This would work like "Play.exe[MyGame]: Game Name". You may use "<*>" at the start or end of "MyGame" as a wildcard.
 // If the executable or window name is the same as the game name, providing the game name is not required.
-// To turn off individual tracking for a particular application, just use "Untracked" as its name.
+// To turn off tracking for a particular application, use "Untracked" as its name.
 // To ignore tracking when a window name is a match (such as a splash screen), use "<ignore>" as its name.
 
 100orange.exe: 100% Orange Juice
@@ -799,6 +799,7 @@ King's Quest 5.exe: King's Quest V
 King's Quest 6 Win.exe: King's Quest VI
 King's Quest 7.exe: King's Quest VII
 Kingdom.exe
+KingdomCome.exe: Kingdom Come: Deliverance
 KingOfFighters2002UM.exe: The King Of Fighters 2002 Unlimited Match
 KiteDemo-Win64-Shipping.exe: Untracked
 KiteDemo.exe: Untracked
@@ -1097,6 +1098,7 @@ PrimalCarnageGame.exe: Primal Cargnage
 Prison Architect Safe Mode.exe: Prison Architect
 Prison Architect.exe
 PRO64_93_3.exe: Pokemon Revolution Online
+Program Files/Everything/Everything.exe: <ignore>
 Project64.exe
 Project76_GamePass.exe: Fallout 76
 project8.exe: Deadlock
@@ -1349,6 +1351,7 @@ starwarsbattlefront.exe: Star Wars: Battlefront
 starwarsbattlefrontii.exe: Star Wars Battlefront II
 starwarsbattlefrontii_trial.exe: Star Wars Battlefront II
 starwarsjedifallenorder.exe: STAR WARS Jedi: Fallen Order
+steamapps/common/Everything/Everything.exe: Everything
 SteamworksExample.exe: Untracked
 STEINSGATE.exe: STEINS;GATE
 stellaris.exe: Stellaris

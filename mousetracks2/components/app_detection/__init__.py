@@ -16,6 +16,7 @@ class AppDetection(Component):
 
     def __post_init__(self) -> None:
         self.applist = AppList()
+        self.applist.save()
         self._regex_cache: dict[str, re.Pattern] = {}
         self._previous_focus: tuple[str, str] = '', ''
         self._previous_app: tuple[str, str] | None = None
