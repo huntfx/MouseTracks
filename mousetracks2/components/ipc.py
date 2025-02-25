@@ -532,3 +532,10 @@ class ExportStatsSuccessful(Message):
 
     target: int = field(default=Target.GUI, init=False)
     source: ExportStats
+
+
+@dataclass
+class ReloadAppList(Message):
+    """Reload AppList.txt."""
+
+    target: int = field(default=Target.AppDetection | Target.GUI, init=False)

@@ -4,7 +4,7 @@ import psutil
 
 from .. import ipc
 from ..abstract import Component
-from ...applications import AppList
+from ...applications import AppList, LOCAL_PATH
 from ...constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ...exceptions import ExitRequest
 from ...utils.system.win32 import PID, WindowHandle, get_window_handle
@@ -126,6 +126,10 @@ class AppDetection(Component):
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[Application Detection] Test Exception')
+
+            case ipc.ReloadAppList():
+                self.applist = AppList()
+                print(f'[Application Detection] Successfully reloaded "{LOCAL_PATH}"')
 
     def run(self):
         """Listen for events to process."""

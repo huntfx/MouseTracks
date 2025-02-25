@@ -126,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_redraw = 0
         self.pause_colour_change = False
         self.redraw_queue: list[Pixel] = []
-        self._last_save_time = self._last_thumbnail_time = time.time()
+        self._last_save_time = self._last_thumbnail_time = self._last_app_reload_time = int(time.time() * 10)
         self._delete_mouse_pressed = False
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
@@ -271,6 +271,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.enable_custom_width.stateChanged.connect(self.render_resolution_state_changed)
         self.ui.enable_custom_height.stateChanged.connect(self.render_resolution_state_changed)
+        self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_gamepad.stateChanged.connect(self.handle_delete_button_visibility)
@@ -309,6 +310,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
+        self.timer_activity.timeout.connect(self.update_time_since_applist_reload)
         self.timer_activity.timeout.connect(self.update_queue_size)
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
@@ -574,12 +576,20 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def update_time_since_save(self) -> None:
         """Set how long it has been since the last save."""
-        self.ui.time_since_save.setText(f'{round(time.time() - self._last_save_time, 1)} s')
+        text = format_ticks(time.time() * 10 - self._last_save_time, 10, 1)
+        self.ui.time_since_save.setText(text)
 
     @QtCore.Slot()
     def update_time_since_thumbnail(self) -> None:
         """Set how long it has been since the last thumbnail render."""
-        self.ui.time_since_thumbnail.setText(f'{round(time.time() - self._last_thumbnail_time, 1)} s')
+        text = format_ticks(time.time() * 10 - self._last_thumbnail_time, 10, 1)
+        self.ui.time_since_thumbnail.setText(text)
+
+    @QtCore.Slot()
+    def update_time_since_applist_reload(self) -> None:
+        """Set how long it has been since the last thumbnail render."""
+        text = format_ticks(time.time() * 10 - self._last_app_reload_time, 10, 1)
+        self.ui.time_since_applist_reload.setText(text)
 
     def update_queue_size(self) -> None:
         """Request an update of the queue size."""
@@ -841,6 +851,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self._timer_rendering.isActive():
             self._timer_rendering.start(1000)
 
+    @QtCore.Slot()
+    def reload_applist(self):
+        """Send a request to reload AppList.txt."""
+        self.component.send_data(ipc.ReloadAppList())
+
     def request_thumbnail(self) -> bool:
         """Trigger a request to draw a thumbnail.
         This uses a timer to prevent multiple simulaneous requests at
@@ -1033,6 +1048,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.request_thumbnail()
                 self.ui.save.setEnabled(True)
                 self.ui.thumbnail_refresh.setEnabled(True)
+                self.ui.applist_reload.setEnabled(True)
                 self.set_profile_modified_text()
 
             case ipc.PauseTracking():
@@ -1041,6 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.ui.save.setEnabled(True)
                 self.ui.thumbnail_refresh.setEnabled(True)
+                self.ui.applist_reload.setEnabled(True)
                 self.set_profile_modified_text()
 
             case ipc.StopTracking():
@@ -1049,6 +1066,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.ui.save.setEnabled(False)
                 self.ui.thumbnail_refresh.setEnabled(False)
+                self.ui.applist_reload.setEnabled(False)
                 self.set_profile_modified_text()
 
             case ipc.Exit():
@@ -1070,7 +1088,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self._timer_rendering.stop()
                     self.ui.thumbnail.hide_rendering_text()
 
-                    self._last_thumbnail_time = time.time()
+                    self._last_thumbnail_time = int(time.time() * 10)
                     match channels:
                         case 1:
                             image_format = QtGui.QImage.Format.Format_Grayscale8
@@ -1229,7 +1247,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.SaveComplete():
                 self._last_save_message = message
-                self._last_save_time = time.time()
+                self._last_save_time = int(time.time() * 10)
                 self.mark_profiles_saved(*message.succeeded)
                 self.mark_profiles_unsaved(self.current_profile.name)
                 self._redraw_profile_combobox()
@@ -1315,6 +1333,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.setText(f'Export was successful.\nFile was saved to "{message.source.path}".')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.exec_()
+
+            case ipc.ReloadAppList():
+                self._last_app_reload_time = int(time.time() * 10)
 
     @QtCore.Slot()
     def start_tracking(self) -> None:

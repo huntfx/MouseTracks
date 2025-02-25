@@ -2,6 +2,7 @@
 
 [Bugs]
 - [Tracking] Errors raised in `pynput` are not handled
+- [GUI] Closing with stopped tracking resumes it
 
 [QOL]
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data

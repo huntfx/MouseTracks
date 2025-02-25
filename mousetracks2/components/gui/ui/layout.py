@@ -178,7 +178,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, -263, 261, 899))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 899))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -787,22 +787,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.save, 0, 0, 1, 1)
 
-        self.label_3 = QLabel(self.groupBox_10)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setEnabled(False)
-
-        self.gridLayout_4.addWidget(self.label_3, 2, 1, 1, 1)
-
         self.thumbnail_refresh = QPushButton(self.groupBox_10)
         self.thumbnail_refresh.setObjectName(u"thumbnail_refresh")
 
         self.gridLayout_4.addWidget(self.thumbnail_refresh, 1, 0, 1, 1)
-
-        self.pushButton = QPushButton(self.groupBox_10)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setEnabled(False)
-
-        self.gridLayout_4.addWidget(self.pushButton, 2, 0, 1, 1)
 
         self.horizontalLayout_7 = QHBoxLayout()
         self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
@@ -819,6 +807,16 @@ class Ui_MainWindow(object):
 
 
         self.gridLayout_4.addLayout(self.horizontalLayout_7, 0, 1, 1, 1)
+
+        self.time_since_applist_reload = QLabel(self.groupBox_10)
+        self.time_since_applist_reload.setObjectName(u"time_since_applist_reload")
+
+        self.gridLayout_4.addWidget(self.time_since_applist_reload, 2, 1, 1, 1)
+
+        self.applist_reload = QPushButton(self.groupBox_10)
+        self.applist_reload.setObjectName(u"applist_reload")
+
+        self.gridLayout_4.addWidget(self.applist_reload, 2, 0, 1, 1)
 
 
         self.verticalLayout.addWidget(self.groupBox_10)
@@ -1146,6 +1144,9 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.thumbnail.setText(QCoreApplication.translate("MainWindow", u"<image>", None))
 #if QT_CONFIG(tooltip)
+        self.tab_options.setToolTip(QCoreApplication.translate("MainWindow", u"How many seconds since AppList.txt was read from disk.", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
         self.scrollArea.setToolTip(QCoreApplication.translate("MainWindow", u"Set the strength of the gaussian blur.\n"
 "\n"
 "This is primarily designed for use with heatmaps.", None))
@@ -1386,25 +1387,32 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.time_since_thumbnail.setToolTip(QCoreApplication.translate("MainWindow", u"How many seconds since the render preview was updated.", None))
 #endif // QT_CONFIG(tooltip)
-        self.time_since_thumbnail.setText(QCoreApplication.translate("MainWindow", u"5.4 s", None))
+        self.time_since_thumbnail.setText(QCoreApplication.translate("MainWindow", u"5.4s", None))
 #if QT_CONFIG(tooltip)
         self.save.setToolTip(QCoreApplication.translate("MainWindow", u"Save all modified profiles.", None))
 #endif // QT_CONFIG(tooltip)
         self.save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"4m12s", None))
 #if QT_CONFIG(tooltip)
         self.thumbnail_refresh.setToolTip(QCoreApplication.translate("MainWindow", u"Request a render preview update.", None))
 #endif // QT_CONFIG(tooltip)
         self.thumbnail_refresh.setText(QCoreApplication.translate("MainWindow", u"Preview Render", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"AppList Reload", None))
 #if QT_CONFIG(tooltip)
         self.time_since_save.setToolTip(QCoreApplication.translate("MainWindow", u"How many seconds since the last save.", None))
 #endif // QT_CONFIG(tooltip)
-        self.time_since_save.setText(QCoreApplication.translate("MainWindow", u"23.5 s", None))
+        self.time_since_save.setText(QCoreApplication.translate("MainWindow", u"23.5s", None))
 #if QT_CONFIG(tooltip)
         self.autosave.setToolTip(QCoreApplication.translate("MainWindow", u"Enable or disable autosaving.", None))
 #endif // QT_CONFIG(tooltip)
         self.autosave.setText(QCoreApplication.translate("MainWindow", u"Autosave", None))
+#if QT_CONFIG(tooltip)
+        self.time_since_applist_reload.setToolTip(QCoreApplication.translate("MainWindow", u"How many seconds since AppList.txt was read from disk.", None))
+#endif // QT_CONFIG(tooltip)
+        self.time_since_applist_reload.setText(QCoreApplication.translate("MainWindow", u"4m 12s", None))
+#if QT_CONFIG(tooltip)
+        self.applist_reload.setToolTip(QCoreApplication.translate("MainWindow", u"Trigger a reload of AppList.txt.\n"
+"This should be used after manually editing it.", None))
+#endif // QT_CONFIG(tooltip)
+        self.applist_reload.setText(QCoreApplication.translate("MainWindow", u"Applist Reload", None))
         self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
         self.stat_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.label_39.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
