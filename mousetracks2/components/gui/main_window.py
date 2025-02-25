@@ -149,7 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
         self._sampling = RenderOption(4, 4, 4, 4)
         self._padding = RenderOption(0, 0, 0, 0)
-        self._clipping = RenderOption(0.0, 0.0, 0.005, 0.0)
+        self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
         self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
         self._linear = RenderOption(False, True, True, False)
 
