@@ -63,8 +63,10 @@ class AppDetection(Component):
         current_app_name = self.applist.match(handle.pid.executable, title)
         if current_app_name is None or current_app_name == TRACKING_IGNORE:
             current_app = None
+            rects = []
         else:
             current_app = current_app_name, exe
+            rects = handle.pid.rects
 
         # Print out any changes
         position = handle.pid.position
@@ -100,7 +102,6 @@ class AppDetection(Component):
             if current_app is not None:
                 print(f'[Application Detection] {current_app[0]} gained focus')
 
-        rects = handle.pid.rects
         if current_app != self._previous_app or rects != self._previous_rects:
             if current_app is None:
                 self.send_data(ipc.TrackedApplicationDetected(DEFAULT_PROFILE_NAME, None))
