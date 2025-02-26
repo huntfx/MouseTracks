@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import IO
+from typing import Any, IO
 
 import yaml
 
@@ -55,15 +55,23 @@ class ProfileConfig:
     track_keyboard: bool = True
     track_gamepad: bool = True
     track_network: bool = True
-    disabled_resolutions: list = field(default_factory=list)
+    disabled_resolutions: list[tuple[int, int]] = field(default_factory=list)
 
     def save(self, f: IO[bytes]) -> None:
         """Save the config to a YAML file."""
-        yaml.dump(self.__dict__, f, default_flow_style=False, encoding='utf-8')
+        data = self.__dict__.copy()
+        data['disabled_resolutions'] = [f'{w}x{h}' for w, h in self.disabled_resolutions]
+        yaml.dump(data, f, default_flow_style=False, encoding='utf-8')
 
     def load(self, f: IO[bytes]) -> None:
         """Load the config from a YAML file if it exists."""
-        self.__dict__.update(yaml.safe_load(f.read()))
+        data: dict[str, Any] = yaml.safe_load(f.read())
+        resolutions: list[str] = data.pop('disabled_resolutions', [])
+        self.__dict__.update(data)
+        self.disabled_resolutions = []
+        for res in resolutions:
+            width, height = map(int, res.split('x'))
+            self.disabled_resolutions.append((width, height))
 
     def should_track_keycode(self, keycode: int) -> bool:
         """Determine if a keycode should be tracked."""

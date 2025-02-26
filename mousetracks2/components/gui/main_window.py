@@ -553,12 +553,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.profile_save.setEnabled(not value)
 
     @property
-    def resolutions(self) -> dict[tuple[int, int], tuple[int, int]]:
+    def resolutions(self) -> dict[tuple[int, int], tuple[int, bool]]:
         """Get the resolution data for the profile."""
         return self._resolutions
 
     @resolutions.setter
-    def resolutions(self, resolutions: dict[tuple[int, int], tuple[int, int]]) -> None:
+    def resolutions(self, resolutions: dict[tuple[int, int], tuple[int, bool]]) -> None:
         """Load in the resolution data."""
         self._resolutions = resolutions
 
@@ -586,10 +586,11 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def resolution_toggled(self, value: bool) -> None:
         """Toggle rendering of a particular resolution in a profile."""
-        checkbox: QtWidgets.QCheckBox = self.sender()
+        checkbox = cast(QtWidgets.QCheckBox, self.sender())
         profile = self.ui.current_profile.currentData()
         width, height = map(int, checkbox.text().split('x'))
         self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
+        self.mark_profiles_unsaved(profile)
         self.request_thumbnail()
 
     @QtCore.Slot()

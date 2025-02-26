@@ -122,7 +122,7 @@ class Processing(Component):
                 keys -= profile.key_presses[keycodes.VK_RMENU]
 
         # Get all resolutions and how much data they contain
-        resolutions: dict[tuple[int, int], tuple[int, int]] = {}
+        resolutions: dict[tuple[int, int], tuple[int, bool]] = {}
         for resolution, array in profile.cursor_map.density_arrays.items():
             resolutions[resolution] = (np.sum(array), resolution not in profile.config.disabled_resolutions)
 

@@ -333,7 +333,7 @@ class ProfileData(Message):
     bytes_sent: int
     bytes_recv: int
     config: ProfileConfig
-    resolutions: dict[tuple[int, int], tuple[int, int]]
+    resolutions: dict[tuple[int, int], tuple[int, bool]]
 
 
 @dataclass
