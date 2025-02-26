@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBo
     QSizePolicy, QSpacerItem, QSpinBox, QStatusBar,
     QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.components.gui.widgets import (ResizableImage, Splitter)
+from mousetracks2.gui.widgets import (ResizableImage, Splitter)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

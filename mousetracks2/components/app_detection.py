@@ -2,12 +2,12 @@ import re
 
 import psutil
 
-from .. import ipc
-from ..abstract import Component
-from ...applications import AppList, LOCAL_PATH
-from ...constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
-from ...exceptions import ExitRequest
-from ...utils.system.win32 import PID, WindowHandle, get_window_handle
+from . import ipc
+from .abstract import Component
+from ..applications import AppList, LOCAL_PATH
+from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
+from ..exceptions import ExitRequest
+from ..utils.system.win32 import PID, WindowHandle, get_window_handle
 
 
 

@@ -1,17 +1,14 @@
-import multiprocessing
 import os
-import queue
 import sys
 import time
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from .utils import ICON_PATH
-from .main_window import MainWindow
-from .. import ipc
-from ..abstract import Component
-from ...config import GlobalConfig
-from ...exceptions import ExitRequest
+from ..gui.utils import ICON_PATH
+from ..gui.main_window import MainWindow
+from . import ipc
+from .abstract import Component
+from ..config import GlobalConfig
 
 
 class QueueWorker(QtCore.QObject):

@@ -10,8 +10,8 @@ from PIL import Image, ImageFont, ImageDraw
 
 from .colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
 from ..constants import REPO_DIR
+from ..gui.utils import format_ticks as ticks_to_seconds
 from ..utils.math import calculate_circle
-from ..components.gui.utils import format_ticks as ticks_to_seconds
 
 
 LANGUAGE_BASE_PATH = REPO_DIR / 'config' / 'language'

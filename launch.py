@@ -8,7 +8,7 @@ from multiprocessing import freeze_support
 if hasattr(sys, '_MEIPASS'):
     sys.path.append(os.path.join(sys._MEIPASS, 'resources', 'build'))
 
-from mousetracks2.components.hub import Hub
+from mousetracks2.components import Hub
 
 
 if __name__ == '__main__':

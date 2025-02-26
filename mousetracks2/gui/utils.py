@@ -1,9 +1,8 @@
 """General functions being used by the GUI."""
 
 import math
-import sys
 
-from ...constants import UPDATES_PER_SECOND, REPO_DIR
+from ..constants import UPDATES_PER_SECOND, REPO_DIR
 
 
 ICON_PATH = str(REPO_DIR / 'resources' / 'images' / 'icon.png')

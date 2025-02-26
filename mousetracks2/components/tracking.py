@@ -1,25 +1,51 @@
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+from itertools import count
 from typing import Iterator
 
 import psutil
 import pynput
 import XInput  # type: ignore
 
-from . import utils
-from .. import ipc
-from ..abstract import Component
-from ...config import GlobalConfig
-from ...constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
-from ...exceptions import ExitRequest
-from ...utils import get_cursor_pos, keycodes
-from ...utils.network import Interfaces
-from ...utils.system import monitor_locations
+from . import ipc
+from .abstract import Component
+from ..config import GlobalConfig
+from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ..exceptions import ExitRequest
+from ..utils import get_cursor_pos, keycodes
+from ..utils.network import Interfaces
+from ..utils.system import monitor_locations
 
 
 XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
                   if isinstance(v, int) and hasattr(keycodes, k)}
+
+
+def ticks(ups: int) -> Iterator[int]:
+    """Count up at a constant speed.
+
+    If any delay occurs, it will account for this and will continue to
+    count at a constant rate, resuming from the previous tick.
+    For example, if a PC gets put to sleep, then waking it up should
+    resume from the tick it was put to sleep at.
+    """
+    start = time.time()
+    for tick in count():
+        yield tick
+
+        # Calculate the expected time for the next tick
+        expected = start + (tick + 1) / ups
+        remaining = expected - time.time()
+
+        # Adjust the start time to account for missed time
+        if remaining < 0:
+            missed_ticks = -int(remaining * ups)
+            start += missed_ticks / ups
+            continue
+
+        time.sleep(remaining)
+
 
 
 @dataclass
@@ -126,7 +152,7 @@ class Tracking(Component):
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
-        for tick in utils.ticks(UPDATES_PER_SECOND):
+        for tick in ticks(UPDATES_PER_SECOND):
             self._receive_data()
 
             state_changed = previous_state != self.state

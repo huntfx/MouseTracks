@@ -2078,12 +2078,12 @@ This should be used after manually editing it.</string>
   <customwidget>
    <class>ResizableImage</class>
    <extends>QLabel</extends>
-   <header>mousetracks2.components.gui.widgets</header>
+   <header>mousetracks2.gui.widgets</header>
   </customwidget>
   <customwidget>
    <class>Splitter</class>
    <extends>QSplitter</extends>
-   <header>mousetracks2.components.gui.widgets</header>
+   <header>mousetracks2.gui.widgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

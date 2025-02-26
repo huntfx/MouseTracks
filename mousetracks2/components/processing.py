@@ -7,18 +7,18 @@ from typing import Iterator
 
 import numpy as np
 
-from .. import ipc
-from ..abstract import Component
-from ...exceptions import ExitRequest
-from ...export import Export
-from ...file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
-from ...legacy import keyboard
-from ...utils import keycodes, get_cursor_pos
-from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ...utils.network import Interfaces
-from ...utils.system import monitor_locations
-from ...constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
-from ...render import render, EmptyRenderError
+from . import ipc
+from .abstract import Component
+from ..exceptions import ExitRequest
+from ..export import Export
+from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ..legacy import keyboard
+from ..utils import keycodes, get_cursor_pos
+from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
+from ..utils.network import Interfaces
+from ..utils.system import monitor_locations
+from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
+from ..render import render, EmptyRenderError
 
 
 @dataclass
