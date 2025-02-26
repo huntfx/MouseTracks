@@ -68,7 +68,7 @@ class Tracking(Component):
         self.track_network = config.track_network
 
         # Setup pynput listeners
-        self._pynput_opcodes: set[keycodes.KeyCode] = set()
+        self._pynput_opcodes: set[int | keycodes.KeyCode] = set()
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
@@ -255,10 +255,12 @@ class Tracking(Component):
         if isinstance(key, pynput.keyboard.KeyCode):
             name = key.char
             vk = key.vk
-        else:
+        elif isinstance(key, pynput.keyboard.Key):
             name = key.name
             vk = key.value.vk
-        self._pynput_opcodes.add(vk)
+
+        if vk is not None:
+            self._pynput_opcodes.add(vk)
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
@@ -268,10 +270,14 @@ class Tracking(Component):
         if isinstance(key, pynput.keyboard.KeyCode):
             name = key.char
             vk = key.vk
-        else:
+        elif isinstance(key, pynput.keyboard.Key):
             name = key.name
             vk = key.value.vk
-        self._pynput_opcodes.discard(vk)
+        else:
+            vk = None
+
+        if vk is not None:
+            self._pynput_opcodes.discard(vk)
 
     def _key_press(self, keycode: int | keycodes.KeyCode) -> None:
         """Handle key presses."""

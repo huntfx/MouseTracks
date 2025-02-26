@@ -1953,8 +1953,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.prefs_autostart.isEnabled():
             return
 
-        launch = []
-
         if value:
             launch: list[str] = sys.argv[:]
             if launch[0] != sys.executable:
