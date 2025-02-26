@@ -552,6 +552,46 @@ class MainWindow(QtWidgets.QMainWindow):
         self._save_profile_request_sent = value
         self.ui.profile_save.setEnabled(not value)
 
+    @property
+    def resolutions(self) -> dict[tuple[int, int], tuple[int, int]]:
+        """Get the resolution data for the profile."""
+        return self._resolutions
+
+    @resolutions.setter
+    def resolutions(self, resolutions: dict[tuple[int, int], tuple[int, int]]) -> None:
+        """Load in the resolution data."""
+        self._resolutions = resolutions
+
+        # Delete all existing items in the layout
+        layout = self.ui.profile_resolutions.layout()
+        while layout.count():
+            item = self.ui.profile_resolutions.layout().takeAt(0)
+            item.widget().deleteLater()
+
+        # Populate with new widgets
+        total_count = sum(count for count, enabled in resolutions.values())
+        sorted_items = sorted(resolutions.items(), key=lambda kv: kv[1][0], reverse=True)
+        for row, ((width, height), (count, enabled)) in enumerate(sorted_items):
+            checkbox = QtWidgets.QCheckBox(f'{width}x{height}')
+            checkbox.setChecked(enabled)
+            checkbox.setToolTip(f'Toggle rendering of data recorded at {width}x{height}.')
+            checkbox.toggled.connect(self.resolution_toggled)
+            label = QtWidgets.QLabel(f'{round(100 * count / total_count, 3)}%')
+            label.setToolTip('The percentage of time this resolution has been tracked.\n'
+                             '\n'
+                             f'Raw value: {count}')
+            layout.addWidget(checkbox, row, 0)
+            layout.addWidget(label, row, 1)
+
+    @QtCore.Slot()
+    def resolution_toggled(self, value: bool) -> None:
+        """Toggle rendering of a particular resolution in a profile."""
+        checkbox: QtWidgets.QCheckBox = self.sender()
+        profile = self.ui.current_profile.currentData()
+        width, height = map(int, checkbox.text().split('x'))
+        self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
+        self.request_thumbnail()
+
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
         """Update the activity preview periodically.
@@ -1219,6 +1259,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.inactive_time = message.inactive_ticks
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
+                self.resolutions = message.resolutions
 
                 if finished_loading:
                     self.request_thumbnail()

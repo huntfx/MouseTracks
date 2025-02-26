@@ -333,6 +333,7 @@ class ProfileData(Message):
     bytes_sent: int
     bytes_recv: int
     config: ProfileConfig
+    resolutions: dict[tuple[int, int], tuple[int, int]]
 
 
 @dataclass
@@ -539,3 +540,13 @@ class ReloadAppList(Message):
     """Reload AppList.txt."""
 
     target: int = field(default=Target.AppDetection | Target.GUI, init=False)
+
+
+@dataclass
+class ToggleProfileResolution(Message):
+    """Enable or disable a resolution for a profile."""
+
+    target: int = field(default=Target.Processing, init=False)
+    profile: str
+    resolution: tuple[int, int]
+    enable: bool

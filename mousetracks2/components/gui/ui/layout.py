@@ -622,7 +622,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 274, 312))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 257, 490))
         self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_13.setObjectName(u"verticalLayout_13")
         self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
@@ -653,10 +653,67 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_13.addWidget(self.groupBox_7)
 
+        self.groupBox_8 = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.groupBox_8.setObjectName(u"groupBox_8")
+        self.verticalLayout_6 = QVBoxLayout(self.groupBox_8)
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.label_17 = QLabel(self.groupBox_8)
+        self.label_17.setObjectName(u"label_17")
+        self.label_17.setWordWrap(True)
+
+        self.verticalLayout_6.addWidget(self.label_17)
+
+        self.profile_resolutions = QGridLayout()
+        self.profile_resolutions.setObjectName(u"profile_resolutions")
+        self.label_15 = QLabel(self.groupBox_8)
+        self.label_15.setObjectName(u"label_15")
+
+        self.profile_resolutions.addWidget(self.label_15, 1, 1, 1, 1)
+
+        self.checkBox_2 = QCheckBox(self.groupBox_8)
+        self.checkBox_2.setObjectName(u"checkBox_2")
+        self.checkBox_2.setChecked(True)
+
+        self.profile_resolutions.addWidget(self.checkBox_2, 1, 0, 1, 1)
+
+        self.checkBox = QCheckBox(self.groupBox_8)
+        self.checkBox.setObjectName(u"checkBox")
+        self.checkBox.setChecked(True)
+
+        self.profile_resolutions.addWidget(self.checkBox, 0, 0, 1, 1)
+
+        self.label_2 = QLabel(self.groupBox_8)
+        self.label_2.setObjectName(u"label_2")
+
+        self.profile_resolutions.addWidget(self.label_2, 0, 1, 1, 1)
+
+        self.checkBox_4 = QCheckBox(self.groupBox_8)
+        self.checkBox_4.setObjectName(u"checkBox_4")
+        self.checkBox_4.setChecked(True)
+
+        self.profile_resolutions.addWidget(self.checkBox_4, 2, 0, 1, 1)
+
+        self.label_3 = QLabel(self.groupBox_8)
+        self.label_3.setObjectName(u"label_3")
+
+        self.profile_resolutions.addWidget(self.label_3, 2, 1, 1, 1)
+
+
+        self.verticalLayout_6.addLayout(self.profile_resolutions)
+
+
+        self.verticalLayout_13.addWidget(self.groupBox_8)
+
         self.groupBox_6 = QGroupBox(self.scrollAreaWidgetContents_2)
         self.groupBox_6.setObjectName(u"groupBox_6")
         self.verticalLayout_11 = QVBoxLayout(self.groupBox_6)
         self.verticalLayout_11.setObjectName(u"verticalLayout_11")
+        self.label_25 = QLabel(self.groupBox_6)
+        self.label_25.setObjectName(u"label_25")
+        self.label_25.setWordWrap(True)
+
+        self.verticalLayout_11.addWidget(self.label_25)
+
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.track_mouse = QCheckBox(self.groupBox_6)
@@ -1314,7 +1371,16 @@ class Ui_MainWindow(object):
         self.label_13.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit profile_modified", None))
 #endif // QT_CONFIG(tooltip)
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"Modified:", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
+        self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Resolutions", None))
+        self.label_17.setText(QCoreApplication.translate("MainWindow", u"Choose which resolutions should be visible in the render.", None))
+        self.label_15.setText(QCoreApplication.translate("MainWindow", u"2.5%", None))
+        self.checkBox_2.setText(QCoreApplication.translate("MainWindow", u"1920x1080", None))
+        self.checkBox.setText(QCoreApplication.translate("MainWindow", u"2560x1440", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"97.2%", None))
+        self.checkBox_4.setText(QCoreApplication.translate("MainWindow", u"1080x1920", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"0.3%", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Tracking", None))
+        self.label_25.setText(QCoreApplication.translate("MainWindow", u"Choose which data should be tracked.", None))
 #if QT_CONFIG(tooltip)
         self.track_mouse.setToolTip(QCoreApplication.translate("MainWindow", u"Enable or disable mouse tracking for the selected profile.", None))
 #endif // QT_CONFIG(tooltip)

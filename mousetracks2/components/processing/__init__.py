@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass, field
+from typing import Iterator
 
 import numpy as np
 
@@ -10,7 +11,7 @@ from .. import ipc
 from ..abstract import Component
 from ...exceptions import ExitRequest
 from ...export import Export
-from ...file import MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ...file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ...legacy import keyboard
 from ...utils import keycodes, get_cursor_pos
 from ...utils.math import calculate_line, calculate_distance, calculate_pixel_offset
@@ -120,6 +121,11 @@ class Processing(Component):
                 keys -= profile.key_presses[keycodes.VK_LMENU]
                 keys -= profile.key_presses[keycodes.VK_RMENU]
 
+        # Get all resolutions and how much data they contain
+        resolutions: dict[tuple[int, int], tuple[int, int]] = {}
+        for resolution, array in profile.cursor_map.density_arrays.items():
+            resolutions[resolution] = (np.sum(array), resolution not in profile.config.disabled_resolutions)
+
         # Send data back to the GUI
         self.send_data(ipc.ProfileData(
             profile_name=profile.name,
@@ -137,6 +143,7 @@ class Processing(Component):
             bytes_sent=sum(profile.data_upload.values()),
             bytes_recv=sum(profile.data_download.values()),
             config=profile.config,
+            resolutions=resolutions,
         ))
 
     @property
@@ -222,16 +229,21 @@ class Processing(Component):
                               left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
                               ) -> dict[tuple[int, int], list[np.typing.ArrayLike]]:
         """Get a list of arrays to use for a render."""
+        def get_arrays(array_map: ArrayResolutionMap) -> Iterator[np.typing.ArrayLike]:
+            for resolution, arrays in array_map.items():
+                if resolution not in profile.config.disabled_resolutions:
+                    yield arrays
+
         arrays: dict[tuple[int, int], list[np.typing.ArrayLike]] = defaultdict(list)
         match render_type:
             case ipc.RenderType.Time:
-                arrays[0, 0].extend(profile.cursor_map.sequential_arrays.values())
+                arrays[0, 0].extend(get_arrays(profile.cursor_map.sequential_arrays))
 
             case ipc.RenderType.TimeHeatmap:
-                arrays[0, 0].extend(profile.cursor_map.density_arrays.values())
+                arrays[0, 0].extend(get_arrays(profile.cursor_map.density_arrays))
 
             case ipc.RenderType.Speed:
-                arrays[0, 0].extend(profile.cursor_map.speed_arrays.values())
+                arrays[0, 0].extend(get_arrays(profile.cursor_map.speed_arrays))
 
             case ipc.RenderType.SingleClick:
                 for keycode, map in profile.mouse_single_clicks.items():
@@ -241,7 +253,7 @@ class Processing(Component):
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(map.values())
+                    arrays[0, 0].extend(get_arrays(map))
 
             case ipc.RenderType.DoubleClick:
                 for keycode, map in profile.mouse_double_clicks.items():
@@ -251,7 +263,7 @@ class Processing(Component):
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(map.values())
+                    arrays[0, 0].extend(get_arrays(map))
 
             case ipc.RenderType.HeldClick:
                 for keycode, map in profile.mouse_held_clicks.items():
@@ -261,7 +273,7 @@ class Processing(Component):
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(map.values())
+                    arrays[0, 0].extend(get_arrays(map))
 
             case ipc.RenderType.Thumbstick_Time:
                 if left_clicks:
@@ -702,6 +714,15 @@ class Processing(Component):
 
             case ipc.ExportStats():
                 self._export_stats(message)
+
+            case ipc.ToggleProfileResolution():
+                profile = self.all_profiles[message.profile]
+                profile.is_modified = True
+                lst = profile.config.disabled_resolutions
+                if message.enable:
+                    del lst[lst.index(message.resolution)]
+                else:
+                    lst.append(message.resolution)
 
             case _:
                 raise NotImplementedError(message)

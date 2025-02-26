@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO
 
@@ -55,6 +55,7 @@ class ProfileConfig:
     track_keyboard: bool = True
     track_gamepad: bool = True
     track_network: bool = True
+    disabled_resolutions: list = field(default_factory=list)
 
     def save(self, f: IO[bytes]) -> None:
         """Save the config to a YAML file."""
