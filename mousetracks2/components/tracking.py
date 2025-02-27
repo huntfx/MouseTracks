@@ -6,7 +6,10 @@ from typing import Iterator
 
 import psutil
 import pynput
-import XInput  # type: ignore
+try:
+    import XInput  # type: ignore
+except IOError:
+    XInput = None
 
 from . import ipc
 from .abstract import Component
@@ -18,8 +21,11 @@ from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
 
 
-XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
-                  if isinstance(v, int) and hasattr(keycodes, k)}
+if XInput is None:
+    XINPUT_OPCODES = {}
+else:
+    XINPUT_OPCODES = {k: v for k, v in vars(XInput).items()
+                      if isinstance(v, int) and hasattr(keycodes, k)}
 
 
 def ticks(ups: int) -> Iterator[int]:
@@ -47,6 +53,12 @@ def ticks(ups: int) -> Iterator[int]:
         time.sleep(remaining)
 
 
+def _getConnectedGamepads() -> tuple[bool, bool, bool, bool]:
+    """Determine which gamepad indexes are connected."""
+    if XInput is None:
+        return (False, False, False, False)
+    return XInput.get_connected()
+
 
 @dataclass
 class DataState:
@@ -61,8 +73,8 @@ class DataState:
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
     monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
-    gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
-    gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=XInput.get_connected)
+    gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
+    gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
     gamepad_force_recheck: bool = field(default=False)
     gamepad_stick_l_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     gamepad_stick_r_position: dict[int, tuple[int, int]] = field(default_factory=dict)
@@ -374,7 +386,7 @@ class Tracking(Component):
                 self._key_press(opcode)
 
             # Determine which gamepads are connected
-            if self.track_gamepad:
+            if self.track_gamepad and XInput is not None:
                 if not tick % 60 or data.gamepad_force_recheck:
                     data.gamepads_current = XInput.get_connected()
                     data.gamepad_force_recheck = False

@@ -7,6 +7,7 @@ Components:
     - cli
 """
 
+import sys
 import time
 import traceback
 import multiprocessing
@@ -16,7 +17,6 @@ from . import app_detection, gui, ipc, processing, tracking
 from ..gui.splash import SplashScreen
 from ..constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
-from ..utils.system.win32 import WindowHandle, get_window_handle
 
 
 class Hub:
@@ -206,6 +206,10 @@ class Hub:
 
     def _toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
+        if sys.platform != 'win32':
+            return
+
+        from ..utils.system.win32 import WindowHandle, get_window_handle
         hwnd = get_window_handle(console=True)
         handle = WindowHandle(hwnd)
         if handle.pid:

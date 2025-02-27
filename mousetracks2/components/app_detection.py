@@ -1,4 +1,5 @@
 import re
+import sys
 
 import psutil
 
@@ -7,7 +8,12 @@ from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
-from ..utils.system.win32 import PID, WindowHandle, get_window_handle
+
+if sys.platform == 'win32':
+    from ..utils.system.win32 import PID, WindowHandle, get_window_handle
+    SUPPORTED = True
+else:
+    SUPPORTED = False
 
 
 
@@ -24,7 +30,7 @@ class AppDetection(Component):
         self._previous_res: tuple[int, int] | None = None
         self._previous_rects: list[tuple[int, int, int, int]] = []
 
-    def _pid_fallback(self, title: str) -> PID:
+    def _pid_fallback(self, title: str) -> int:
         """Guess the PID of the selected application.
         This is only for when the PID returns 0.
 
@@ -39,15 +45,18 @@ class AppDetection(Component):
             if proc.info['exe'] is None or pid.hwnds:
                 continue
             if self.applist.match(proc.info['exe'], title):
-                return pid
-        return PID(0)
+                return int(pid)
+        return 0
 
     def check_running_app(self) -> None:
+        if not SUPPORTED:
+            return
+
         hwnd = get_window_handle()
         handle = WindowHandle(hwnd)
         title = handle.title
         if handle.pid == 0:
-            handle.pid = self._pid_fallback(title)
+            handle.pid = PID(self._pid_fallback(title))
 
         exe = handle.pid.executable
         focus_changed = False
