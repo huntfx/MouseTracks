@@ -1,25 +1,28 @@
 """Linux specific functions.
 
-I have next to no Linux experience, so making notes here.
+I have no Linux experience, so making notes here of what's required to
+get it running.
 
 Arch Linux:
-    So far unsuccessful at launching the window.
-    It gets stuck on creating a QMenuBar.
-
     https://www.osboxes.org/arch-linux/
+    rm /var/lib/pacman/db.lck
     sudo pacman -Sy
-    sudo pacman -S python-pip python-setuptools python-wheel python-build base-devel
     sudo pacman -S git
-    sudo pacman -S qt5-base qt5-x11extras xcb-util xcb-util-keysyms xcb-util-wm xcb-util-image xcb-util-renderutil
-        (may not be required)
-    sudo pacman -S xcb-util-cursor
     cd /home/osboxes
     git clone https://github.com/huntfx/mousetracks
     cd mousetracks
+    sudo pacman -S python-pip python-setuptools python-wheel python-build base-devel
     python -m venv .venv
     source ./.venv/bin/activate
+    pip install --upgrade pip
+    sudo pacman -S xcb-util-cursor
+    pip install -r requirements.txt
     python launch.py
     deactivate
+
+Issues:
+    Non alphanumeric keys have a totally different mapping.
+    Modifier keys are way out of range (close to 65535).
 """
 
 from Xlib import display
