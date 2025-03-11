@@ -375,7 +375,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.addItems(sorted(colour_maps))
 
         # Set it back to the previous colour selection
-        self.ui.colour_option.setCurrentText(self.render_colour)
+        if (idx := self.ui.colour_option.findText(self.render_colour)) == -1:
+            self.ui.colour_option.setCurrentText(self.render_colour)
+        else:
+            self.ui.colour_option.setCurrentIndex(idx)
 
         # Load in other settings
         self.ui.contrast.setValue(self.contrast)
