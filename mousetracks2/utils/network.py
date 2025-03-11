@@ -7,7 +7,14 @@ class Interface:
     """Store the interface name and MAC address."""
 
     name: str
-    mac: str | None
+    _mac: str | None
+
+    @property
+    def mac(self) -> str:
+        """Get the MAC address or return a default one."""
+        if self._mac is None:
+            return '00-00-00-00-00-00'
+        return self._mac
 
 
 class Interfaces:
@@ -41,11 +48,17 @@ class Interfaces:
         """Get an interface from its name."""
         if name not in cls._FROM_NAME:
             cls._reload()
-        return cls._FROM_NAME[name]
+        try:
+            return cls._FROM_NAME[name]
+        except KeyError:
+            return Interface(name, None)
 
     @classmethod
     def get_from_mac(cls, mac: str) -> Interface:
         """Get an interface from its MAC address."""
         if mac not in cls._FROM_MAC:
             cls._reload()
-        return cls._FROM_MAC[mac]
+        try:
+            return cls._FROM_MAC[mac]
+        except KeyError:
+            return Interface('', mac)
