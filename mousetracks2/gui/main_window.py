@@ -17,6 +17,7 @@ from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .widgets import Pixel
 from ..components import ipc
+from ..config.cli import DISABLE_MOUSE, DISABLE_KEYBOARD, DISABLE_GAMEPAD, DISABLE_NETWORK
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
@@ -1282,10 +1283,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.handle_delete_button_visibility()
 
                 # Resume signals on the track options
-                self.ui.track_mouse.setEnabled(finished_loading)
-                self.ui.track_keyboard.setEnabled(finished_loading)
-                self.ui.track_gamepad.setEnabled(finished_loading)
-                self.ui.track_network.setEnabled(finished_loading)
+                # If disabled, ensure they are unchecked
+                if DISABLE_MOUSE:
+                    self.ui.track_mouse.setChecked(False)
+                else:
+                    self.ui.track_mouse.setEnabled(finished_loading)
+                if DISABLE_KEYBOARD:
+                    self.ui.track_keyboard.setChecked(False)
+                else:
+                    self.ui.track_keyboard.setEnabled(finished_loading)
+                if DISABLE_GAMEPAD:
+                    self.ui.track_gamepad.setChecked(False)
+                else:
+                    self.ui.track_gamepad.setEnabled(finished_loading)
+                if DISABLE_NETWORK:
+                    self.ui.track_network.setChecked(False)
+                else:
+                    self.ui.track_network.setEnabled(finished_loading)
 
             case ipc.DataTransfer() if self.is_live and self.ui.track_network.isChecked():
                 self.bytes_sent += message.bytes_sent
