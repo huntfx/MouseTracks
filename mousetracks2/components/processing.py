@@ -9,6 +9,7 @@ import numpy as np
 
 from . import ipc
 from .abstract import Component
+from ..config.cli import SINGLE_MONITOR
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
@@ -162,10 +163,23 @@ class Processing(Component):
             if self.current_application.rects:
                 monitor_data = self.current_application.rects
 
-        for x1, y1, x2, y2 in monitor_data:
-            result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
+        if SINGLE_MONITOR:
+            x_min, y_min, x_max, y_max = monitor_data[0]
+            for x1, y1, x2, y2 in monitor_data[1:]:
+                x_min = min(x_min, x1)
+                y_min = min(y_min, y1)
+                x_max = max(x_max, x2)
+                y_max = max(y_max, y2)
+            result = calculate_pixel_offset(pixel[0], pixel[1], x_min, y_min, x_max, y_max)
             if result is not None:
                 return result
+
+        else:
+            for x1, y1, x2, y2 in monitor_data:
+                result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
+                if result is not None:
+                    return result
+
         return None
 
     def _record_move(self, data: MovementMaps, position: tuple[int, int],

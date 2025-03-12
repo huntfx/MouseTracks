@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--no-gamepad', action='store_true', help='Disable gamepad tracking')
     parser.add_argument('--no-network', action='store_true', help='Disable network tracking')
     parser.add_argument('--admin', action='store_true', help='Run as administrator')
+    parser.add_argument('--single-monitor', action='store_true', help='Record all monitors as one large display')
     return parser.parse_args()
 
 
@@ -47,3 +48,5 @@ DISABLE_GAMEPAD: bool = _ARGS.no_gamepad
 DISABLE_NETWORK: bool = _ARGS.no_network
 
 ELEVATE: bool = _ARGS.admin
+
+SINGLE_MONITOR: bool = _ARGS.single_monitor

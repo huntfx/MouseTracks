@@ -7,8 +7,8 @@
 - [GUI] When switching profiles, pixels are queued for drawing with the incorrect offset data
 
 [Low Priority]
+- Profile setting to record as single monitor
 - Try option to use time heatmap to act as an alpha channel on time, clipping of 75% seems to work well
-- Option to disable multi monitor handling, track both separately
 - Gamepad rendering
 
 [Future Ideas]
