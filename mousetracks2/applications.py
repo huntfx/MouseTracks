@@ -1,8 +1,12 @@
 import os
 import re
+import sys
 from collections import defaultdict
+from contextlib import suppress
 from pathlib import Path
-from typing import Iterator, TextIO
+from typing import Iterable, Iterator
+from urllib.request import urlopen
+from urllib.error import URLError
 
 from .constants import BASE_DIR, REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 
@@ -31,8 +35,10 @@ REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
 APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
+MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/Appist.txt'
 
-def _parse_data(f: TextIO) -> dict[str, dict[str | None, str]]:
+
+def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
     """Parse data from a file."""
     result: dict[str, dict[str | None, str]] = defaultdict(dict)
     for line in filter(bool, map(str.strip, f)):
@@ -119,7 +125,17 @@ class AppList:
         self._wildcard_titles: dict[str, dict[str, re.Pattern]] = defaultdict(dict)
         self.data: dict[str, dict[str | None, str]] = defaultdict(dict)
 
+        # Load the offline data first
         self.load(REPO_PATH)
+
+        # Update with the latest online data
+        if '--offline' not in sys.argv:
+            with suppress(URLError):
+                with urlopen(MASTER_URL) as response:
+                    data = response.read().decode('utf-8')
+                    self.import_(_parse_data(data))
+
+        # Update with any local changes
         if LOCAL_PATH.exists():
             self.load(LOCAL_PATH)
 

@@ -138,7 +138,7 @@ class AppDetection(Component):
                 raise RuntimeError('[Application Detection] Test Exception')
 
             case ipc.ReloadAppList():
-                self.applist = AppList()
+                self.applist.load(LOCAL_PATH)
                 print(f'[Application Detection] Successfully reloaded "{LOCAL_PATH}"')
 
     def run(self):

@@ -8,7 +8,6 @@
 
 [Low Priority]
 - Try option to use time heatmap to act as an alpha channel on time, clipping of 75% seems to work well
-- Update AppList.txt online, add --offline flag to block
 - Option to disable multi monitor handling, track both separately
 - Gamepad rendering
 - Option to run as elevated
