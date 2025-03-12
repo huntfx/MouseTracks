@@ -5,11 +5,11 @@ from typing import Any, IO
 
 import yaml
 
-from .constants import BASE_DIR
-from .utils import keycodes
+from ..config.cli import DATA_DIR
+from ..utils import keycodes
 
 
-GLOBAL_CONFIG_PATH = BASE_DIR / 'config.yaml'
+GLOBAL_CONFIG_PATH = DATA_DIR / 'config.yaml'
 
 
 @dataclass

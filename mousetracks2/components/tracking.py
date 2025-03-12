@@ -13,7 +13,7 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..config import GlobalConfig
+from ..config.settings import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import get_cursor_pos, keycodes

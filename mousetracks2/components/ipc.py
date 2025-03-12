@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 import numpy as np
 
-from ..config import ProfileConfig
+from ..config.settings import ProfileConfig
 
 
 class Target:

@@ -4,11 +4,12 @@ import time
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from ..gui.utils import ICON_PATH
-from ..gui.main_window import MainWindow
 from . import ipc
 from .abstract import Component
-from ..config import GlobalConfig
+from ..gui.utils import ICON_PATH
+from ..gui.main_window import MainWindow
+from ..config.cli import AUTOSTART, START_HIDDEN
+from ..config.settings import GlobalConfig
 
 
 class QueueWorker(QtCore.QObject):
@@ -40,11 +41,7 @@ class QueueWorker(QtCore.QObject):
 
 def should_minimise_on_start() -> bool:
     """Determine if the app should minimise on startup."""
-    if '--minimise' in sys.argv or '--minimize' in sys.argv:
-        return True
-    if '--autostart' in sys.argv and GlobalConfig().minimise_on_start:
-        return True
-    return False
+    return START_HIDDEN or AUTOSTART and GlobalConfig().minimise_on_start
 
 
 class GUI(Component):

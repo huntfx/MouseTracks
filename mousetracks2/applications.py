@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from collections import defaultdict
 from contextlib import suppress
 from pathlib import Path
@@ -8,7 +7,8 @@ from typing import Iterable, Iterator
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .constants import BASE_DIR, REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .config.cli import DATA_DIR, OFFLINE
+from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 
 
 DEFAULT_TEXT = (
@@ -29,7 +29,7 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = BASE_DIR / 'AppList.txt'
+LOCAL_PATH = DATA_DIR / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
@@ -129,7 +129,7 @@ class AppList:
         self.load(REPO_PATH)
 
         # Update with the latest online data
-        if '--offline' not in sys.argv:
+        if not OFFLINE:
             with suppress(URLError):
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')

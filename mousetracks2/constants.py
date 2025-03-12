@@ -2,22 +2,10 @@ import os
 import sys
 from pathlib import Path
 
-# Get the appdata folder
-# Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
-match sys.platform:
-    case "win32":
-        APPDATA = Path(os.path.expandvars('%APPDATA%'))
-    case 'darwin':
-        APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
-    case _:
-        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser("~/.local/share")))
-
 if hasattr(sys, '_MEIPASS'):
     REPO_DIR = Path(sys._MEIPASS)
 else:
     REPO_DIR = Path(__file__).parent.parent
-
-BASE_DIR = APPDATA / 'MouseTracks'
 
 DEFAULT_PROFILE_NAME = 'Desktop'
 
