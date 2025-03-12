@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import math
+import re
 import sys
 import time
 from contextlib import suppress
@@ -998,7 +999,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = 'Gamepad Thumbstick Speed'
             case _:
                 name = 'Tracks'
-        filename = f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile} - {name}.png'
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        filename = f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
 
         if accept:
