@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--no-keyboard', action='store_true', help='Disable keyboard tracking')
     parser.add_argument('--no-gamepad', action='store_true', help='Disable gamepad tracking')
     parser.add_argument('--no-network', action='store_true', help='Disable network tracking')
+    parser.add_argument('--admin', action='store_true', help='Run as administrator')
     return parser.parse_args()
 
 
@@ -44,3 +45,5 @@ DISABLE_KEYBOARD: bool = _ARGS.no_keyboard
 DISABLE_GAMEPAD: bool = _ARGS.no_gamepad
 
 DISABLE_NETWORK: bool = _ARGS.no_network
+
+ELEVATE: bool = _ARGS.admin

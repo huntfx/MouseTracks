@@ -10,7 +10,6 @@
 - Try option to use time heatmap to act as an alpha channel on time, clipping of 75% seems to work well
 - Option to disable multi monitor handling, track both separately
 - Gamepad rendering
-- Option to run as elevated
 
 [Future Ideas]
 - Store last X hours in history, scroll back in time. Perhaps this could be a separate component that will make memory management easier.

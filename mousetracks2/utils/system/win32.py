@@ -6,6 +6,7 @@ import ctypes
 import ctypes.wintypes
 import re
 import os
+import sys
 from typing import Any
 
 import winreg
@@ -18,6 +19,8 @@ user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
 psapi = ctypes.windll.psapi
+
+shell32 = ctypes.windll.shell32
 
 SM_CXSCREEN = 0
 
@@ -275,3 +278,15 @@ def remove_autostart(name: str) -> None:
     """Stop an executable running on startup."""
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.DeleteValue(key, name)
+
+
+def is_elevated() -> bool:
+    """Check if the script is running with admin privileges."""
+    return bool(shell32.IsUserAnAdmin())
+
+
+def relaunch_as_elevated() -> None:
+    """Relaunch the script with admin privileges."""
+    params = ' '.join(f'"{arg}"' for arg in sys.argv)
+    shell32.ShellExecuteW(None, 'runas', sys.executable, params, None, 1)
+    sys.exit()
