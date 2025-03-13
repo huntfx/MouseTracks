@@ -6,26 +6,26 @@ from pathlib import Path
 # Get the appdata folder
 # Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
 match sys.platform:
-    case "win32":
+    case 'win32':
         APPDATA = Path(os.path.expandvars('%APPDATA%'))
     case 'darwin':
         APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
     case _:
-        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser("~/.local/share")))
+        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser('~/.local/share')))
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='MouseTracks')
-    parser.add_argument('--offline', action='store_true', help='Force offline mode')
-    parser.add_argument('--start-hidden', action='store_true', help='Minimise on startup')
+    parser.add_argument('--offline', action='store_true', help='force offline mode')
+    parser.add_argument('--start-hidden', action='store_true', help='minimise on startup')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='Specify an alternative data directory')
-    parser.add_argument('--no-mouse', action='store_true', help='Disable mouse tracking')
-    parser.add_argument('--no-keyboard', action='store_true', help='Disable keyboard tracking')
-    parser.add_argument('--no-gamepad', action='store_true', help='Disable gamepad tracking')
-    parser.add_argument('--no-network', action='store_true', help='Disable network tracking')
-    parser.add_argument('--admin', action='store_true', help='Run as administrator')
-    parser.add_argument('--single-monitor', action='store_true', help='Record all monitors as one large display')
+    parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify an alternative data directory')
+    parser.add_argument('--no-mouse', action='store_true', help='disable mouse tracking')
+    parser.add_argument('--no-keyboard', action='store_true', help='disable keyboard tracking')
+    parser.add_argument('--no-gamepad', action='store_true', help='disable gamepad tracking')
+    parser.add_argument('--no-network', action='store_true', help='disable network tracking')
+    parser.add_argument('--admin', action='store_true', help='run as administrator')
+    parser.add_argument('--single-monitor', action='store_true', help='record all monitors as one large display')
     return parser.parse_args()
 
 

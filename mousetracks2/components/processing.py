@@ -159,9 +159,8 @@ class Processing(Component):
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         monitor_data = self.monitor_data
-        if self.current_application is not None:
-            if self.current_application.rects:
-                monitor_data = self.current_application.rects
+        if self.current_application.rects:
+            monitor_data = self.current_application.rects
 
         if SINGLE_MONITOR:
             x_min, y_min, x_max, y_max = monitor_data[0]

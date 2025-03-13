@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes
-import re
 import os
+import re
 import sys
 from typing import Any
 
 import winreg
-
-from ...constants import IS_EXE
 
 
 user32 = ctypes.windll.user32
