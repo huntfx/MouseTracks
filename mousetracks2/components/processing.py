@@ -154,7 +154,7 @@ class Processing(Component):
         """
         creation_day = self.profile.created // 86400
         current_day = self.timestamp // 86400
-        return current_day - creation_day
+        return max(0, current_day - creation_day)
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
