@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--no-network', action='store_true', help='disable network tracking')
     parser.add_argument('--admin', action='store_true', help='run as administrator')
     parser.add_argument('--single-monitor', action='store_true', help='record all monitors as one large display')
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 
 _ARGS = parse_args()
