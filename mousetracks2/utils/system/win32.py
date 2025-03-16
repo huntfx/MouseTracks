@@ -91,16 +91,6 @@ class PID:
 
     @property
     def hwnds(self) -> list[int]:
-        """Find all window handles for the given process ID.
-
-        This shouldn't be required often, but certain applications such
-        as "HP Anyware Client" have multiple windows with different
-        handles.
-
-        In some cases, if reading the PID from the hwnd returns 0, then
-        directly querying the window handles from the PID will return an
-        empty list. See the `WindowHandle` class for details.
-        """
         hwnds: list[int] = []
         if not self.pid:
             return hwnds
@@ -114,8 +104,22 @@ class PID:
 
         EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
         user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
+        hwnds.sort()
+        return hwnds
 
-        return [hwnd for hwnd in sorted(hwnds) if user32.IsWindowVisible(hwnd)]
+    @property
+    def visible_hwnds(self) -> list[int]:
+        """Find all window handles for the given process ID.
+
+        This shouldn't be required often, but certain applications such
+        as "HP Anyware Client" have multiple windows with different
+        handles.
+
+        In some cases, if reading the PID from the hwnd returns 0, then
+        directly querying the window handles from the PID will return an
+        empty list. See the `WindowHandle` class for details.
+        """
+        return [hwnd for hwnd in self.hwnds if user32.IsWindowVisible(hwnd)]
 
     @property
     def executable(self) -> str:
@@ -135,7 +139,7 @@ class PID:
         right = bottom = -2 << 31
 
         valid = False
-        for hwnd in self.hwnds:
+        for hwnd in self.visible_hwnds:
             rect = ctypes.wintypes.RECT()
             if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
                 valid = True
@@ -151,7 +155,7 @@ class PID:
     @property
     def rects(self) -> list[tuple[int, int, int, int]]:
         """Get the rects of each window handle."""
-        return [handle.rect for handle in map(WindowHandle, self.hwnds)]
+        return [handle.rect for handle in map(WindowHandle, self.visible_hwnds)]
 
     @property
     def position(self) -> tuple[int, int]:

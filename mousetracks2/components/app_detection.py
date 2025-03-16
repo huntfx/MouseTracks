@@ -40,12 +40,16 @@ class AppDetection(Component):
         So given this, checking for any executable matches and ignoring
         any with window handles should give a relatively accurate guess.
         """
+        pids = []
         for proc in psutil.process_iter(attrs=['pid', 'exe']):
             pid = PID(proc.info['pid'])
             if proc.info['exe'] is None or pid.hwnds:
                 continue
             if self.applist.match(proc.info['exe'], title):
-                return int(pid)
+                print(f'[Application Detection] Fallback matched "{proc.info["exe"]}" with PID {proc.info["pid"]}')
+                pids.append(int(pid))
+        if pids:
+            return pids[-1]
         return 0
 
     def check_running_app(self) -> None:
@@ -56,6 +60,7 @@ class AppDetection(Component):
         handle = WindowHandle(hwnd)
         title = handle.title
         if handle.pid == 0:
+            print('[Application Detection] PID returned 0, running fallback function...')
             handle.pid = PID(self._pid_fallback(title))
 
         exe = handle.pid.executable
