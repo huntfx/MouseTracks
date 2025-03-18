@@ -107,7 +107,8 @@ class Tracking(Component):
         self.track_network = not DISABLE_NETWORK and config.track_network
 
         # Setup pynput listeners
-        self._pynput_opcodes: set[int | keycodes.KeyCode] = set()
+        self._pynput_opcodes: dict[int | keycodes.KeyCode, int] = {}
+        self._pynput_quick_press: list[int | keycodes.KeyCode] = []
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
@@ -261,9 +262,9 @@ class Tracking(Component):
             return
 
         if pressed:
-            self._pynput_opcodes.add(keycodes.MOUSE_CODES[idx])
-        else:
-            self._pynput_opcodes.discard(keycodes.MOUSE_CODES[idx])
+            self._pynput_opcodes[keycodes.MOUSE_CODES[idx]] = self.data.tick_current
+        elif keycodes.MOUSE_CODES[idx] in self._pynput_opcodes:
+            del self._pynput_opcodes[keycodes.MOUSE_CODES[idx]]
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
@@ -299,7 +300,7 @@ class Tracking(Component):
             vk = key.value.vk
 
         if vk is not None:
-            self._pynput_opcodes.add(vk)
+            self._pynput_opcodes[vk] = self.data.tick_current
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
@@ -315,10 +316,15 @@ class Tracking(Component):
         else:
             vk = None
 
-        if vk is not None:
-            self._pynput_opcodes.discard(vk)
+        if vk is not None and vk in self._pynput_opcodes:
+            recorded_tick = self._pynput_opcodes.pop(vk)
 
-    def _key_press(self, keycode: int | keycodes.KeyCode) -> None:
+            # Some keyboard features may emit faster than a tick
+            # If so, queue them in a separate list
+            if recorded_tick == self.data.tick_current:
+                self._pynput_quick_press.append(vk)
+
+    def _key_press(self, keycode: int | keycodes.KeyCode, quick_press: bool = False) -> None:
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
@@ -326,7 +332,7 @@ class Tracking(Component):
         # Handle all standard keypresses
         if keycode <= 0xFF:
             # First press
-            if press_latest != self.data.tick_current - 1:
+            if quick_press or press_latest != self.data.tick_current - 1:
                 if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
                     self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
                 self.send_data(ipc.KeyPress(int(keycode)))
@@ -383,8 +389,10 @@ class Tracking(Component):
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Record key presses / mouse clicks
-            for opcode in self._pynput_opcodes:
+            for opcode in tuple(self._pynput_opcodes):
                 self._key_press(opcode)
+            while self._pynput_quick_press:
+                self._key_press(self._pynput_quick_press.pop(), quick_press=True)
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
