@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import numpy as np
 
-from .config.cli import DATA_DIR
+from .config.cli import CLI
 from .config.settings import ProfileConfig
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
 from .utils.keycodes import CLICK_CODES
@@ -21,7 +21,7 @@ CURRENT_FILE_VERSION = 1
 EXTENSION = 'mtk'
 """Extension to use for the profile data."""
 
-PROFILE_DIR = DATA_DIR / 'Profiles'
+PROFILE_DIR = CLI.data_dir / 'Profiles'
 
 
 class UnsupportedVersionError(Exception):

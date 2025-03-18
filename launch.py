@@ -9,7 +9,7 @@ if hasattr(sys, '_MEIPASS'):
     sys.path.append(os.path.join(sys._MEIPASS, 'resources', 'build'))
 
 from mousetracks2.components import Hub
-from mousetracks2.config.cli import ELEVATE
+from mousetracks2.config.cli import CLI
 from mousetracks2.utils.system import is_elevated, relaunch_as_elevated
 
 
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     set_start_method('spawn')
 
     # Relaunch as elevated
-    if ELEVATE and not is_elevated():
+    if CLI.elevate and not is_elevated():
         relaunch_as_elevated()
 
     Hub(use_gui=True).run()

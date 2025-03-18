@@ -13,7 +13,7 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..config.cli import DISABLE_MOUSE, DISABLE_KEYBOARD, DISABLE_GAMEPAD, DISABLE_NETWORK
+from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
@@ -101,10 +101,10 @@ class Tracking(Component):
         self.autosave = True
 
         config = GlobalConfig()
-        self.track_mouse = not DISABLE_MOUSE and config.track_mouse
-        self.track_keyboard = not DISABLE_KEYBOARD and config.track_keyboard
-        self.track_gamepad = not DISABLE_GAMEPAD and config.track_gamepad
-        self.track_network = not DISABLE_NETWORK and config.track_network
+        self.track_mouse = not CLI.disable_mouse and config.track_mouse
+        self.track_keyboard = not CLI.disable_keyboard and config.track_keyboard
+        self.track_gamepad = not CLI.disable_gamepad and config.track_gamepad
+        self.track_network = not CLI.disable_network and config.track_network
 
         # Setup pynput listeners
         self._pynput_opcodes: dict[int | keycodes.KeyCode, int] = {}

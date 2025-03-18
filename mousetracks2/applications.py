@@ -7,7 +7,7 @@ from typing import Iterable, Iterator
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .config.cli import DATA_DIR, OFFLINE
+from .config.cli import CLI
 from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 
 
@@ -29,7 +29,7 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = DATA_DIR / 'AppList.txt'
+LOCAL_PATH = CLI.data_dir / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
@@ -129,7 +129,7 @@ class AppList:
         self.load(REPO_PATH)
 
         # Update with the latest online data
-        if not OFFLINE:
+        if not CLI.offline:
             with suppress(URLError):
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')

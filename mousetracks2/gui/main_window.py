@@ -17,7 +17,7 @@ from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .widgets import Pixel
 from ..components import ipc
-from ..config.cli import DISABLE_MOUSE, DISABLE_KEYBOARD, DISABLE_GAMEPAD, DISABLE_NETWORK, SINGLE_MONITOR
+from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
@@ -881,7 +881,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
-        if SINGLE_MONITOR:
+        if CLI.single_monitor:
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
                 x_min = min(x_min, x1)
@@ -1297,19 +1297,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Resume signals on the track options
                 # If disabled, ensure they are unchecked
-                if DISABLE_MOUSE:
+                if CLI.disable_mouse:
                     self.ui.track_mouse.setChecked(False)
                 else:
                     self.ui.track_mouse.setEnabled(finished_loading)
-                if DISABLE_KEYBOARD:
+                if CLI.disable_keyboard:
                     self.ui.track_keyboard.setChecked(False)
                 else:
                     self.ui.track_keyboard.setEnabled(finished_loading)
-                if DISABLE_GAMEPAD:
+                if CLI.disable_gamepad:
                     self.ui.track_gamepad.setChecked(False)
                 else:
                     self.ui.track_gamepad.setEnabled(finished_loading)
-                if DISABLE_NETWORK:
+                if CLI.disable_network:
                     self.ui.track_network.setChecked(False)
                 else:
                     self.ui.track_network.setEnabled(finished_loading)

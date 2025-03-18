@@ -29,24 +29,136 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
-_ARGS = parse_args()
+def bool2str(value: bool) -> str:
+    """Convert a value from `bool` to `str`."""
+    return f'{value:d}'
 
-OFFLINE: bool = _ARGS.offline
 
-START_HIDDEN: bool = _ARGS.start_hidden
+def str2bool(value: str) -> bool:
+    """Convert a value from `str` to `bool`."""
+    return bool(int(value))
 
-AUTOSTART: bool = _ARGS.autostart
 
-DATA_DIR = Path(_ARGS.data_dir)
+class _CLI:
+    """Store all the arguments in environment variables.
 
-DISABLE_MOUSE: bool = _ARGS.no_mouse
+    When a new process is spawned, it may not retain `sys.argv`, but it
+    does retain all the environment variables. By using `setdefault`,
+    this class ensures that the values are set by the parent process and
+    read by the child processes.
+    """
+    def __init__(self):
+        args = parse_args()
+        self.offline = args.offline
+        self.start_hidden = args.start_hidden
+        self.autostart = args.autostart
+        self.data_dir = Path(args.data_dir)
+        self.disable_mouse = args.no_mouse
+        self.disable_keyboard = args.no_keyboard
+        self.disable_gamepad = args.no_gamepad
+        self.disable_network = args.no_network
+        self.elevate = args.admin
+        self.single_monitor = args.single_monitor
 
-DISABLE_KEYBOARD: bool = _ARGS.no_keyboard
+    @property
+    def offline(self) -> bool:
+        """Force offline mode so that no connections are ever made."""
+        return str2bool(os.environ['MT_OFFLINE'])
 
-DISABLE_GAMEPAD: bool = _ARGS.no_gamepad
+    @offline.setter
+    def offline(self, value: bool) -> None:
+        """Set offline mode."""
+        os.environ.setdefault('MT_OFFLINE', bool2str(value))
 
-DISABLE_NETWORK: bool = _ARGS.no_network
+    @property
+    def start_hidden(self) -> bool:
+        """Start the application as hidden."""
+        return str2bool(os.environ['MT_START_HIDDEN'])
 
-ELEVATE: bool = _ARGS.admin
+    @start_hidden.setter
+    def start_hidden(self, value: bool) -> None:
+        """Set if the application should be started as hidden."""
+        os.environ.setdefault('MT_START_HIDDEN', bool2str(value))
 
-SINGLE_MONITOR: bool = _ARGS.single_monitor
+    @property
+    def autostart(self) -> bool:
+        """Flag when automatically launched at startup."""
+        return str2bool(os.environ['MT_AUTOSTART'])
+
+    @autostart.setter
+    def autostart(self, value: bool) -> None:
+        """Set autostart mode."""
+        os.environ.setdefault('MT_AUTOSTART', bool2str(value))
+
+    @property
+    def data_dir(self) -> Path:
+        """Get the data directory path."""
+        return Path(os.environ['MT_DATA_DIR'])
+
+    @data_dir.setter
+    def data_dir(self, value: Path) -> None:
+        """Set the data directory path."""
+        os.environ.setdefault('MT_DATA_DIR', str(value))
+
+    @property
+    def disable_mouse(self) -> bool:
+        """Disable mouse tracking."""
+        return str2bool(os.environ['MT_DISABLE_MOUSE'])
+
+    @disable_mouse.setter
+    def disable_mouse(self, value: bool) -> None:
+        """Set mouse tracking disabled state."""
+        os.environ.setdefault('MT_DISABLE_MOUSE', bool2str(value))
+
+    @property
+    def disable_keyboard(self) -> bool:
+        """Disable keyboard tracking."""
+        return str2bool(os.environ['MT_DISABLE_KEYBOARD'])
+
+    @disable_keyboard.setter
+    def disable_keyboard(self, value: bool) -> None:
+        """Set keyboard tracking disabled state."""
+        os.environ.setdefault('MT_DISABLE_KEYBOARD', bool2str(value))
+
+    @property
+    def disable_gamepad(self) -> bool:
+        """Disable gamepad tracking."""
+        return str2bool(os.environ['MT_DISABLE_GAMEPAD'])
+
+    @disable_gamepad.setter
+    def disable_gamepad(self, value: bool) -> None:
+        """Set gamepad tracking disabled state."""
+        os.environ.setdefault('MT_DISABLE_GAMEPAD', bool2str(value))
+
+    @property
+    def disable_network(self) -> bool:
+        """Disable network tracking."""
+        return str2bool(os.environ['MT_DISABLE_NETWORK'])
+
+    @disable_network.setter
+    def disable_network(self, value: bool) -> None:
+        """Set network tracking disabled state."""
+        os.environ.setdefault('MT_DISABLE_NETWORK', bool2str(value))
+
+    @property
+    def elevate(self) -> bool:
+        """Run with elevated privileges."""
+        return str2bool(os.environ['MT_ELEVATE'])
+
+    @elevate.setter
+    def elevate(self, value: bool) -> None:
+        """Set elevated mode."""
+        os.environ.setdefault('MT_ELEVATE', bool2str(value))
+
+    @property
+    def single_monitor(self) -> bool:
+        """Treat all monitors as a single space."""
+        return str2bool(os.environ['MT_SINGLE_MONITOR'])
+
+    @single_monitor.setter
+    def single_monitor(self, value: bool) -> None:
+        """Set single monitor mode."""
+        os.environ.setdefault('MT_SINGLE_MONITOR', bool2str(value))
+
+
+CLI = _CLI()

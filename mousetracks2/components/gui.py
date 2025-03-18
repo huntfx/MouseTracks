@@ -8,7 +8,7 @@ from . import ipc
 from .abstract import Component
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
-from ..config.cli import AUTOSTART, START_HIDDEN
+from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 
 
@@ -41,7 +41,7 @@ class QueueWorker(QtCore.QObject):
 
 def should_minimise_on_start() -> bool:
     """Determine if the app should minimise on startup."""
-    return START_HIDDEN or AUTOSTART and GlobalConfig().minimise_on_start
+    return CLI.start_hidden or CLI.autostart and GlobalConfig().minimise_on_start
 
 
 class GUI(Component):

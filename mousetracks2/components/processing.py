@@ -9,7 +9,7 @@ import numpy as np
 
 from . import ipc
 from .abstract import Component
-from ..config.cli import SINGLE_MONITOR
+from ..config.cli import CLI
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
@@ -162,7 +162,7 @@ class Processing(Component):
         if self.current_application.rects:
             monitor_data = self.current_application.rects
 
-        if SINGLE_MONITOR:
+        if CLI.single_monitor:
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
                 x_min = min(x_min, x1)
