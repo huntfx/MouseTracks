@@ -942,9 +942,9 @@ This may take a few seconds to complete.</string>
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>0</y>
-               <width>257</width>
-               <height>490</height>
+               <y>-121</y>
+               <width>261</width>
+               <height>638</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -1058,6 +1058,62 @@ This may take a few seconds to complete.</string>
                     </widget>
                    </item>
                   </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox">
+                <property name="toolTip">
+                 <string>Set how multiple monitors are handled.</string>
+                </property>
+                <property name="title">
+                 <string>Multiple Monitors</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_7">
+                 <item>
+                  <widget class="QLabel" name="label_26">
+                   <property name="text">
+                    <string>Choose how to handle multiple monitors.</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_27">
+                   <property name="text">
+                    <string>Changing this setting only affects how new data is recorded.</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="multi_monitor">
+                   <property name="toolTip">
+                    <string>Record each monitor and overlap the data.
+This is the default behaviour.</string>
+                   </property>
+                   <property name="text">
+                    <string>Record each monitor independently</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="single_monitor">
+                   <property name="toolTip">
+                    <string>Treat all connected monitors as part of the same display.</string>
+                   </property>
+                   <property name="text">
+                    <string>Combine as one large display</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </widget>
@@ -1237,7 +1293,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>257</width>
+               <width>261</width>
                <height>556</height>
               </rect>
              </property>

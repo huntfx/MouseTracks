@@ -19,9 +19,9 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel,
     QListWidget, QListWidgetItem, QMainWindow, QMenu,
-    QMenuBar, QPushButton, QScrollArea, QScrollBar,
-    QSizePolicy, QSpacerItem, QSpinBox, QStatusBar,
-    QTabWidget, QVBoxLayout, QWidget)
+    QMenuBar, QPushButton, QRadioButton, QScrollArea,
+    QScrollBar, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
 from mousetracks2.gui.widgets import (ResizableImage, Splitter)
 
@@ -622,7 +622,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 257, 490))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, -121, 261, 638))
         self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_13.setObjectName(u"verticalLayout_13")
         self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
@@ -703,6 +703,36 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_13.addWidget(self.groupBox_8)
+
+        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.groupBox.setObjectName(u"groupBox")
+        self.verticalLayout_7 = QVBoxLayout(self.groupBox)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.label_26 = QLabel(self.groupBox)
+        self.label_26.setObjectName(u"label_26")
+        self.label_26.setWordWrap(True)
+
+        self.verticalLayout_7.addWidget(self.label_26)
+
+        self.label_27 = QLabel(self.groupBox)
+        self.label_27.setObjectName(u"label_27")
+        self.label_27.setWordWrap(True)
+
+        self.verticalLayout_7.addWidget(self.label_27)
+
+        self.multi_monitor = QRadioButton(self.groupBox)
+        self.multi_monitor.setObjectName(u"multi_monitor")
+        self.multi_monitor.setChecked(True)
+
+        self.verticalLayout_7.addWidget(self.multi_monitor)
+
+        self.single_monitor = QRadioButton(self.groupBox)
+        self.single_monitor.setObjectName(u"single_monitor")
+
+        self.verticalLayout_7.addWidget(self.single_monitor)
+
+
+        self.verticalLayout_13.addWidget(self.groupBox)
 
         self.groupBox_6 = QGroupBox(self.scrollAreaWidgetContents_2)
         self.groupBox_6.setObjectName(u"groupBox_6")
@@ -789,7 +819,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 257, 556))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 556))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -1379,6 +1409,21 @@ class Ui_MainWindow(object):
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"97.2%", None))
         self.checkBox_4.setText(QCoreApplication.translate("MainWindow", u"1080x1920", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"0.3%", None))
+#if QT_CONFIG(tooltip)
+        self.groupBox.setToolTip(QCoreApplication.translate("MainWindow", u"Set how multiple monitors are handled.", None))
+#endif // QT_CONFIG(tooltip)
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Multiple Monitors", None))
+        self.label_26.setText(QCoreApplication.translate("MainWindow", u"Choose how to handle multiple monitors.", None))
+        self.label_27.setText(QCoreApplication.translate("MainWindow", u"Changing this setting only affects how new data is recorded.", None))
+#if QT_CONFIG(tooltip)
+        self.multi_monitor.setToolTip(QCoreApplication.translate("MainWindow", u"Record each monitor and overlap the data.\n"
+"This is the default behaviour.", None))
+#endif // QT_CONFIG(tooltip)
+        self.multi_monitor.setText(QCoreApplication.translate("MainWindow", u"Record each monitor independently", None))
+#if QT_CONFIG(tooltip)
+        self.single_monitor.setToolTip(QCoreApplication.translate("MainWindow", u"Treat all connected monitors as part of the same display.", None))
+#endif // QT_CONFIG(tooltip)
+        self.single_monitor.setText(QCoreApplication.translate("MainWindow", u"Combine as one large display", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Tracking", None))
         self.label_25.setText(QCoreApplication.translate("MainWindow", u"Choose which data should be tracked.", None))
 #if QT_CONFIG(tooltip)

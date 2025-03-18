@@ -308,6 +308,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.export_gamepad_stats.triggered.connect(self.export_gamepad_stats)
         self.ui.export_network_stats.triggered.connect(self.export_network_stats)
         self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
+        self.ui.single_monitor.toggled.connect(self.multi_monitor_change)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -587,7 +588,7 @@ class MainWindow(QtWidgets.QMainWindow):
             layout.addWidget(checkbox, row, 0)
             layout.addWidget(label, row, 1)
 
-    @QtCore.Slot()
+    @QtCore.Slot(bool)
     def resolution_toggled(self, value: bool) -> None:
         """Toggle rendering of a particular resolution in a profile."""
         checkbox = cast(QtWidgets.QCheckBox, self.sender())
@@ -596,6 +597,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
         self.mark_profiles_unsaved(profile)
         self.request_thumbnail()
+
+    @QtCore.Slot()
+    def multi_monitor_change(self) -> None:
+        """Change the multiple monitor option."""
+        if not self.ui.single_monitor.isEnabled():
+            return
+        profile = self.ui.current_profile.currentData()
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.single_monitor.isChecked()))
 
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
@@ -881,7 +890,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
-        if CLI.single_monitor:
+        if CLI.single_monitor or self.ui.single_monitor.isChecked():
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
                 x_min = min(x_min, x1)
@@ -1262,6 +1271,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.track_keyboard.setEnabled(False)
                 self.ui.track_gamepad.setEnabled(False)
                 self.ui.track_network.setEnabled(False)
+                self.ui.single_monitor.setEnabled(False)
+                self.ui.multi_monitor.setEnabled(False)
 
                 self.cursor_data.distance = message.distance
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1279,6 +1290,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
                 self.resolutions = message.resolutions
+                if message.single_monitor:
+                    self.ui.single_monitor.setChecked(True)
+                else:
+                    self.ui.multi_monitor.setChecked(True)
 
                 if finished_loading:
                     self.request_thumbnail()
@@ -1313,6 +1328,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.track_network.setChecked(False)
                 else:
                     self.ui.track_network.setEnabled(finished_loading)
+                self.ui.single_monitor.setEnabled(True)
+                self.ui.multi_monitor.setEnabled(True)
 
             case ipc.DataTransfer() if self.is_live and self.ui.track_network.isChecked():
                 self.bytes_sent += message.bytes_sent
