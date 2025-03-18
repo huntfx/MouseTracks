@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--start-hidden', action='store_true', help='minimise on startup')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify an alternative data directory')
+    parser.add_argument('--no-splash', action='store_true', help='disable splash screen on startup')
     parser.add_argument('--no-mouse', action='store_true', help='disable mouse tracking')
     parser.add_argument('--no-keyboard', action='store_true', help='disable keyboard tracking')
     parser.add_argument('--no-gamepad', action='store_true', help='disable gamepad tracking')
@@ -47,12 +48,14 @@ class _CLI:
     this class ensures that the values are set by the parent process and
     read by the child processes.
     """
+
     def __init__(self):
         args = parse_args()
         self.offline = args.offline
         self.start_hidden = args.start_hidden
         self.autostart = args.autostart
         self.data_dir = Path(args.data_dir)
+        self.disable_splash = args.no_splash
         self.disable_mouse = args.no_mouse
         self.disable_keyboard = args.no_keyboard
         self.disable_gamepad = args.no_gamepad
@@ -99,6 +102,16 @@ class _CLI:
     def data_dir(self, value: Path) -> None:
         """Set the data directory path."""
         os.environ.setdefault('MT_DATA_DIR', str(value))
+
+    @property
+    def disable_splash(self) -> bool:
+        """Disable the splash screen."""
+        return str2bool(os.environ['MT_DISABLE_SPLASH'])
+
+    @disable_splash.setter
+    def disable_splash(self, value: bool) -> None:
+        """Set the splash screen disabled state."""
+        os.environ.setdefault('MT_DISABLE_SPLASH', bool2str(value))
 
     @property
     def disable_mouse(self) -> bool:

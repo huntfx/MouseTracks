@@ -15,6 +15,7 @@ import queue
 
 from . import app_detection, gui, ipc, processing, tracking
 from ..gui.splash import SplashScreen
+from ..config.cli import CLI
 from ..constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 
@@ -247,7 +248,8 @@ class Hub:
             if self.use_gui:
                 if IS_EXE or gui.should_minimise_on_start():
                     self._toggle_console(False)
-                self.splash = SplashScreen.standalone()
+                if not CLI.disable_splash:
+                    self.splash = SplashScreen.standalone()
                 self._p_gui.start()
 
             self.start_tracking()
