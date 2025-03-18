@@ -163,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks') is not None)
+        self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks'))
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
