@@ -13,7 +13,7 @@ call .venv\Scripts\activate
 :: Ensure pyinstaller is installed
 python -m pip install --upgrade pip
 python -m pip install --upgrade -r requirements.txt
-python -m pip install --upgrade -r requirements-build.txt
+python -m pip install --upgrade -r requirements-build-pyinstaller.txt
 if errorlevel 1 (
     echo Failed to install or update modules. Exiting.
     exit /b 1

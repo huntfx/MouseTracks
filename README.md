@@ -54,7 +54,10 @@ _Currently, only Windows is supported. Contributions for Linux or macOS support 
 
 Launch `MouseTracks.exe` from anywhere. Recommended for ease of use.
 
-Build it using [`build.bat`](build.bat), or download it from the releases (available with v2.0).
+Build it using [`build-pyinstaller.bat`](build-pyinstaller.bat), or download it from the releases (available with v2.0).
+
+It's also possible to run [`build-nuitka.bat`](build-nuitka.bat), but unless you have a commercial license, it will be flagged by a lot of AV programs, so this is generally not recommended.
+
 
 ### Virtual Environment
 
