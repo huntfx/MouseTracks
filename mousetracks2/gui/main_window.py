@@ -17,6 +17,7 @@ from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .widgets import Pixel
 from ..components import ipc
+from ..constants import SYS_EXECUTABLE
 from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
@@ -2002,10 +2003,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if value:
-            launch: list[str] = sys.argv[:]
-            if launch[0] != sys.executable:
-                launch.insert(0, sys.executable)
-            set_autostart('MouseTracks', *launch, '--autostart')
+            set_autostart('MouseTracks', SYS_EXECUTABLE, '--autostart')
 
         else:
             remove_autostart('MouseTracks')

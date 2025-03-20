@@ -1,11 +1,21 @@
 import os
 import sys
 from pathlib import Path
+from typing import cast
 
+
+SYS_EXECUTABLE = sys.executable
+
+REPO_DIR = Path(__file__).parent.parent
+
+# PyInstaller
 if hasattr(sys, '_MEIPASS'):
     REPO_DIR = Path(sys._MEIPASS)
-else:
-    REPO_DIR = Path(__file__).parent.parent
+
+# Nuitka
+elif '__compiled__' in globals():
+    REPO_DIR = Path(sys.executable).parent
+    SYS_EXECUTABLE = cast(str, __compiled__.original_argv0)  # type: ignore
 
 DEFAULT_PROFILE_NAME = 'Desktop'
 

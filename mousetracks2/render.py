@@ -1,13 +1,8 @@
 import math
-import sys
 from collections import defaultdict
 
 import numpy as np
-try:
-    from scipy import ndimage
-except ModuleNotFoundError:
-    sys.path.append('resources/build')
-    from scipy import ndimage
+from scipy import ndimage
 
 from .legacy import colours
 

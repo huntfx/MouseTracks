@@ -5,8 +5,8 @@ import sys
 from multiprocessing import freeze_support, set_start_method
 
 # Source DLL files when running as an executable
-if hasattr(sys, '_MEIPASS'):
-    sys.path.append(os.path.join(sys._MEIPASS, 'resources', 'build'))
+from mousetracks2.constants import REPO_DIR
+sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
 from mousetracks2.components import Hub
 from mousetracks2.config.cli import CLI
