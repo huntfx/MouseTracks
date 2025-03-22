@@ -174,11 +174,14 @@ class WindowHandle:
     """Class to manage a window handle and retrieve relevant information.
     Note that a PID may have multiple window handles.
 
-    In some cases, the PID will be 0. This seems to be an issue with the
-    built executable, as it will work correctly when running as a Python
-    script. From within this class there's nothing that can really be
-    done, querying the PID for its window handles will just return an
-    empty list. One such example is Helldivers 2.
+    In some cases, the PID will return 0. This is likely an anti cheat
+    measure, as I've only seen this happening for Helldivers 2 using
+    "nProtect GameGuard". If this happens, then using the PID to get
+    all window handles will also return nothing, so I wasn't able to
+    find a solution to this.
+
+    Using ctypes instead of pywin32 fixes it when running as a Python
+    script, but both methods fail once built as an executable.
     """
 
     def __init__(self, hwnd: int, pid: int | None = None) -> None:
