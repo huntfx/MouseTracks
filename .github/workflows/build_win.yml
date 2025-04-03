@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions: write-all
     steps:
     - name: Checkout partial repository
       if: github.ref_type == 'tag'
