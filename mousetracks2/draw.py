@@ -118,6 +118,14 @@ def create_rounded_rect(x: int, y: int, width: int, height: int, radius: int,
 class Polygon:
     """Represents a polygon with Bezier curve edges."""
 
+    AlignLeft = 1
+    AlignCentreH = 2
+    AlignRight = 4
+    AlignTop = 8
+    AlignCentreV = 16
+    AlignBottom = 32
+    AlignCentre = AlignCentreH | AlignCentreV
+
     def __init__(self, width: int, height: int, vertices: list[tuple[int, int]],
                  control_points: list[tuple[int, int]], thickness: int = 1) -> None:
         """Creates a Polygon object and calculates internal masks.
@@ -166,50 +174,85 @@ class Polygon:
             self._outline_mask |= edge_mask
         self._fill_mask = binary_fill_holes(self._outline_mask)
 
-    def fill(self, colour: tuple[int, int, int, int], shift: tuple[int, int] | None = None) -> None:
-        """Fills the polygon's interior with an optional shift.
+    def fill(self, colour: tuple[int, int, int, int], offset: tuple[int, int] | None = None) -> None:
+        """Fills the polygon's interior with an optional offset.
 
         Parameters:
             colour: The colour to use when drawing.
-            shift: Specify the shift offset in pixels.
+            offset: Specify the shift offset in pixels.
         """
         mask = self._fill_mask
-        if shift is not None and any(shift):
-            mask = shift_2d(mask, shift[0], shift[1])
+        if offset is not None and any(offset):
+            mask = shift_2d(mask, offset[0], offset[1])
         self.array[mask] = colour
 
-    def draw_outline(self, color: tuple[int, int, int, int], shift: tuple[int, int] | None = None) -> None:
+    def draw_outline(self, color: tuple[int, int, int, int], offset: tuple[int, int] | None = None) -> None:
         """Draws the polygon's outline.
 
         Parameters:
             colour: The colour to use when drawing.
-            shift: Specify the shift offset in pixels.
+            offset: Specify the shift offset in pixels.
         """
         mask = self._outline_mask
-        if shift is not None and any(shift):
-            mask = shift_2d(mask, shift[0], shift[1])
+        if offset is not None and any(offset):
+            mask = shift_2d(mask, offset[0], offset[1])
         self.array[mask] = color
 
-    def draw_text(self, text: str, colour: tuple[int, int, int],
-                  size: int = 20, shift: tuple[int, int] = (0, 0)) -> None:
+    def draw_text(self, text: str, colour: tuple[int, int, int], align: int = AlignCentre,
+                  size: int = 20, offset: tuple[int, int] = (0, 0)) -> None:
         """Draws text over the polygon.
 
         Parameters:
             text: The text to draw.
             colour: The colour to use when drawing.
             size: The desired font size in points.
-            shift: Specify the shift offset in pixels.
+            offset: Specify the shift offset in pixels.
         """
         font = ImageFont.truetype('arial.ttf', size)
-        centre_y, centre_x = center_of_mass(self._fill_mask)
+
+        target_x = 0.0
+        target_y = 0.0
+        h_anchor = 'm'
+        v_anchor = 'm'
+
+        # Calculate bounding box of the filled polygon
+        rows, cols = np.where(self._fill_mask)
+        min_x = np.min(cols)
+        max_x = np.max(cols)
+        min_y = np.min(rows)
+        max_y = np.max(rows)
+        center_y = (min_y + max_y) / 2.0
+        center_x = (min_x + max_x) / 2.0
+
+        # Horizontal Alignment
+        if align & self.AlignLeft:
+            target_x = min_x
+            h_anchor = 'l'
+        elif align & self.AlignRight:
+            target_x = max_x
+            h_anchor = 'r'
+        else:
+            target_x = center_x
+            h_anchor = 'm'
+
+        # Vertical Alignment
+        if align & self.AlignTop:
+            target_y = min_y
+            v_anchor = 't'
+        elif align & self.AlignBottom:
+            target_y = max_y
+            v_anchor = 'b'
+        else:
+            target_y = center_y
+            v_anchor = 'm'
 
         # Adjust position with offset
-        target_x = centre_x + shift[0]
-        target_y = centre_y + shift[1]
+        target_x += offset[0]
+        target_y += offset[1]
 
         img_pil = Image.fromarray(self.array)
         draw = ImageDraw.Draw(img_pil)
-        draw.text((target_x, target_y), text, fill=colour, font=font, anchor='mm')
+        draw.text((target_x, target_y), text, fill=colour, font=font, anchor=h_anchor + v_anchor)
         self.array = np.asarray(img_pil)
 
 
