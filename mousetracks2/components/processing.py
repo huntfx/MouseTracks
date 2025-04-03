@@ -58,7 +58,7 @@ class Processing(Component):
         # Load in the default profile
         self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
         self._current_application = Application('', [])
-        self.current_application = Application(DEFAULT_PROFILE_NAME, [])
+        self._queued_application = Application(DEFAULT_PROFILE_NAME, [])
 
     @property
     def timestamp(self) -> int:
@@ -447,6 +447,10 @@ class Processing(Component):
                 self.tick = message.tick
                 self.timestamp = message.timestamp
 
+                # Update current profile
+                # This is done here to prevent race conditions
+                self.current_application = self._queued_application
+
                 # Update profile data
                 self.profile.elapsed += 1
                 self.profile.daily_ticks[self.profile_age_days, 0] += 1
@@ -601,7 +605,7 @@ class Processing(Component):
 
             # Store the data for the newly detected application
             case ipc.TrackedApplicationDetected():
-                self.current_application = Application(message.name, message.rects)
+                self._queued_application = Application(message.name, message.rects)
 
             case ipc.Save():
                 # Keep track of what saved and what didn't
