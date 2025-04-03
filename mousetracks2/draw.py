@@ -1,5 +1,8 @@
+import os
+
 import numpy as np
-from scipy.ndimage import binary_dilation, binary_fill_holes
+from scipy.ndimage import binary_dilation, binary_fill_holes, center_of_mass
+from PIL import Image, ImageDraw, ImageFont
 
 
 KAPPA = 4 * (2 ** 0.5 - 1) / 3  # Cubic Bezier approximation of a circle quadrant
@@ -187,6 +190,28 @@ class Polygon:
             mask = shift_2d(mask, shift[0], shift[1])
         self.array[mask] = color
 
+    def draw_text(self, text: str, colour: tuple[int, int, int],
+                  size: int = 20, shift: tuple[int, int] = (0, 0)) -> None:
+        """Draws text over the polygon.
+
+        Parameters:
+            text: The text to draw.
+            colour: The colour to use when drawing.
+            size: The desired font size in points.
+            shift: Specify the shift offset in pixels.
+        """
+        font = ImageFont.truetype('arial.ttf', size)
+        centre_y, centre_x = center_of_mass(self._fill_mask)
+
+        # Adjust position with offset
+        target_x = centre_x + shift[0]
+        target_y = centre_y + shift[1]
+
+        img_pil = Image.fromarray(self.array)
+        draw = ImageDraw.Draw(img_pil)
+        draw.text((target_x, target_y), text, fill=colour, font=font, anchor='mm')
+        self.array = np.asarray(img_pil)
+
 
 if __name__ == '__main__':
     vertices, control_points = create_rounded_rect(x=50, y=40, width=200, height=150, radius=30)
@@ -194,7 +219,7 @@ if __name__ == '__main__':
     poly.fill((105, 105, 105, 255), (5, 5))
     poly.fill((211, 211, 211, 255))
     poly.draw_outline((0, 0, 0, 255))
+    poly.draw_text('test', (0, 0, 0), size=30)
 
-    from PIL import Image
     final_image = Image.fromarray(poly.array)
     final_image.show()
