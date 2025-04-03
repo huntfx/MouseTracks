@@ -86,11 +86,6 @@ combat aliasing.</string>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <widget class="QScrollArea" name="scrollArea">
-            <property name="toolTip">
-             <string>Set the strength of the gaussian blur.
-
-This is primarily designed for use with heatmaps.</string>
-            </property>
             <property name="widgetResizable">
              <bool>true</bool>
             </property>

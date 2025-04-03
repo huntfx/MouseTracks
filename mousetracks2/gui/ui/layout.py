@@ -1233,11 +1233,6 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.tab_options.setToolTip(QCoreApplication.translate("MainWindow", u"How many seconds since AppList.txt was read from disk.", None))
 #endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(tooltip)
-        self.scrollArea.setToolTip(QCoreApplication.translate("MainWindow", u"Set the strength of the gaussian blur.\n"
-"\n"
-"This is primarily designed for use with heatmaps.", None))
-#endif // QT_CONFIG(tooltip)
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Profile Selection", None))
         self.current_profile.setItemText(0, QCoreApplication.translate("MainWindow", u"*Main", None))
         self.current_profile.setItemText(1, QCoreApplication.translate("MainWindow", u"*Path of Exile", None))
