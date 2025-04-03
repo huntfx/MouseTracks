@@ -746,7 +746,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        self.ui.tab_options.setTabText(2, f'{self.ui.current_profile.itemData(idx)} Options')
+        self.ui.tab_options.setTabText(1, f'{self.ui.current_profile.itemData(idx)} Options')
 
         if not self._redrawing_profiles:
             self.request_profile_data(self.ui.current_profile.itemData(idx))
