@@ -46,11 +46,45 @@ jobs:
       run: |
         python -m venv .venv
 
+    - name: Create build folder
+      shell: cmd
+      run: |
+        if exist build rmdir build /s /q
+        mkdir build
+
+    - name: Update components
+      shell: cmd
+      run: |
+        call .venv\Scripts\activate
+        python -m pip install --upgrade pip wheel
+        call .venv\Scripts\deactivate
+
+    - name: Build PyInstaller Bootloader (${{ env.PYINSTALLER_VERSION }})
+      shell: cmd
+      run: |
+        call .venv\Scripts\activate
+
+        echo --- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---
+        git clone --branch ${{ env.PYINSTALLER_VERSION }} --depth 1 https://github.com/pyinstaller/pyinstaller.git build/pyinstaller
+        if errorlevel 1 exit /b 1
+
+        echo --- Building Bootloader ---
+        cd build\pyinstaller\bootloader
+        python ./waf distclean all
+        if errorlevel 1 exit /b 1
+        cd ..
+
+        echo --- Installing Custom PyInstaller from build directory ---
+        pip install .
+        if errorlevel 1 exit /b 1
+
+        call deactivate
+        echo --- Bootloader build and PyInstaller install complete ---
+
     - name: Install dependencies
       shell: cmd
       run: |
         call .venv\Scripts\activate
-        python -m pip install --upgrade pip
         python -m pip install --upgrade -r requirements.txt
         python -m pip install --upgrade -r requirements-build-pyinstaller.txt
         call .venv\Scripts\deactivate
@@ -58,7 +92,6 @@ jobs:
     - name: Create version.rc
       shell: cmd
       run: |
-        mkdir build
         call .venv\Scripts\activate
         pyivf-make_version --outfile "build\version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%"
         call .venv\Scripts\deactivate
