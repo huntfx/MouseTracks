@@ -256,9 +256,84 @@ class Polygon:
         self.array = np.asarray(img_pil)
 
 
+def create_controller_body(width: int, height: int):
+    """Create the body of a controller.
+
+    Note:
+        This was done by manually plotting points using
+        https://www.desmos.com/calculator/cahqdxeshd.
+
+        Here are the rough rules for the right side that were used for
+        this function:
+        - Top: (0, 8), (3, 8) -> (6, 7), (6, 8)
+        - Right: (6, 7), (6.5, 6.5) -> (7, -3.5), (11, -2.5)
+        - Bottom: (7, -3.5), (0.5, 3.5) -> (0, 0), (4, 0)
+
+    TODO:
+        R shoulder:
+            (2.5, 8) (3, 8) -> (3.5, 8.5), (3, 8.5)
+            (3.5, 8.5), (4.5, 8.5) -> (6, 7), (6, 7.5)
+        A: midpoint (4.5, 4), radius 1
+        B: midpoint (5.75, 5.25)
+        X: midpoint (3.25, 5.25)
+        Y: midpoint (4.5, 6.25)
+        LS: midpoint (-4.5, 5.25), radius: 2
+        RS: midpoint (2.25, 2.75)
+        DPAD: midpoint (-2.25, 2.25), radius: 2.5
+        START: midpoint (1.25, 5.25), radius: 0.75
+        SELECT: midpoint (-1.25, 5.25)
+    """
+    vertices = [
+        (0, 8),
+        (6, 7),
+        (7, -3.5),
+        (0, 0),
+        (-7, -3.5),
+        (-6, 7),
+    ]
+    control_points = [
+        (3, 8), (5, 8),
+        (6.5, 6.5), (11, -2.5),
+        (3.5, 0.5), (4, -0.05),
+        (-4, -0.05), (-3.5, 0.5),
+        (-11, -2.5), (-6.5, 6.5),
+        (-5, 8), (-3, 8),
+    ]
+
+    # Split to x/y lists for easier editing
+    vx, vy = zip(*vertices)
+    cx, cy = zip(*control_points)
+
+    # Flip the Y axis
+    vy = [-y for y in vy]
+    cy = [-y for y in cy]
+
+    # Shift to (0, 0)
+    vx_min = min(vx)
+    vx = [x - vx_min for x in vx]
+    cx = [x - vx_min for x in cx]
+    vy_min = min(vy)
+    vy = [y - vy_min for y in vy]
+    cy = [y - vy_min for y in cy]
+
+    # Calculate scale factor
+    x_scale = (0.8 * width) / max(vx)
+    y_scale = (0.8 * height) / max(vy)
+    scale = min(x_scale, y_scale)
+
+    # Calculate centre offset
+    x_offset = (width - max(vx) * scale) / 2
+    y_offset = (height - max(vy) * scale) / 2
+
+    vertices = [(x * scale + x_offset, y * scale + y_offset) for x, y in zip(vx, vy)]
+    control_points = [(x * scale + x_offset, y * scale + y_offset) for x, y in zip(cx, cy)]
+    return vertices, control_points
+
+
 if __name__ == '__main__':
     vertices, control_points = create_rounded_rect(x=50, y=40, width=200, height=150, radius=30)
-    poly = Polygon(width=300, height=250, vertices=vertices, control_points=control_points, thickness=3)
+    vertices, control_points = create_controller_body(2560, 1080)
+    poly = Polygon(width=2560, height=1080, vertices=vertices, control_points=control_points, thickness=3)
     poly.fill((105, 105, 105, 255), (5, 5))
     poly.fill((211, 211, 211, 255))
     poly.draw_outline((0, 0, 0, 255))
