@@ -330,9 +330,31 @@ def create_controller_body(width: int, height: int):
     return vertices, control_points
 
 
+def calculate_circle(width: int, height: int, centre: tuple[int, int], radius: int):
+    r = radius
+    k = KAPPA
+    rk = r * k
+    cx, cy = centre
+
+    vertices = [
+        (cx + r, cy),
+        (cx, cy + r),
+        (cx - r, cy),
+        (cx, cy - r),
+    ]
+    control_points = [
+        (cx + r, cy + rk), (cx + rk, cy + r),
+        (cx - rk, cy + r), (cx - r, cy + rk),
+        (cx - r, cy - rk), (cx - rk, cy - r),
+        (cx + rk, cy - r), (cx + r, cy - rk),
+    ]
+    return vertices, control_points
+
+
 if __name__ == '__main__':
     vertices, control_points = create_rounded_rect(x=50, y=40, width=200, height=150, radius=30)
     vertices, control_points = create_controller_body(2560, 1080)
+    vertices, control_points = calculate_circle(2560, 1080, (500, 500), 40)
     poly = Polygon(width=2560, height=1080, vertices=vertices, control_points=control_points, thickness=3)
     poly.fill((105, 105, 105, 255), (5, 5))
     poly.fill((211, 211, 211, 255))
