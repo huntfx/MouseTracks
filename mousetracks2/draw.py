@@ -300,6 +300,18 @@ def create_controller_body(width: int, height: int):
         (-5, 8), (-3, 8),
     ]
 
+    # R sholder
+    # vertices = [
+    #     (2.5, 8),
+    #     (3.5, 8.5),
+    #     (6, 7),
+    # ]
+    # control_points = [
+    #     (3, 8), (3, 8.5),
+    #     (4.5, 8.5), (6, 7.5),
+    #     (6, 7), (2.5, 8),
+    # ]
+
     # Split to x/y lists for easier editing
     vx, vy = zip(*vertices)
     cx, cy = zip(*control_points)
