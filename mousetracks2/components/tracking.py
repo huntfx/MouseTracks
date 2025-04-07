@@ -1,5 +1,7 @@
 import time
+import traceback
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from itertools import count
 from typing import Iterator
@@ -249,22 +251,35 @@ class Tracking(Component):
             print('[Tracking] Monitor change detected')
             self.send_data(ipc.MonitorsChanged(self.data.monitors))
 
+    @contextmanager
+    def _exception_handler(self):
+        """Custom exception handler to ensure an error is handled.
+
+        This is used for the `pynput` threads, as any errors will
+        otherwise just shut them down without affecting anything else.
+        """
+        try:
+            yield
+        except Exception as e:
+            self.send_data(ipc.Traceback(e, traceback.format_exc()))
+
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
         if self.state != ipc.TrackingState.Running or not self.track_mouse:
             return
 
-        try:
-            idx = ('left', 'middle', 'right', 'x1', 'x2').index(button.name)
+        with self._exception_handler():
+            try:
+                idx = ('left', 'middle', 'right', 'x1', 'x2').index(button.name)
 
-        # Ignore anything unknown
-        except ValueError:
-            return
+            # Ignore anything unknown
+            except ValueError:
+                return
 
-        if pressed:
-            self._pynput_opcodes[keycodes.MOUSE_CODES[idx]] = self.data.tick_current
-        elif keycodes.MOUSE_CODES[idx] in self._pynput_opcodes:
-            del self._pynput_opcodes[keycodes.MOUSE_CODES[idx]]
+            if pressed:
+                self._pynput_opcodes[keycodes.MOUSE_CODES[idx]] = self.data.tick_current
+            elif keycodes.MOUSE_CODES[idx] in self._pynput_opcodes:
+                del self._pynput_opcodes[keycodes.MOUSE_CODES[idx]]
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
@@ -274,55 +289,60 @@ class Tracking(Component):
         if self.state != ipc.TrackingState.Running or not self.track_mouse:
             return
 
-        if dx > 0:
-            for _ in range(dx):
-                self._key_press(keycodes.VK_SCROLL_RIGHT)
-        elif dx < 0:
-            for _ in range(-dx):
-                self._key_press(keycodes.VK_SCROLL_LEFT)
-        if dy > 0:
-            for _ in range(dy):
-                self._key_press(keycodes.VK_SCROLL_UP)
-        elif dy < 0:
-            for _ in range(-dy):
-                self._key_press(keycodes.VK_SCROLL_DOWN)
+        with self._exception_handler():
+            if dx > 0:
+                for _ in range(dx):
+                    self._key_press(keycodes.VK_SCROLL_RIGHT)
+            elif dx < 0:
+                for _ in range(-dx):
+                    self._key_press(keycodes.VK_SCROLL_LEFT)
+            if dy > 0:
+                for _ in range(dy):
+                    self._key_press(keycodes.VK_SCROLL_UP)
+            elif dy < 0:
+                for _ in range(-dy):
+                    self._key_press(keycodes.VK_SCROLL_DOWN)
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
         if self.state != ipc.TrackingState.Running or key is None or not self.track_keyboard:
             return
 
-        if isinstance(key, pynput.keyboard.KeyCode):
-            name = key.char
-            vk = key.vk
-        elif isinstance(key, pynput.keyboard.Key):
-            name = key.name
-            vk = key.value.vk
+        with self._exception_handler():
+            if isinstance(key, pynput.keyboard.KeyCode):
+                name = key.char
+                vk = key.vk
+            elif isinstance(key, pynput.keyboard.Key):
+                name = key.name
+                vk = key.value.vk
+            else:
+                raise NotImplementedError(type(key))
 
-        if vk is not None:
-            self._pynput_opcodes[vk] = self.data.tick_current
+            if vk is not None:
+                self._pynput_opcodes[vk] = self.data.tick_current
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
         if self.state != ipc.TrackingState.Running or key is None:
             return
 
-        if isinstance(key, pynput.keyboard.KeyCode):
-            name = key.char
-            vk = key.vk
-        elif isinstance(key, pynput.keyboard.Key):
-            name = key.name
-            vk = key.value.vk
-        else:
-            vk = None
+        with self._exception_handler():
+            if isinstance(key, pynput.keyboard.KeyCode):
+                name = key.char
+                vk = key.vk
+            elif isinstance(key, pynput.keyboard.Key):
+                name = key.name
+                vk = key.value.vk
+            else:
+                raise NotImplementedError(type(key))
 
-        if vk is not None and vk in self._pynput_opcodes:
-            recorded_tick = self._pynput_opcodes.pop(vk)
+            if vk is not None and vk in self._pynput_opcodes:
+                recorded_tick = self._pynput_opcodes.pop(vk)
 
-            # Some keyboard features may emit faster than a tick
-            # If so, queue them in a separate list
-            if recorded_tick == self.data.tick_current:
-                self._pynput_quick_press.append(vk)
+                # Some keyboard features may emit faster than a tick
+                # If so, queue them in a separate list
+                if recorded_tick == self.data.tick_current:
+                    self._pynput_quick_press.append(vk)
 
     def _key_press(self, keycode: int | keycodes.KeyCode, quick_press: bool = False) -> None:
         """Handle key presses."""
