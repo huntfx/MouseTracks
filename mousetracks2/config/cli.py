@@ -1,5 +1,6 @@
 import argparse
 import os
+import multiprocessing
 import sys
 from pathlib import Path
 
@@ -27,6 +28,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--no-network', action='store_true', help='disable network tracking')
     parser.add_argument('--admin', action='store_true', help='run as administrator')
     parser.add_argument('--single-monitor', action='store_true', help='record all monitors as one large display')
+
+    if multiprocessing.current_process().name == 'MainProcess':
+        return parser.parse_args()
+    # Subprocesses get extra args, so ignore them
     return parser.parse_known_args()[0]
 
 
