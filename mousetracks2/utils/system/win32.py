@@ -42,6 +42,10 @@ MonitorEnumProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, HMONITOR, HDC, ctypes
 
 REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 
+user32.GetWindowThreadProcessId.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.DWORD)]
+
+user32.GetWindowThreadProcessId.restype = ctypes.wintypes.DWORD
+
 
 def monitor_locations() -> list[tuple[int, int, int, int]]:
     """Get the location of each monitor.
@@ -100,7 +104,7 @@ class PID:
             user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
             if process_id.value == self.pid:
                 hwnds.append(hwnd)
-            return True  # Continue enumeration
+            return True
 
         EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
         user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
