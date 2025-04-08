@@ -30,21 +30,69 @@ SW_RESTORE = 9
 
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
-MONITORINFOEX = ctypes.wintypes.RECT
+BOOL = ctypes.wintypes.BOOL
 
-HMONITOR = ctypes.wintypes.HANDLE
+DWORD = ctypes.wintypes.DWORD
 
 HDC = ctypes.wintypes.HDC
 
+HMONITOR = ctypes.wintypes.HMONITOR
+
+HWND = ctypes.wintypes.HWND
+
 LPARAM = ctypes.wintypes.LPARAM
 
-MonitorEnumProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, HMONITOR, HDC, ctypes.POINTER(MONITORINFOEX), LPARAM)
+LPWSTR = ctypes.wintypes.LPWSTR
+
+RECT = ctypes.wintypes.RECT
+
+MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, ctypes.POINTER(RECT), LPARAM)
+
+EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
+
+WndEnumPrpc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
+
+user32.GetWindowThreadProcessId.argtypes = [HWND, ctypes.POINTER(DWORD)]
+user32.GetWindowThreadProcessId.restype = DWORD
+
+user32.EnumWindows.argtypes = [WndEnumPrpc, LPARAM]
+user32.EnumWindows.restype = BOOL
+
+user32.GetWindowRect.argtypes = [HWND, ctypes.POINTER(RECT)]
+user32.GetWindowRect.restype = BOOL
+
+user32.GetWindowTextLengthW.argtypes = [HWND]
+user32.GetWindowTextLengthW.restype = ctypes.c_int
+
+user32.GetWindowTextW.argtypes = [HWND, LPWSTR, ctypes.c_int]
+user32.GetWindowTextW.restype = ctypes.c_int
+
+user32.SetWindowTextW.argtypes = [HWND, LPWSTR]
+user32.SetWindowTextW.restype = BOOL
+
+user32.IsWindowVisible.argtypes = [HWND]
+user32.IsWindowVisible.restype = BOOL
+
+user32.IsWindowEnabled.argtypes = [HWND]
+user32.IsWindowEnabled.restype = BOOL
+
+user32.ShowWindow.argtypes = [HWND, ctypes.c_int]
+user32.ShowWindow.restype = BOOL
+
+user32.SetForegroundWindow.argtypes = [HWND]
+user32.SetForegroundWindow.restype = BOOL
+
+user32.GetParent.argtypes = [HWND]
+user32.GetParent.restype = HWND
+
+user32.GetForegroundWindow.restype = HWND
+
+kernel32.GetConsoleWindow.restype = HWND
+
+user32.EnumDisplayMonitors.argtypes = [HDC, ctypes.POINTER(RECT), MonitorEnumProc, LPARAM]
+user32.EnumDisplayMonitors.restype = BOOL
 
 REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
-
-user32.GetWindowThreadProcessId.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.DWORD)]
-
-user32.GetWindowThreadProcessId.restype = ctypes.wintypes.DWORD
 
 
 def monitor_locations() -> list[tuple[int, int, int, int]]:
@@ -55,11 +103,11 @@ def monitor_locations() -> list[tuple[int, int, int, int]]:
     """
     monitors: list[tuple[int, int, int, int]] = []
 
-    def callback(hMonitor: HMONITOR, hdc: HDC, lprcMonitor: ctypes._Pointer[MONITORINFOEX], lParam: LPARAM) -> int:
+    def callback(hMonitor: HMONITOR, hdc: HDC, lprcMonitor: ctypes._Pointer[RECT], lParam: LPARAM) -> bool:
         """Callback function for EnumDisplayMonitors."""
         rect = lprcMonitor.contents
         monitors.append((rect.left, rect.top, rect.right, rect.bottom))
-        return 1  # Continue enumeration
+        return True
 
     user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
     return monitors
@@ -99,14 +147,13 @@ class PID:
         if not self.pid:
             return hwnds
 
-        def enum_windows_callback(hwnd, lparam):
-            process_id = ctypes.wintypes.DWORD()
+        def enum_windows_callback(hwnd: int, lparam: int) -> bool:
+            process_id = DWORD()
             user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
             if process_id.value == self.pid:
                 hwnds.append(hwnd)
             return True
 
-        EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
         user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
         hwnds.sort()
         return hwnds
@@ -144,7 +191,7 @@ class PID:
 
         valid = False
         for hwnd in self.visible_hwnds:
-            rect = ctypes.wintypes.RECT()
+            rect = RECT()
             if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
                 valid = True
                 left = min(left, rect.left)
@@ -193,7 +240,7 @@ class WindowHandle:
 
         # Get Process ID
         if pid is None:
-            process_id = ctypes.wintypes.DWORD()
+            process_id = DWORD()
             self.thread_id = user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(process_id))
             pid = process_id.value
         self.pid = PID(pid)
@@ -201,7 +248,7 @@ class WindowHandle:
     @property
     def rect(self) -> tuple[int, int, int, int]:
         """Get the window's rect coordinates."""
-        rect = ctypes.wintypes.RECT()
+        rect = RECT()
         if user32.GetWindowRect(self.hwnd, ctypes.byref(rect)):
             return rect.left, rect.top, rect.right, rect.bottom
         return 0, 0, 0, 0
