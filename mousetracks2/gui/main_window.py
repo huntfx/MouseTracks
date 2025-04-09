@@ -309,7 +309,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.export_gamepad_stats.triggered.connect(self.export_gamepad_stats)
         self.ui.export_network_stats.triggered.connect(self.export_network_stats)
         self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
-        self.ui.single_monitor.toggled.connect(self.multi_monitor_change)
+        self.ui.multi_monitor.toggled.connect(self.multi_monitor_change)
+        self.ui.override_monitor.toggled.connect(self.multi_monitor_override_toggle)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -602,10 +603,18 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def multi_monitor_change(self) -> None:
         """Change the multiple monitor option."""
-        if not self.ui.single_monitor.isEnabled():
+        if not self.ui.override_monitor.isChecked():
             return
         profile = self.ui.current_profile.currentData()
-        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.single_monitor.isChecked()))
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked()))
+
+    @QtCore.Slot(bool)
+    def multi_monitor_override_toggle(self, checked: bool) -> None:
+        """Enable or disable the multi monitor override."""
+        if not self.ui.override_monitor.isEnabled():
+            return
+        profile = self.ui.current_profile.currentData()
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked() if checked else None))
 
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
@@ -891,7 +900,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
-        if CLI.single_monitor or self.ui.single_monitor.isChecked():
+        single_monitor = self.ui.single_monitor.isChecked() if self.ui.override_monitor.isChecked() else CLI.single_monitor
+        if single_monitor:
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
                 x_min = min(x_min, x1)
@@ -1272,8 +1282,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.track_keyboard.setEnabled(False)
                 self.ui.track_gamepad.setEnabled(False)
                 self.ui.track_network.setEnabled(False)
-                self.ui.single_monitor.setEnabled(False)
-                self.ui.multi_monitor.setEnabled(False)
+                self.ui.override_monitor.setEnabled(False)
 
                 self.cursor_data.distance = message.distance
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1291,10 +1300,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_sent = message.bytes_sent
                 self.bytes_recv = message.bytes_recv
                 self.resolutions = message.resolutions
-                if message.single_monitor:
-                    self.ui.single_monitor.setChecked(True)
+                if message.multi_monitor is None:
+                    single_monitor = CLI.single_monitor
+                    multi_monitor = CLI.multi_monitor
                 else:
-                    self.ui.multi_monitor.setChecked(True)
+                    single_monitor = not message.multi_monitor
+                    multi_monitor = message.multi_monitor
+                self.ui.single_monitor.setChecked(single_monitor)
+                self.ui.multi_monitor.setChecked(multi_monitor)
+                self.ui.override_monitor.setChecked(message.multi_monitor is not None)
+                self.ui.override_monitor.setEnabled(True)
 
                 if finished_loading:
                     self.request_thumbnail()
@@ -1329,8 +1344,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.track_network.setChecked(False)
                 else:
                     self.ui.track_network.setEnabled(finished_loading)
-                self.ui.single_monitor.setEnabled(True)
-                self.ui.multi_monitor.setEnabled(True)
 
             case ipc.DataTransfer() if self.is_live and self.ui.track_network.isChecked():
                 self.bytes_sent += message.bytes_sent

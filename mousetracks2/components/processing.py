@@ -145,7 +145,7 @@ class Processing(Component):
             bytes_recv=sum(profile.data_download.values()),
             config=profile.config,
             resolutions=resolutions,
-            single_monitor=profile.config.single_monitor,
+            multi_monitor=profile.config.multi_monitor,
         ))
 
     @property
@@ -163,7 +163,8 @@ class Processing(Component):
         if self.current_application.rects:
             monitor_data = self.current_application.rects
 
-        if CLI.single_monitor or self.profile.config.single_monitor:
+        single_monitor = CLI.single_monitor if self.profile.config.multi_monitor is None else not self.profile.config.multi_monitor
+        if single_monitor:
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
                 x_min = min(x_min, x1)
@@ -745,7 +746,7 @@ class Processing(Component):
             case ipc.ToggleProfileMultiMonitor():
                 profile = self.all_profiles[message.profile]
                 profile.is_modified = True
-                profile.config.single_monitor = message.single_monitor
+                profile.config.multi_monitor = message.multi_monitor
 
             case _:
                 raise NotImplementedError(message)

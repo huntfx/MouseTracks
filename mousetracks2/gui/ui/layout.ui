@@ -937,9 +937,9 @@ This may take a few seconds to complete.</string>
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-121</y>
+               <y>0</y>
                <width>261</width>
-               <height>638</height>
+               <height>654</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -1058,18 +1058,24 @@ This may take a few seconds to complete.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox">
+               <widget class="QGroupBox" name="override_monitor">
                 <property name="toolTip">
                  <string>Set how multiple monitors are handled.</string>
                 </property>
                 <property name="title">
-                 <string>Multiple Monitors</string>
+                 <string>Override Multiple Monitors Mode</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_7">
                  <item>
                   <widget class="QLabel" name="label_26">
                    <property name="text">
-                    <string>Choose how to handle multiple monitors.</string>
+                    <string>Choose how to handle multiple monitors for this profile.</string>
                    </property>
                    <property name="wordWrap">
                     <bool>true</bool>
@@ -2163,12 +2169,12 @@ This should be used after manually editing it.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>991</x>
-     <y>177</y>
+     <x>999</x>
+     <y>288</y>
     </hint>
     <hint type="destinationlabel">
-     <x>942</x>
-     <y>174</y>
+     <x>980</x>
+     <y>284</y>
     </hint>
    </hints>
   </connection>
@@ -2179,12 +2185,12 @@ This should be used after manually editing it.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>997</x>
-     <y>206</y>
+     <x>999</x>
+     <y>323</y>
     </hint>
     <hint type="destinationlabel">
-     <x>944</x>
-     <y>208</y>
+     <x>980</x>
+     <y>321</y>
     </hint>
    </hints>
   </connection>

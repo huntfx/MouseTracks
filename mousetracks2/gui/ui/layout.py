@@ -622,7 +622,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, -121, 261, 638))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 261, 654))
         self.verticalLayout_13 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_13.setObjectName(u"verticalLayout_13")
         self.groupBox_7 = QGroupBox(self.scrollAreaWidgetContents_2)
@@ -704,35 +704,37 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_13.addWidget(self.groupBox_8)
 
-        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_2)
-        self.groupBox.setObjectName(u"groupBox")
-        self.verticalLayout_7 = QVBoxLayout(self.groupBox)
+        self.override_monitor = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.override_monitor.setObjectName(u"override_monitor")
+        self.override_monitor.setCheckable(True)
+        self.override_monitor.setChecked(False)
+        self.verticalLayout_7 = QVBoxLayout(self.override_monitor)
         self.verticalLayout_7.setObjectName(u"verticalLayout_7")
-        self.label_26 = QLabel(self.groupBox)
+        self.label_26 = QLabel(self.override_monitor)
         self.label_26.setObjectName(u"label_26")
         self.label_26.setWordWrap(True)
 
         self.verticalLayout_7.addWidget(self.label_26)
 
-        self.label_27 = QLabel(self.groupBox)
+        self.label_27 = QLabel(self.override_monitor)
         self.label_27.setObjectName(u"label_27")
         self.label_27.setWordWrap(True)
 
         self.verticalLayout_7.addWidget(self.label_27)
 
-        self.multi_monitor = QRadioButton(self.groupBox)
+        self.multi_monitor = QRadioButton(self.override_monitor)
         self.multi_monitor.setObjectName(u"multi_monitor")
         self.multi_monitor.setChecked(True)
 
         self.verticalLayout_7.addWidget(self.multi_monitor)
 
-        self.single_monitor = QRadioButton(self.groupBox)
+        self.single_monitor = QRadioButton(self.override_monitor)
         self.single_monitor.setObjectName(u"single_monitor")
 
         self.verticalLayout_7.addWidget(self.single_monitor)
 
 
-        self.verticalLayout_13.addWidget(self.groupBox)
+        self.verticalLayout_13.addWidget(self.override_monitor)
 
         self.groupBox_6 = QGroupBox(self.scrollAreaWidgetContents_2)
         self.groupBox_6.setObjectName(u"groupBox_6")
@@ -1405,10 +1407,10 @@ class Ui_MainWindow(object):
         self.checkBox_4.setText(QCoreApplication.translate("MainWindow", u"1080x1920", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"0.3%", None))
 #if QT_CONFIG(tooltip)
-        self.groupBox.setToolTip(QCoreApplication.translate("MainWindow", u"Set how multiple monitors are handled.", None))
+        self.override_monitor.setToolTip(QCoreApplication.translate("MainWindow", u"Set how multiple monitors are handled.", None))
 #endif // QT_CONFIG(tooltip)
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Multiple Monitors", None))
-        self.label_26.setText(QCoreApplication.translate("MainWindow", u"Choose how to handle multiple monitors.", None))
+        self.override_monitor.setTitle(QCoreApplication.translate("MainWindow", u"Override Multiple Monitors Mode", None))
+        self.label_26.setText(QCoreApplication.translate("MainWindow", u"Choose how to handle multiple monitors for this profile.", None))
         self.label_27.setText(QCoreApplication.translate("MainWindow", u"Changing this setting only affects how new data is recorded.", None))
 #if QT_CONFIG(tooltip)
         self.multi_monitor.setToolTip(QCoreApplication.translate("MainWindow", u"Record each monitor and overlap the data.\n"

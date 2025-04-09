@@ -51,7 +51,7 @@ class GlobalConfig:
 class ProfileConfig:
     """Settings to save to a profile."""
 
-    single_monitor: bool = False
+    multi_monitor: bool | None = None
     track_mouse: bool = True
     track_keyboard: bool = True
     track_gamepad: bool = True

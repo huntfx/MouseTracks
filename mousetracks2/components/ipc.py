@@ -334,7 +334,7 @@ class ProfileData(Message):
     bytes_recv: int
     config: ProfileConfig
     resolutions: dict[tuple[int, int], tuple[int, bool]]
-    single_monitor: bool
+    multi_monitor: bool | None
 
 
 @dataclass
@@ -559,4 +559,4 @@ class ToggleProfileMultiMonitor(Message):
 
     target: int = field(default=Target.Processing, init=False)
     profile: str
-    single_monitor: bool
+    multi_monitor: bool | None
