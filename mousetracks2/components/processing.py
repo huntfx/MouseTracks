@@ -49,7 +49,7 @@ class Application:
 class Processing(Component):
     def __post_init__(self) -> None:
         self.tick = 0
-        self._timestamp = None
+        self._timestamp = -1
 
         self.previous_mouse_click: PreviousMouseClick | None = None
         self.monitor_data = monitor_locations()
@@ -63,7 +63,7 @@ class Processing(Component):
     @property
     def timestamp(self) -> int:
         """Get the timestamp."""
-        if self._timestamp is None:
+        if self._timestamp < 0:
             raise RuntimeError('no tick data received')
         return self._timestamp
 
