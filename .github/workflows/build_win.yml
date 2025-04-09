@@ -5,6 +5,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+env:
+  PYINSTALLER_VERSION: v6.11.1  # Match 'requirements-build-pyinstaller.txt'
+
 jobs:
   build:
     runs-on: windows-latest
