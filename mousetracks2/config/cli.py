@@ -31,9 +31,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--multi-monitor', action='store_true', help='record monitors as independant displays (default)')
     parser.add_argument('--single-monitor', action='store_true', help='record monitors as one large display')
 
-    if multiprocessing.current_process().name == 'MainProcess':
+    if multiprocessing.current_process().name == 'MainProcess' and not os.getenv('_MT_PYINSTALLER_BUILD'):
         return parser.parse_args()
-    # Subprocesses get extra args, so ignore them
+    # Subprocesses and the pyinstaller build both get extra args, so ignore them
     return parser.parse_known_args()[0]
 
 

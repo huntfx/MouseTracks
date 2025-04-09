@@ -107,7 +107,10 @@ jobs:
       shell: cmd
       run: |
         call .venv\Scripts\activate
+        set _MT_PYINSTALLER_BUILD=1
         pyinstaller MouseTracks.spec
+        if errorlevel 1 exit /b 1
+        set _MT_PYINSTALLER_BUILD=
         call .venv\Scripts\deactivate
 
     - name: Attach executable to release
