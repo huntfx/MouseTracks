@@ -16,7 +16,14 @@ match sys.platform:
         APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser('~/.local/share')))
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(strict: bool = False) -> argparse.Namespace:
+    """Parse the command line arguments.
+
+    Parameters:
+        strict: Check there are no unrecognised arguments.
+            This is not done by default, as both `multiprocessing` and
+            `PyInstaller` insert their own custom arguments.
+    """
     parser = argparse.ArgumentParser(description='MouseTracks')
     parser.add_argument('--offline', action='store_true', help='force offline mode')
     parser.add_argument('--start-hidden', action='store_true', help='minimise on startup')
@@ -31,9 +38,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--multi-monitor', action='store_true', help='record monitors as independant displays (default)')
     parser.add_argument('--single-monitor', action='store_true', help='record monitors as one large display')
 
-    if multiprocessing.current_process().name == 'MainProcess' and not os.getenv('_MT_PYINSTALLER_BUILD'):
+    if strict:
         return parser.parse_args()
-    # Subprocesses and the pyinstaller build both get extra args, so ignore them
     return parser.parse_known_args()[0]
 
 

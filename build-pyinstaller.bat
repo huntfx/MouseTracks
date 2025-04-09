@@ -30,9 +30,7 @@ mkdir build
 pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
 :: Build the executable
-set _MT_PYINSTALLER_BUILD=1
 pyinstaller MouseTracks.spec
-set _MT_PYINSTALLER_BUILD=
 
 :: Exit the virtual environment
 call deactivate
