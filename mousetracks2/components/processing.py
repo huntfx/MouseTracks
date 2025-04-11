@@ -420,6 +420,11 @@ class Processing(Component):
         # This is the same logic in the GUI
         inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
         tick_diff = profile.elapsed - (profile.active + profile.inactive)
+        # There's a bug where tick_diff is ending up as -1 and causing an error
+        # The cause is not known, so just check for it
+        if tick_diff < 0:
+            raise RuntimeError(f'unepxected tick difference, should be a positive number, got {tick_diff} '
+                               f'(elapsed: {profile.elapsed}, active: {profile.active}, inactive: {profile.inactive})')
         if tick_diff > inactivity_threshold:
             self._record_inactive_tick(profile_name, tick_diff)
         elif tick_diff:
