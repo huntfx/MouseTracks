@@ -1261,7 +1261,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.button_press_count += 1
 
             # Update the selected profile
-            case ipc.TrackedApplicationDetected():
+            case ipc.CurrentProfileChanged():
                 self.current_profile = Profile(message.name, message.rects)
 
                 if self.is_live:

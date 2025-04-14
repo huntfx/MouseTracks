@@ -242,11 +242,30 @@ class RequestRunningAppCheck(Message):
 
 @dataclass
 class TrackedApplicationDetected(Message):
-    """Trigger a profile change.
-    This is sent from the application detection thread.
+    """Detect when a new tracked application is focused.
+
+    This was originally processed by all components, but there was a
+    rare chance of a race condition where the active time was 1 tick
+    higher than the elapsed time. Now it notifies just the tracking
+    component, which then it turn sends a separate message out to the
+    other components, but in sync with the ticks.
     """
 
-    target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
+    target: int = field(default=Target.Tracking, init=False)
+    name: str
+    process_id: int | None
+    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+
+
+@dataclass
+class CurrentProfileChanged(Message):
+    """Trigger a profile switch.
+
+    This is a variation of `TrackedApplicationDetected`, but is in
+    sync with the tick counter to prevent race conditions.
+    """
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     process_id: int | None
     rects: list[tuple[int, int, int, int]] = field(default_factory=list)

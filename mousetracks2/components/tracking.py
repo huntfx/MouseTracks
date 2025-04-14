@@ -140,11 +140,11 @@ class Tracking(Component):
                     raise RuntimeError('[Tracking] Test Exception')
 
                 # Update the current profile
-                case ipc.TrackedApplicationDetected():
-                    if message.name != self.profile_name:
-                        self.data.tick_modified = self.data.tick_current
-                        self._calculate_inactivity()
+                case ipc.TrackedApplicationDetected() if message.name != self.profile_name:
+                    self.data.tick_modified = self.data.tick_current
+                    self._calculate_inactivity()
                     self.profile_name = message.name
+                    self.send_data(ipc.CurrentProfileChanged(message.name, message.process_id, message.rects))
 
                 case ipc.Autosave():
                     self.autosave = message.enabled
@@ -210,12 +210,8 @@ class Tracking(Component):
 
     def _calculate_inactivity(self) -> int:
         """Send the activity or inactivity ticks.
-
-        It took a few iterations but this stays completely in sync with
-        the elapsed time if `force_update` is set on saving. This is
-        required or inactivity will cause a desync.
-
-        TODO: Testing needed on tracking pause/stop
+        This is required to keep the active and inactive time in sync
+        with the elapsed time.
         """
         if self.data.tick_modified is None:
             return 0
