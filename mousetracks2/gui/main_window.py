@@ -202,7 +202,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
-            self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
             self.tray.show()
         else:
@@ -1510,17 +1509,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
-        """What to do when the tray icon is double clicked."""
+        """What to do when the tray icon is activated."""
         match reason:
             case QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
                 self.load_from_tray()
 
-            # Determine if the debug menu should be visible
-            # Note that `QtWidgets.QApplication.keyboardModifiers` fails on the first run
             case QtWidgets.QSystemTrayIcon.ActivationReason.Context:
+                # Determine if the debug menu should be visible
                 modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
                 shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
                 self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
+
+                # Show the menu
+                self.ui.tray_context_menu.exec(QtGui.QCursor.pos())
 
     def hide_to_tray(self) -> None:
         """Minimise the window to the tray."""
