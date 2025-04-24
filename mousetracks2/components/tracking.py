@@ -87,8 +87,8 @@ class DataState:
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
     bytes_recv: dict[str, int] = field(default_factory=dict)
-    pynput_opcodes: dict[int | keycodes.KeyCode, int] = {}
-    pynput_quick_press: list[int | keycodes.KeyCode] = []
+    pynput_opcodes: dict[int | keycodes.KeyCode, int] = field(default_factory=dict)
+    pynput_quick_press: list[int | keycodes.KeyCode] = field(default_factory=list)
 
     def __post_init__(self):
         self.tick_previous = self.tick_current - 1
