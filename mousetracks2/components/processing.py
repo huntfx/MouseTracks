@@ -430,7 +430,7 @@ class Processing(Component):
         elif tick_diff:
             self._record_active_tick(profile_name, tick_diff)
 
-        result = profile.save(get_filename(profile_name))
+        result = profile.save()
 
         # Undo the temporary sync
         if tick_diff > inactivity_threshold:

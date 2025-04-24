@@ -320,9 +320,11 @@ class TrackingProfile:
     daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
 
-    def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
+    def _write_to_zip(self, zf: zipfile.ZipFile, modified: float | None = None) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
+        if modified is None:
+            modified = time.time()
 
         with zf.open('config.yaml', 'w') as f:
             self.config.save(f)
@@ -330,7 +332,7 @@ class TrackingProfile:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/time/created', str(self.created))
-        zf.writestr('metadata/time/modified', str(int(time.time())))
+        zf.writestr('metadata/time/modified', str(int(modified)))
         zf.writestr('metadata/ticks/elapsed', str(self.elapsed))
         zf.writestr('metadata/ticks/active', str(self.active))
         zf.writestr('metadata/ticks/inactive', str(self.inactive))
@@ -431,7 +433,15 @@ class TrackingProfile:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
 
-    def save(self, path: str) -> bool:
+    def save(self, path: str | None = None, _is_fix: bool = False) -> bool:
+        """Save the profile.
+        The `_is_fix` parameter can be used when manually making edits
+        to profiles to avoid updating the modified date.
+        """
+        if path is None:
+            path = get_filename(self.name)
+        if _is_fix and self.is_modified:
+            raise RuntimeError('fixes can only be done on unmodified profiles')
         self.is_modified = False
 
         # Ensure the folder exists
@@ -446,7 +456,7 @@ class TrackingProfile:
 
         try:
             with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-                self._write_to_zip(zf)
+                self._write_to_zip(zf, modified=self.modified)
 
             # Quickly swap over the files to reduce chances of a race condition
             if os.path.exists(path):
@@ -464,9 +474,15 @@ class TrackingProfile:
                         break
                 else:
                     print(f'[File] Unable to overwrite {path}, saving failed!')
-                    self.is_modified = True
+                    if not _is_fix:
+                        self.is_modified = True
                     return False
 
+            # Copy modified date if required
+            if _is_fix:
+                os.utime(temp_file, (self.modified, self.modified))
+
+            # Replace file
             os.rename(temp_file, path)
 
         finally:
