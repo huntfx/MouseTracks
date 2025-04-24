@@ -73,9 +73,6 @@ combat aliasing.</string>
           <height>0</height>
          </size>
         </property>
-        <property name="toolTip">
-         <string>How many seconds since AppList.txt was read from disk.</string>
-        </property>
         <property name="currentIndex">
          <number>0</number>
         </property>
