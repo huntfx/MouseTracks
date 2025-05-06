@@ -188,6 +188,10 @@ VK_F12 = KeyCode(0x7B, 'F12')
 VK_NUMLOCK = KeyCode(0x90, 'Num Lock')
 VK_SCROLL = KeyCode(0x91, 'Scroll Lock')
 
+# Volume keys (not standardised, but common)
+VK_VOLUME_DOWN = KeyCode(0xAE, 'Volume Down')
+VK_VOLUME_UP = KeyCode(0xAF, 'Volume Up')
+
 # OEM keys (these may vary by region)
 VK_OEM_1 = KeyCode(0xBA, ';')
 VK_OEM_PLUS = KeyCode(0xBB, '+')
@@ -229,6 +233,7 @@ TRIGGER_RIGHT =  GamepadCode(0x080000, 'RT')
 CLICK_CODES = (VK_LBUTTON, VK_MBUTTON, VK_RBUTTON)
 MOUSE_CODES = CLICK_CODES + (VK_XBUTTON1, VK_XBUTTON2)
 SCROLL_CODES = (VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT)
+VOLUME_CODES = (VK_VOLUME_DOWN, VK_VOLUME_UP)
 KEYBOARD_CODES = tuple(KeyCode(i) for i in range(256) if i not in MOUSE_CODES)
 GAMEPAD_CODES = (BUTTON_DPAD_UP, BUTTON_DPAD_DOWN, BUTTON_DPAD_LEFT, BUTTON_DPAD_RIGHT,
                  BUTTON_START, BUTTON_BACK,
