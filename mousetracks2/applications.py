@@ -166,8 +166,11 @@ class AppList:
         with open(LOCAL_PATH, 'w', encoding='utf-8') as f:
             f.write('\n'.join(_prepare_data(self.data)))
 
-    def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str]]:
-        """Find all matches for an executable."""
+    def _match_exe(self, exe: str, full_paths: bool = False) -> Iterator[tuple[dict[str | None, str], str]]:
+        """Find all matches for an executable.
+        The first item returned is a dict of `{window_title: profile_name}`.
+        The second item returned is the executable.
+        """
         exe = exe.replace('\\', '/')
 
         if '/' not in exe:
@@ -177,8 +180,8 @@ class AppList:
 
         # Path match
         for path in self._path_executables.get(os.path.basename(exe), []):
-            if exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower()):
-                yield self.data[path], exe
+            if exe != path and (exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower())):
+                yield self.data[path], path if full_paths else exe
                 break
 
         # Wildcard match
@@ -191,8 +194,9 @@ class AppList:
         if '/' in exe:
             if exe in self.data:
                 yield self.data[exe], exe
-            if os.path.basename(exe) in self.data:
-                yield self.data[os.path.basename(exe)], exe
+            exe_basename = os.path.basename(exe)
+            if exe_basename in self.data:
+                yield self.data[exe_basename], exe_basename
 
 
     def match(self, exe: str, title: str | None = None) -> str | None:
