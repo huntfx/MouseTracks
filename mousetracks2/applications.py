@@ -53,7 +53,7 @@ def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
         exe, title, name = match.groups()
         if name is None:
             if title is None:
-                name = exe.replace(TRACKING_WILDCARD, '').strip()
+                name = os.path.splitext(os.path.basename(exe))[0].replace(TRACKING_WILDCARD, '').strip()
             else:
                 name = title.replace(TRACKING_WILDCARD, '').strip()
 
