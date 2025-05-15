@@ -930,6 +930,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self._timer_rendering.isActive():
             self._timer_rendering.start(1000)
 
+    def add_application(self) -> None:
+        """Load the window to add new tracked applications."""
+        win = AppListWindow(self)
+        if win.exec():
+            self.reload_applist()
+
     @QtCore.Slot()
     def reload_applist(self):
         """Send a request to reload AppList.txt."""
@@ -2007,11 +2013,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_gamepad.setEnabled(delete_gamepad)
         self.ui.delete_network.setEnabled(delete_network)
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
-
-    def add_application(self) -> None:
-        """Load the window to add new tracked applications."""
-        win = AppListWindow(self)
-        win.exec()
 
     @QtCore.Slot(bool)
     def set_autostart(self, value: bool) -> None:

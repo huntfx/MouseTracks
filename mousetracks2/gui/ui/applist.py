@@ -18,24 +18,30 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGroupBox,
     QHBoxLayout, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QPushButton, QRadioButton, QSizePolicy,
-    QSpacerItem, QVBoxLayout, QWidget)
+    QSpacerItem, QSplitter, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(700, 562)
-        self.horizontalLayout = QHBoxLayout(Form)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.verticalLayout_2 = QVBoxLayout()
+        Form.resize(913, 634)
+        self.verticalLayout = QVBoxLayout(Form)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.splitter = QSplitter(Form)
+        self.splitter.setObjectName(u"splitter")
+        self.splitter.setOrientation(Qt.Orientation.Horizontal)
+        self.layoutWidget = QWidget(self.splitter)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.verticalLayout_2 = QVBoxLayout(self.layoutWidget)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.label_5 = QLabel(Form)
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.label_5 = QLabel(self.layoutWidget)
         self.label_5.setObjectName(u"label_5")
         self.label_5.setWordWrap(True)
 
         self.verticalLayout_2.addWidget(self.label_5)
 
-        self.groupBox_3 = QGroupBox(Form)
+        self.groupBox_3 = QGroupBox(self.layoutWidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.verticalLayout_3 = QVBoxLayout(self.groupBox_3)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
@@ -54,7 +60,7 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addWidget(self.groupBox_3)
 
-        self.groupBox_6 = QGroupBox(Form)
+        self.groupBox_6 = QGroupBox(self.layoutWidget)
         self.groupBox_6.setObjectName(u"groupBox_6")
         self.verticalLayout_6 = QVBoxLayout(self.groupBox_6)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
@@ -73,7 +79,7 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addWidget(self.groupBox_6)
 
-        self.window_title_enabled = QGroupBox(Form)
+        self.window_title_enabled = QGroupBox(self.layoutWidget)
         self.window_title_enabled.setObjectName(u"window_title_enabled")
         self.window_title_enabled.setCheckable(True)
         self.window_title_enabled.setChecked(False)
@@ -98,7 +104,7 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addWidget(self.window_title_enabled)
 
-        self.groupBox_5 = QGroupBox(Form)
+        self.groupBox_5 = QGroupBox(self.layoutWidget)
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.verticalLayout_5 = QVBoxLayout(self.groupBox_5)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
@@ -143,9 +149,9 @@ class Ui_Form(object):
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.create = QPushButton(Form)
+        self.create = QPushButton(self.layoutWidget)
         self.create.setObjectName(u"create")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.create.sizePolicy().hasHeightForWidth())
@@ -153,7 +159,7 @@ class Ui_Form(object):
 
         self.horizontalLayout_5.addWidget(self.create)
 
-        self.advanced = QCheckBox(Form)
+        self.advanced = QCheckBox(self.layoutWidget)
         self.advanced.setObjectName(u"advanced")
         self.advanced.setChecked(True)
 
@@ -162,24 +168,25 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_5)
 
-
-        self.horizontalLayout.addLayout(self.verticalLayout_2)
-
-        self.verticalLayout_8 = QVBoxLayout()
+        self.splitter.addWidget(self.layoutWidget)
+        self.layoutWidget1 = QWidget(self.splitter)
+        self.layoutWidget1.setObjectName(u"layoutWidget1")
+        self.verticalLayout_8 = QVBoxLayout(self.layoutWidget1)
         self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.label_4 = QLabel(Form)
+        self.verticalLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.label_4 = QLabel(self.layoutWidget1)
         self.label_4.setObjectName(u"label_4")
         self.label_4.setWordWrap(True)
 
         self.verticalLayout_8.addWidget(self.label_4)
 
-        self.label_3 = QLabel(Form)
+        self.label_3 = QLabel(self.layoutWidget1)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setWordWrap(True)
 
         self.verticalLayout_8.addWidget(self.label_3)
 
-        self.rules = QListWidget(Form)
+        self.rules = QListWidget(self.layoutWidget1)
         QListWidgetItem(self.rules)
         QListWidgetItem(self.rules)
         self.rules.setObjectName(u"rules")
@@ -187,13 +194,19 @@ class Ui_Form(object):
 
         self.verticalLayout_8.addWidget(self.rules)
 
-        self.remove = QPushButton(Form)
+        self.remove = QPushButton(self.layoutWidget1)
         self.remove.setObjectName(u"remove")
 
         self.verticalLayout_8.addWidget(self.remove)
 
+        self.splitter.addWidget(self.layoutWidget1)
 
-        self.horizontalLayout.addLayout(self.verticalLayout_8)
+        self.verticalLayout.addWidget(self.splitter)
+
+        self.save = QPushButton(Form)
+        self.save.setObjectName(u"save")
+
+        self.verticalLayout.addWidget(self.save)
 
 
         self.retranslateUi(Form)
@@ -259,7 +272,7 @@ class Ui_Form(object):
         self.state_disabled.setText(QCoreApplication.translate("Form", u"Disabled", None))
         self.label_2.setText(QCoreApplication.translate("Form", u"- Enabled: Track this profile.\n"
 "- Ignored: Use in conjunction with the window title to prevent the profile changing for certain windows (eg. splash screens).\n"
-"- Disabled: Do not write the data to any profiles..", None))
+"- Disabled: Do not write the data to any profiles.", None))
 #if QT_CONFIG(tooltip)
         self.create.setToolTip(QCoreApplication.translate("Form", u"Create the new rule or update the matching one.", None))
 #endif // QT_CONFIG(tooltip)
@@ -268,7 +281,7 @@ class Ui_Form(object):
         self.advanced.setToolTip(QCoreApplication.translate("Form", u"Show advanced options.", None))
 #endif // QT_CONFIG(tooltip)
         self.advanced.setText(QCoreApplication.translate("Form", u"Advanced", None))
-        self.label_4.setText(QCoreApplication.translate("Form", u"For conveniene, listed below are all matching rules for the currently selected executable and profile name.", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"For convenience, listed below are all matching rules for the currently selected executable.", None))
         self.label_3.setText(QCoreApplication.translate("Form", u"Text in square brackets after the executable name specifies a rule for a specific window title.", None))
 
         __sortingEnabled = self.rules.isSortingEnabled()
@@ -292,5 +305,6 @@ class Ui_Form(object):
         self.remove.setToolTip(QCoreApplication.translate("Form", u"Remove the selected rule.", None))
 #endif // QT_CONFIG(tooltip)
         self.remove.setText(QCoreApplication.translate("Form", u"Remove Rule", None))
+        self.save.setText(QCoreApplication.translate("Form", u"Save Changes and Exit", None))
     # retranslateUi
 
