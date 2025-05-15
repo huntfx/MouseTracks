@@ -595,6 +595,12 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.scrollArea)
 
+        self.label_28 = QLabel(self.tab)
+        self.label_28.setObjectName(u"label_28")
+        self.label_28.setWordWrap(True)
+
+        self.verticalLayout_2.addWidget(self.label_28)
+
         self.horizontalLayout_9 = QHBoxLayout()
         self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
         self.save_render = QPushButton(self.tab)
@@ -821,17 +827,25 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 556))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 588))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
         self.groupBox_11.setObjectName(u"groupBox_11")
-        self.gridLayout_5 = QGridLayout(self.groupBox_11)
+        self.verticalLayout_8 = QVBoxLayout(self.groupBox_11)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.gridLayout_5 = QGridLayout()
         self.gridLayout_5.setObjectName(u"gridLayout_5")
-        self.label_6 = QLabel(self.groupBox_11)
-        self.label_6.setObjectName(u"label_6")
+        self.stat_app_title = QLabel(self.groupBox_11)
+        self.stat_app_title.setObjectName(u"stat_app_title")
+        self.stat_app_title.setWordWrap(True)
 
-        self.gridLayout_5.addWidget(self.label_6, 2, 0, 1, 1)
+        self.gridLayout_5.addWidget(self.stat_app_title, 1, 1, 1, 1)
+
+        self.stat_app_exe = QLabel(self.groupBox_11)
+        self.stat_app_exe.setObjectName(u"stat_app_exe")
+
+        self.gridLayout_5.addWidget(self.stat_app_exe, 0, 1, 1, 1)
 
         self.label_10 = QLabel(self.groupBox_11)
         self.label_10.setObjectName(u"label_10")
@@ -843,21 +857,23 @@ class Ui_MainWindow(object):
 
         self.gridLayout_5.addWidget(self.label_5, 0, 0, 1, 1)
 
-        self.stat_app_exe = QLabel(self.groupBox_11)
-        self.stat_app_exe.setObjectName(u"stat_app_exe")
+        self.label_6 = QLabel(self.groupBox_11)
+        self.label_6.setObjectName(u"label_6")
 
-        self.gridLayout_5.addWidget(self.stat_app_exe, 0, 1, 1, 1)
-
-        self.stat_app_title = QLabel(self.groupBox_11)
-        self.stat_app_title.setObjectName(u"stat_app_title")
-        self.stat_app_title.setWordWrap(True)
-
-        self.gridLayout_5.addWidget(self.stat_app_title, 1, 1, 1, 1)
+        self.gridLayout_5.addWidget(self.label_6, 2, 0, 1, 1)
 
         self.stat_app_tracked = QLabel(self.groupBox_11)
         self.stat_app_tracked.setObjectName(u"stat_app_tracked")
 
         self.gridLayout_5.addWidget(self.stat_app_tracked, 2, 1, 1, 1)
+
+
+        self.verticalLayout_8.addLayout(self.gridLayout_5)
+
+        self.stat_app_add = QPushButton(self.groupBox_11)
+        self.stat_app_add.setObjectName(u"stat_app_add")
+
+        self.verticalLayout_8.addWidget(self.stat_app_add)
 
 
         self.verticalLayout.addWidget(self.groupBox_11)
@@ -1378,6 +1394,7 @@ class Ui_MainWindow(object):
         self.stat_elapsed.setText(QCoreApplication.translate("MainWindow", u"50.30 hours", None))
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
+        self.label_28.setText(QCoreApplication.translate("MainWindow", u"Tip: Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
 #if QT_CONFIG(tooltip)
         self.save_render.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
 "This may take a few seconds to complete.", None))
@@ -1478,12 +1495,16 @@ class Ui_MainWindow(object):
 "This is useful if adding to AppList.txt.", None))
 #endif // QT_CONFIG(tooltip)
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Current Application", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Tracked", None))
+        self.stat_app_title.setText(QCoreApplication.translate("MainWindow", u"Qt Widgets Designer", None))
+        self.stat_app_exe.setText(QCoreApplication.translate("MainWindow", u"designer.exe", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Window Name", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Executable", None))
-        self.stat_app_exe.setText(QCoreApplication.translate("MainWindow", u"designer.exe", None))
-        self.stat_app_title.setText(QCoreApplication.translate("MainWindow", u"Qt Widgets Designer", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Tracked", None))
         self.stat_app_tracked.setText(QCoreApplication.translate("MainWindow", u"No", None))
+#if QT_CONFIG(tooltip)
+        self.stat_app_add.setToolTip(QCoreApplication.translate("MainWindow", u"Add a new tracked application.", None))
+#endif // QT_CONFIG(tooltip)
+        self.stat_app_add.setText(QCoreApplication.translate("MainWindow", u"Add Tracked Application", None))
 #if QT_CONFIG(tooltip)
         self.groupBox_10.setToolTip(QCoreApplication.translate("MainWindow", u"Displays how long since actions have occurred.\n"
 "Clicking the button will trigger a manual update.", None))

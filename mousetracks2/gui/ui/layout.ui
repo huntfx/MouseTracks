@@ -888,6 +888,16 @@ prevent overly bright spots from dominating the image.</string>
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="label_28">
+            <property name="text">
+             <string>Tip: Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
             <item>
              <widget class="QPushButton" name="save_render">
@@ -1292,7 +1302,7 @@ any tracking is enabled.
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>556</height>
+               <height>588</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
@@ -1305,49 +1315,63 @@ This is useful if adding to AppList.txt.</string>
                 <property name="title">
                  <string>Current Application</string>
                 </property>
-                <layout class="QGridLayout" name="gridLayout_5">
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_6">
-                   <property name="text">
-                    <string>Tracked</string>
-                   </property>
-                  </widget>
+                <layout class="QVBoxLayout" name="verticalLayout_8">
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_5">
+                   <item row="1" column="1">
+                    <widget class="QLabel" name="stat_app_title">
+                     <property name="text">
+                      <string>Qt Widgets Designer</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="stat_app_exe">
+                     <property name="text">
+                      <string>designer.exe</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_10">
+                     <property name="text">
+                      <string>Window Name</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>Executable</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Tracked</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLabel" name="stat_app_tracked">
+                     <property name="text">
+                      <string>No</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_10">
-                   <property name="text">
-                    <string>Window Name</string>
+                 <item>
+                  <widget class="QPushButton" name="stat_app_add">
+                   <property name="toolTip">
+                    <string>Add a new tracked application.</string>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_5">
                    <property name="text">
-                    <string>Executable</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_app_exe">
-                   <property name="text">
-                    <string>designer.exe</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_app_title">
-                   <property name="text">
-                    <string>Qt Widgets Designer</string>
-                   </property>
-                   <property name="wordWrap">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_app_tracked">
-                   <property name="text">
-                    <string>No</string>
+                    <string>Add Tracked Application</string>
                    </property>
                   </widget>
                  </item>

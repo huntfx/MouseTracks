@@ -53,7 +53,7 @@ def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
         exe, title, name = match.groups()
         if name is None:
             if title is None:
-                name = exe.replace(TRACKING_WILDCARD, '').strip()
+                name = os.path.splitext(os.path.basename(exe))[0].replace(TRACKING_WILDCARD, '').strip()
             else:
                 name = title.replace(TRACKING_WILDCARD, '').strip()
 
@@ -78,11 +78,11 @@ def _prepare_data(data: dict[str, dict[str | None, str]]) -> Iterator[str]:
                 name = None
 
             if title is None:
-                if name is None:
+                if name is None or name == os.path.splitext(os.path.basename(exe))[0]:
                     yield exe
                 else:
                     yield f'{exe}: {name}'
-            elif name is None:
+            elif name is None or name == title:
                 yield f'{exe}[{title}]'
             else:
                 yield f'{exe}[{title}]: {name}'
@@ -166,19 +166,22 @@ class AppList:
         with open(LOCAL_PATH, 'w', encoding='utf-8') as f:
             f.write('\n'.join(_prepare_data(self.data)))
 
-    def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str]]:
-        """Find all matches for an executable."""
+    def _match_exe(self, exe: str, full_paths: bool = False) -> Iterator[tuple[dict[str | None, str], str]]:
+        """Find all matches for an executable.
+        The first item returned is a dict of `{window_title: profile_name}`.
+        The second item returned is the executable.
+        """
         exe = exe.replace('\\', '/')
 
-        if '/' not in exe:
+        if '/' not in exe and '*' not in exe:
             # Direct match
             if exe in self.data:
                 yield self.data[exe], exe
 
         # Path match
         for path in self._path_executables.get(os.path.basename(exe), []):
-            if exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower()):
-                yield self.data[path], exe
+            if exe != path and (exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower())):
+                yield self.data[path], path if full_paths else exe
                 break
 
         # Wildcard match
@@ -191,8 +194,9 @@ class AppList:
         if '/' in exe:
             if exe in self.data:
                 yield self.data[exe], exe
-            if os.path.basename(exe) in self.data:
-                yield self.data[os.path.basename(exe)], exe
+            exe_basename = os.path.basename(exe)
+            if exe_basename in self.data:
+                yield self.data[exe_basename], exe_basename
 
 
     def match(self, exe: str, title: str | None = None) -> str | None:

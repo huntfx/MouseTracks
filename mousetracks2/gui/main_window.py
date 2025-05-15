@@ -13,6 +13,7 @@ from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from .applist import AppListWindow
 from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
 from .widgets import Pixel
@@ -310,6 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
         self.ui.multi_monitor.toggled.connect(self.multi_monitor_change)
         self.ui.override_monitor.toggled.connect(self.multi_monitor_override_toggle)
+        self.ui.stat_app_add.clicked.connect(self.add_application)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -927,6 +929,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if not self._timer_rendering.isActive():
             self._timer_rendering.start(1000)
+
+    def add_application(self) -> None:
+        """Load the window to add new tracked applications."""
+        win = AppListWindow(self)
+        if win.exec():
+            self.reload_applist()
 
     @QtCore.Slot()
     def reload_applist(self):

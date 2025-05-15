@@ -1,5 +1,6 @@
 import re
 import sys
+from collections import deque
 
 import psutil
 
@@ -28,6 +29,9 @@ class AppDetection(Component):
         self._previous_pos: tuple[int, int] | None = None
         self._previous_res: tuple[int, int] | None = None
         self._previous_rects: list[tuple[int, int, int, int]] = []
+
+        # Cache each process in case the fallback is required
+        deque(psutil.process_iter(attrs=['pid', 'exe']), maxlen=0)
 
     def _pid_fallback(self, title: str) -> PID:
         """Guess the PID of the selected application.
