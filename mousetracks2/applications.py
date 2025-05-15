@@ -78,11 +78,11 @@ def _prepare_data(data: dict[str, dict[str | None, str]]) -> Iterator[str]:
                 name = None
 
             if title is None:
-                if name is None:
+                if name is None or name == os.path.splitext(os.path.basename(exe))[0]:
                     yield exe
                 else:
                     yield f'{exe}: {name}'
-            elif name is None:
+            elif name is None or name == title:
                 yield f'{exe}[{title}]'
             else:
                 yield f'{exe}[{title}]: {name}'
@@ -173,7 +173,7 @@ class AppList:
         """
         exe = exe.replace('\\', '/')
 
-        if '/' not in exe:
+        if '/' not in exe and '*' not in exe:
             # Direct match
             if exe in self.data:
                 yield self.data[exe], exe
