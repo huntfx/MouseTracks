@@ -103,6 +103,19 @@ jobs:
           exit /b 1
         )
 
+    - name: Install UPX
+      shell: powershell
+      run: |
+        Invoke-WebRequest `
+          -Uri https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-win64.zip `
+          -OutFile upx.zip
+
+        Expand-Archive -Path upx.zip -DestinationPath upx
+
+        $upxDir = "$(Resolve-Path upx\upx-5.0.1-win64)"
+        Write-Host "UPX location: $upxDir"
+        echo "PATH=$upxDir;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
     - name: Build executable
       shell: cmd
       run: |
