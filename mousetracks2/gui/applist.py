@@ -152,6 +152,8 @@ class AppListWindow(QtWidgets.QDialog):
             if window_title is None:
                 if os.path.splitext(os.path.basename(executable))[0] == profile_name:
                     self.ui.profile_name.setText('')
+                else:
+                    self.ui.profile_name.setText(profile_name)
             elif window_title == profile_name:
                 self.ui.profile_name.setText('')
             else:
