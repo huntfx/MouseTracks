@@ -24,7 +24,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(913, 634)
+        Form.resize(866, 669)
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.splitter = QSplitter(Form)
@@ -226,7 +226,8 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"AppList Updater", None))
-        self.label_5.setText(QCoreApplication.translate("Form", u"Add or update the tracking information for a profile.", None))
+        self.label_5.setText(QCoreApplication.translate("Form", u"Add or update the tracking information for a profile.\n"
+"A profile will activate once the linked application gains focus.", None))
 #if QT_CONFIG(tooltip)
         self.groupBox_3.setToolTip(QCoreApplication.translate("Form", u"Select an executable name from the loaded applications, or type one.\n"
 "It is case sensitive and supports partial paths.\n"

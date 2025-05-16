@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>913</width>
-    <height>634</height>
+    <width>866</width>
+    <height>669</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,8 @@
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Add or update the tracking information for a profile.</string>
+          <string>Add or update the tracking information for a profile.
+A profile will activate once the linked application gains focus.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
