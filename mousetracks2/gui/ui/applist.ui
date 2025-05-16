@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>AppList Updater</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -279,9 +279,9 @@ now it records to a &quot;Untracked&quot; profile.</string>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_4">
+        <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>For convenience, listed below are all matching rules for the currently selected executable.</string>
+          <string>Listed below are all matching profile rules for the currently selected executable.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -289,9 +289,11 @@ now it records to a &quot;Untracked&quot; profile.</string>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_3">
+        <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Text in square brackets after the executable name specifies a rule for a specific window title.</string>
+          <string>The format is as follows:
+ - Executable.exe: Profile Name
+ - Executable.exe[Window Title] Profile Name</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -343,6 +345,9 @@ Possible formats:
    </item>
    <item>
     <widget class="QPushButton" name="save">
+     <property name="toolTip">
+      <string>Save all changes made and close this window.</string>
+     </property>
      <property name="text">
       <string>Save Changes and Exit</string>
      </property>

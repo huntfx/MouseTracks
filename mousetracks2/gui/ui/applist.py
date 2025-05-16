@@ -179,17 +179,17 @@ class Ui_Form(object):
 
         self.verticalLayout_8.addWidget(self.open)
 
-        self.label_4 = QLabel(self.layoutWidget1)
-        self.label_4.setObjectName(u"label_4")
-        self.label_4.setWordWrap(True)
-
-        self.verticalLayout_8.addWidget(self.label_4)
-
         self.label_3 = QLabel(self.layoutWidget1)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setWordWrap(True)
 
         self.verticalLayout_8.addWidget(self.label_3)
+
+        self.label_4 = QLabel(self.layoutWidget1)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setWordWrap(True)
+
+        self.verticalLayout_8.addWidget(self.label_4)
 
         self.rules = QListWidget(self.layoutWidget1)
         QListWidgetItem(self.rules)
@@ -225,7 +225,7 @@ class Ui_Form(object):
     # setupUi
 
     def retranslateUi(self, Form):
-        Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
+        Form.setWindowTitle(QCoreApplication.translate("Form", u"AppList Updater", None))
         self.label_5.setText(QCoreApplication.translate("Form", u"Add or update the tracking information for a profile.", None))
 #if QT_CONFIG(tooltip)
         self.groupBox_3.setToolTip(QCoreApplication.translate("Form", u"Select an executable name from the loaded applications, or type one.\n"
@@ -291,8 +291,10 @@ class Ui_Form(object):
         self.open.setToolTip(QCoreApplication.translate("Form", u"Open the AppList.txt file.", None))
 #endif // QT_CONFIG(tooltip)
         self.open.setText(QCoreApplication.translate("Form", u"Open AppList.txt", None))
-        self.label_4.setText(QCoreApplication.translate("Form", u"For convenience, listed below are all matching rules for the currently selected executable.", None))
-        self.label_3.setText(QCoreApplication.translate("Form", u"Text in square brackets after the executable name specifies a rule for a specific window title.", None))
+        self.label_3.setText(QCoreApplication.translate("Form", u"Listed below are all matching profile rules for the currently selected executable.", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"The format is as follows:\n"
+" - Executable.exe: Profile Name\n"
+" - Executable.exe[Window Title] Profile Name", None))
 
         __sortingEnabled = self.rules.isSortingEnabled()
         self.rules.setSortingEnabled(False)
@@ -315,6 +317,9 @@ class Ui_Form(object):
         self.remove.setToolTip(QCoreApplication.translate("Form", u"Remove the selected rule.", None))
 #endif // QT_CONFIG(tooltip)
         self.remove.setText(QCoreApplication.translate("Form", u"Remove Rule", None))
+#if QT_CONFIG(tooltip)
+        self.save.setToolTip(QCoreApplication.translate("Form", u"Save all changes made and close this window.", None))
+#endif // QT_CONFIG(tooltip)
         self.save.setText(QCoreApplication.translate("Form", u"Save Changes and Exit", None))
     # retranslateUi
 
