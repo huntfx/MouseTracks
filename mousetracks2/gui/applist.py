@@ -1,10 +1,12 @@
 import os
+import subprocess
+import sys
 
 import psutil
 from PySide6 import QtCore, QtWidgets
 
 from .ui import applist
-from ..applications import AppList
+from ..applications import LOCAL_PATH, AppList
 from ..constants import TRACKING_IGNORE, TRACKING_DISABLE
 
 
@@ -29,6 +31,7 @@ class AppListWindow(QtWidgets.QDialog):
         self.ui.rules.itemClicked.connect(self.selected_new_rule)
         self.ui.create.clicked.connect(self.create_new_rule)
         self.ui.remove.clicked.connect(self.remove_selected_rule)
+        self.ui.open.clicked.connect(self.open_applist)
 
         self._populate_process_list()
 
@@ -166,6 +169,19 @@ class AppListWindow(QtWidgets.QDialog):
             executable, window_title, profile_name = item.data(QtCore.Qt.ItemDataRole.UserRole)
             del self.applist.data[executable][window_title]
         self.update_matching_apps(force=True)
+
+    @QtCore.Slot()
+    def open_applist(self) -> None:
+        """Open AppList.txt."""
+        filename = LOCAL_PATH
+        if sys.platform.startswith('darwin'):  # macOS
+            subprocess.run(['open', filename], check=True)
+        elif os.name == 'nt':  # Windows
+            os.startfile(filename)
+        elif os.name == 'posix':  # Linux / Unix
+            subprocess.run(['xdg-open', filename], check=True)
+        else:
+            raise RuntimeError(f'Unsupported OS: {os.name}')
 
     def save(self) -> None:
         """Save the data and exit."""

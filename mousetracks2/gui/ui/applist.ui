@@ -269,6 +269,16 @@ now it records to a &quot;Untracked&quot; profile.</string>
      <widget class="QWidget" name="layoutWidget">
       <layout class="QVBoxLayout" name="verticalLayout_8">
        <item>
+        <widget class="QPushButton" name="open">
+         <property name="toolTip">
+          <string>Open the AppList.txt file.</string>
+         </property>
+         <property name="text">
+          <string>Open AppList.txt</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>For convenience, listed below are all matching rules for the currently selected executable.</string>
@@ -349,12 +359,12 @@ Possible formats:
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>210</x>
-     <y>368</y>
+     <x>583</x>
+     <y>590</y>
     </hint>
     <hint type="destinationlabel">
-     <x>93</x>
-     <y>-39</y>
+     <x>113</x>
+     <y>86</y>
     </hint>
    </hints>
   </connection>
@@ -365,12 +375,12 @@ Possible formats:
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>229</x>
-     <y>379</y>
+     <x>583</x>
+     <y>590</y>
     </hint>
     <hint type="destinationlabel">
-     <x>235</x>
-     <y>154</y>
+     <x>245</x>
+     <y>355</y>
     </hint>
    </hints>
   </connection>
@@ -381,8 +391,8 @@ Possible formats:
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>225</x>
-     <y>377</y>
+     <x>583</x>
+     <y>590</y>
     </hint>
     <hint type="destinationlabel">
      <x>111</x>
@@ -397,12 +407,28 @@ Possible formats:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>77</x>
-     <y>301</y>
+     <x>98</x>
+     <y>430</y>
     </hint>
     <hint type="destinationlabel">
-     <x>159</x>
-     <y>35</y>
+     <x>169</x>
+     <y>186</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>advanced</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>open</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>541</x>
+     <y>575</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>753</x>
+     <y>31</y>
     </hint>
    </hints>
   </connection>

@@ -174,6 +174,11 @@ class Ui_Form(object):
         self.verticalLayout_8 = QVBoxLayout(self.layoutWidget1)
         self.verticalLayout_8.setObjectName(u"verticalLayout_8")
         self.verticalLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.open = QPushButton(self.layoutWidget1)
+        self.open.setObjectName(u"open")
+
+        self.verticalLayout_8.addWidget(self.open)
+
         self.label_4 = QLabel(self.layoutWidget1)
         self.label_4.setObjectName(u"label_4")
         self.label_4.setWordWrap(True)
@@ -214,6 +219,7 @@ class Ui_Form(object):
         self.advanced.toggled.connect(self.window_title_enabled.setVisible)
         self.advanced.toggled.connect(self.groupBox_5.setVisible)
         self.state_enabled.toggled.connect(self.groupBox_6.setEnabled)
+        self.advanced.toggled.connect(self.open.setVisible)
 
         QMetaObject.connectSlotsByName(Form)
     # setupUi
@@ -281,6 +287,10 @@ class Ui_Form(object):
         self.advanced.setToolTip(QCoreApplication.translate("Form", u"Show advanced options.", None))
 #endif // QT_CONFIG(tooltip)
         self.advanced.setText(QCoreApplication.translate("Form", u"Advanced", None))
+#if QT_CONFIG(tooltip)
+        self.open.setToolTip(QCoreApplication.translate("Form", u"Open the AppList.txt file.", None))
+#endif // QT_CONFIG(tooltip)
+        self.open.setText(QCoreApplication.translate("Form", u"Open AppList.txt", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"For convenience, listed below are all matching rules for the currently selected executable.", None))
         self.label_3.setText(QCoreApplication.translate("Form", u"Text in square brackets after the executable name specifies a rule for a specific window title.", None))
 
