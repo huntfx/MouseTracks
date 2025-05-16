@@ -12,7 +12,7 @@ import numpy as np
 
 from .config.cli import CLI
 from .config.settings import ProfileConfig
-from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG
+from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
 from .utils.keycodes import CLICK_CODES
 
 
@@ -639,6 +639,14 @@ class TrackingProfileLoader(dict):
         else:
             self[profile_name] = profile = TrackingProfile()
             profile.name = profile_name
+
+            # Set disabled profile config
+            if profile_name == TRACKING_DISABLE:
+                profile.config.track_mouse = False
+                profile.config.track_keyboard = False
+                profile.config.track_gamepad = False
+                profile.config.track_network = False
+
         return self[profile_name]
 
 
