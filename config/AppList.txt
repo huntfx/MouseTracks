@@ -94,6 +94,7 @@ arma3.exe: Arma 3
 armello.exe: Armello
 armoredwarfare.exe: Armored Warfare
 Arpiel.exe
+AShortHike.exe: A Short Hike
 ASN_App_PcDx9_Final.exe: Sonic & All-Stars Racing Transformed
 AssassinsCreed_Game.exe: Assassin's Creed
 AssettoCorsa.exe: Assetto Corsa
@@ -288,6 +289,7 @@ cs2.exe: Counter Strike 2
 CSDSteamBuild.exe: Cook, Serve, Delicious!
 csgo.exe: Counter Strike: Global Offensive
 Cube.exe: Cube World
+CubicOdyssey.exe
 cw.exe: Closers Dimension Conflict
 CW3.exe: Creeper World 3: Arc Eternal
 Cyberdrome-Win64-Shipping.exe: Cyberdrome
@@ -328,6 +330,7 @@ deadspace2.exe: Dead Space 2
 dearesther.exe: Dear Esther
 DefenseGrid2_Release.exe: Defense Grid 2
 Defiance.exe
+Deliver At All Costs Demo.exe: Deliver At All Costs
 DemoCitadel.exe: Untracked
 DemonsNeverLieDemo.exe: Demons Never Lie Demo
 DemoToonVillage.exe: Untracked
@@ -398,6 +401,7 @@ DontTouchAnything.exe: Please, Don't Touch Anything
 DonutCounty.exe: Donut County
 Doom.exe: DOOM 3
 Doom3BFG.exe: DOOM 3
+DOOMEternalx64vk.exe: DOOM Eternal
 DOOMx64.exe: DOOM
 DOOMx64vk.exe: DOOM
 DoorKickers.exe: Door Kickers
@@ -748,6 +752,8 @@ Injustice2.exe[DCF2 (x64)]: Ignore
 Insurgency.exe
 Intruder.exe
 invisibleinc.exe: Invisible Inc.
+inZOI-Win64-Shipping.exe: inZOI
+inZOI.exe
 iracinglauncher.exe: iRacing
 iracingsim.exe: iRacing
 iracingsim64.exe: iRacing
@@ -770,6 +776,7 @@ JagexLauncher.exe: RuneScape
 jamp.exe: Star Wars Jedi Knight
 jasp.exe: Star Wars Jedi Knight
 javaw.exe[Minecraft<*>]: Minecraft
+JediSurvivor.exe: STAR WARS Jedi: Survivor
 jetsetradio.exe: Jet Set Radio
 jk2mp.exe: Star Wars Jedi Knight II
 jk2mvmp_x64.exe: Star Wars Jedi Knight II
@@ -1068,6 +1075,7 @@ Pirate101.exe
 pitpeople.exe: Pit People
 Pixel Puzzles Ultimate.exe
 Pixel_Dungeons.exe: Pixel Dungeon
+Pixelmancer.exe
 PlagueIncEvolved.exe: Plague Inc: Evolved
 PlagueIncSC.exe: Plague Inc: Evolved
 PlanetSide2_x64.exe: Planetside 2
@@ -1310,6 +1318,7 @@ South Park - The Stick of Truth.exe: South Park: The Stick of Truth
 SpaceChem.exe
 SpaceEngineers.exe: Space Engineers
 spacegame-Win64-shipping.exe: Fractured Space
+SpaceIdle.exe: Unnamed Space Idle
 SpazGame.exe: Space Pirates and Zombies
 SpecOpsTheLine.exe: Spec Ops: The Line
 speed.exe: Need For Speed Most Wanted
@@ -1351,7 +1360,7 @@ starwarsbattlefront.exe: Star Wars: Battlefront
 starwarsbattlefrontii.exe: Star Wars Battlefront II
 starwarsbattlefrontii_trial.exe: Star Wars Battlefront II
 starwarsjedifallenorder.exe: STAR WARS Jedi: Fallen Order
-steamapps/common/Everything/Everything.exe: Everything
+steamapps/common/Everything/Everything.exe
 SteamworksExample.exe: Untracked
 STEINSGATE.exe: STEINS;GATE
 stellaris.exe: Stellaris
@@ -1397,6 +1406,7 @@ swtor.exe: Star Wars: The Old Republic
 SYNTH_FREEWARE_v1664_64Bit_Win7.exe: SYNTH
 Synthesia.exe
 SYNTHETIK.exe
+SynthRiders.exe
 System Shock.exe
 System Shock2.exe: System Shock 2
 System40.exe: Sengoku Rance
@@ -1548,6 +1558,7 @@ tru.exe: Tomb Raider: Underworld
 TS3.exe: The Sims 3
 ts3w.exe: The Sims 3
 TS4.exe: The Sims 4
+TS4_x64.exe: The Sims 4
 TSA.exe: Touhou Sky Arena
 TslGame.exe: Player Unknown's Battlegrounds
 tsunmajo.exe: Tsundertaker's Mahou Removal
@@ -1664,6 +1675,7 @@ Wow-64.exe: World of Warcraft
 Wow.exe: World of Warcraft
 WoWSLauncher.exe: World of Warships
 WowT-64.exe: World of Warcraft PTR
+WRC.exe
 Wreckfest.exe: Next Car Game: Wreckfest
 Wreckfest_x64.exe: Next Car Game: Wreckfest
 wwzRetail.exe: World War Z
