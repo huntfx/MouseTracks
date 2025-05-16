@@ -333,12 +333,15 @@ class KeyboardGrid(object):
         lookup = {v: i + 1 for i, v in enumerate(pools)}
         lookup[0] = 0
 
-        colours = calculate_colour_map(GLOBALS.colour_map)
-        colour_range = ColourRange(0, max_range, colours)
+        try:
+            colour_map_data = calculate_colour_map(GLOBALS.colour_map)
+        except Exception:  # Old code - just fallback to tranparent
+            colour_map_data = [(0, 0, 0, 0)]
+        colour_range = ColourRange(0, max_range, colour_map_data)
 
         # Decide on background colour
         # For now the options are black or while
-        if any(i > 128 for i in colours[0][:3]):
+        if any(i > 128 for i in colour_map_data[0][:3]):
             image['Background'] = self.colours['white']['Colour']
             image['Shadow'] = self.colours['black']['Colour']
         else:
