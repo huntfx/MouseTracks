@@ -102,7 +102,13 @@ class AppListWindow(QtWidgets.QDialog):
             window_title = self.ui.window_title.text()
         else:
             window_title = None
-        profile_name = self.ui.profile_name.text() or self.ui.profile_name.placeholderText()
+
+        if self.ui.state_ignored.isChecked():
+            profile_name = TRACKING_IGNORE
+        elif self.ui.state_disabled.isChecked():
+            profile_name = TRACKING_DISABLE
+        else:
+            profile_name = self.ui.profile_name.text() or self.ui.profile_name.placeholderText()
 
         # Update rule
         self.applist.data[executable][window_title] = profile_name
