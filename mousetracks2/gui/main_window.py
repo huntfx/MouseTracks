@@ -1654,6 +1654,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
+                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+                self.setEnabled(False)
                 self.component.send_data(ipc.Save())
                 self._waiting_on_save = True
         return True
