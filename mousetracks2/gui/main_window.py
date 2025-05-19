@@ -5,6 +5,7 @@ import math
 import re
 import sys
 import time
+import webbrowser
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -312,6 +313,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.multi_monitor.toggled.connect(self.multi_monitor_change)
         self.ui.override_monitor.toggled.connect(self.multi_monitor_override_toggle)
         self.ui.stat_app_add.clicked.connect(self.add_application)
+        self.ui.link_facebook.triggered.connect(self.open_url)
+        self.ui.link_github.triggered.connect(self.open_url)
+        self.ui.link_reddit.triggered.connect(self.open_url)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -332,6 +336,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Trigger initial setup
         self.profile_changed(0)
+
+    @QtCore.Slot()
+    def open_url(self) -> None:
+        """Open a URL from the selected action.
+        Requires the action to have a "website" property.
+        """
+        action: QtGui.QAction = self.sender()
+        url: QtCore.QUrl = action.property('website')
+        webbrowser.open(url.toString())
 
     @property
     def pixel_colour(self) -> QtGui.QColor:
@@ -1046,7 +1059,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if accept:
             width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-            height = self.ui.custom_width.value() if self.ui.custom_height.isEnabled() else None
+            height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
             self.component.send_data(ipc.RenderRequest(self.render_type,
                                                        width=width, height=height, lock_aspect=False,
                                                        profile=profile, file_path=file_path,

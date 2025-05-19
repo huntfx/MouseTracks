@@ -23,40 +23,43 @@ MouseTracks is an application designed to track and visualize mouse movements, c
 
   - Key presses: Heatmap overlaid on a keyboard image.
 
-  - _(Gamepad button rendering is not yet supported.)_
+  - _(Gamepad rendering is not yet supported.)_
 
 - ### Colourful Renders:
   Includes predefined and customizable color maps for all render types.
 
 - ### Application Tracking:
-  Use separate tracking profiles when different applications (defined in `AppList.txt`) are detected.
+  Use separate tracking profiles depending on which application has focus.
 
-  _(New applications must be added manually.)_
+  _(New applications must be added via the GUI.)_
 
 - ### Multi-Monitor Support:
   Tracks activity across multiple monitors. If linked to a specific application, the rendering bounds will automatically adjust to the application's window geometry.
 
 - ### Unobtrusive:
-  Designed to run silently in the background. Closing the GUI will minimise it to the System Tray, which also reduces the processing overhead.
+  Designed to run silently in the background. The GUI can be hidden to the System Tray, which also removes the processing overhead of showing all the live data.
 
 - ### Modular Design:
   The application was designed with multiple components that communicate but run independenantly of each other, ensuring the live tracking remains fully stable, even during resource-intensive tasks like rendering or waiting on GUI operations.
 
 - ### Stability
   Will happily keep running for years without any issues.
+
+MouseTracks is and will always remain free, but if you enjoy using it and would like to [buy me a pint](https://www.paypal.me/PeterHunt999) in appreciation (as I don't like coffee), then that would be very kind.
+
 ---
 
 ## Installation (v2.0)
 
-_Currently, only Windows is supported. Contributions for Linux or macOS support are welcome!_
+_Currently, only Windows is supported. Contributions for Linux or macOS support are welcome._
 
 ### Prebuilt Executable
 
 Launch `MouseTracks.exe` from anywhere. Recommended for ease of use.
 
-Build it using [`build-pyinstaller.bat`](build-pyinstaller.bat), or download it from the releases (available with v2.0).
+Build it using [`build-pyinstaller.bat`](build-pyinstaller.bat), or download it from the releases.
 
-It's also possible to run [`build-nuitka.bat`](build-nuitka.bat), but unless you have a commercial license, it will be flagged by a lot of AV programs, so this is generally not recommended.
+It's also possible to run [`build-nuitka.bat`](build-nuitka.bat), but this is not recommended unless you have a commercial license, as it will be flagged by a lot of AV programs.
 
 
 ### Virtual Environment

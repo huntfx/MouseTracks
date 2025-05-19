@@ -1314,7 +1314,7 @@ any tracking is enabled.
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-237</y>
+               <y>0</y>
                <width>261</width>
                <height>588</height>
               </rect>
@@ -1812,14 +1812,11 @@ This should be used after manually editing it.</string>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>Links</string>
     </property>
-    <addaction name="actionDocumentation"/>
-    <addaction name="actionAbout"/>
-    <addaction name="separator"/>
-    <addaction name="actionWebsite"/>
-    <addaction name="actionReddit"/>
-    <addaction name="actionFacebook"/>
+    <addaction name="link_github"/>
+    <addaction name="link_reddit"/>
+    <addaction name="link_facebook"/>
    </widget>
    <widget class="QMenu" name="menuPreferences">
     <property name="title">
@@ -1832,12 +1829,10 @@ This should be used after manually editing it.</string>
      <addaction name="prefs_autostart"/>
      <addaction name="prefs_automin"/>
     </widget>
-    <addaction name="prefs_console"/>
-    <addaction name="separator"/>
     <addaction name="menuStartup"/>
     <addaction name="separator"/>
+    <addaction name="prefs_console"/>
     <addaction name="menu_allow_minimise"/>
-    <addaction name="actionShow_Log"/>
     <addaction name="separator"/>
     <addaction name="always_on_top"/>
     <addaction name="full_screen"/>
@@ -1921,10 +1916,7 @@ This should be used after manually editing it.</string>
     <string>Import</string>
    </property>
   </action>
-  <action name="actionAbout">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="about">
    <property name="text">
     <string>About</string>
    </property>
@@ -1971,28 +1963,43 @@ This should be used after manually editing it.</string>
     <string>Restart</string>
    </property>
   </action>
-  <action name="actionWebsite">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="link_github">
    <property name="text">
-    <string>Website</string>
+    <string>Github</string>
+   </property>
+   <property name="toolTip">
+    <string>Navigate to the Github repository.</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://github.com/huntfx/MouseTracks</string>
+    </url>
    </property>
   </action>
-  <action name="actionReddit">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="link_reddit">
    <property name="text">
     <string>Reddit</string>
    </property>
-  </action>
-  <action name="actionFacebook">
-   <property name="enabled">
-    <bool>false</bool>
+   <property name="toolTip">
+    <string>Navigate to the r/MouseTracks subreddit.</string>
    </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://www.reddit.com/r/MouseTracks</string>
+    </url>
+   </property>
+  </action>
+  <action name="link_facebook">
    <property name="text">
     <string>Facebook</string>
+   </property>
+   <property name="toolTip">
+    <string>Navigate to the Facebook page.</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://www.facebook.com/MouseTracksApp</string>
+    </url>
    </property>
   </action>
   <action name="tray_exit">
