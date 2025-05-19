@@ -1324,7 +1324,7 @@ any tracking is enabled.
                <widget class="QGroupBox" name="groupBox_11">
                 <property name="toolTip">
                  <string>Shows the details of the currently focused application.
-This is useful if adding to AppList.txt.</string>
+This can be useful if adding a profile for a new application.</string>
                 </property>
                 <property name="title">
                  <string>Current Application</string>
@@ -1807,7 +1807,6 @@ This should be used after manually editing it.</string>
     <addaction name="file_import"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
-    <addaction name="actionRestart"/>
     <addaction name="menu_exit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1955,10 +1954,7 @@ This should be used after manually editing it.</string>
     <string>Pause</string>
    </property>
   </action>
-  <action name="actionRestart">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="file_tracking_restart">
    <property name="text">
     <string>Restart</string>
    </property>

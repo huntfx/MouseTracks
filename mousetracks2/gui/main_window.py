@@ -1463,7 +1463,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
-        """Start/unpause the script."""
+        """Start/unpause the tracking."""
         self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
         self.component.send_data(ipc.StartTracking())
         self.ui.save.setEnabled(True)
@@ -1472,7 +1472,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def pause_tracking(self) -> None:
-        """Pause/unpause the script."""
+        """Pause/unpause the tracking."""
         self.component.send_data(ipc.PauseTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)
@@ -1480,7 +1480,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def stop_tracking(self) -> None:
-        """Stop the script."""
+        """Stop the tracking."""
         self.component.send_data(ipc.StopTracking())
 
     @QtCore.Slot()
