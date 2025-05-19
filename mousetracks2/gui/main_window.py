@@ -1673,9 +1673,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._waiting_on_save = True
         return True
 
-    def _handle_close_event(self):
+    def _handle_close_event(self) -> bool:
         """Handle saving as part of the close event."""
         is_closing, self._is_closing = self._is_closing, True
+
+        # Close now if no tracking is running
+        if self.state == ipc.TrackingState.Stopped:
+            return True
 
         # Allow the user to cancel
         if not self._force_close:
