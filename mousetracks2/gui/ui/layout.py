@@ -827,7 +827,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 588))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, -237, 261, 588))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -1112,6 +1112,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(shortcut)
         self.custom_width_label.setBuddy(self.custom_width)
         self.custom_height_label.setBuddy(self.custom_height)
+        self.label_24.setBuddy(self.colour_option)
         self.sampling_label.setBuddy(self.sampling)
         self.label_16.setBuddy(self.padding)
         self.contrast_label.setBuddy(self.contrast)
@@ -1190,10 +1191,6 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MouseTracks", None))
-#if QT_CONFIG(tooltip)
-        MainWindow.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
-"This may take a few seconds to complete.", None))
-#endif // QT_CONFIG(tooltip)
         self.actionShow_Log.setText(QCoreApplication.translate("MainWindow", u"Display Output Log", None))
         self.file_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
 #if QT_CONFIG(shortcut)
@@ -1244,7 +1241,7 @@ class Ui_MainWindow(object):
 "Click to pause or resume the tracking.\n"
 "\n"
 "Note that the full quality render will look slightly different due to\n"
-"how the downscaling works, as each line needs to be made ticker to\n"
+"how the downscaling works, as each line needs to be made thicker to\n"
 "combat aliasing.", None))
 #endif // QT_CONFIG(tooltip)
         self.thumbnail.setText(QCoreApplication.translate("MainWindow", u"<image>", None))
@@ -1255,7 +1252,7 @@ class Ui_MainWindow(object):
 
 #if QT_CONFIG(tooltip)
         self.current_profile.setToolTip(QCoreApplication.translate("MainWindow", u"Select which profile to show.\n"
-"An asterix indicates that a profile has unsaved changes and will be saved.\n"
+"An asterisk indicates that a profile has unsaved changes and will be saved.\n"
 "Changing this does not affect what profile is currently being tracked.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
@@ -1273,7 +1270,7 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
 #if QT_CONFIG(tooltip)
-        self.show_right_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show left mouse clicks / right thumbstick.", None))
+        self.show_right_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show right mouse clicks / right thumbstick.", None))
 #endif // QT_CONFIG(tooltip)
         self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
 #if QT_CONFIG(tooltip)
@@ -1286,7 +1283,7 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.lock_aspect.setText(QCoreApplication.translate("MainWindow", u"Lock Aspect Ratio", None))
 #if QT_CONFIG(tooltip)
-        self.custom_width_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_width", None))
+        self.custom_width_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit custom_width", None))
 #endif // QT_CONFIG(tooltip)
         self.custom_width_label.setText(QCoreApplication.translate("MainWindow", u"Width Override:", None))
 #if QT_CONFIG(tooltip)
@@ -1301,7 +1298,7 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.enable_custom_width.setText("")
 #if QT_CONFIG(tooltip)
-        self.custom_height_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits custom_height", None))
+        self.custom_height_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit custom_height", None))
 #endif // QT_CONFIG(tooltip)
         self.custom_height_label.setText(QCoreApplication.translate("MainWindow", u"Height Override:", None))
 #if QT_CONFIG(tooltip)
@@ -1316,6 +1313,9 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.enable_custom_height.setText("")
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Render Settings", None))
+#if QT_CONFIG(tooltip)
+        self.label_24.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit colour_option", None))
+#endif // QT_CONFIG(tooltip)
         self.label_24.setText(QCoreApplication.translate("MainWindow", u"Colour Map:", None))
 #if QT_CONFIG(tooltip)
         self.blur.setToolTip(QCoreApplication.translate("MainWindow", u"Set the strength of the gaussian blur.\n"
@@ -1323,7 +1323,7 @@ class Ui_MainWindow(object):
 "This is primarily designed for use with heatmaps.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
-        self.sampling_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_samples", None))
+        self.sampling_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit sampling", None))
 #endif // QT_CONFIG(tooltip)
         self.sampling_label.setText(QCoreApplication.translate("MainWindow", u"Sampling:", None))
 #if QT_CONFIG(tooltip)
@@ -1354,14 +1354,20 @@ class Ui_MainWindow(object):
 "prevent overly bright spots from dominating the image.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
-        self.label_16.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit render_padding", None))
+        self.label_16.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit padding", None))
 #endif // QT_CONFIG(tooltip)
         self.label_16.setText(QCoreApplication.translate("MainWindow", u"Padding:", None))
 #if QT_CONFIG(tooltip)
-        self.contrast_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherits contrast", None))
+        self.contrast_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit contrast", None))
 #endif // QT_CONFIG(tooltip)
         self.contrast_label.setText(QCoreApplication.translate("MainWindow", u"Contrast:", None))
+#if QT_CONFIG(tooltip)
+        self.label_18.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit blur", None))
+#endif // QT_CONFIG(tooltip)
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"Blur:", None))
+#if QT_CONFIG(tooltip)
+        self.label_14.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit clipping", None))
+#endif // QT_CONFIG(tooltip)
         self.label_14.setText(QCoreApplication.translate("MainWindow", u"Clipping:", None))
         self.colour_option.setItemText(0, QCoreApplication.translate("MainWindow", u"Default", None))
         self.colour_option.setItemText(1, QCoreApplication.translate("MainWindow", u"Citrus", None))
@@ -1406,7 +1412,13 @@ class Ui_MainWindow(object):
         self.show_advanced.setText(QCoreApplication.translate("MainWindow", u"Advanced", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Main", None))
         self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Status", None))
+#if QT_CONFIG(tooltip)
+        self.profile_modified.setToolTip(QCoreApplication.translate("MainWindow", u"Indicates if the selected profile has unsaved changes.", None))
+#endif // QT_CONFIG(tooltip)
         self.profile_modified.setText(QCoreApplication.translate("MainWindow", u"Yes", None))
+#if QT_CONFIG(tooltip)
+        self.profile_save.setToolTip(QCoreApplication.translate("MainWindow", u"Save the selected profile.", None))
+#endif // QT_CONFIG(tooltip)
         self.profile_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
 #if QT_CONFIG(tooltip)
         self.label_13.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit profile_modified", None))
@@ -1444,7 +1456,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.delete_mouse.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all mouse data for the current profile.\n"
 "\n"
-"As a safety precaution,this option is disabled while\n"
+"As a safety precaution, this option is disabled while\n"
 "mouse tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_mouse.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
@@ -1455,7 +1467,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.delete_keyboard.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all keyboard data for the current profile.\n"
 "\n"
-"As a safety precaution,this option is disabled while\n"
+"As a safety precaution, this option is disabled while\n"
 "keyboard tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_keyboard.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
@@ -1466,7 +1478,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.delete_gamepad.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all gamepad data for the current profile.\n"
 "\n"
-"As a safety precaution,this option is disabled while\n"
+"As a safety precaution, this option is disabled while\n"
 "gamepad tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_gamepad.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
@@ -1477,14 +1489,14 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.delete_network.setToolTip(QCoreApplication.translate("MainWindow", u"Delete all network data for the current profile.\n"
 "\n"
-"As a safety precaution,this option is disabled while\n"
+"As a safety precaution, this option is disabled while\n"
 "network tracking is enabled.", None))
 #endif // QT_CONFIG(tooltip)
         self.delete_network.setText(QCoreApplication.translate("MainWindow", u"Delete Data", None))
 #if QT_CONFIG(tooltip)
         self.delete_profile.setToolTip(QCoreApplication.translate("MainWindow", u"Delete the entire profile from disk.\n"
 "\n"
-"As a safety precaution,this option is disabled while\n"
+"As a safety precaution, this option is disabled while\n"
 "any tracking is enabled.\n"
 "", None))
 #endif // QT_CONFIG(tooltip)

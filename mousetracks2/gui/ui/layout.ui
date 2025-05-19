@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>MouseTracks</string>
   </property>
-  <property name="toolTip">
-   <string>Save a full quality render to disk.
-This may take a few seconds to complete.</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="main_layout">
     <item>
@@ -50,7 +46,7 @@ This may take a few seconds to complete.</string>
 Click to pause or resume the tracking.
 
 Note that the full quality render will look slightly different due to
-how the downscaling works, as each line needs to be made ticker to
+how the downscaling works, as each line needs to be made thicker to
 combat aliasing.</string>
            </property>
            <property name="text">
@@ -112,7 +108,7 @@ combat aliasing.</string>
                    </property>
                    <property name="toolTip">
                     <string>Select which profile to show.
-An asterix indicates that a profile has unsaved changes and will be saved.
+An asterisk indicates that a profile has unsaved changes and will be saved.
 Changing this does not affect what profile is currently being tracked.</string>
                    </property>
                    <item>
@@ -186,7 +182,7 @@ When a new profile is recorded to, the GUI will immediately update.</string>
                    <item>
                     <widget class="QCheckBox" name="show_right_clicks">
                      <property name="toolTip">
-                      <string>Show left mouse clicks / right thumbstick.</string>
+                      <string>Show right mouse clicks / right thumbstick.</string>
                      </property>
                      <property name="text">
                       <string>Right</string>
@@ -237,7 +233,7 @@ If no data exists, then a blank image will be shown.</string>
                     </sizepolicy>
                    </property>
                    <property name="toolTip">
-                    <string>!inherits custom_width</string>
+                    <string>!inherit custom_width</string>
                    </property>
                    <property name="text">
                     <string>Width Override:</string>
@@ -308,7 +304,7 @@ If this is disabled, the width will be set based on the available data.</string>
                     </sizepolicy>
                    </property>
                    <property name="toolTip">
-                    <string>!inherits custom_height</string>
+                    <string>!inherit custom_height</string>
                    </property>
                    <property name="text">
                     <string>Height Override:</string>
@@ -383,11 +379,17 @@ If this is disabled, the height will be set based on the available data.</string
                   <layout class="QGridLayout" name="gridLayout_12">
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_24">
+                     <property name="toolTip">
+                      <string>!inherit colour_option</string>
+                     </property>
                      <property name="text">
                       <string>Colour Map:</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>colour_option</cstring>
                      </property>
                     </widget>
                    </item>
@@ -421,7 +423,7 @@ This is primarily designed for use with heatmaps.</string>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>!inherit render_samples</string>
+                      <string>!inherit sampling</string>
                      </property>
                      <property name="text">
                       <string>Sampling:</string>
@@ -551,7 +553,7 @@ prevent overly bright spots from dominating the image.</string>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>!inherit render_padding</string>
+                      <string>!inherit padding</string>
                      </property>
                      <property name="text">
                       <string>Padding:</string>
@@ -567,7 +569,7 @@ prevent overly bright spots from dominating the image.</string>
                    <item row="7" column="0">
                     <widget class="QLabel" name="contrast_label">
                      <property name="toolTip">
-                      <string>!inherits contrast</string>
+                      <string>!inherit contrast</string>
                      </property>
                      <property name="text">
                       <string>Contrast:</string>
@@ -582,6 +584,9 @@ prevent overly bright spots from dominating the image.</string>
                    </item>
                    <item row="11" column="0">
                     <widget class="QLabel" name="label_18">
+                     <property name="toolTip">
+                      <string>!inherit blur</string>
+                     </property>
                      <property name="text">
                       <string>Blur:</string>
                      </property>
@@ -595,6 +600,9 @@ prevent overly bright spots from dominating the image.</string>
                    </item>
                    <item row="10" column="0">
                     <widget class="QLabel" name="label_14">
+                     <property name="toolTip">
+                      <string>!inherit clipping</string>
+                     </property>
                      <property name="text">
                       <string>Clipping:</string>
                      </property>
@@ -960,6 +968,9 @@ This may take a few seconds to complete.</string>
                   <layout class="QHBoxLayout" name="horizontalLayout_6">
                    <item>
                     <widget class="QLabel" name="profile_modified">
+                     <property name="toolTip">
+                      <string>Indicates if the selected profile has unsaved changes.</string>
+                     </property>
                      <property name="text">
                       <string>Yes</string>
                      </property>
@@ -967,6 +978,9 @@ This may take a few seconds to complete.</string>
                    </item>
                    <item>
                     <widget class="QPushButton" name="profile_save">
+                     <property name="toolTip">
+                      <string>Save the selected profile.</string>
+                     </property>
                      <property name="text">
                       <string>Save</string>
                      </property>
@@ -1162,7 +1176,7 @@ This is the default behaviour.</string>
                      <property name="toolTip">
                       <string>Delete all mouse data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 mouse tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1188,7 +1202,7 @@ mouse tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all keyboard data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 keyboard tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1214,7 +1228,7 @@ keyboard tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all gamepad data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 gamepad tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1240,7 +1254,7 @@ gamepad tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all network data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 network tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1255,7 +1269,7 @@ network tracking is enabled.</string>
                    <property name="toolTip">
                     <string>Delete the entire profile from disk.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 any tracking is enabled.
 </string>
                    </property>
@@ -1300,7 +1314,7 @@ any tracking is enabled.
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>0</y>
+               <y>-237</y>
                <width>261</width>
                <height>588</height>
               </rect>
@@ -2174,8 +2188,8 @@ This should be used after manually editing it.</string>
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>885</x>
-     <y>226</y>
+     <x>886</x>
+     <y>258</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -2191,11 +2205,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>288</y>
+     <y>-8</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>284</y>
+     <y>-3</y>
     </hint>
    </hints>
   </connection>
@@ -2207,11 +2221,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>323</y>
+     <y>22</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>321</y>
+     <y>27</y>
     </hint>
    </hints>
   </connection>

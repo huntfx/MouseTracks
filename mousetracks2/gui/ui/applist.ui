@@ -78,8 +78,9 @@ Examples:
           <string>Set the name of the profile.
 Multiple rules can write to the same profile.
 
-If not set and the rule contains a specific window title, then that will be used.
-Otherwise, it will fallback to the executable name.</string>
+If this field is left empty, the profile name will be automatically determined. 
+It will first try to use the 'Window Title' (if one is specified for this rule). 
+If no 'Window Title' is specified, it will use the 'Executable' name as the profile name.</string>
          </property>
          <property name="title">
           <string>Profile Name</string>
@@ -102,7 +103,7 @@ Otherwise, it will fallback to the executable name.</string>
             </property>
             <property name="text">
              <string>- Multiple rules can point to the same profile.
-- If not set, then it will be read from the executable name or window title.</string>
+- If not set, name defaults to Window Title (if specified), otherwise Executable.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -158,7 +159,7 @@ being loaded, assuming the splash screen has a different title.</string>
          <property name="toolTip">
           <string>Set how the profile should work.
 
-- An ignored profile is meant to work in conjuction with the window title option,
+- An ignored profile is meant to work in conjunction with the window title option,
 so particular cases such as splash screens can be ignored instead of recording low
 resolution data to the application.
 
@@ -209,7 +210,7 @@ now it records to a &quot;Untracked&quot; profile.</string>
             <property name="text">
              <string>- Enabled: Track this profile.
 - Ignored: Use in conjunction with the window title to prevent the profile changing for certain windows (eg. splash screens).
-- Disabled: Do not write the data to any profiles.</string>
+- Disabled: Stop recording all data while profile is loaded.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -294,7 +295,7 @@ now it records to a &quot;Untracked&quot; profile.</string>
          <property name="text">
           <string>The format is as follows:
  - Executable.exe: Profile Name
- - Executable.exe[Window Title] Profile Name</string>
+ - Executable.exe[Window Title]: Profile Name</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

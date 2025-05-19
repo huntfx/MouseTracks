@@ -246,13 +246,14 @@ class Ui_Form(object):
         self.groupBox_6.setToolTip(QCoreApplication.translate("Form", u"Set the name of the profile.\n"
 "Multiple rules can write to the same profile.\n"
 "\n"
-"If not set and the rule contains a specific window title, then that will be used.\n"
-"Otherwise, it will fallback to the executable name.", None))
+"If this field is left empty, the profile name will be automatically determined. \n"
+"It will first try to use the 'Window Title' (if one is specified for this rule). \n"
+"If no 'Window Title' is specified, it will use the 'Executable' name as the profile name.", None))
 #endif // QT_CONFIG(tooltip)
         self.groupBox_6.setTitle(QCoreApplication.translate("Form", u"Profile Name", None))
         self.profile_name.setPlaceholderText(QCoreApplication.translate("Form", u"Game_Win64", None))
         self.label_10.setText(QCoreApplication.translate("Form", u"- Multiple rules can point to the same profile.\n"
-"- If not set, then it will be read from the executable name or window title.", None))
+"- If not set, name defaults to Window Title (if specified), otherwise Executable.", None))
 #if QT_CONFIG(tooltip)
         self.window_title_enabled.setToolTip(QCoreApplication.translate("Form", u"Add a check on the window title.\n"
 "These rules take priority over any matching rule without a window title.\n"
@@ -265,7 +266,7 @@ class Ui_Form(object):
 #if QT_CONFIG(tooltip)
         self.groupBox_5.setToolTip(QCoreApplication.translate("Form", u"Set how the profile should work.\n"
 "\n"
-"- An ignored profile is meant to work in conjuction with the window title option,\n"
+"- An ignored profile is meant to work in conjunction with the window title option,\n"
 "so particular cases such as splash screens can be ignored instead of recording low\n"
 "resolution data to the application.\n"
 "\n"
@@ -279,7 +280,7 @@ class Ui_Form(object):
         self.state_disabled.setText(QCoreApplication.translate("Form", u"Disabled", None))
         self.label_2.setText(QCoreApplication.translate("Form", u"- Enabled: Track this profile.\n"
 "- Ignored: Use in conjunction with the window title to prevent the profile changing for certain windows (eg. splash screens).\n"
-"- Disabled: Do not write the data to any profiles.", None))
+"- Disabled: Stop recording all data while profile is loaded.", None))
 #if QT_CONFIG(tooltip)
         self.create.setToolTip(QCoreApplication.translate("Form", u"Create the new rule or update the matching one.", None))
 #endif // QT_CONFIG(tooltip)
@@ -295,7 +296,7 @@ class Ui_Form(object):
         self.label_3.setText(QCoreApplication.translate("Form", u"Listed below are all matching profile rules for the currently selected executable.", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"The format is as follows:\n"
 " - Executable.exe: Profile Name\n"
-" - Executable.exe[Window Title] Profile Name", None))
+" - Executable.exe[Window Title]: Profile Name", None))
 
         __sortingEnabled = self.rules.isSortingEnabled()
         self.rules.setSortingEnabled(False)
