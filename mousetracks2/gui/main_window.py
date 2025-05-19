@@ -37,6 +37,11 @@ if TYPE_CHECKING:
 T = TypeVar('T')
 
 
+def _get_docs_folder() -> Path:
+    """Get the documents folder."""
+    return Path(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.StandardLocation.DocumentsLocation))
+
+
 @dataclass
 class MapData:
     position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
@@ -1055,7 +1060,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = 'Tracks'
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
         filename = f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
-        file_path, accept = dialog.getSaveFileName(None, 'Save Image', filename, 'Image Files (*.png)')
+        file_path, accept = dialog.getSaveFileName(None,
+                                                   'Save Image',
+                                                   str(Path.home() / 'Pictures' / filename),
+                                                   'Image Files (*.png)')
 
         if accept:
             width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
@@ -1068,8 +1076,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        clipping=self.clipping, blur=self.blur, linear=self.linear,
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                       ))
+                                                       show_right_clicks=self.ui.show_right_clicks.isChecked()))
 
     def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -2141,15 +2148,16 @@ class MainWindow(QtWidgets.QMainWindow):
         """Prompt the user to import a legacy profile.
         A check is done to avoid name clashes.
         """
-         # Get the default legacy location
-        documents_path = Path(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.StandardLocation.DocumentsLocation))
+         # Get the default legacy location if available
+        documents_path = _get_docs_folder()
         default_dir = documents_path / 'Mouse Tracks' / 'Data'
         if not default_dir.exists():
             default_dir = documents_path
 
         # Select the profile
         path, accept = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
-                                                             str(default_dir), 'MouseTracks Profile (*.mtk)')
+                                                             str(default_dir),
+                                                             'MouseTracks Profile (*.mtk)')
         if not accept:
             return
 
@@ -2184,7 +2192,9 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['TSV Files (*.tsv)"'])
         dialog.setDefaultSuffix('tsv')
-        file_path, accept = dialog.getSaveFileName(None, 'Save Mouse Stats', 'mouse_stats.tsv', 'TSV Files (*.tsv)')
+        file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats',
+                                                   str(_get_docs_folder() / 'mouse_stats.tsv'),
+                                                   'TSV Files (*.tsv)')
         if accept:
             self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2195,7 +2205,9 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['TSV Files (*.tsv)"'])
         dialog.setDefaultSuffix('tsv')
-        file_path, accept = dialog.getSaveFileName(None, 'Save Keyboard Stats', 'keyboard_stats.tsv', 'TSV Files (*.tsv)')
+        file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats',
+                                                   str(_get_docs_folder() / 'keyboard_stats.tsv'),
+                                                   'TSV Files (*.tsv)')
         if accept:
             self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2206,7 +2218,9 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['TSV Files (*.tsv)"'])
         dialog.setDefaultSuffix('tsv')
-        file_path, accept = dialog.getSaveFileName(None, 'Save Gamepad Stats', 'gamepad_stats.tsv', 'TSV Files (*.tsv)')
+        file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats',
+                                                   str(_get_docs_folder() / 'gamepad_stats.tsv'),
+                                                   'TSV Files (*.tsv)')
         if accept:
             self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2217,7 +2231,9 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['TSV Files (*.tsv)"'])
         dialog.setDefaultSuffix('tsv')
-        file_path, accept = dialog.getSaveFileName(None, 'Save Network Stats', 'network_stats.tsv', 'TSV Files (*.tsv)')
+        file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats',
+                                                   str(_get_docs_folder() / 'network_stats.tsv'),
+                                                   'TSV Files (*.tsv)')
         if accept:
             self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2228,7 +2244,9 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['TSV Files (*.tsv)"'])
         dialog.setDefaultSuffix('tsv')
-        file_path, accept = dialog.getSaveFileName(None, 'Save Daily Stats', 'daily_stats.tsv', 'TSV Files (*.tsv)')
+        file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats',
+                                                   str(_get_docs_folder() / 'daily_stats.tsv'),
+                                                   'TSV Files (*.tsv)')
         if accept:
             self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
 
