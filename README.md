@@ -40,12 +40,14 @@ MouseTracks is an application designed to track and visualize mouse movements, c
   Designed to run silently in the background. The GUI can be hidden to the System Tray, which also removes the processing overhead of showing all the live data.
 
 - ### Modular Design:
-  The application was designed with multiple components that communicate but run independenantly of each other, ensuring the live tracking remains fully stable, even during resource-intensive tasks like rendering or waiting on GUI operations.
+  The application was designed with multiple components that communicate but run independenantly of each other, ensuring the live tracking remains fully stable, even during resource intensive tasks like rendering or waiting on GUI operations.
 
 - ### Stability
   Will happily keep running for years without any issues.
 
 MouseTracks is and will always remain free, but if you enjoy using it and would like to [buy me a pint](https://www.paypal.me/PeterHunt999) in appreciation (as I don't like coffee), then that would be very kind.
+
+Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki#faq), or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can't find an answer.
 
 ---
 
