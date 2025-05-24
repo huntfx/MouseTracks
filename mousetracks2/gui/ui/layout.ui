@@ -70,7 +70,7 @@ combat aliasing.</string>
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -953,7 +953,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>251</width>
+               <width>261</width>
                <height>654</height>
               </rect>
              </property>
@@ -1315,7 +1315,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>239</width>
+               <width>261</width>
                <height>588</height>
               </rect>
              </property>
@@ -1870,7 +1870,11 @@ This should be used after manually editing it.</string>
     <addaction name="tray_show"/>
     <addaction name="tray_hide"/>
     <addaction name="separator"/>
+    <addaction name="tray_app_add"/>
+    <addaction name="separator"/>
     <addaction name="menu_debug"/>
+    <addaction name="separator"/>
+    <addaction name="tray_about"/>
     <addaction name="separator"/>
     <addaction name="tray_exit"/>
    </widget>
@@ -2143,6 +2147,16 @@ This should be used after manually editing it.</string>
     <string>About</string>
    </property>
   </action>
+  <action name="tray_about">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="tray_app_add">
+   <property name="text">
+    <string>Add Tracked Application</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2204,6 +2218,38 @@ This should be used after manually editing it.</string>
     <hint type="destinationlabel">
      <x>980</x>
      <y>27</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_app_add</sender>
+   <signal>triggered()</signal>
+   <receiver>stat_app_add</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>889</x>
+     <y>180</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_about</sender>
+   <signal>triggered()</signal>
+   <receiver>about</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>
