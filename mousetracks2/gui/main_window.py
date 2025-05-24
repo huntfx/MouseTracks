@@ -14,6 +14,7 @@ from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from .about import AboutWindow
 from .applist import AppListWindow
 from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
@@ -321,6 +322,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_facebook.triggered.connect(self.open_url)
         self.ui.link_github.triggered.connect(self.open_url)
         self.ui.link_reddit.triggered.connect(self.open_url)
+        self.ui.about.triggered.connect(self.about)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -350,6 +352,12 @@ class MainWindow(QtWidgets.QMainWindow):
         action: QtGui.QAction = self.sender()
         url: QtCore.QUrl = action.property('website')
         webbrowser.open(url.toString())
+
+    @QtCore.Slot()
+    def about(self) -> None:
+        """Load the "about" window."""
+        win = AboutWindow(self)
+        win.exec_()
 
     @property
     def pixel_colour(self) -> QtGui.QColor:

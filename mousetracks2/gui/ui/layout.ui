@@ -953,7 +953,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>251</width>
                <height>654</height>
               </rect>
              </property>
@@ -1315,7 +1315,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>239</width>
                <height>588</height>
               </rect>
              </property>
@@ -1811,11 +1811,13 @@ This should be used after manually editing it.</string>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Links</string>
+     <string>Help</string>
     </property>
     <addaction name="link_github"/>
     <addaction name="link_reddit"/>
     <addaction name="link_facebook"/>
+    <addaction name="separator"/>
+    <addaction name="about"/>
    </widget>
    <widget class="QMenu" name="menuPreferences">
     <property name="title">
@@ -1888,20 +1890,6 @@ This should be used after manually editing it.</string>
    <addaction name="tray_context_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionShow_Log">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Display Output Log</string>
-   </property>
-  </action>
   <action name="file_save">
    <property name="text">
     <string>Save</string>
@@ -1913,19 +1901,6 @@ This should be used after manually editing it.</string>
   <action name="file_import">
    <property name="text">
     <string>Import</string>
-   </property>
-  </action>
-  <action name="about">
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
-  <action name="actionDocumentation">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Documentation</string>
    </property>
   </action>
   <action name="menu_exit">
@@ -1952,11 +1927,6 @@ This should be used after manually editing it.</string>
   <action name="file_tracking_pause">
    <property name="text">
     <string>Pause</string>
-   </property>
-  </action>
-  <action name="file_tracking_restart">
-   <property name="text">
-    <string>Restart</string>
    </property>
   </action>
   <action name="link_github">
@@ -2166,6 +2136,11 @@ This should be used after manually editing it.</string>
   <action name="export_daily_stats">
    <property name="text">
     <string>Daily Stats</string>
+   </property>
+  </action>
+  <action name="about">
+   <property name="text">
+    <string>About</string>
    </property>
   </action>
  </widget>
