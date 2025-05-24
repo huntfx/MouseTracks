@@ -358,7 +358,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Open a URL from the selected action.
         Requires the action to have a "website" property.
         """
-        action: QtGui.QAction = self.sender()
+        action= cast(QtGui.QAction, self.sender())
         url: QtCore.QUrl = action.property('website')
         webbrowser.open(url.toString())
 
