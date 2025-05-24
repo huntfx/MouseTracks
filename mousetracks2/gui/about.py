@@ -3,7 +3,8 @@ import webbrowser
 from PySide6 import QtCore, QtWidgets
 
 from .ui import about
-from ..version import __version__
+from ..update import is_latest_version
+from ..version import VERSION
 
 
 class AboutWindow(QtWidgets.QDialog):
@@ -13,12 +14,11 @@ class AboutWindow(QtWidgets.QDialog):
         super().__init__(parent)
         self.ui = about.Ui_Dialog()
         self.ui.setupUi(self)
-        self.ui.version.setText(f'<span style=" font-size:10pt;">Version {__version__} '
-                                f'(<a href="https://github.com/huntfx/MouseTracks/releases/tag/v{__version__}">'
+        self.ui.version.setText(f'<span style=" font-size:10pt;">Version {VERSION} '
+                                f'(<a href="https://github.com/huntfx/MouseTracks/releases/tag/v{VERSION}">'
                                 'release notes</a>)</span>')
-        self.ui.version.linkActivated.connect(self.loadReleaseNotes)
+        self.ui.latest.setText(self.ui.latest.property('text_latest' if is_latest_version() else 'text_update'))
 
-    @QtCore.Slot(str)
-    def loadReleaseNotes(self, url: str) -> None:
-        """Load the page to the release notes."""
-        webbrowser.open(url)
+        self.ui.version.linkActivated.connect(webbrowser.open)
+        self.ui.latest.linkActivated.connect(webbrowser.open)
+

@@ -23,9 +23,9 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(220, 175)
-        Dialog.setMinimumSize(QSize(220, 175))
-        Dialog.setMaximumSize(QSize(220, 175))
+        Dialog.resize(260, 200)
+        Dialog.setMinimumSize(QSize(260, 200))
+        Dialog.setMaximumSize(QSize(260, 200))
         self.verticalLayout = QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout = QHBoxLayout()
@@ -57,6 +57,12 @@ class Ui_Dialog(object):
 
         self.verticalLayout.addWidget(self.version)
 
+        self.latest = QLabel(Dialog)
+        self.latest.setObjectName(u"latest")
+        self.latest.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.verticalLayout.addWidget(self.latest)
+
         self.close = QPushButton(Dialog)
         self.close.setObjectName(u"close")
 
@@ -78,6 +84,9 @@ class Ui_Dialog(object):
         self.label_3.setText("")
         self.label.setText(QCoreApplication.translate("Dialog", u"<html><head/><body><p align=\"center\"><span style=\" font-size:14pt; font-weight:700;\">About MouseTracks</span></p></body></html>", None))
         self.version.setText(QCoreApplication.translate("Dialog", u"<span style=\" font-size:10pt;\">Version 2.0.0 (<a href=\"https://github.com/huntfx/MouseTracks/releases/tag/v2.0.0\">release notes</a>)</span>", None))
+        self.latest.setText(QCoreApplication.translate("Dialog", u"You have the latest version.", None))
+        self.latest.setProperty(u"text_update", QCoreApplication.translate("Dialog", u"An update is available.<br/><a href=\"https://github.com/huntfx/MouseTracks/releases\">Click here</a> to visit the download page.", None))
+        self.latest.setProperty(u"text_latest", QCoreApplication.translate("Dialog", u"You have the latest version.", None))
         self.close.setText(QCoreApplication.translate("Dialog", u"Close", None))
     # retranslateUi
 

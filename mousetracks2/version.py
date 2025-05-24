@@ -2,4 +2,4 @@
 This is used for both the application and build process.
 """
 
-__version__ = '2.0.0'
+VERSION = '2.0.0'

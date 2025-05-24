@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>220</width>
-    <height>175</height>
+    <width>260</width>
+    <height>200</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>220</width>
-    <height>175</height>
+    <width>260</width>
+    <height>200</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>220</width>
-    <height>175</height>
+    <width>260</width>
+    <height>200</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -81,6 +81,22 @@
      </property>
      <property name="textInteractionFlags">
       <set>Qt::TextInteractionFlag::TextBrowserInteraction</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="latest">
+     <property name="text">
+      <string>You have the latest version.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <property name="text_update" stdset="0">
+      <string>An update is available.&lt;br/&gt;&lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
+     </property>
+     <property name="text_latest" stdset="0">
+      <string>You have the latest version.</string>
      </property>
     </widget>
    </item>

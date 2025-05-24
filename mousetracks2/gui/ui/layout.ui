@@ -70,7 +70,7 @@ combat aliasing.</string>
          </size>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -896,12 +896,18 @@ prevent overly bright spots from dominating the image.</string>
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label_28">
+           <widget class="QLabel" name="tip">
             <property name="text">
              <string>Tip: Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
+            </property>
+            <property name="tip_tracking" stdset="0">
+             <string>Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
+            </property>
+            <property name="tip_update" stdset="0">
+             <string>A new update is available. &lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
             </property>
            </widget>
           </item>
@@ -953,7 +959,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>251</width>
                <height>654</height>
               </rect>
              </property>
