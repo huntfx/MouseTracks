@@ -1,0 +1,207 @@
+name: Build (Windows)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  PYINSTALLER_VERSION: v6.11.1  # Match 'requirements-build-pyinstaller.txt'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions: write-all
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 32 bit python not included as PySide6 not compatible
+        include:
+          - bits: 64
+            architecture: x64
+
+    steps:
+      - name: Checkout partial repository
+        if: github.ref_type == 'tag'
+        uses: actions/checkout@v4
+
+      - name: Checkout full repository
+        if: github.ref_type != 'tag'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11 ${{ matrix.architecture }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          architecture: ${{ matrix.architecture }}
+
+      - name: Create virtual environment
+        shell: cmd
+        run: |
+          python -m venv .venv
+          if errorlevel 1 exit /b 1
+
+      - name: Create build folder
+        shell: cmd
+        run: |
+          if exist build rmdir build /s /q
+          mkdir build
+
+      - name: Update components
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          python -m pip install --upgrade pip wheel
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Build PyInstaller Bootloader
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          echo --- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---
+          git clone --branch ${{ env.PYINSTALLER_VERSION }} --depth 1 https://github.com/pyinstaller/pyinstaller.git build/pyinstaller
+          if errorlevel 1 exit /b 1
+
+          echo --- Building Bootloader ---
+          cd build\pyinstaller\bootloader
+          python ./waf distclean all --target-arch=${{ matrix.bits }}bit
+          if errorlevel 1 exit /b 1
+          cd ..
+
+          echo --- Installing Custom PyInstaller from build directory ---
+          pip install .
+          if errorlevel 1 exit /b 1
+
+          call deactivate
+
+      - name: Install dependencies
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          echo --- Installing main requirements ---
+          python -m pip install --upgrade -r requirements.txt
+          if errorlevel 1 exit /b 1
+
+          echo --- Installing build requirements ---
+          python -m pip install --upgrade -r requirements-build-pyinstaller.txt
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Get version details from tag
+        if: github.ref_type == 'tag'
+        shell: python
+        run: |
+          import os
+
+          tag_name = os.environ['GITHUB_REF_NAME']  # eg. v2.0.0
+          version = tag_name.lstrip('v')  # eg. 2.0.0
+
+          print(f'Tag: {tag_name}')
+          print(f'Version: {version}')
+
+          with open(os.environ['GITHUB_ENV'], 'a') as fh_env:
+            print(f'VERSION={version}', file=fh_env)
+
+      - name: Get version details from file
+        if: github.ref_type != 'tag'
+        id: extract_version
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          python .github/scripts/get-version.py
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Set dynamic executable name
+        id: set_names
+        shell: bash
+        run: |
+          # VERSION env var should be set by previous 'Get version' steps
+          if [ -z "$VERSION" ]; then
+            echo "::error::VERSION environment variable not set!"
+            exit 1
+          fi
+
+          EXE_BASENAME="MouseTracks-${VERSION}-windows-${{ matrix.architecture }}"
+          FULL_EXE_NAME="${EXE_BASENAME}.exe"
+
+          # Set environment variables for use in later steps of this job
+          echo "EXE_BASENAME=${EXE_BASENAME}" >> $GITHUB_ENV
+          echo "FULL_EXE_NAME=${FULL_EXE_NAME}" >> $GITHUB_ENV
+
+          echo "exe_basename=${EXE_BASENAME}" >> $GITHUB_OUTPUT
+          echo "full_exe_name=${FULL_EXE_NAME}" >> $GITHUB_OUTPUT
+
+          echo "Executable basename: ${EXE_BASENAME}"
+          echo "Full executable name: ${FULL_EXE_NAME}"
+
+      - name: Create version.rc
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          pyivf-make_version --outfile "build\version.rc" --version "${{ env.VERSION }}" --file-description "${{ env.EXE_BASENAME }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "${{ env.EXE_BASENAME }}"
+          call .venv\Scripts\deactivate
+          if not exist build\version.rc (
+            echo ERROR: version.rc not created!
+            exit /b 1
+          )
+
+          call .venv\Scripts\deactivate
+
+      - name: Install UPX
+        shell: powershell
+        run: |
+          Invoke-WebRequest `
+            -Uri https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-win${{ matrix.bits }}.zip `
+            -OutFile upx.zip
+
+          Expand-Archive -Path upx.zip -DestinationPath upx -Force
+
+          $upxDir = "$(Resolve-Path upx\upx-5.0.1-win${{ matrix.bits  }})"
+          Write-Host "UPX location: $upxDir"
+          echo "PATH=$upxDir;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
+      - name: Modify PyInstaller Spec File
+        shell: python
+        run: |
+          import os
+          with open('MouseTracks.spec', 'r') as f:
+            content = f.read()
+          with open('MouseTracks.spec', 'w') as f:
+            f.write(content.replace('MouseTracks', os.environ['EXE_BASENAME']))
+
+      - name: Build executable
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          pyinstaller MouseTracks.spec
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Attach executable to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/${{ env.FULL_EXE_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+
+      - name: Upload executable as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseTracks-${{ env.VERSION }}-windows-${{ matrix.architecture }}
+          path: dist/${{ env.FULL_EXE_NAME }}
