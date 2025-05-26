@@ -30,15 +30,15 @@ class Ui_Dialog(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_3 = QLabel(Dialog)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setMinimumSize(QSize(64, 64))
-        self.label_3.setMaximumSize(QSize(64, 64))
-        self.label_3.setPixmap(QPixmap(u"resources/images/icon.png"))
-        self.label_3.setScaledContents(True)
-        self.label_3.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.icon = QLabel(Dialog)
+        self.icon.setObjectName(u"icon")
+        self.icon.setMinimumSize(QSize(64, 64))
+        self.icon.setMaximumSize(QSize(64, 64))
+        self.icon.setPixmap(QPixmap(u"resources/images/icon.png"))
+        self.icon.setScaledContents(True)
+        self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.horizontalLayout.addWidget(self.label_3)
+        self.horizontalLayout.addWidget(self.icon)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout)
@@ -81,7 +81,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"About", None))
-        self.label_3.setText("")
+        self.icon.setText("")
         self.label.setText(QCoreApplication.translate("Dialog", u"<html><head/><body><p align=\"center\"><span style=\" font-size:14pt; font-weight:700;\">About MouseTracks</span></p></body></html>", None))
         self.version.setText(QCoreApplication.translate("Dialog", u"<span style=\" font-size:10pt;\">Version 2.0.0 (<a href=\"https://github.com/huntfx/MouseTracks/releases/tag/v2.0.0\">release notes</a>)</span>", None))
         self.latest.setText(QCoreApplication.translate("Dialog", u"You have the latest version.", None))

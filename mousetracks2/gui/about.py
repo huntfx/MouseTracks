@@ -1,8 +1,9 @@
 import webbrowser
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from .ui import about
+from ..constants import REPO_DIR
 from ..update import is_latest_version
 from ..version import VERSION
 
@@ -18,6 +19,7 @@ class AboutWindow(QtWidgets.QDialog):
                                 f'(<a href="https://github.com/huntfx/MouseTracks/releases/tag/v{VERSION}">'
                                 'release notes</a>)</span>')
         self.ui.latest.setText(self.ui.latest.property('text_latest' if is_latest_version() else 'text_update'))
+        self.ui.icon.setPixmap(QtGui.QPixmap(REPO_DIR / 'resources' / 'images' / 'icon.png'))
 
         self.ui.version.linkActivated.connect(webbrowser.open)
         self.ui.latest.linkActivated.connect(webbrowser.open)

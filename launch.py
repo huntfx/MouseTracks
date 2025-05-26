@@ -9,6 +9,7 @@ from mousetracks2.constants import REPO_DIR
 sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
 from mousetracks2.components import Hub
+from mousetracks2.constants import REPO_DIR
 from mousetracks2.config.cli import CLI, parse_args
 from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, check_autostart
 
