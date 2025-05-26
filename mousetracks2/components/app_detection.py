@@ -9,6 +9,7 @@ from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
+from ..utils import get_cursor_pos
 
 if sys.platform == 'win32':
     from ..utils.system.win32 import PID, WindowHandle, get_window_handle
@@ -64,8 +65,8 @@ class AppDetection(Component):
         handle = WindowHandle(hwnd)
         title = handle.title
         pid = handle.pid
-        if pid == 0:
-            print('[Application Detection] PID returned 0, running fallback function...')
+        if pid == 0 and get_cursor_pos() is not None:
+            print('[Application Detection] PID returned 0 while computer is active, running fallback function...')
             pid = self._pid_fallback(title)
 
         exe = handle.pid.executable
