@@ -4,6 +4,7 @@ import os
 import math
 import random
 import re
+import sys
 import time
 import webbrowser
 from contextlib import suppress
@@ -30,7 +31,7 @@ from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ..utils.system import monitor_locations, get_autostart, set_autostart, remove_autostart
+from ..utils.system import monitor_locations, check_autostart, set_autostart, remove_autostart
 from ..version import VERSION
 
 if TYPE_CHECKING:
@@ -174,7 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        self.ui.prefs_autostart.setChecked(get_autostart('MouseTracks'))
+        self.ui.prefs_autostart.setChecked(check_autostart())
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_console.setChecked(not IS_EXE)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
@@ -2068,10 +2069,13 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if value:
-            set_autostart('MouseTracks', SYS_EXECUTABLE, '--autostart')
+            args = sys.argv
+            if args and os.path.normpath(args[0]) == os.path.normpath(SYS_EXECUTABLE):
+                args = args[1:]
+            set_autostart(*args, '--autostart')
 
         else:
-            remove_autostart('MouseTracks')
+            remove_autostart()
 
         self.notify(f'{self.windowTitle()} will {"now" if value else "no longer"} launch when Windows starts.')
 

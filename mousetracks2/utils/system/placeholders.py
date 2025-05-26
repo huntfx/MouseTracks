@@ -2,16 +2,16 @@
 These are used when code hasn't yet been written for an OS.
 """
 
-def get_autostart(name: str) -> bool:
+def check_autostart() -> bool:
     """Determine if running on startup."""
     return False
 
 
-def set_autostart(name: str, executable: str, *args: str) -> None:
+def set_autostart(*args: str) -> None:
     """Set to run on startup."""
 
 
-def remove_autostart(name: str) -> None:
+def remove_autostart() -> None:
     """Stop running on startup."""
 
 

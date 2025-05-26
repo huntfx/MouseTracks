@@ -7,9 +7,12 @@ import ctypes.wintypes
 import os
 import re
 import sys
+from contextlib import suppress
 from typing import Any
 
 import winreg
+
+from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 
 
 user32 = ctypes.windll.user32
@@ -93,6 +96,8 @@ user32.EnumDisplayMonitors.argtypes = [HDC, ctypes.POINTER(RECT), MonitorEnumPro
 user32.EnumDisplayMonitors.restype = BOOL
 
 REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
+
+AUTOSTART_NAME = 'MouseTracks'
 
 
 def monitor_locations() -> list[tuple[int, int, int, int]]:
@@ -307,19 +312,25 @@ def _parse_args(cmd: str) -> list[str]:
             for m in re.finditer(r'"([^"]+)"|(\S+)', cmd)]
 
 
-def get_autostart(name: str) -> bool:
-    """Determine if running on startup."""
+def check_autostart() -> bool:
+    """Determine if running on startup and correct the path to current."""
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_READ) as key:
-            for arg in _parse_args(winreg.QueryValueEx(key, name)[0]):
-                if not arg.startswith('-') and not os.path.exists(arg):
-                    return False
-            return True
+            cmd = winreg.QueryValueEx(key, AUTOSTART_NAME)[0]
+
+            # Check if remapping the executable is required
+            # This is in case the user downloads a new version and runs it
+            # It only runs for built executables
+            if IS_BUILT_EXE:
+                with suppress(OSError):
+                    set_autostart(*(arg for arg in _parse_args(cmd) if arg.startswith('-')))
+
     except OSError:
         return False
+    return True
 
 
-def set_autostart(name: str, executable: str, *args: str) -> None:
+def set_autostart(*args: str) -> None:
     """Set an executable to run on startup."""
     def escape(text: str) -> str:
         if ' ' in text:
@@ -327,13 +338,13 @@ def set_autostart(name: str, executable: str, *args: str) -> None:
         return text
 
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, ' '.join(map(escape, [executable] + list(args))))
+        winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, ' '.join(map(escape, [SYS_EXECUTABLE] + list(args))))
 
 
-def remove_autostart(name: str) -> None:
+def remove_autostart() -> None:
     """Stop an executable running on startup."""
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.DeleteValue(key, name)
+        winreg.DeleteValue(key, AUTOSTART_NAME)
 
 
 def is_elevated() -> bool:

@@ -8,14 +8,18 @@ SYS_EXECUTABLE = sys.executable
 
 REPO_DIR = Path(__file__).parent.parent
 
+IS_BUILT_EXE = False
+
 # PyInstaller
 if hasattr(sys, '_MEIPASS'):
     REPO_DIR = Path(sys._MEIPASS)
+    IS_BUILT_EXE = True
 
 # Nuitka
 elif '__compiled__' in globals():
     REPO_DIR = Path(sys.executable).parent
     SYS_EXECUTABLE = cast(str, __compiled__.original_argv0)  # type: ignore
+    IS_BUILT_EXE = True
 
 DEFAULT_PROFILE_NAME = 'Desktop'
 
