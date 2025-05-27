@@ -93,9 +93,9 @@ class DataState:
     def __post_init__(self):
         self.tick_previous = self.tick_current - 1
 
-        for connection_name, data in psutil.net_io_counters(pernic=True).items():
-            self.bytes_sent_previous[connection_name] = data.bytes_sent
-            self.bytes_recv_previous[connection_name] = data.bytes_recv
+        for connection_name, counters in psutil.net_io_counters(pernic=True).items():
+            self.bytes_sent_previous[connection_name] = counters.bytes_sent
+            self.bytes_recv_previous[connection_name] = counters.bytes_recv
 
 
 class Tracking(Component):
@@ -468,10 +468,18 @@ class Tracking(Component):
 
             if not tick % 60:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
-                    bytes_sent = counters.bytes_sent - data.bytes_sent_previous.get(interface_name, 0)
-                    bytes_recv = counters.bytes_recv - data.bytes_recv_previous.get(interface_name, 0)
-                    data.bytes_sent_previous[interface_name] += bytes_sent
-                    data.bytes_recv_previous[interface_name] += bytes_recv
+                    prev_sent = data.bytes_sent_previous.get(interface_name, 0)
+                    prev_recv = data.bytes_recv_previous.get(interface_name, 0)
+
+                    # If a network disconnects its counters will reset
+                    if counters.bytes_sent < prev_sent or counters.bytes_recv < prev_recv:
+                        prev_sent = prev_recv = 0
+                    else:
+                        bytes_sent = counters.bytes_sent - prev_sent
+                        bytes_recv = counters.bytes_recv - prev_recv
+
+                    data.bytes_sent_previous[interface_name] = counters.bytes_sent
+                    data.bytes_recv_previous[interface_name] = counters.bytes_recv
 
                     if bytes_sent or bytes_recv:
                         mac_address = Interfaces.get_from_name(interface_name).mac
