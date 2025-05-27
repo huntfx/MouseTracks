@@ -267,6 +267,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.show_left_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_middle_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_right_clicks.toggled.connect(self.show_clicks_changed)
+        self.ui.sampling.valueChanged.connect(self.sampling_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
