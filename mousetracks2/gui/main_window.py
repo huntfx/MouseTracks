@@ -325,6 +325,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_facebook.triggered.connect(self.open_url)
         self.ui.link_github.triggered.connect(self.open_url)
         self.ui.link_reddit.triggered.connect(self.open_url)
+        self.ui.link_donate.triggered.connect(self.open_url)
         self.ui.about.triggered.connect(self.about)
         self.ui.tip.linkActivated.connect(webbrowser.open)
         self.timer_activity.timeout.connect(self.update_activity_preview)

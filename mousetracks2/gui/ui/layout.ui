@@ -959,7 +959,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>251</width>
+               <width>261</width>
                <height>654</height>
               </rect>
              </property>
@@ -1823,6 +1823,8 @@ This should be used after manually editing it.</string>
     <addaction name="link_reddit"/>
     <addaction name="link_facebook"/>
     <addaction name="separator"/>
+    <addaction name="link_donate"/>
+    <addaction name="separator"/>
     <addaction name="about"/>
    </widget>
    <widget class="QMenu" name="menuPreferences">
@@ -1879,6 +1881,8 @@ This should be used after manually editing it.</string>
     <addaction name="tray_app_add"/>
     <addaction name="separator"/>
     <addaction name="menu_debug"/>
+    <addaction name="separator"/>
+    <addaction name="tray_donate"/>
     <addaction name="separator"/>
     <addaction name="tray_about"/>
     <addaction name="separator"/>
@@ -2163,6 +2167,21 @@ This should be used after manually editing it.</string>
     <string>Add Tracked Application</string>
    </property>
   </action>
+  <action name="tray_donate">
+   <property name="text">
+    <string>Donate</string>
+   </property>
+  </action>
+  <action name="link_donate">
+   <property name="text">
+    <string>Donate</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://github.com/huntfx/MouseTracks/wiki/Donate</string>
+    </url>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2252,6 +2271,22 @@ This should be used after manually editing it.</string>
     <hint type="sourcelabel">
      <x>-1</x>
      <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_donate</sender>
+   <signal>triggered()</signal>
+   <receiver>link_donate</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>898</x>
+     <y>217</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
