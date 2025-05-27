@@ -434,6 +434,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.clipping.setValue(self.clipping)
         self.ui.blur.setValue(self.blur)
         self.ui.linear.setChecked(self.linear)
+        self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
 
@@ -2151,10 +2152,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.render_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_render)
 
     @QtCore.Slot(bool)
-    def toggle_advanced_options(self, enabled: bool) -> None:
+    def toggle_advanced_options(self, show_advanced: bool) -> None:
         """Set the visibility of render option widgets."""
-        show_advanced = self.ui.show_advanced.isChecked()
-
         is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
         is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
         is_keyboard = self.render_type == ipc.RenderType.Keyboard
