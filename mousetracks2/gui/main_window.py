@@ -1045,8 +1045,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def thumbnail_click(self, state: bool) -> None:
         """Handle what to do when the thumbnail is clicked."""
         if state:
+            self.notify(f'{self.windowTitle()} has resumed tracking.')
             self.start_tracking()
         else:
+            self.notify(f'{self.windowTitle()} has paused tracking.')
             self.pause_tracking()
 
     def request_render(self) -> None:
