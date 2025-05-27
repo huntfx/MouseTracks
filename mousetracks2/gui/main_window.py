@@ -18,7 +18,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from .about import AboutWindow
 from .applist import AppListWindow
 from .ui import layout
-from .utils import format_distance, format_ticks, format_bytes, ICON_PATH
+from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
 from .widgets import Pixel
 from ..components import ipc
 from ..constants import SYS_EXECUTABLE
@@ -1448,9 +1448,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.ui.track_network.setEnabled(finished_loading)
 
-            case ipc.DataTransfer() if self.is_live and self.ui.track_network.isChecked():
-                self.bytes_sent += message.bytes_sent
-                self.bytes_recv += message.bytes_recv
+            case ipc.DataTransfer():
+                if self.is_live and self.ui.track_network.isChecked():
+                    self.bytes_sent += message.bytes_sent
+                    self.bytes_recv += message.bytes_recv
+
+                    self.ui.stat_download_current.setText(format_network_speed(message.bytes_recv))
+                    self.ui.stat_upload_current.setText(format_network_speed(message.bytes_sent))
+
+                else:
+                    self.ui.stat_download_current.setText(format_network_speed(0))
+                    self.ui.stat_upload_current.setText(format_network_speed(0))
 
             case ipc.SaveComplete():
                 self._last_save_message = message

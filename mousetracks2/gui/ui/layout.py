@@ -175,7 +175,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 927))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 971))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -451,104 +451,11 @@ class Ui_MainWindow(object):
         self.groupBox_9.setObjectName(u"groupBox_9")
         self.gridLayout_3 = QGridLayout(self.groupBox_9)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.label_8 = QLabel(self.groupBox_9)
-        self.label_8.setObjectName(u"label_8")
-        self.label_8.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_8, 9, 0, 1, 1)
-
-        self.stat_download_total = QLabel(self.groupBox_9)
-        self.stat_download_total.setObjectName(u"stat_download_total")
-
-        self.gridLayout_3.addWidget(self.stat_download_total, 8, 1, 1, 1)
-
-        self.stat_clicks = QLabel(self.groupBox_9)
-        self.stat_clicks.setObjectName(u"stat_clicks")
-
-        self.gridLayout_3.addWidget(self.stat_clicks, 0, 1, 1, 1)
-
-        self.label_21 = QLabel(self.groupBox_9)
-        self.label_21.setObjectName(u"label_21")
-        self.label_21.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_21, 0, 0, 1, 1)
-
-        self.label_22 = QLabel(self.groupBox_9)
-        self.label_22.setObjectName(u"label_22")
-        self.label_22.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_22, 6, 0, 1, 1)
-
-        self.label_23 = QLabel(self.groupBox_9)
-        self.label_23.setObjectName(u"label_23")
-        self.label_23.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_23, 7, 0, 1, 1)
-
-        self.label_19 = QLabel(self.groupBox_9)
-        self.label_19.setObjectName(u"label_19")
-        self.label_19.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_19, 4, 0, 1, 1)
-
-        self.label = QLabel(self.groupBox_9)
-        self.label.setObjectName(u"label")
-        self.label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label, 3, 0, 1, 1)
-
-        self.stat_active = QLabel(self.groupBox_9)
-        self.stat_active.setObjectName(u"stat_active")
-
-        self.gridLayout_3.addWidget(self.stat_active, 6, 1, 1, 1)
-
-        self.stat_keys = QLabel(self.groupBox_9)
-        self.stat_keys.setObjectName(u"stat_keys")
-
-        self.gridLayout_3.addWidget(self.stat_keys, 2, 1, 1, 1)
-
-        self.label_20 = QLabel(self.groupBox_9)
-        self.label_20.setObjectName(u"label_20")
-        self.label_20.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_20, 2, 0, 1, 1)
-
         self.label_9 = QLabel(self.groupBox_9)
         self.label_9.setObjectName(u"label_9")
         self.label_9.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.gridLayout_3.addWidget(self.label_9, 1, 0, 1, 1)
-
-        self.stat_buttons = QLabel(self.groupBox_9)
-        self.stat_buttons.setObjectName(u"stat_buttons")
-
-        self.gridLayout_3.addWidget(self.stat_buttons, 3, 1, 1, 1)
-
-        self.stat_inactive = QLabel(self.groupBox_9)
-        self.stat_inactive.setObjectName(u"stat_inactive")
-
-        self.gridLayout_3.addWidget(self.stat_inactive, 7, 1, 1, 1)
-
-        self.label_4 = QLabel(self.groupBox_9)
-        self.label_4.setObjectName(u"label_4")
-        self.label_4.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.gridLayout_3.addWidget(self.label_4, 8, 0, 1, 1)
-
-        self.stat_scroll = QLabel(self.groupBox_9)
-        self.stat_scroll.setObjectName(u"stat_scroll")
-
-        self.gridLayout_3.addWidget(self.stat_scroll, 1, 1, 1, 1)
-
-        self.stat_distance = QLabel(self.groupBox_9)
-        self.stat_distance.setObjectName(u"stat_distance")
-
-        self.gridLayout_3.addWidget(self.stat_distance, 4, 1, 1, 1)
-
-        self.stat_upload_total = QLabel(self.groupBox_9)
-        self.stat_upload_total.setObjectName(u"stat_upload_total")
-
-        self.gridLayout_3.addWidget(self.stat_upload_total, 9, 1, 1, 1)
 
         self.label_11 = QLabel(self.groupBox_9)
         self.label_11.setObjectName(u"label_11")
@@ -556,10 +463,125 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addWidget(self.label_11, 5, 0, 1, 1)
 
+        self.stat_active = QLabel(self.groupBox_9)
+        self.stat_active.setObjectName(u"stat_active")
+
+        self.gridLayout_3.addWidget(self.stat_active, 6, 1, 1, 1)
+
+        self.label_8 = QLabel(self.groupBox_9)
+        self.label_8.setObjectName(u"label_8")
+        self.label_8.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_8, 9, 0, 1, 1)
+
+        self.stat_clicks = QLabel(self.groupBox_9)
+        self.stat_clicks.setObjectName(u"stat_clicks")
+
+        self.gridLayout_3.addWidget(self.stat_clicks, 0, 1, 1, 1)
+
+        self.stat_scroll = QLabel(self.groupBox_9)
+        self.stat_scroll.setObjectName(u"stat_scroll")
+
+        self.gridLayout_3.addWidget(self.stat_scroll, 1, 1, 1, 1)
+
+        self.label_20 = QLabel(self.groupBox_9)
+        self.label_20.setObjectName(u"label_20")
+        self.label_20.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_20, 2, 0, 1, 1)
+
+        self.label_22 = QLabel(self.groupBox_9)
+        self.label_22.setObjectName(u"label_22")
+        self.label_22.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_22, 6, 0, 1, 1)
+
         self.stat_elapsed = QLabel(self.groupBox_9)
         self.stat_elapsed.setObjectName(u"stat_elapsed")
 
         self.gridLayout_3.addWidget(self.stat_elapsed, 5, 1, 1, 1)
+
+        self.label_21 = QLabel(self.groupBox_9)
+        self.label_21.setObjectName(u"label_21")
+        self.label_21.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_21, 0, 0, 1, 1)
+
+        self.stat_keys = QLabel(self.groupBox_9)
+        self.stat_keys.setObjectName(u"stat_keys")
+
+        self.gridLayout_3.addWidget(self.stat_keys, 2, 1, 1, 1)
+
+        self.stat_upload_total = QLabel(self.groupBox_9)
+        self.stat_upload_total.setObjectName(u"stat_upload_total")
+
+        self.gridLayout_3.addWidget(self.stat_upload_total, 9, 1, 1, 1)
+
+        self.stat_inactive = QLabel(self.groupBox_9)
+        self.stat_inactive.setObjectName(u"stat_inactive")
+
+        self.gridLayout_3.addWidget(self.stat_inactive, 7, 1, 1, 1)
+
+        self.stat_download_total = QLabel(self.groupBox_9)
+        self.stat_download_total.setObjectName(u"stat_download_total")
+
+        self.gridLayout_3.addWidget(self.stat_download_total, 8, 1, 1, 1)
+
+        self.stat_buttons = QLabel(self.groupBox_9)
+        self.stat_buttons.setObjectName(u"stat_buttons")
+
+        self.gridLayout_3.addWidget(self.stat_buttons, 3, 1, 1, 1)
+
+        self.label_19 = QLabel(self.groupBox_9)
+        self.label_19.setObjectName(u"label_19")
+        self.label_19.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_19, 4, 0, 1, 1)
+
+        self.stat_distance = QLabel(self.groupBox_9)
+        self.stat_distance.setObjectName(u"stat_distance")
+
+        self.gridLayout_3.addWidget(self.stat_distance, 4, 1, 1, 1)
+
+        self.label_4 = QLabel(self.groupBox_9)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_4, 8, 0, 1, 1)
+
+        self.label_29 = QLabel(self.groupBox_9)
+        self.label_29.setObjectName(u"label_29")
+        self.label_29.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_29, 10, 0, 1, 1)
+
+        self.label_23 = QLabel(self.groupBox_9)
+        self.label_23.setObjectName(u"label_23")
+        self.label_23.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_23, 7, 0, 1, 1)
+
+        self.label = QLabel(self.groupBox_9)
+        self.label.setObjectName(u"label")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label, 3, 0, 1, 1)
+
+        self.label_30 = QLabel(self.groupBox_9)
+        self.label_30.setObjectName(u"label_30")
+        self.label_30.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.label_30, 11, 0, 1, 1)
+
+        self.stat_download_current = QLabel(self.groupBox_9)
+        self.stat_download_current.setObjectName(u"stat_download_current")
+
+        self.gridLayout_3.addWidget(self.stat_download_current, 10, 1, 1, 1)
+
+        self.stat_upload_current = QLabel(self.groupBox_9)
+        self.stat_upload_current.setObjectName(u"stat_upload_current")
+
+        self.gridLayout_3.addWidget(self.stat_upload_current, 11, 1, 1, 1)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_9)
@@ -1427,26 +1449,30 @@ class Ui_MainWindow(object):
 "require more processing.", None))
 #endif // QT_CONFIG(tooltip)
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Total Upload:", None))
-        self.stat_download_total.setText(QCoreApplication.translate("MainWindow", u"1.32 TB", None))
-        self.stat_clicks.setText(QCoreApplication.translate("MainWindow", u"526462", None))
-        self.label_21.setText(QCoreApplication.translate("MainWindow", u"Mouse Clicks:", None))
-        self.label_22.setText(QCoreApplication.translate("MainWindow", u"Active Time:", None))
-        self.label_23.setText(QCoreApplication.translate("MainWindow", u"Inactive Time:", None))
-        self.label_19.setText(QCoreApplication.translate("MainWindow", u"Cursor Distance:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Buttons Pressed:", None))
-        self.stat_active.setText(QCoreApplication.translate("MainWindow", u"45.0 hours", None))
-        self.stat_keys.setText(QCoreApplication.translate("MainWindow", u"42544", None))
-        self.label_20.setText(QCoreApplication.translate("MainWindow", u"Keys Pressed:", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Mouse Scrolls:", None))
-        self.stat_buttons.setText(QCoreApplication.translate("MainWindow", u"264", None))
-        self.stat_inactive.setText(QCoreApplication.translate("MainWindow", u"5.30 hours", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Total Download:", None))
-        self.stat_scroll.setText(QCoreApplication.translate("MainWindow", u"316177", None))
-        self.stat_distance.setText(QCoreApplication.translate("MainWindow", u"32.54km", None))
-        self.stat_upload_total.setText(QCoreApplication.translate("MainWindow", u"643.16 MB", None))
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"Elapsed Time:", None))
+        self.stat_active.setText(QCoreApplication.translate("MainWindow", u"45.0 hours", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Total Upload:", None))
+        self.stat_clicks.setText(QCoreApplication.translate("MainWindow", u"526462", None))
+        self.stat_scroll.setText(QCoreApplication.translate("MainWindow", u"316177", None))
+        self.label_20.setText(QCoreApplication.translate("MainWindow", u"Keys Pressed:", None))
+        self.label_22.setText(QCoreApplication.translate("MainWindow", u"Active Time:", None))
         self.stat_elapsed.setText(QCoreApplication.translate("MainWindow", u"50.30 hours", None))
+        self.label_21.setText(QCoreApplication.translate("MainWindow", u"Mouse Clicks:", None))
+        self.stat_keys.setText(QCoreApplication.translate("MainWindow", u"42544", None))
+        self.stat_upload_total.setText(QCoreApplication.translate("MainWindow", u"643.16 MB", None))
+        self.stat_inactive.setText(QCoreApplication.translate("MainWindow", u"5.30 hours", None))
+        self.stat_download_total.setText(QCoreApplication.translate("MainWindow", u"1.32 TB", None))
+        self.stat_buttons.setText(QCoreApplication.translate("MainWindow", u"264", None))
+        self.label_19.setText(QCoreApplication.translate("MainWindow", u"Cursor Distance:", None))
+        self.stat_distance.setText(QCoreApplication.translate("MainWindow", u"32.54km", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Total Download:", None))
+        self.label_29.setText(QCoreApplication.translate("MainWindow", u"Current Download:", None))
+        self.label_23.setText(QCoreApplication.translate("MainWindow", u"Inactive Time:", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Buttons Pressed:", None))
+        self.label_30.setText(QCoreApplication.translate("MainWindow", u"Current Upload:", None))
+        self.stat_download_current.setText(QCoreApplication.translate("MainWindow", u"3.5 Mb/s (0.3 MB/s)", None))
+        self.stat_upload_current.setText(QCoreApplication.translate("MainWindow", u"80 Mb/s (8.2 MB/s)", None))
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
         self.tip.setText(QCoreApplication.translate("MainWindow", u"Tip: Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))

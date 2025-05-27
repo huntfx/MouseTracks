@@ -46,3 +46,8 @@ def format_bytes(b: int) -> str:
     adjusted = round(b / 1024 ** power, 2)
     sign = 'KMGTPEZY'[power - 1]
     return f'{adjusted} {sign}B'
+
+
+def format_network_speed(b: int) -> str:
+    """Convert bytes to network speed."""
+    return f'{format_bytes(b * 8)[:-1]}bps'
