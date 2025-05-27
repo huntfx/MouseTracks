@@ -176,7 +176,7 @@ class TrackingIntArray(TrackingArray):
         self.max_value = np.iinfo(self.array.dtype).max
 
 
-class ArrayResolutionMap(dict):
+class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
     """Store multiple arrays for different resolutions.
     New arrays will be created on demand.
     """
@@ -233,8 +233,8 @@ class MovementMaps:
         """
         for maps in (self.sequential_arrays, self.speed_arrays):
             # Compress all arrays
-            for res, array in tuple(maps.items()):
-                array = np.asarray(array)
+            for res, tracking_array in tuple(maps.items()):
+                array = np.asarray(tracking_array)
                 maps[res] = (array.astype(np.float64) / factor).astype(array.dtype)
 
                 # Remove array if it no longer contains data
@@ -618,7 +618,7 @@ class TrackingProfile:
             self.button_held[0][keycode] = count
 
 
-class TrackingProfileLoader(dict):
+class TrackingProfileLoader(dict[str, TrackingProfile]):
     """Act like a defaultdict to load data if available."""
 
     def __getitem__(self, profile_name: str) -> TrackingProfile:
