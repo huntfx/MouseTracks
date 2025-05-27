@@ -1082,11 +1082,14 @@ class MainWindow(QtWidgets.QMainWindow):
             case _:
                 name = 'Tracks'
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
-        filename = f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
-        file_path, accept = dialog.getSaveFileName(None,
-                                                   'Save Image',
-                                                   str(Path.home() / 'Pictures' / filename),
-                                                   'Image Files (*.png)')
+
+        image_dir = Path.home() / 'Pictures'
+        if image_dir.exists():
+            image_dir /= 'MouseTracks'
+            if not image_dir.exists():
+                image_dir.mkdir()
+        image_dir /= f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
+        file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
             width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
