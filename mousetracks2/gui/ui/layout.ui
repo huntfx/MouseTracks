@@ -1399,6 +1399,9 @@ This can be useful if adding a profile for a new application.</string>
                      <property name="text">
                       <string>designer.exe</string>
                      </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
                     </widget>
                    </item>
                    <item row="1" column="0">

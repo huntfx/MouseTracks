@@ -856,6 +856,7 @@ class Ui_MainWindow(object):
 
         self.stat_app_exe = QLabel(self.groupBox_11)
         self.stat_app_exe.setObjectName(u"stat_app_exe")
+        self.stat_app_exe.setWordWrap(True)
 
         self.gridLayout_5.addWidget(self.stat_app_exe, 0, 1, 1, 1)
 
