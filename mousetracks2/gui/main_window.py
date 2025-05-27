@@ -1038,14 +1038,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_rendering_timer()
 
-        aspect = self.thumbnail_aspect
-        if aspect is not None:
-            if aspect > width / height:
-                height = round(width / aspect)
+        # Handle custom resolution
+        use_custom_width = self.ui.custom_width.isEnabled()
+        use_custom_height = self.ui.custom_height.isEnabled()
+        lock_aspect = self.ui.lock_aspect.isChecked()
+        if not lock_aspect and (use_custom_width or use_custom_height):
+            custom_width = self.ui.custom_width.value()
+            custom_height = self.ui.custom_height.value()
+
+            # Set the aspect ratio to requested
+            aspect_ratio = custom_width / custom_height
+            if aspect_ratio > width / height:
+                height = round(width / aspect_ratio)
             else:
-                width = round(height * aspect)
+                width = round(height * aspect_ratio)
+
+            # Ensure resolutions aren't greater than requested
+            width = min(width, custom_width)
+            height = min(height, custom_height)
+
         self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                   width=width, height=height, lock_aspect=aspect is None,
+                                                   width=width, height=height, lock_aspect=lock_aspect,
                                                    profile=profile, file_path=None,
                                                    colour_map=self.render_colour, padding=self.padding,
                                                    sampling=self.ui.thumbnail_sampling.value(),
@@ -1863,27 +1876,13 @@ class MainWindow(QtWidgets.QMainWindow):
             redraw_queue, self.redraw_queue = self.redraw_queue, []
             self.ui.thumbnail.update_pixels(*redraw_queue)
 
-    @property
-    def thumbnail_aspect(self) -> float | None:
-        """Determine the aspect ratio of the thumbnail.
-        If the aspect is automatically calculated it will return None.
-        """
-        if self.ui.lock_aspect.isChecked():
-            return None
-
-        width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-        height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
-
-        if width is None or height is None:
-            return self.ui.thumbnail.width() / self.ui.thumbnail.height()
-        return width / height
-
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
         custom_width = self.ui.custom_width.isEnabled()
         custom_height = self.ui.custom_height.isEnabled()
+        lock_aspect = self.ui.lock_aspect.isChecked()
 
-        if custom_width == custom_height:
+        if lock_aspect or (custom_width and custom_height):
             aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
         else:
             aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
