@@ -160,6 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._render_colour = RenderOption('Ice', 'Ice', 'Jet', 'Aqua')
         self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
         self._sampling = RenderOption(4, 4, 4, 4)
+        self._sampling_preview = RenderOption(0, 0, 1, 1)
         self._padding = RenderOption(0, 0, 0, 0)
         self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
         self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
@@ -283,7 +284,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.enable_custom_width.stateChanged.connect(self.render_resolution_state_changed)
         self.ui.enable_custom_height.stateChanged.connect(self.render_resolution_state_changed)
-        self.ui.thumbnail_sampling.valueChanged.connect(self.thumbnail_sample_value_changed)
+        self.ui.thumbnail_sampling.valueChanged.connect(self.sampling_preview_changed)
         self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
@@ -428,6 +429,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Load in other settings
         self.ui.contrast.setValue(self.contrast)
         self.ui.sampling.setValue(self.sampling)
+        self.ui.thumbnail_sampling.setValue(self.sampling_preview)
         self.ui.padding.setValue(self.padding)
         self.ui.clipping.setValue(self.clipping)
         self.ui.blur.setValue(self.blur)
@@ -466,6 +468,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def sampling(self, value: int) -> None:
         """Set a new sampling value for the current render type."""
         self._sampling.set(self.render_type, value)
+
+    @property
+    def sampling_preview(self) -> int:
+        """Get the thumbnail sampling for the current render type."""
+        return self._sampling_preview.get(self.render_type)
+
+    @sampling_preview.setter
+    def sampling_preview(self, value: int) -> None:
+        """Set a new thumbnail sampling value for the current render type."""
+        self._sampling_preview.set(self.render_type, value)
 
     @property
     def padding(self) -> int:
@@ -860,6 +872,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.sampling = value
 
+    @QtCore.Slot(int)
+    def sampling_preview_changed(self, value: int) -> None:
+        """Update the render when the sampling is changed."""
+        if self.pause_colour_change:
+            return
+        self.sampling_preview = value
+        self.request_thumbnail()
+
     @QtCore.Slot(str)
     def render_colour_changed(self, colour: str) -> None:
         """Update the render when the colour is changed."""
@@ -929,11 +949,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if not self.ui.lock_aspect.isChecked():
             self.request_thumbnail()
-
-    @QtCore.Slot(int)
-    def thumbnail_sample_value_changed(self, value: int) -> None:
-        """Update the thumbnail when the resampling mode is changed."""
-        self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:

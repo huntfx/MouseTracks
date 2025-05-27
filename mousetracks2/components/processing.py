@@ -358,7 +358,7 @@ class Processing(Component):
     def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1) -> np.ndarray:
         """Render a keyboard image."""
         keyboard.GLOBALS.colour_map = colour_map
-        keyboard.GLOBALS.multiplier = sampling
+        keyboard.GLOBALS.multiplier = max(1, sampling)
 
         pressed = {i: profile.key_presses[i] for i in map(int, keycodes.KEYBOARD_CODES)}
         held = {i: profile.key_held[i] for i in map(int, keycodes.KEYBOARD_CODES)}
