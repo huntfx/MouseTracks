@@ -1512,11 +1512,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.stat_app_detection_queue.setText(str(message.app_detection))
 
                 if self.state == ipc.TrackingState.Running:
-                    self.ui.stat_tracking_state.setText('Running' if message.tracking <= 1 else 'Busy')
-                    self.ui.stat_processing_state.setText('Running' if message.processing <= 1 else 'Busy')
-                    self.ui.stat_hub_state.setText('Running' if message.hub <= 1 else 'Busy')
-                    self.ui.stat_hub_state.setToolTip(str(message.processing))
-                    self.ui.stat_app_state.setText('Running' if message.app_detection <= 1 else 'Busy')
+                    self.ui.stat_tracking_state.setText('Running' if message.tracking <= 5 else 'Busy')
+                    self.ui.stat_processing_state.setText('Running' if message.processing <= 5 else 'Busy')
+                    self.ui.stat_hub_state.setText('Running' if message.hub <= 5 else 'Busy')
+                    self.ui.stat_app_state.setText('Running' if message.app_detection <= 5 else 'Busy')
                 else:
                     for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
                                    self.ui.stat_hub_state, self.ui.stat_app_state):
