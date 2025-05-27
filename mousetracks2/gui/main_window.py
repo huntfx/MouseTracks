@@ -2159,11 +2159,12 @@ class MainWindow(QtWidgets.QMainWindow):
         If the tray messages are not available, a popup will be shown.
         """
         if self.tray is None or not self.tray.supportsMessages():
-            msg = QtWidgets.QMessageBox(self)
-            msg.setWindowTitle(self.windowTitle())
-            msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-            msg.setText(message)
-            msg.exec_()
+            if self.isVisible():
+                msg = QtWidgets.QMessageBox(self)
+                msg.setWindowTitle(self.windowTitle())
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                msg.setText(message)
+                msg.exec_()
         else:
             self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
 
