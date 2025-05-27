@@ -1057,12 +1057,17 @@ class MainWindow(QtWidgets.QMainWindow):
         return True
 
     @QtCore.Slot(QtCore.QSize)
-    def thumbnail_resize(self, size) -> None:
+    def thumbnail_resize(self, size: QtCore.QSize) -> None:
         """Start the resize timer when the thumbnail changes size.
         This prevents constant render requests as it will only trigger
         after resizing has finished.
         """
         self._timer_resize.start(10)
+
+        if not self.ui.enable_custom_width.isChecked():
+            self.ui.custom_width.setValue(size.width())
+        if not self.ui.enable_custom_height.isChecked():
+            self.ui.custom_height.setValue(size.height())
 
     @QtCore.Slot(bool)
     def thumbnail_click(self, state: bool) -> None:
