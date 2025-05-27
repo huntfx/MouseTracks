@@ -1012,7 +1012,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
-        self._timer_thumbnail_update.start(10)
+        self._timer_thumbnail_update.start(100)
         return True
 
     def _request_thumbnail(self) -> bool:
