@@ -1880,14 +1880,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        if self.thumbnail_aspect is None:
+        custom_width = self.ui.custom_width.isEnabled()
+        custom_height = self.ui.custom_height.isEnabled()
+
+        if custom_width == custom_height:
             aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
         else:
             aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
 
         if self.ui.thumbnail.freeze_scale(aspect_mode):
             self.request_thumbnail()
-            return
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""
