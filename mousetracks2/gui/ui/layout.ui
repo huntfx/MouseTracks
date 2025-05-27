@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>899</height>
+               <height>927</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -211,90 +211,6 @@ If no data exists, then a blank image will be shown.</string>
                  <string>Resolution</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_7">
-                 <item row="2" column="1">
-                  <widget class="QCheckBox" name="lock_aspect">
-                   <property name="toolTip">
-                    <string>Set if the aspect ratio should be locked to the recommended value.</string>
-                   </property>
-                   <property name="text">
-                    <string>Lock Aspect Ratio</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="custom_width_label">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="toolTip">
-                    <string>!inherit custom_width</string>
-                   </property>
-                   <property name="text">
-                    <string>Width Override:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                   <property name="buddy">
-                    <cstring>custom_width</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <layout class="QHBoxLayout" name="horizontalLayout_5">
-                   <item>
-                    <widget class="QSpinBox" name="custom_width">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Set an override to render at a specific width.
-
-If the aspect ratio is locked and a height override is set,
-then the render may end up smaller than this override.</string>
-                     </property>
-                     <property name="suffix">
-                      <string notr="true">px</string>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>999999</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>16</number>
-                     </property>
-                     <property name="value">
-                      <number>1920</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="enable_custom_width">
-                     <property name="toolTip">
-                      <string>Enable the width override.
-If this is disabled, the width will be set based on the available data.</string>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
                  <item row="1" column="0">
                   <widget class="QLabel" name="custom_height_label">
                    <property name="sizePolicy">
@@ -314,6 +230,19 @@ If this is disabled, the width will be set based on the available data.</string>
                    </property>
                    <property name="buddy">
                     <cstring>custom_height</cstring>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QCheckBox" name="lock_aspect">
+                   <property name="toolTip">
+                    <string>Set if the aspect ratio should be locked to the recommended value.</string>
+                   </property>
+                   <property name="text">
+                    <string>Lock Aspect Ratio</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
@@ -366,6 +295,77 @@ If this is disabled, the height will be set based on the available data.</string
                    </item>
                   </layout>
                  </item>
+                 <item row="0" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_5">
+                   <item>
+                    <widget class="QSpinBox" name="custom_width">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set an override to render at a specific width.
+
+If the aspect ratio is locked and a height override is set,
+then the render may end up smaller than this override.</string>
+                     </property>
+                     <property name="suffix">
+                      <string notr="true">px</string>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>999999</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>16</number>
+                     </property>
+                     <property name="value">
+                      <number>1920</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="enable_custom_width">
+                     <property name="toolTip">
+                      <string>Enable the width override.
+If this is disabled, the width will be set based on the available data.</string>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="custom_width_label">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="toolTip">
+                    <string>!inherit custom_width</string>
+                   </property>
+                   <property name="text">
+                    <string>Width Override:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                   <property name="buddy">
+                    <cstring>custom_width</cstring>
+                   </property>
+                  </widget>
+                 </item>
                 </layout>
                </widget>
               </item>
@@ -377,19 +377,65 @@ If this is disabled, the height will be set based on the available data.</string
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <item>
                   <layout class="QGridLayout" name="gridLayout_12">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_24">
+                   <item row="9" column="1">
+                    <widget class="QSpinBox" name="padding">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="toolTip">
-                      <string>!inherit colour_option</string>
+                      <string>Adjust the padding around the render.
+
+Note that this may affect the intensity of heatmap edges.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>px</string>
+                     </property>
+                     <property name="maximum">
+                      <number>4096</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="11" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="toolTip">
+                      <string>!inherit blur</string>
                      </property>
                      <property name="text">
-                      <string>Colour Map:</string>
+                      <string>Blur:</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
                      <property name="buddy">
-                      <cstring>colour_option</cstring>
+                      <cstring>blur</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="9" column="0">
+                    <widget class="QLabel" name="label_16">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>!inherit padding</string>
+                     </property>
+                     <property name="text">
+                      <string>Padding:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>padding</cstring>
                      </property>
                     </widget>
                    </item>
@@ -414,60 +460,38 @@ This is primarily designed for use with heatmaps.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="8" column="0">
-                    <widget class="QLabel" name="sampling_label">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_24">
                      <property name="toolTip">
-                      <string>!inherit sampling</string>
+                      <string>!inherit colour_option</string>
                      </property>
                      <property name="text">
-                      <string>Sampling:</string>
+                      <string>Colour Map:</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
                      <property name="buddy">
-                      <cstring>sampling</cstring>
+                      <cstring>colour_option</cstring>
                      </property>
                     </widget>
                    </item>
-                   <item row="8" column="1">
-                    <widget class="QSpinBox" name="sampling">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
+                   <item row="10" column="1">
+                    <widget class="QDoubleSpinBox" name="clipping">
                      <property name="toolTip">
-                      <string>Set the render sampling level.
+                      <string>Define a clipping threshold.
 
-Higher sampling improves accuracy when combining data from 
-different resolutions, especially for lower-resolution recordings.</string>
+Values in the highest percentage range will be clipped to
+prevent overly bright spots from dominating the image.</string>
                      </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
+                     <property name="decimals">
                       <number>8</number>
                      </property>
-                     <property name="value">
-                      <number>4</number>
+                     <property name="maximum">
+                      <double>100.000000000000000</double>
                      </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QCheckBox" name="linear">
-                     <property name="toolTip">
-                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
-                     </property>
-                     <property name="text">
-                      <string>Linear Mapping</string>
+                     <property name="singleStep">
+                      <double>0.000100000000000</double>
                      </property>
                     </widget>
                    </item>
@@ -501,71 +525,6 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      </property>
                     </widget>
                    </item>
-                   <item row="9" column="1">
-                    <widget class="QSpinBox" name="padding">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Adjust the padding around the render.
-
-Note that this may affect the intensity of heatmap edges.</string>
-                     </property>
-                     <property name="suffix">
-                      <string>px</string>
-                     </property>
-                     <property name="maximum">
-                      <number>4096</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>8</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="10" column="1">
-                    <widget class="QDoubleSpinBox" name="clipping">
-                     <property name="toolTip">
-                      <string>Define a clipping threshold.
-
-Values in the highest percentage range will be clipped to
-prevent overly bright spots from dominating the image.</string>
-                     </property>
-                     <property name="decimals">
-                      <number>8</number>
-                     </property>
-                     <property name="maximum">
-                      <double>100.000000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.000100000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="9" column="0">
-                    <widget class="QLabel" name="label_16">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit padding</string>
-                     </property>
-                     <property name="text">
-                      <string>Padding:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>padding</cstring>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="7" column="0">
                     <widget class="QLabel" name="contrast_label">
                      <property name="toolTip">
@@ -582,35 +541,64 @@ prevent overly bright spots from dominating the image.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="11" column="0">
-                    <widget class="QLabel" name="label_18">
+                   <item row="1" column="1">
+                    <widget class="QCheckBox" name="linear">
                      <property name="toolTip">
-                      <string>!inherit blur</string>
+                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
                      </property>
                      <property name="text">
-                      <string>Blur:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>blur</cstring>
+                      <string>Linear Mapping</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="10" column="0">
-                    <widget class="QLabel" name="label_14">
+                   <item row="12" column="0">
+                    <widget class="QLabel" name="sampling_label">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="toolTip">
-                      <string>!inherit clipping</string>
+                      <string>!inherit sampling</string>
                      </property>
                      <property name="text">
-                      <string>Clipping:</string>
+                      <string>Sampling (Render):</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
                      <property name="buddy">
-                      <cstring>clipping</cstring>
+                      <cstring>sampling</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="12" column="1">
+                    <widget class="QSpinBox" name="sampling">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set the render sampling level.
+
+Higher sampling improves accuracy when combining data from 
+different resolutions, especially for lower-resolution recordings.
+
+A value of 0 will turn off all upscaling, and will instead run the
+resampling that's in use by the preview image, where lines will
+get thicker at lower resolutions.</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>4</number>
                      </property>
                     </widget>
                    </item>
@@ -643,6 +631,61 @@ prevent overly bright spots from dominating the image.</string>
                        <string>Sunburst</string>
                       </property>
                      </item>
+                    </widget>
+                   </item>
+                   <item row="10" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="toolTip">
+                      <string>!inherit clipping</string>
+                     </property>
+                     <property name="text">
+                      <string>Clipping:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>clipping</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="13" column="0">
+                    <widget class="QLabel" name="label_28">
+                     <property name="toolTip">
+                      <string>!inherit thumbnail_sampling</string>
+                     </property>
+                     <property name="text">
+                      <string>Sampling (Preview):</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>thumbnail_sampling</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="13" column="1">
+                    <widget class="QSpinBox" name="thumbnail_sampling">
+                     <property name="toolTip">
+                      <string>Set the level of sampling used for the preview render.
+
+The default behaviour is a sample level of 0, which is optimised for
+low resolution previews, but is not representative of the final render.
+
+A sample level of 1 or higher will match the output render. Lower
+sample levels will be aliased however, and higher sample levels
+require more processing.</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>0</number>
+                     </property>
                     </widget>
                    </item>
                   </layout>
@@ -937,6 +980,9 @@ This may take a few seconds to complete.</string>
               </property>
               <property name="text">
                <string>Advanced</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -2222,11 +2268,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>-8</y>
+     <y>-67</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>-3</y>
+     <y>-71</y>
     </hint>
    </hints>
   </connection>
@@ -2238,11 +2284,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>22</y>
+     <y>-37</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>27</y>
+     <y>-41</y>
     </hint>
    </hints>
   </connection>
@@ -2285,8 +2331,8 @@ This should be used after manually editing it.</string>
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>898</x>
-     <y>217</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

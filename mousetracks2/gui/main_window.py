@@ -283,6 +283,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.enable_custom_width.stateChanged.connect(self.render_resolution_state_changed)
         self.ui.enable_custom_height.stateChanged.connect(self.render_resolution_state_changed)
+        self.ui.thumbnail_sampling.valueChanged.connect(self.thumbnail_sample_value_changed)
         self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
@@ -348,6 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Trigger initial setup
         self.profile_changed(0)
+        self.ui.show_advanced.setChecked(False)
 
         # Set tip
         tips = ['tip_tracking']
@@ -430,7 +432,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.clipping.setValue(self.clipping)
         self.ui.blur.setValue(self.blur)
         self.ui.linear.setChecked(self.linear)
-        self._set_advanced_visibility()
 
         self.pause_colour_change = False
 
@@ -929,6 +930,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.lock_aspect.isChecked():
             self.request_thumbnail()
 
+    @QtCore.Slot(int)
+    def thumbnail_sample_value_changed(self, value: int) -> None:
+        """Update the thumbnail when the resampling mode is changed."""
+        self.request_thumbnail()
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
         """Switch to the current profile when auto switch is checked."""
@@ -1026,12 +1032,12 @@ class MainWindow(QtWidgets.QMainWindow):
                                                    width=width, height=height, lock_aspect=aspect is None,
                                                    profile=profile, file_path=None,
                                                    colour_map=self.render_colour, padding=self.padding,
+                                                   sampling=self.ui.thumbnail_sampling.value(),
                                                    contrast=self.contrast, clipping=self.clipping,
                                                    blur=self.blur, linear=self.linear,
                                                    show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                   ))
+                                                   show_right_clicks=self.ui.show_right_clicks.isChecked()))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -1213,8 +1219,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 height, width, channels = message.array.shape
                 failed = width == height == 0
 
-                target_height = int(height / message.request.sampling)
-                target_width = int(width / message.request.sampling)
+                target_height = int(height / (message.request.sampling or 1))
+                target_width = int(width / (message.request.sampling or 1))
 
                 # Draw the new pixmap
                 if message.request.file_path is None:
@@ -1240,7 +1246,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         image = QtGui.QImage(message.array.data, width, height, stride, image_format)
 
                         # Scale the QImage to fit the pixmap size
-                        scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+                        scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
                         self.ui.thumbnail.set_pixmap(scaled_image)
 
                     self.pause_redraw -= 1
@@ -2129,7 +2135,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.main_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_main)
         self.ui.render_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0) if full_screen else self._margins_render)
 
-    def _set_advanced_visibility(self):
+    @QtCore.Slot(bool)
+    def toggle_advanced_options(self, enabled: bool) -> None:
         """Set the visibility of render option widgets."""
         show_advanced = self.ui.show_advanced.isChecked()
 
@@ -2145,6 +2152,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._buddies[self.ui.contrast].setVisible(show_advanced and not is_keyboard)
         self.ui.sampling.setVisible(show_advanced)
         self._buddies[self.ui.sampling].setVisible(show_advanced)
+        self.ui.thumbnail_sampling.setVisible(show_advanced)
+        self._buddies[self.ui.thumbnail_sampling].setVisible(show_advanced)
         self.ui.padding.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.padding].setVisible(show_advanced and not is_keyboard)
         self.ui.clipping.setVisible(show_advanced and not is_keyboard)
@@ -2154,11 +2163,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.linear.setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
-
-    @QtCore.Slot(bool)
-    def toggle_advanced_options(self, enabled: bool) -> None:
-        """Update visibility of widgets when the advanced button is toggled."""
-        self._set_advanced_visibility()
 
     def notify(self, message: str) -> None:
         """Show a notification.
