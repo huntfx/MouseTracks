@@ -282,8 +282,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
         self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
-        self.ui.enable_custom_width.stateChanged.connect(self.render_resolution_state_changed)
-        self.ui.enable_custom_height.stateChanged.connect(self.render_resolution_state_changed)
+        self.ui.enable_custom_width.stateChanged.connect(self.custom_width_toggle)
+        self.ui.enable_custom_height.stateChanged.connect(self.custom_height_toggle)
         self.ui.thumbnail_sampling.valueChanged.connect(self.sampling_preview_changed)
         self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
@@ -936,20 +936,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def render_resolution_value_changed(self, value: int) -> None:
-        """Update the thumbnail when a custom resolution is set.
-        This is only enabled when both resolution values are set.
-        """
-        if not self.ui.lock_aspect.isChecked() and self.ui.custom_width.isEnabled() and self.ui.custom_height.isEnabled():
+        """Update the thumbnail when a custom resolution is set."""
+        if self.ui.custom_width.isEnabled() or self.ui.custom_height.isEnabled():
             self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
-    def render_resolution_state_changed(self, state: QtCore.Qt.CheckState) -> None:
-        """Update the thumbnail when a custom resolution is set.
-        This is limited to when the aspect is unlocked, otherwise it
-        would have no affect.
-        """
-        if not self.ui.lock_aspect.isChecked():
-            self.request_thumbnail()
+    def custom_width_toggle(self, state: QtCore.Qt.CheckState) -> None:
+        """Update the thumbnail when custom width is toggled."""
+        self.request_thumbnail()
+
+        # Reset to current width
+        if state == QtCore.Qt.CheckState.Unchecked.value:
+            self.ui.custom_width.setValue(self.ui.thumbnail.size().width())
+
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def custom_height_toggle(self, state: QtCore.Qt.CheckState) -> None:
+        """Update the thumbnail when custom height is toggled."""
+        self.request_thumbnail()
+
+        # Reset to current height
+        if state == QtCore.Qt.CheckState.Unchecked.value:
+            self.ui.custom_height.setValue(self.ui.thumbnail.size().height())
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
@@ -1039,12 +1046,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.start_rendering_timer()
 
         # Handle custom resolution
+        custom_width = self.ui.custom_width.value()
+        custom_height = self.ui.custom_height.value()
         use_custom_width = self.ui.custom_width.isEnabled()
         use_custom_height = self.ui.custom_height.isEnabled()
         lock_aspect = self.ui.lock_aspect.isChecked()
         if not lock_aspect and (use_custom_width or use_custom_height):
-            custom_width = self.ui.custom_width.value()
-            custom_height = self.ui.custom_height.value()
 
             # Set the aspect ratio to requested
             aspect_ratio = custom_width / custom_height
@@ -1053,8 +1060,10 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 width = round(height * aspect_ratio)
 
-            # Ensure resolutions aren't greater than requested
+        # Ensure resolutions aren't greater than requested
+        if use_custom_width:
             width = min(width, custom_width)
+        if use_custom_height:
             height = min(height, custom_height)
 
         self.component.send_data(ipc.RenderRequest(self.render_type,
@@ -1878,12 +1887,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
+        width = self.ui.thumbnail.width()
+        height = self.ui.thumbnail.height()
         custom_width = self.ui.custom_width.isEnabled()
         custom_height = self.ui.custom_height.isEnabled()
         lock_aspect = self.ui.lock_aspect.isChecked()
 
+        # If the aspect is locked, or both width and height are set
         if lock_aspect or (custom_width and custom_height):
             aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
+
+        # If the custom width or height is too low
+        elif custom_width < width or custom_height < height:
+            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
+
+        # Allow the render to fill the widget
         else:
             aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
 
