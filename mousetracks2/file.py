@@ -635,19 +635,21 @@ class TrackingProfileLoader(dict[str, TrackingProfile]):
         """Load in any missing data or create a new profile."""
         filename = get_filename(profile_name)
         if os.path.exists(filename):
-            self[profile_name] = TrackingProfile.load(filename)
+            profile = self[profile_name] = TrackingProfile.load(filename)
         else:
-            self[profile_name] = profile = TrackingProfile()
-            profile.name = profile_name
+            profile = self[profile_name] = TrackingProfile()
 
-            # Set disabled profile config
-            if profile_name == TRACKING_DISABLE:
-                profile.config.track_mouse = False
-                profile.config.track_keyboard = False
-                profile.config.track_gamepad = False
-                profile.config.track_network = False
+        # Update the name
+        profile.name = profile_name
 
-        return self[profile_name]
+        # Force disabled profile config
+        if profile_name == TRACKING_DISABLE:
+            profile.config.track_mouse = False
+            profile.config.track_keyboard = False
+            profile.config.track_gamepad = False
+            profile.config.track_network = False
+
+        return profile
 
 
 def get_filename(application: str) -> str:

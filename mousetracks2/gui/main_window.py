@@ -25,14 +25,13 @@ from ..constants import SYS_EXECUTABLE
 from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT
+from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT, TRACKING_DISABLE
 from ..file import PROFILE_DIR, get_profile_names, get_filename
 from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ..utils.system import monitor_locations, check_autostart, set_autostart, remove_autostart
-from ..version import VERSION
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
@@ -793,13 +792,16 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        self.ui.tab_options.setTabText(1, f'{self.ui.current_profile.itemData(idx)} Options')
+        profile_name = self.ui.current_profile.itemData(idx)
+        self.ui.tab_options.setTabText(1, f'{profile_name} Options')
 
         if not self._redrawing_profiles:
-            self.request_profile_data(self.ui.current_profile.itemData(idx))
+            self.request_profile_data(profile_name)
             if idx:
                 self.ui.auto_switch_profile.setChecked(False)
             self.set_profile_modified_text()
+
+        self.ui.tracking_group.setEnabled(profile_name != TRACKING_DISABLE)
 
     def request_profile_data(self, profile_name: str) -> None:
         """Request loading profile data."""

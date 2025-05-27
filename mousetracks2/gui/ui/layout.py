@@ -739,11 +739,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_13.addWidget(self.override_monitor)
 
-        self.groupBox_6 = QGroupBox(self.scrollAreaWidgetContents_2)
-        self.groupBox_6.setObjectName(u"groupBox_6")
-        self.verticalLayout_11 = QVBoxLayout(self.groupBox_6)
+        self.tracking_group = QGroupBox(self.scrollAreaWidgetContents_2)
+        self.tracking_group.setObjectName(u"tracking_group")
+        self.verticalLayout_11 = QVBoxLayout(self.tracking_group)
         self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        self.label_25 = QLabel(self.groupBox_6)
+        self.label_25 = QLabel(self.tracking_group)
         self.label_25.setObjectName(u"label_25")
         self.label_25.setWordWrap(True)
 
@@ -751,46 +751,46 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.track_mouse = QCheckBox(self.groupBox_6)
+        self.track_mouse = QCheckBox(self.tracking_group)
         self.track_mouse.setObjectName(u"track_mouse")
         self.track_mouse.setChecked(True)
 
         self.gridLayout_2.addWidget(self.track_mouse, 0, 0, 1, 1)
 
-        self.delete_mouse = QPushButton(self.groupBox_6)
+        self.delete_mouse = QPushButton(self.tracking_group)
         self.delete_mouse.setObjectName(u"delete_mouse")
 
         self.gridLayout_2.addWidget(self.delete_mouse, 0, 1, 1, 1)
 
-        self.track_keyboard = QCheckBox(self.groupBox_6)
+        self.track_keyboard = QCheckBox(self.tracking_group)
         self.track_keyboard.setObjectName(u"track_keyboard")
         self.track_keyboard.setChecked(True)
 
         self.gridLayout_2.addWidget(self.track_keyboard, 1, 0, 1, 1)
 
-        self.delete_keyboard = QPushButton(self.groupBox_6)
+        self.delete_keyboard = QPushButton(self.tracking_group)
         self.delete_keyboard.setObjectName(u"delete_keyboard")
 
         self.gridLayout_2.addWidget(self.delete_keyboard, 1, 1, 1, 1)
 
-        self.track_gamepad = QCheckBox(self.groupBox_6)
+        self.track_gamepad = QCheckBox(self.tracking_group)
         self.track_gamepad.setObjectName(u"track_gamepad")
         self.track_gamepad.setChecked(True)
 
         self.gridLayout_2.addWidget(self.track_gamepad, 2, 0, 1, 1)
 
-        self.delete_gamepad = QPushButton(self.groupBox_6)
+        self.delete_gamepad = QPushButton(self.tracking_group)
         self.delete_gamepad.setObjectName(u"delete_gamepad")
 
         self.gridLayout_2.addWidget(self.delete_gamepad, 2, 1, 1, 1)
 
-        self.track_network = QCheckBox(self.groupBox_6)
+        self.track_network = QCheckBox(self.tracking_group)
         self.track_network.setObjectName(u"track_network")
         self.track_network.setChecked(True)
 
         self.gridLayout_2.addWidget(self.track_network, 3, 0, 1, 1)
 
-        self.delete_network = QPushButton(self.groupBox_6)
+        self.delete_network = QPushButton(self.tracking_group)
         self.delete_network.setObjectName(u"delete_network")
 
         self.gridLayout_2.addWidget(self.delete_network, 3, 1, 1, 1)
@@ -798,13 +798,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_11.addLayout(self.gridLayout_2)
 
-        self.delete_profile = QPushButton(self.groupBox_6)
+        self.delete_profile = QPushButton(self.tracking_group)
         self.delete_profile.setObjectName(u"delete_profile")
 
         self.verticalLayout_11.addWidget(self.delete_profile)
 
 
-        self.verticalLayout_13.addWidget(self.groupBox_6)
+        self.verticalLayout_13.addWidget(self.tracking_group)
 
         self.verticalSpacer_4 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -1463,7 +1463,7 @@ class Ui_MainWindow(object):
         self.single_monitor.setToolTip(QCoreApplication.translate("MainWindow", u"Treat all connected monitors as part of the same display.", None))
 #endif // QT_CONFIG(tooltip)
         self.single_monitor.setText(QCoreApplication.translate("MainWindow", u"Combine as one large display", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Tracking", None))
+        self.tracking_group.setTitle(QCoreApplication.translate("MainWindow", u"Tracking", None))
         self.label_25.setText(QCoreApplication.translate("MainWindow", u"Choose which data should be tracked.", None))
 #if QT_CONFIG(tooltip)
         self.track_mouse.setToolTip(QCoreApplication.translate("MainWindow", u"Enable or disable mouse tracking for the selected profile.", None))
