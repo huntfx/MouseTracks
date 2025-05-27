@@ -1062,7 +1062,7 @@ class MainWindow(QtWidgets.QMainWindow):
         This prevents constant render requests as it will only trigger
         after resizing has finished.
         """
-        self._timer_resize.start(10)
+        self._timer_resize.start(100)
 
         if not self.ui.enable_custom_width.isChecked():
             self.ui.custom_width.setValue(size.width())
