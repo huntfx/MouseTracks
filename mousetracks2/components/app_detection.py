@@ -1,6 +1,6 @@
 import re
 import sys
-from collections import deque
+from collections import defaultdict, deque
 
 import psutil
 
@@ -31,7 +31,7 @@ class AppDetection(Component):
         self._previous_rects: list[tuple[int, int, int, int]] = []
 
         # Cache each process in case the fallback is required
-        deque(psutil.process_iter(attrs=['pid', 'exe']), maxlen=0)
+        deque(psutil.process_iter(attrs=['pid', 'exe', 'create_time']), maxlen=0)
 
     def _pid_fallback(self, title: str) -> PID:
         """Guess the PID of the selected application.
@@ -41,18 +41,41 @@ class AppDetection(Component):
         PID, which indicates it's the most recently loaded.
 
         See the `WindowHandle` class for more details of why this is
-        necessary. This method is not foolproof, and loading a new
-        tracked application will cause that one to take priority even
-        if it's not focused.
+        necessary. This method is not foolproof, and has been tweaked
+        multiple times to try and make it work 100% of the time for the
+        one use case I've come across.
         """
-        matched = PID(0)
-        for proc in psutil.process_iter(attrs=['pid', 'exe']):
+        matched_procs = []  # type: list[psutil.Process]
+        invalid_exes = set()  # type: set[str]
+        for proc in psutil.process_iter(attrs=['pid', 'exe', 'create_time']):
             pid = PID(proc.info['pid'])
-            if proc.info['exe'] is None or pid.hwnds:
-                continue
-            if self.applist.match(proc.info['exe'], title):
+
+            # Ignore if no executable
+            if proc.info['exe'] is None:
+                pass
+
+            # If there are window handles, it's not valid for the callback
+            elif pid.hwnds:
+                invalid_exes.add(proc.info['exe'])
+
+            # Check for a match
+            elif proc.info['exe'] not in invalid_exes and self.applist.match(proc.info['exe'], title):
                 print(f'[Application Detection] Fallback matched "{proc.info["exe"]}" with PID {proc.info["pid"]}')
-                matched = pid
+                matched_procs.append(proc)
+
+        # Sort the processes by the latest creation time
+        matched_procs = list(sorted(matched_procs, key=lambda proc: proc.info['create_time'], reverse=True))
+        all_exes = [proc.info['exe'] for proc in matched_procs]
+
+        # Find the first unique process, discard any duplicate ones
+        for proc, exe in zip(matched_procs, all_exes):
+            if exe in invalid_exes or all_exes.count(exe) > 1:
+                continue
+            matched = PID(proc.info['pid'])
+            break
+        else:
+            matched = PID(0)
+
         print(f'[Application Detection] Fallback returning PID {int(matched)}')
         return matched
 
