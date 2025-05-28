@@ -1642,7 +1642,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.isVisible():
             self.hide()
 
-    def load_from_tray(self):
+    def load_from_tray(self) -> None:
         """Load the window from the tray icon.
         If the window is only minimised to the taskbar, then `show()`
         will be ignored.
@@ -1650,7 +1650,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.isMinimized():
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
 
-        if not self.isVisible():
+        if self.isVisible():
+            self.raise_()
+            self.activateWindow()
+
+        else:
             self.show()
 
             if self.ui.full_screen.isChecked():
