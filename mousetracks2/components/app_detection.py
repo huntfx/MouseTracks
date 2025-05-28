@@ -63,16 +63,14 @@ class AppDetection(Component):
                 print(f'[Application Detection] Fallback matched "{proc.info["exe"]}" with PID {proc.info["pid"]}')
                 matched_procs.append(proc)
 
-        # Sort the processes by the latest creation time
-        matched_procs = list(sorted(matched_procs, key=lambda proc: proc.info['create_time'], reverse=True))
-        all_exes = [proc.info['exe'] for proc in matched_procs]
+        # Sort by the latest creation time
+        matched_procs.sort(key=lambda proc: proc.info['create_time'], reverse=True)
 
-        # Find the first unique process, discard any duplicate ones
-        for proc, exe in zip(matched_procs, all_exes):
-            if exe in invalid_exes or all_exes.count(exe) > 1:
-                continue
-            matched = PID(proc.info['pid'])
-            break
+        # Find the first matched process without any valid hwnds
+        for proc in matched_procs:
+            if proc.info['exe'] not in invalid_exes:
+                matched = PID(proc.info['pid'])
+                break
         else:
             matched = PID(0)
 
