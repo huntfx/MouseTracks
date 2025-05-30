@@ -1,6 +1,9 @@
 """General functions being used by the GUI."""
 
 import math
+import time
+
+from PySide6 import QtCore, QtWidgets
 
 from ..constants import UPDATES_PER_SECOND, REPO_DIR
 

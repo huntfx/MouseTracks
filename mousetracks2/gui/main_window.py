@@ -19,7 +19,7 @@ from .about import AboutWindow
 from .applist import AppListWindow
 from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
-from .widgets import Pixel
+from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..constants import SYS_EXECUTABLE
 from ..config.cli import CLI
@@ -1542,36 +1542,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
 
             case ipc.ExportStatsSuccessful():
-                self.show_export_stats_complete(message.source.path)
+                msg = AutoCloseMessageBox(self)
+                msg.setWindowTitle(f'Export Successful')
+                msg.setText(f'"{message.source.path}" was successfully saved.')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                msg.exec_with_timeout('Closing notification', 7.0)
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
-
-    def show_export_stats_complete(self, export_path: str, timeout: float = 10.0, accuracy: int = 1) -> None:
-        """Show a popup when the stats export completes."""
-        target_timeout = time.time() + timeout
-
-        def update_message() -> None:
-            """Updates the countdown message and auto-saves if time runs out."""
-            remaining_timeout = round(target_timeout - time.time(), accuracy)
-            if remaining_timeout > 0:
-                msg.setInformativeText(f'Closing notification in {remaining_timeout} seconds...')
-            else:
-                timer.stop()
-                msg.accept()
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setWindowTitle(f'Export Successful')
-        msg.setText(f'"{export_path}" was successfully saved.')
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-        update_message()
-
-        # Use a QTimer to update the countdown
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(update_message)
-        timer.start(10 ** (3 - accuracy))
-
-        msg.exec_()
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
@@ -1746,40 +1724,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         event.accept()
 
-    def ask_to_save(self, timeout: float = SHUTDOWN_TIMEOUT, accuracy: int = 1) -> bool:
+    def ask_to_save(self) -> bool:
         """Ask the user to save.
         Returns True if the close event should proceed.
         """
-        target_timeout = time.time() + timeout
-
-        def update_message() -> None:
-            """Updates the countdown message and auto-saves if time runs out."""
-            remaining_timeout = round(target_timeout - time.time(), accuracy)
-            if remaining_timeout > 0:
-                msg.setInformativeText(f'Saving automatically in {remaining_timeout} seconds...')
-            else:
-                timer.stop()
-                msg.accept()
-
         # Pause the tracking
         if self.state != ipc.TrackingState.Stopped:
             self.component.send_data(ipc.PauseTracking())
 
-        msg = QtWidgets.QMessageBox(self)
+        msg = AutoCloseMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
         msg.setText('Do you want to save?')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Cancel)
-        update_message()
 
-        # Use a QTimer to update the countdown
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(update_message)
-        timer.start(10 ** (3 - accuracy))
-
-        match msg.exec_():
+        match msg.exec_with_timeout('Saving automatically', SHUTDOWN_TIMEOUT):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 if self.state != ipc.TrackingState.Stopped:
                     self.component.send_data(ipc.StartTracking())
