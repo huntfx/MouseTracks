@@ -1103,7 +1103,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def request_render(self) -> None:
         """Send a render request."""
-        profile = self.ui.current_profile.currentData()
 
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
@@ -1131,8 +1130,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = 'Gamepad Thumbstick Speed'
             case _:
                 name = 'Tracks'
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
 
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
         image_dir = Path.home() / 'Pictures'
         if image_dir.exists():
             image_dir /= 'MouseTracks'
@@ -2279,9 +2279,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
-        file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats',
-                                                   str(_get_docs_folder() / 'mouse_stats.csv'),
-                                                   'CSV Files (*.csv)')
+
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Mouse Stats.csv'
+
+        file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2292,9 +2295,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
-        file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats',
-                                                   str(_get_docs_folder() / 'keyboard_stats.csv'),
-                                                   'CSV Files (*.csv)')
+
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Keyboard Stats.csv'
+
+        file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2305,9 +2311,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
-        file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats',
-                                                   str(_get_docs_folder() / 'gamepad_stats.csv'),
-                                                   'CSV Files (*.csv)')
+
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Gamepad Stats.csv'
+
+        file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2318,9 +2327,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
-        file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats',
-                                                   str(_get_docs_folder() / 'network_stats.csv'),
-                                                   'CSV Files (*.csv)')
+
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Network Stats.csv'
+
+        file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2331,9 +2343,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
-        file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats',
-                                                   str(_get_docs_folder() / 'daily_stats.csv'),
-                                                   'CSV Files (*.csv)')
+
+        profile = self.ui.current_profile.currentData()
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Daily Stats.csv'
+
+        file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
 
