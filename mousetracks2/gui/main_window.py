@@ -1154,7 +1154,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                        show_right_clicks=self.ui.show_right_clicks.isChecked()))
 
-    def thumbnail_render_check(self, update_smoothness: int = 4) -> None:
+    def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""
         match self.render_type:
             # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
@@ -1188,7 +1188,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         # Only render every `update_frequency` ticks
-        if count % math.ceil(update_frequency / update_smoothness):
+        if count % math.ceil(update_frequency / GlobalConfig.preview_frequency_multiplier):
             return
 
         # Skip repeat renders

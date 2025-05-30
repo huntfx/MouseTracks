@@ -34,6 +34,7 @@ class GlobalConfig:
             The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
             20 seconds, so don't exceed 25 seconds or it may get terminated.
         export_notification_timeout: How long to show the export notification for.
+        preview_frequency_multiplier: How often to re-render the preview image.
     """
 
     minimise_on_start: bool = False
@@ -49,6 +50,7 @@ class GlobalConfig:
     component_check_frequency: float = 1.0
     shutdown_timeout: float = 15.0
     export_notification_timeout: float = 7.0
+    preview_frequency_multiplier: float = 1.0
 
     def __post_init__(self) -> None:
         self.load()
