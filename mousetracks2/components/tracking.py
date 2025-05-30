@@ -17,7 +17,7 @@ from . import ipc
 from .abstract import Component
 from ..config.cli import CLI
 from ..config.settings import GlobalConfig
-from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import get_cursor_pos, keycodes
 from ..utils.network import Interfaces
@@ -218,7 +218,7 @@ class Tracking(Component):
         if self.data.tick_modified is None:
             return 0
 
-        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
         diff = self.data.tick_modified - self.data.tick_previous
         if diff > inactivity_threshold:
             self.send_data(ipc.Inactive(self.profile_name, diff))
@@ -402,8 +402,10 @@ class Tracking(Component):
                     self.send_data(ipc.MouseMove(mouse_position))
 
             # Check resolution and update if required
-            if tick and not tick % UPDATES_PER_SECOND:
+            if tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.monitor_check_frequency):
                 self._refresh_monitor_data()
+
+            if tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Record key presses / mouse clicks
@@ -414,7 +416,7 @@ class Tracking(Component):
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
-                if not tick % 60 or data.gamepad_force_recheck:
+                if not tick % int(UPDATES_PER_SECOND * GlobalConfig.gamepad_check_frequency) or data.gamepad_force_recheck:
                     data.gamepads_current = XInput.get_connected()
                     data.gamepad_force_recheck = False
 
@@ -466,7 +468,7 @@ class Tracking(Component):
                         data.gamepad_stick_r_position[gamepad] = stick_r
                         self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
-            if not tick % 60:
+            if not tick % UPDATES_PER_SECOND:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
                     prev_sent = data.bytes_sent_previous.get(interface_name, 0)
                     prev_recv = data.bytes_recv_previous.get(interface_name, 0)
@@ -488,7 +490,7 @@ class Tracking(Component):
             self._calculate_inactivity()
 
             # Save every 5 mins
-            if self.autosave and tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
+            if self.autosave and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.save_frequency):
                 self.send_data(ipc.Save())
 
     def on_exit(self) -> None:

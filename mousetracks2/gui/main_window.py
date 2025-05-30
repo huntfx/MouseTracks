@@ -25,7 +25,7 @@ from ..constants import SYS_EXECUTABLE
 from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, IS_EXE, SHUTDOWN_TIMEOUT, TRACKING_DISABLE
+from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
 from ..file import PROFILE_DIR, get_profile_names, get_filename
 from ..legacy import colours
 from ..update import is_latest_version
@@ -678,7 +678,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # The active and inactive time don't update every tick
         # Add the difference to keep the GUI in sync
-        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
         tick_diff = self.elapsed_time - (self.active_time + self.inactive_time)
         if tick_diff > inactivity_threshold:
             inactive_time += tick_diff
@@ -1546,7 +1546,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.setWindowTitle(f'Export Successful')
                 msg.setText(f'"{message.source.path}" was successfully saved.')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                msg.exec_with_timeout('Closing notification', 7.0)
+                msg.exec_with_timeout('Closing notification', GlobalConfig.export_notification_timeout)
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
@@ -1740,7 +1740,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Cancel)
 
-        match msg.exec_with_timeout('Saving automatically', SHUTDOWN_TIMEOUT):
+        match msg.exec_with_timeout('Saving automatically', GlobalConfig.shutdown_timeout):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 if self.state != ipc.TrackingState.Stopped:
                     self.component.send_data(ipc.StartTracking())

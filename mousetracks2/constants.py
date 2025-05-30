@@ -37,9 +37,6 @@ COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
 COMPRESSION_FACTOR = 1.1
 """How much to compress tracks by."""
 
-INACTIVITY_MS = 1000 * 60 * 5  # 5 mins
-"""Time in ms before inactive."""
-
 RADIAL_ARRAY_SIZE = 2048
 """Size to use for gamepad radial arrays."""
 
@@ -48,16 +45,6 @@ DEBUG = True
 
 IS_EXE = getattr(sys, 'frozen', False)
 """Determine if running as an executable."""
-
-SHUTDOWN_TIMEOUT = 15.0
-"""How many seconds to wait before shutting down automatically.
-This is to avoid blocking Windows from shutting down.
-The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
-20 seconds, so don't exceed 25 seconds or it may get terminated.
-"""
-
-CHECK_COMPONENT_FREQUENCY = 1.0
-"""How often in seconds to check if all components are running."""
 
 TRACKING_DISABLE = 'Untracked'
 """Turn off tracking for any applications with this name."""

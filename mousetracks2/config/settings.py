@@ -14,13 +14,41 @@ GLOBAL_CONFIG_PATH = CLI.data_dir / 'config.yaml'
 
 @dataclass
 class GlobalConfig:
-    """Settings to save to disk."""
+    """Settings to save to disk.
+
+    Attributes:
+        minimise_on_start: Minimise the application on startup.
+        track_mouse: Enable mouse tracking.
+        track_keyboard: Enable keyboard tracking.
+        track_gamepad: Enable gamepad tracking.
+        track_network: Enable network tracking.
+        inactivity_time: How long before the user is classed as inactive.
+        save_frequency: How often to autosave.
+        gamepad_check_frequency: How often to check the connected gamepads.
+        monitor_check_frequency: How often to check the current resolutions.
+        application_check_frequency: How often to check the current focused application.
+        component_check_frequency: How often to check all components are running.
+            This is used once per message received.
+        shutdown_timeout: How long to wait before shutting down automatically.
+            This is to avoid blocking Windows from shutting down.
+            The default `HungAppTimeout` is 5 seconds and `WaitToKillAppTimeout` is
+            20 seconds, so don't exceed 25 seconds or it may get terminated.
+        export_notification_timeout: How long to show the export notification for.
+    """
 
     minimise_on_start: bool = False
     track_mouse: bool = True
     track_keyboard: bool = True
     track_gamepad: bool = True
     track_network: bool = True
+    inactivity_time: float = 300.0
+    save_frequency: float = 600.0
+    gamepad_check_frequency: float = 1.0
+    monitor_check_frequency: float = 1.0
+    application_check_frequency: float = 1.0
+    component_check_frequency: float = 1.0
+    shutdown_timeout: float = 15.0
+    export_notification_timeout: float = 7.0
 
     def __post_init__(self) -> None:
         self.load()

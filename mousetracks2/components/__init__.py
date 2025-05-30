@@ -16,7 +16,8 @@ import queue
 from . import app_detection, gui, ipc, processing, tracking
 from ..gui.splash import SplashScreen
 from ..config.cli import CLI
-from ..constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
+from ..config.settings import GlobalConfig
+from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 
 
@@ -223,7 +224,7 @@ class Hub:
         If this fails an error will be raised.
         """
         current_time = time.time()
-        if self._previous_component_check + CHECK_COMPONENT_FREQUENCY > current_time:
+        if self._previous_component_check + GlobalConfig.component_check_frequency > current_time:
             return
 
         if self.state == ipc.TrackingState.Running:

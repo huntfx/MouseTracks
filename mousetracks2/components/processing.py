@@ -10,6 +10,7 @@ import numpy as np
 from . import ipc
 from .abstract import Component
 from ..config.cli import CLI
+from ..config.settings import GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
@@ -18,7 +19,7 @@ from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
-from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, INACTIVITY_MS
+from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
 from ..render import render, EmptyRenderError
 
 
@@ -418,7 +419,7 @@ class Processing(Component):
         # To keep the active/inactive time in sync with elapsed,
         # temporarily add the current data to the profile
         # This is the same logic in the GUI
-        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
         tick_diff = profile.elapsed - (profile.active + profile.inactive)
         # There's a bug where tick_diff is ending up as -1 and causing an error
         # The cause is not known, so just check for it
