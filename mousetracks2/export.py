@@ -46,7 +46,7 @@ class Export:
 
     def daily_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the daily stats."""
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._daily_stats()):
                 if i:
                     f.write('\n')
@@ -63,7 +63,7 @@ class Export:
 
     def mouse_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the mouse stats."""
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._mouse_stats()):
                 if i:
                     f.write('\n')
@@ -79,7 +79,7 @@ class Export:
 
     def keyboard_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the keyboard stats."""
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._keyboard_stats()):
                 if i:
                     f.write('\n')
@@ -98,7 +98,7 @@ class Export:
 
     def network_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the network stats."""
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._network_stats()):
                 if i:
                     f.write('\n')
@@ -122,7 +122,7 @@ class Export:
 
     def gamepad_stats(self, path: str | os.PathLike) -> None:
         """Save a TSV file of the gamepad stats."""
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._gamepad_stats()):
                 if i:
                     f.write('\n')
