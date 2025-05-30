@@ -371,7 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def about(self) -> None:
         """Load the "about" window."""
         win = AboutWindow(self)
-        win.exec_()
+        win.exec()
 
     @property
     def pixel_colour(self) -> QtGui.QColor:
@@ -1301,7 +1301,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
                     msg.setText('No data is available for this render.')
                     msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-                    msg.exec_()
+                    msg.exec()
 
                 else:
                     im = Image.fromarray(message.array)
@@ -1502,7 +1502,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:
                         raise RuntimeError('incorrect message format')
 
-                    msg.exec_()
+                    msg.exec()
 
                 # Continue shutdown now save message has been received
                 if self._is_closing:
@@ -1802,7 +1802,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
         # Proceed with shutdown
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             return True
 
         # Reset flags
@@ -1919,7 +1919,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_mouse_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteMouseData(profile))
@@ -1940,7 +1940,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_keyboard_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteKeyboardData(profile))
@@ -1962,7 +1962,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_gamepad_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteGamepadData(profile))
@@ -1983,7 +1983,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_network_pressed = True
             self.handle_delete_button_visibility()
             self.component.send_data(ipc.DeleteNetworkData(profile))
@@ -2004,7 +2004,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
-        if msg.exec_() == QtWidgets.QMessageBox.StandardButton.Yes:
+        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self.component.send_data(ipc.DeleteProfile(profile))
             self.mark_profiles_saved(profile)
             del self._profile_names[self._profile_names.index(profile)]
@@ -2209,7 +2209,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.setWindowTitle(self.windowTitle())
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.setText(message)
-                msg.exec_()
+                msg.exec()
         else:
             self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
 
@@ -2250,7 +2250,7 @@ class MainWindow(QtWidgets.QMainWindow):
             msg.setWindowTitle('Error')
             msg.setText('This profile already exists.\n\n'
                         'To avoid accidental overwrites, please delete the existing profile or choose a new name.')
-            msg.exec_()
+            msg.exec()
 
         # Send the request
         self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))
