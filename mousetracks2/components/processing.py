@@ -379,7 +379,7 @@ class Processing(Component):
         profile.daily_ticks[self.profile_age_days, 2] += ticks
 
     def _export_stats(self, message: ipc.ExportStats):
-        """Export a stats TSV file."""
+        """Export a stats CSV file."""
         export = Export(self.all_profiles[message.profile])
 
         match message:

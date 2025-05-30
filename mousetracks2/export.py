@@ -45,12 +45,12 @@ class Export:
                    self.profile.daily_upload[i])
 
     def daily_stats(self, path: str | os.PathLike) -> None:
-        """Save a TSV file of the daily stats."""
+        """Save a CSV file of the daily stats."""
         with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._daily_stats()):
                 if i:
                     f.write('\n')
-                f.write('\t'.join(map(str, data)))
+                f.write(','.join(map(str, data)))
 
     def _mouse_stats(self) -> Iterator[tuple[Any, ...]]:
         yield 'Code', 'Button', 'Presses', 'Time (seconds)'
@@ -62,12 +62,12 @@ class Export:
             yield '', str(keycode), self.profile.key_held[keycode], 0
 
     def mouse_stats(self, path: str | os.PathLike) -> None:
-        """Save a TSV file of the mouse stats."""
+        """Save a CSV file of the mouse stats."""
         with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._mouse_stats()):
                 if i:
                     f.write('\n')
-                f.write('\t'.join(map(str, data)))
+                f.write(','.join(map(str, data)))
 
     def _keyboard_stats(self) -> Iterator[tuple[Any, ...]]:
         yield 'Code', 'Key', 'Presses', 'Time (seconds)'
@@ -78,12 +78,12 @@ class Export:
                 yield int(keycode), str(keycode), presses, held
 
     def keyboard_stats(self, path: str | os.PathLike) -> None:
-        """Save a TSV file of the keyboard stats."""
+        """Save a CSV file of the keyboard stats."""
         with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._keyboard_stats()):
                 if i:
                     f.write('\n')
-                f.write('\t'.join(map(str, data)))
+                f.write(','.join(map(str, data)))
 
     def _network_stats(self) -> Iterator[tuple[Any, ...]]:
         """Iterate over the data for the network stats."""
@@ -97,12 +97,12 @@ class Export:
                    self.profile.data_upload[mac_address], total)
 
     def network_stats(self, path: str | os.PathLike) -> None:
-        """Save a TSV file of the network stats."""
+        """Save a CSV file of the network stats."""
         with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._network_stats()):
                 if i:
                     f.write('\n')
-                f.write('\t'.join(map(str, data)))
+                f.write(','.join(map(str, data)))
 
     def _gamepad_stats(self) -> Iterator[tuple[Any, ...]]:
         yield 'Code', 'Name', 'Presses', 'Time (seconds)'
@@ -121,9 +121,9 @@ class Export:
                        round(held[keycode] / UPDATES_PER_SECOND, 2))
 
     def gamepad_stats(self, path: str | os.PathLike) -> None:
-        """Save a TSV file of the gamepad stats."""
+        """Save a CSV file of the gamepad stats."""
         with open(path, 'w', encoding='utf-8') as f:
             for i, data in enumerate(self._gamepad_stats()):
                 if i:
                     f.write('\n')
-                f.write('\t'.join(map(str, data)))
+                f.write(','.join(map(str, data)))

@@ -2277,11 +2277,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the mouse statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['TSV Files (*.tsv)"'])
-        dialog.setDefaultSuffix('tsv')
+        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setDefaultSuffix('csv')
         file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats',
-                                                   str(_get_docs_folder() / 'mouse_stats.tsv'),
-                                                   'TSV Files (*.tsv)')
+                                                   str(_get_docs_folder() / 'mouse_stats.csv'),
+                                                   'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2290,11 +2290,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the keyboard statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['TSV Files (*.tsv)"'])
-        dialog.setDefaultSuffix('tsv')
+        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setDefaultSuffix('csv')
         file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats',
-                                                   str(_get_docs_folder() / 'keyboard_stats.tsv'),
-                                                   'TSV Files (*.tsv)')
+                                                   str(_get_docs_folder() / 'keyboard_stats.csv'),
+                                                   'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2303,11 +2303,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the gamepad statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['TSV Files (*.tsv)"'])
-        dialog.setDefaultSuffix('tsv')
+        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setDefaultSuffix('csv')
         file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats',
-                                                   str(_get_docs_folder() / 'gamepad_stats.tsv'),
-                                                   'TSV Files (*.tsv)')
+                                                   str(_get_docs_folder() / 'gamepad_stats.csv'),
+                                                   'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2316,11 +2316,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the network statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['TSV Files (*.tsv)"'])
-        dialog.setDefaultSuffix('tsv')
+        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setDefaultSuffix('csv')
         file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats',
-                                                   str(_get_docs_folder() / 'network_stats.tsv'),
-                                                   'TSV Files (*.tsv)')
+                                                   str(_get_docs_folder() / 'network_stats.csv'),
+                                                   'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
 
@@ -2329,11 +2329,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the daily statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['TSV Files (*.tsv)"'])
-        dialog.setDefaultSuffix('tsv')
+        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setDefaultSuffix('csv')
         file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats',
-                                                   str(_get_docs_folder() / 'daily_stats.tsv'),
-                                                   'TSV Files (*.tsv)')
+                                                   str(_get_docs_folder() / 'daily_stats.csv'),
+                                                   'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
 
