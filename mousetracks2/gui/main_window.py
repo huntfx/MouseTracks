@@ -1542,14 +1542,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
 
             case ipc.ExportStatsSuccessful():
-                msg = QtWidgets.QMessageBox(self)
-                msg.setWindowTitle(f'Export Successful')
-                msg.setText(f'Export was successful.\nFile was saved to "{message.source.path}".')
-                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                msg.exec_()
+                self.show_export_stats_complete(message.source.path)
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
+
+    def show_export_stats_complete(self, export_path: str, timeout: float = 10.0, accuracy: int = 1) -> None:
+        """Show a popup when the stats export completes."""
+        target_timeout = time.time() + timeout
+
+        def update_message() -> None:
+            """Updates the countdown message and auto-saves if time runs out."""
+            remaining_timeout = round(target_timeout - time.time(), accuracy)
+            if remaining_timeout > 0:
+                msg.setInformativeText(f'Closing notification in {remaining_timeout} seconds...')
+            else:
+                timer.stop()
+                msg.accept()
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setWindowTitle(f'Export Successful')
+        msg.setText(f'"{export_path}" was successfully saved.')
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+        update_message()
+
+        # Use a QTimer to update the countdown
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(update_message)
+        timer.start(10 ** (3 - accuracy))
+
+        msg.exec_()
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
@@ -1734,7 +1756,6 @@ class MainWindow(QtWidgets.QMainWindow):
             """Updates the countdown message and auto-saves if time runs out."""
             remaining_timeout = round(target_timeout - time.time(), accuracy)
             if remaining_timeout > 0:
-                msg.setText('Do you want to save?')
                 msg.setInformativeText(f'Saving automatically in {remaining_timeout} seconds...')
             else:
                 timer.stop()
@@ -1746,6 +1767,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle(f'Closing {self.windowTitle()}')
+        msg.setText('Do you want to save?')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
                                | QtWidgets.QMessageBox.StandardButton.Cancel)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
