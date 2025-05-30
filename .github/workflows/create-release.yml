@@ -1,0 +1,147 @@
+name: Create Release on Version Update
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'mousetracks2/version.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout full repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: True
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create virtual environment
+        shell: cmd
+        run: |
+          python -m venv .venv
+
+      - name: Update components
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          python -m pip install --upgrade pip wheel
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Install dependencies
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          python -m pip install --upgrade -r requirements.txt
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Get version details from file
+        id: extract_version
+        shell: cmd
+        run: |
+          call .venv\Scripts\activate
+
+          python .github/scripts/get-version.py
+          if errorlevel 1 exit /b 1
+
+          call .venv\Scripts\deactivate
+
+      - name: Check if tag already exists
+        shell: bash
+        run: |
+          TAG_NAME="${{ steps.extract_version.outputs.tag_name }}"
+          echo "Checking for existing tag: $TAG_NAME"
+
+          if git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG_NAME already exists. Halting workflow to prevent duplicate release."
+            exit 1
+          else
+            echo "Tag $TAG_NAME does not exist. Proceeding to create tag and release."
+          fi
+
+      - name: Configure Git committer
+        shell: bash
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+      - name: Prepare Release Notes Body
+        id: prep_release_notes
+        shell: python
+        env:
+          FULL_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          import os
+          from datetime import datetime
+
+          message = os.environ['FULL_COMMIT_MESSAGE']
+          subject, *comment_lines = message.splitlines()
+          comment = '\n'.join(comment_lines).strip()
+          comment = comment.replace('\n# ', '\n### ').replace('\n## ', '\n ###')
+          if comment.startswith('# '):
+            comment = f'##{comment}'
+
+          now = datetime.now()
+          date = now.strftime(f'%b {now.day}, %Y')
+          title = f'## Release Notes ({date})'
+
+          print('Full commit message received by Python script:')
+          print('<<<<<<<<<<')
+          print(message)
+          print('>>>>>>>>>>')
+          print('---')
+          print('Processed commit comment (for release notes):')
+          print('<<<<<<<<<<')
+          print(title)
+          print(comment)
+          print('>>>>>>>>>>')
+
+          delim = 'EOF_COMMIT_BODY'  # Can be any unique string
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            print(f'release_body<<{delim}', file=f)
+            print(title, file=f)
+            print(comment, file=f)
+            print(delim, file=f)
+
+      - name: Create Git Tag and Push
+        shell: bash
+        run: |
+          TAG_NAME="${{ steps.extract_version.outputs.tag_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          RELEASE_NAME="${{ steps.extract_version.outputs.release_name }}"
+
+          echo "Creating annotated tag $TAG_NAME for commit $COMMIT_SHA"
+          # Create an annotated tag (recommended for releases)
+          git tag -a "$TAG_NAME" -m "$RELEASE_NAME - triggered by commit changing version.py" "$COMMIT_SHA"
+
+          echo "Pushing tag $TAG_NAME to origin"
+          git push origin "$TAG_NAME"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREATE_RELEASE_TOKEN }}  # Permissions: Contents RW
+        with:
+          tag_name: ${{ steps.extract_version.outputs.tag_name }}
+          name: ${{ steps.extract_version.outputs.release_name }}
+          body: ${{ steps.prep_release_notes.outputs.release_body }}
+          draft: false
+          prerelease: false
+

@@ -1,4 +1,4 @@
-name: Build (Windows)
+name: Build Executable on Release
 
 on:
   release:
@@ -10,7 +10,7 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os_runner }}
     permissions: write-all
 
     strategy:
@@ -18,7 +18,8 @@ jobs:
       matrix:
         # 32 bit python not included as PySide6 not compatible
         include:
-          - bits: 64
+          - os_runner: windows-latest
+            bits: 64
             architecture: x64
 
     steps:
@@ -169,7 +170,7 @@ jobs:
 
           Expand-Archive -Path upx.zip -DestinationPath upx -Force
 
-          $upxDir = "$(Resolve-Path upx\upx-5.0.1-win${{ matrix.bits  }})"
+          $upxDir = "$(Resolve-Path upx\upx-5.0.1-win${{ matrix.bits }})"
           Write-Host "UPX location: $upxDir"
           echo "PATH=$upxDir;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
