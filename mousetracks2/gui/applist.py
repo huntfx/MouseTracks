@@ -40,7 +40,8 @@ class AppListWindow(QtWidgets.QDialog):
         self.ui.executable.clear()
 
         seen = set()
-        for proc in reversed(tuple(psutil.process_iter(attrs=['exe']))):
+        for proc in sorted(psutil.process_iter(attrs=['exe', 'create_time']),
+                           key=lambda proc: proc.info['create_time'], reverse=True):
             path = proc.info['exe']
             if path is None:
                 continue
