@@ -16,7 +16,7 @@ def get_latest_version() -> str:
     if CLI.offline:
         return VERSION
     try:
-        with urlopen(RELEASES_URL) as response:
+        with urlopen(RELEASES_URL, timeout=5) as response:
             data = json.load(response)
     except (URLError, json.decoder.JSONDecodeError):
         return VERSION
