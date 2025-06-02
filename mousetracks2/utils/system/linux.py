@@ -5,20 +5,35 @@ get it running.
 
 Arch Linux:
     https://www.osboxes.org/arch-linux/
-    rm /var/lib/pacman/db.lck
-    sudo pacman -Sy
-    sudo pacman -S git
-    cd /home/osboxes
-    git clone https://github.com/huntfx/mousetracks
-    cd mousetracks
-    sudo pacman -S python-pip python-setuptools python-wheel python-build base-devel
-    python -m venv .venv
-    source ./.venv/bin/activate
-    pip install --upgrade pip
-    sudo pacman -S xcb-util-cursor
-    pip install -r requirements.txt
-    python launch.py
-    deactivate
+    > rm /var/lib/pacman/db.lck
+    > sudo pacman -Sy
+    > sudo pacman -S git
+    > cd /home/osboxes
+    > git clone https://github.com/huntfx/mousetracks
+    > cd mousetracks
+    > sudo pacman -S python-pip python-setuptools python-wheel python-build base-devel
+    > python -m venv .venv
+    > source ./.venv/bin/activate
+    > pip install --upgrade pip
+    > sudo pacman -S xcb-util-cursor
+    > pip install -r requirements.txt
+    > python launch.py
+    > deactivate
+
+Ubuntu:
+    https://www.osboxes.org/ubuntu/
+    Login with "Ubuntu on Xorg" session.
+    > cd /home/osboxes
+    > sudo apt update
+    > sudo apt install git python3-venv gcc python3-dev libxcb-cursor-dev -y
+    > git clone https://github.com/huntfx/mousetracks
+    > cd mousetracks
+    > python3 -m venv .venv
+    > source ./.venv/bin/activate
+    > pip install --upgrade pip
+    > pip install -r requirements.txt
+    > python3 launch.py
+    > deactivate
 
 Issues:
     Non alphanumeric keys have a totally different mapping.
@@ -42,7 +57,7 @@ def monitor_locations() -> list[tuple[int, int, int, int]]:
     try:
         resources = root.xinerama_query_screens()
 
-    # This was available on Arch Linux
+    # This was available on Ubuntu and Arch Linux
     except AttributeError:
         res = root.xrandr_get_monitors()
         for mon in res._data['monitors']:

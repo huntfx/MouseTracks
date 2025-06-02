@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import sys
 from collections import deque
@@ -30,7 +32,7 @@ class AppDetection(Component):
         self._previous_res: tuple[int, int] | None = None
         self._previous_rects: list[tuple[int, int, int, int]] = []
         self._fallback_title = ''
-        self._fallback_pid = PID(0)
+        self._fallback_pid = 0
 
         # Cache each process in case the fallback is required
         deque(psutil.process_iter(attrs=['pid', 'exe', 'create_time']), maxlen=0)
@@ -92,18 +94,19 @@ class AppDetection(Component):
         if pid == 0 and title:
             # The title matches so reuse the match
             if title == self._fallback_title:
-                pid = self._fallback_pid
+                pid = PID(self._fallback_pid)
 
             # Find a new match
             else:
                 print(f'[Application Detection] PID returned 0 for an app with title "{title}",'
                       'running fallback function...')
-                pid = self._fallback_pid = self._pid_fallback(title)
+                pid = self._pid_fallback(title)
+                self._fallback_pid = int(pid)
                 self._fallback_title = title
 
         # Reset the fallback data
         else:
-            self._fallback_pid = PID(0)
+            self._fallback_pid = 0
             self._fallback_title = ''
 
         exe = handle.pid.executable
