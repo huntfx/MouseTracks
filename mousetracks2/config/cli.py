@@ -1,9 +1,13 @@
 import argparse
+import logging
 import os
 import multiprocessing
 import sys
 from pathlib import Path
 from typing import Callable
+
+
+LOG_LEVEL_CHOICES = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 # Get the appdata folder
 # Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
@@ -37,6 +41,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('--admin', action='store_true', help='run as administrator')
     parser.add_argument('--multi-monitor', action='store_true', help='record monitors as independant displays (default)')
     parser.add_argument('--single-monitor', action='store_true', help='record monitors as one large display')
+    parser.add_argument('--log-level', type=str.upper, choices=LOG_LEVEL_CHOICES, default='INFO', help='Set the logging verbosity.')
 
     if strict:
         return parser.parse_args()
@@ -93,6 +98,7 @@ class _CLI:
             self.elevate = args.admin
             self.single_monitor = args.single_monitor
             self.multi_monitor = args.multi_monitor
+            self.log_level = args.log_level
         finally:
             self._soft_load = False
 
@@ -233,6 +239,20 @@ class _CLI:
     def multi_monitor(self, value: bool) -> None:
         """Set multi monitor mode."""
         self._set('MT_MULTI_MONITOR', bool2str(value))
+
+    @property
+    def log_level(self) -> int:
+        """Get the logging level."""
+        return int(os.environ['MT_LOG_LEVEL'])
+
+    @log_level.setter
+    def log_level(self, value: str | int) -> None:
+        """Set the logging level."""
+        if not isinstance(value, int):
+            if value not in LOG_LEVEL_CHOICES:
+                raise ValueError('invalid log level')
+            value = getattr(logging, value)
+        self._set('MT_LOG_LEVEL', str(value))
 
 
 CLI = _CLI()
