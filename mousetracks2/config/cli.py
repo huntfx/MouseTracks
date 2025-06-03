@@ -1,6 +1,5 @@
 import argparse
 import os
-import multiprocessing
 import sys
 from pathlib import Path
 from typing import Callable
@@ -24,23 +23,34 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
             This is not done by default, as both `multiprocessing` and
             `PyInstaller` insert their own custom arguments.
     """
-    parser = argparse.ArgumentParser(description='MouseTracks')
-    parser.add_argument('--offline', action='store_true', help='force offline mode')
-    parser.add_argument('--start-hidden', action='store_true', help='minimise on startup')
+    parser = argparse.ArgumentParser(description='MouseTracks', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify an alternative data directory')
-    parser.add_argument('--no-splash', action='store_true', help='disable splash screen on startup')
-    parser.add_argument('--no-mouse', action='store_true', help='disable mouse tracking')
-    parser.add_argument('--no-keyboard', action='store_true', help='disable keyboard tracking')
-    parser.add_argument('--no-gamepad', action='store_true', help='disable gamepad tracking')
-    parser.add_argument('--no-network', action='store_true', help='disable network tracking')
-    parser.add_argument('--admin', action='store_true', help='run as administrator')
-    parser.add_argument('--multi-monitor', action='store_true', help='record monitors as independant displays (default)')
-    parser.add_argument('--single-monitor', action='store_true', help='record monitors as one large display')
+    parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
+    parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
+
+    startup_group = parser.add_argument_group('Startup Options')
+    startup_group.add_argument('--start-hidden', action='store_true', help='minimise to the system tray')
+    startup_group.add_argument('--no-splash', action='store_true', help='disable splash screen')
+
+    monitor_group = parser.add_argument_group('Monitor Options')
+    monitor_options = monitor_group.add_mutually_exclusive_group()
+    monitor_options.add_argument('--multi-monitor', action='store_const', const=True, dest='multi_monitor',
+                                 help='record monitors as independant displays', default=True)
+    monitor_options.add_argument('--single-monitor', action='store_const', const=False, dest='multi_monitor',
+                                 help='record monitors as one large combined display', default=False)
+
+    privacy_group = parser.add_argument_group('Privacy Options')
+    privacy_group.add_argument('--offline', action='store_true', help='force offline mode')
+    privacy_group.add_argument('--no-mouse', action='store_true', help='disable mouse tracking')
+    privacy_group.add_argument('--no-keyboard', action='store_true', help='disable keyboard tracking')
+    privacy_group.add_argument('--no-gamepad', action='store_true', help='disable gamepad tracking')
+    privacy_group.add_argument('--no-network', action='store_true', help='disable network tracking')
 
     if strict:
-        return parser.parse_args()
-    return parser.parse_known_args()[0]
+        args = parser.parse_args()
+    else:
+        args, unknown = parser.parse_known_args()
+    return args
 
 
 def bool2str(value: bool | None) -> str:
@@ -67,7 +77,6 @@ class _CLI:
     def __init__(self):
         self._soft_load = False
         self._load_args()
-        self._validate_args()
 
     def _load_args(self) -> None:
         """Load in the command line arguments.
@@ -91,19 +100,10 @@ class _CLI:
             self.disable_gamepad = args.no_gamepad
             self.disable_network = args.no_network
             self.elevate = args.admin
-            self.single_monitor = args.single_monitor
+            self.single_monitor = not args.multi_monitor
             self.multi_monitor = args.multi_monitor
         finally:
             self._soft_load = False
-
-    def _validate_args(self) -> None:
-        """Perform any necessary checks."""
-        single_monitor = self.single_monitor
-        multi_monitor = self.multi_monitor
-        if single_monitor and multi_monitor:
-            raise ValueError('cannot use both "--single-monitor" and "--multi-monitor" at the same time')
-        elif not single_monitor and not multi_monitor:
-            self.multi_monitor = True
 
     @property
     def _set(self) -> Callable:
