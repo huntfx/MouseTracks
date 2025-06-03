@@ -192,7 +192,7 @@ class AppDetection(Component):
                 self.applist.load(LOCAL_PATH)
                 print(f'[Application Detection] Successfully reloaded "{LOCAL_PATH}"')
 
-    def run(self):
+    def run(self) -> None:
         """Listen for events to process."""
         for message in self.receive_data(polling_rate=0.25):
             self._process_message(message)

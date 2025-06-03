@@ -27,7 +27,7 @@ class Component:
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name: str) -> None:
         """Set the component name."""
         self._name = name
 
@@ -47,7 +47,7 @@ class Component:
             case _:
                 raise NotImplementedError(self.name)
 
-    def is_hub_running(self):
+    def is_hub_running(self) -> bool:
         """Determine if the Hub is still running.
         If it is not running, then attempting to read from a queue will
         lock the entire process.
@@ -102,7 +102,7 @@ class Component:
         """
 
     @classmethod
-    def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
+    def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
         # Attempt to initialise the class
         try:
             self = cls(q_send, q_receive)

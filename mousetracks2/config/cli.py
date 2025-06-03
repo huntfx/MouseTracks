@@ -74,7 +74,7 @@ class _CLI:
     read by the child processes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._soft_load = False
         self._load_args()
 

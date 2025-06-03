@@ -400,7 +400,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return self._render_type
 
     @render_type.setter
-    def render_type(self, render_type: ipc.RenderType):
+    def render_type(self, render_type: ipc.RenderType) -> None:
         """Set the render type.
         This populates the available colour maps.
         """
@@ -831,7 +831,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.request_thumbnail()
 
     @QtCore.Slot(bool)
-    def show_clicks_changed(self, enabled: bool):
+    def show_clicks_changed(self, enabled: bool) -> None:
         """Update the render when the click visibility options change.
 
         Using a shift click is a quick way to check/uncheck all options.
@@ -990,7 +990,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return None
 
-    def start_rendering_timer(self):
+    def start_rendering_timer(self) -> None:
         """Start the timer to display rendering text.
 
         If a render is not completed within 1 second, then text will be
@@ -1006,7 +1006,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reload_applist()
 
     @QtCore.Slot()
-    def reload_applist(self):
+    def reload_applist(self) -> None:
         """Send a request to reload AppList.txt."""
         self.component.send_data(ipc.ReloadAppList())
 
@@ -2083,7 +2083,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._unsaved_profiles |= set(profile_names)
         self.set_profile_modified_text()
 
-    def set_profile_modified_text(self):
+    def set_profile_modified_text(self) -> None:
         """Set the text if the profile has been modified."""
         if self.ui.current_profile.currentData() in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
@@ -2214,7 +2214,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
 
     @QtCore.Slot()
-    def import_legacy_profile(self):
+    def import_legacy_profile(self) -> None:
         """Prompt the user to import a legacy profile.
         A check is done to avoid name clashes.
         """
@@ -2225,10 +2225,10 @@ class MainWindow(QtWidgets.QMainWindow):
             default_dir = documents_path
 
         # Select the profile
-        path, accept = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
+        path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
                                                              str(default_dir),
                                                              'MouseTracks Profile (*.mtk)')
-        if not accept:
+        if not path:
             return
 
         # Ask for the profile name
@@ -2256,7 +2256,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))
 
     @QtCore.Slot()
-    def export_mouse_stats(self):
+    def export_mouse_stats(self) -> None:
         """Export the mouse statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
@@ -2272,7 +2272,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
 
     @QtCore.Slot()
-    def export_keyboard_stats(self):
+    def export_keyboard_stats(self) -> None:
         """Export the keyboard statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
@@ -2288,7 +2288,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
 
     @QtCore.Slot()
-    def export_gamepad_stats(self):
+    def export_gamepad_stats(self) -> None:
         """Export the gamepad statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
@@ -2304,7 +2304,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
 
     @QtCore.Slot()
-    def export_network_stats(self):
+    def export_network_stats(self) -> None:
         """Export the network statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
@@ -2320,7 +2320,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
 
     @QtCore.Slot()
-    def export_daily_stats(self):
+    def export_daily_stats(self) -> None:
         """Export the daily statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)

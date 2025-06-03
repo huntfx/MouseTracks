@@ -45,7 +45,7 @@ class OverlayLabel(QtWidgets.QLabel):
 class PlaybackOverlay(QtWidgets.QWidget):
     """An overlay widget that displays a play or pause icon."""
 
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
@@ -190,7 +190,7 @@ class ResizableImage(QtWidgets.QLabel):
         self._pixmap.convertFromImage(self._image)
         self.setPixmap(self._scaled_pixmap())
 
-    def resizeEvent(self, event: QtGui.QResizeEvent):
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         """Update the pixmap while resizing."""
         self.resized.emit(event.size())
         super().resizeEvent(event)

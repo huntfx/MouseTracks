@@ -82,7 +82,7 @@ class DataState:
     gamepad_stick_l_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     gamepad_stick_r_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     key_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
-    button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
+    button_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
     bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
@@ -90,7 +90,7 @@ class DataState:
     pynput_opcodes: dict[int | keycodes.KeyCode, int] = field(default_factory=dict)
     pynput_quick_press: list[int | keycodes.KeyCode] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.tick_previous = self.tick_current - 1
 
         for connection_name, counters in psutil.net_io_counters(pernic=True).items():
@@ -120,7 +120,7 @@ class Tracking(Component):
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
 
-    def _receive_data(self):
+    def _receive_data(self) -> None:
         for message in self.receive_data():
             match message:
                 case ipc.StartTracking():
@@ -250,7 +250,7 @@ class Tracking(Component):
             self.send_data(ipc.MonitorsChanged(self.data.monitors))
 
     @contextmanager
-    def _exception_handler(self):
+    def _exception_handler(self) -> Iterator[None]:
         """Custom exception handler to ensure an error is handled.
 
         This is used for the `pynput` threads, as any errors will
@@ -373,7 +373,7 @@ class Tracking(Component):
 
         self.data.key_presses[keycode] = (press_start, self.data.tick_current)
 
-    def run(self):
+    def run(self) -> None:
         """Run the tracking."""
         print('[Tracking] Loaded.')
 

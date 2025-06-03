@@ -24,7 +24,7 @@ from ..exceptions import ExitRequest
 class Hub:
     """Set up individual components with queues for communication."""
 
-    def __init__(self, use_gui: bool = True):
+    def __init__(self, use_gui: bool = True) -> None:
         """Initialise the hub with queues and processes."""
         self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
@@ -45,7 +45,7 @@ class Hub:
         print('[Hub] Sending start tracking signal...')
         self._process_message(ipc.StartTracking())
 
-    def stop_tracking(self):
+    def stop_tracking(self) -> None:
         """Stop the tracking processes.
 
         A stop signal is pushed to the queue, so that the processes can
@@ -128,7 +128,7 @@ class Hub:
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
 
-    def _startup_tracking_processes(self):
+    def _startup_tracking_processes(self) -> None:
         """Ensure the tracking processes exist.
         This will check that previous ones are shut down before starting
         up new ones.

@@ -32,11 +32,11 @@ class DefaultList(list[T], Generic[T]):
     15
     """
 
-    def __init__(self, default_factory: Callable[[], T], *args):
+    def __init__(self, default_factory: Callable[[], T], *args) -> None:
         self.default_factory = default_factory
         super().__init__(*args)
 
-    def _missing(self, idx: SupportsIndex | slice):
+    def _missing(self, idx: SupportsIndex | slice) -> None:
         """Ensure the list is the correct length for the given index."""
         if isinstance(idx, slice):
             start = idx.start or 0

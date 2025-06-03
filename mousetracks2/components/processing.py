@@ -379,7 +379,7 @@ class Processing(Component):
         profile.inactive += ticks
         profile.daily_ticks[self.profile_age_days, 2] += ticks
 
-    def _export_stats(self, message: ipc.ExportStats):
+    def _export_stats(self, message: ipc.ExportStats) -> None:
         """Export a stats CSV file."""
         export = Export(self.all_profiles[message.profile])
 
@@ -752,7 +752,7 @@ class Processing(Component):
             case _:
                 raise NotImplementedError(message)
 
-    def run(self):
+    def run(self) -> None:
         """Listen for events to process."""
         for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
             self._process_message(message)

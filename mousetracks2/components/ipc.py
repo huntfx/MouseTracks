@@ -152,7 +152,7 @@ class Traceback(Message):
     exception: Exception
     traceback: str
 
-    def reraise(self):
+    def reraise(self) -> None:
         """Re-raise the exception.
         Since the full traceback isn't accessible from a different
         thread, replicate Python's behaviour by showing both exceptions.
