@@ -175,7 +175,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 971))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 999))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -235,6 +235,22 @@ class Ui_MainWindow(object):
         self.map_type.setObjectName(u"map_type")
 
         self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
+
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.show_count = QRadioButton(self.groupBox_3)
+        self.show_count.setObjectName(u"show_count")
+        self.show_count.setChecked(True)
+
+        self.horizontalLayout_2.addWidget(self.show_count)
+
+        self.show_time = QRadioButton(self.groupBox_3)
+        self.show_time.setObjectName(u"show_time")
+
+        self.horizontalLayout_2.addWidget(self.show_time)
+
+
+        self.gridLayout_6.addLayout(self.horizontalLayout_2, 2, 0, 1, 1)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_3)
@@ -1330,6 +1346,8 @@ class Ui_MainWindow(object):
         self.map_type.setToolTip(QCoreApplication.translate("MainWindow", u"Select which dataset to render.\n"
 "If no data exists, then a blank image will be shown.", None))
 #endif // QT_CONFIG(tooltip)
+        self.show_count.setText(QCoreApplication.translate("MainWindow", u"Count", None))
+        self.show_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.resolution_group.setTitle(QCoreApplication.translate("MainWindow", u"Resolution", None))
 #if QT_CONFIG(tooltip)
         self.custom_height_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit custom_height", None))

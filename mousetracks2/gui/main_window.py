@@ -268,6 +268,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.show_left_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_middle_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_right_clicks.toggled.connect(self.show_clicks_changed)
+        self.ui.show_count.toggled.connect(self.show_count_changed)
+        self.ui.show_time.toggled.connect(self.show_time_changed)
         self.ui.sampling.valueChanged.connect(self.sampling_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
@@ -866,6 +868,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.request_thumbnail()
         self._is_setting_click_state = False
 
+    @QtCore.Slot(bool)
+    def show_count_changed(self) -> None:
+        """Trigger when the count radio button changes."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(bool)
+    def show_time_changed(self) -> None:
+        """Trigger when the time radio button changes."""
+        self.request_thumbnail()
+
     @QtCore.Slot(int)
     def sampling_changed(self, value: int) -> None:
         """Change the sampling."""
@@ -1075,7 +1087,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                                    blur=self.blur, linear=self.linear,
                                                    show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked()))
+                                                   show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                                                   show_count=self.ui.show_count.isChecked(),
+                                                   show_time=self.ui.show_time.isChecked()))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -1152,7 +1166,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        clipping=self.clipping, blur=self.blur, linear=self.linear,
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked()))
+                                                       show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                                                       show_count=self.ui.show_count.isChecked(),
+                                                       show_time=self.ui.show_time.isChecked()))
 
     def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -2182,6 +2198,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.show_left_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
         self.ui.show_middle_clicks.setVisible(show_advanced and is_click)
         self.ui.show_right_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
+
+        self.ui.show_count.setVisible(show_advanced and is_keyboard)
+        self.ui.show_time.setVisible(show_advanced and is_keyboard)
 
         self.ui.contrast.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.contrast].setVisible(show_advanced and not is_keyboard)

@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>971</height>
+               <height>999</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -201,6 +201,27 @@ When a new profile is recorded to, the GUI will immediately update.</string>
 If no data exists, then a blank image will be shown.</string>
                    </property>
                   </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_2">
+                   <item>
+                    <widget class="QRadioButton" name="show_count">
+                     <property name="text">
+                      <string>Count</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="show_time">
+                     <property name="text">
+                      <string>Time</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>

@@ -221,6 +221,11 @@ class RenderRequest(Message):
     show_left_clicks: bool = True
     show_middle_clicks: bool = True
     show_right_clicks: bool = True
+    show_count: bool = True
+    show_time: bool = False
+
+    def __post_init__(self) -> None:
+        assert self.show_count != self.show_time
 
 
 @dataclass

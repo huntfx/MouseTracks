@@ -356,8 +356,9 @@ class Processing(Component):
 
         return image
 
-    def _render_keyboard(self, profile: TrackingProfile, colour_map: str, sampling: int = 1) -> np.ndarray:
+    def _render_keyboard(self, profile: TrackingProfile, colour_map: str, data_set: str, sampling: int = 1) -> np.ndarray:
         """Render a keyboard image."""
+        keyboard.GLOBALS.data_set = data_set
         keyboard.GLOBALS.colour_map = colour_map
         keyboard.GLOBALS.multiplier = max(1, sampling)
 
@@ -479,7 +480,13 @@ class Processing(Component):
                     sampling = message.sampling
                     if message.file_path is not None:
                         sampling *= 2
-                    image = self._render_keyboard(profile, message.colour_map, sampling)
+
+                    assert message.show_count != message.show_time
+                    if message.show_count:
+                        data_set = 'count'
+                    if message.show_time:
+                        data_set = 'time'
+                    image = self._render_keyboard(profile, message.colour_map, data_set, sampling)
 
                 else:
                     image = self._render_array(profile, message.type, message.width, message.height,
