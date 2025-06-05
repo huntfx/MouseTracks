@@ -521,6 +521,8 @@ def ticks_to_seconds(amount: float, tick_rate: int = 1, output_length: int = 2,
 
         if time_unit.limit is not None:
             current %= time_unit.limit
+            if isinstance(current, float):
+                current = round(current, time_unit.decimals)  # Handle floating point errors
 
         if current:
             if short:
