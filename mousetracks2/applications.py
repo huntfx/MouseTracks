@@ -144,7 +144,7 @@ class AppList:
         with open(path, 'r', encoding='utf-8') as f:
             self.import_(_parse_data(f))
 
-    def import_(self, data: dict[str, dict[str | None, str]]):
+    def import_(self, data: dict[str, dict[str | None, str]]) -> None:
         for exe, titles in data.items():
             self.data[exe].update(titles)
 

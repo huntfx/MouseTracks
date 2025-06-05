@@ -1840,7 +1840,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return self.ui.track_mouse.isChecked() and self.ui.prefs_track_mouse.isChecked()
 
     def draw_pixmap_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
-                         force_monitor: tuple[int, int] | None = None):
+                         force_monitor: tuple[int, int] | None = None) -> None:
         """When an object moves, draw it.
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.

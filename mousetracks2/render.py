@@ -67,7 +67,7 @@ def array_to_uint8(array: np.ndarray) -> np.ndarray:
     return (array.astype(np.float64) * (255 / max_value)).astype(np.uint8)
 
 
-def gaussian_size(width, height, multiplier: float = 0.0125):
+def gaussian_size(width: int, height: int, multiplier: float = 0.0125) -> float:
     """Choose a gaussian blur amount to use for a given resolution."""
     return min(width, height) * multiplier
 

@@ -1,3 +1,7 @@
 [[tool.mypy.overrides]]
 module = "mousetracks.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "mousetracks2.gui.ui.*"
+ignore_errors = true

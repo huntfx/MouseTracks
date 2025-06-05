@@ -10,7 +10,6 @@ from PIL import Image, ImageFont, ImageDraw
 
 from .colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
 from ..constants import REPO_DIR
-from ..gui.utils import format_ticks as ticks_to_seconds
 from ..utils.math import calculate_circle
 
 
@@ -19,6 +18,26 @@ LANGUAGE_BASE_PATH = REPO_DIR / 'config' / 'language'
 KEYBOARD_KEYS_FOLDER = LANGUAGE_BASE_PATH / 'keyboard' / 'keys'
 
 KEYBOARD_LAYOUT_FOLDER = LANGUAGE_BASE_PATH / 'keyboard' / 'layout'
+
+@dataclass
+class TimeUnit:
+    name: str
+    """Name of the time unit."""
+    length: int
+    """How many seconds the unit is."""
+    limit: int | None
+    """What's the maximum value."""
+    decimals: int | None
+    """How many decimals to show."""
+
+TIME_UNITS = [
+    TimeUnit('second', 1, 60, 2),
+    TimeUnit('minute', 60, 60, None),
+    TimeUnit('hour', 3600, 24, None),
+    TimeUnit('day', 3600 * 24, 7, None),
+    TimeUnit('week', 3600 * 24 * 7, 52, None),
+    TimeUnit('year', 3600 * 24 * 365, None, None)
+]
 
 
 class DataSet(Enum):
@@ -434,15 +453,18 @@ class KeyboardGrid(object):
         return ((width, height), image)
 
 
-def format_amount(value, value_type, max_length=5, min_length=None, decimal_units=False):
+def format_amount(value: float, value_type: str, max_length: int = 5,
+                  min_length: int | None = None, decimal_units: bool = False) -> str:
     """Format the count for something that will fit on a key."""
-    if value_type == 'press':
-        return shorten_number(value, limit=max_length, sig_figures=min_length, decimal_units=decimal_units)
-    elif value_type == 'time':
-        return ticks_to_seconds(value, 60, output_length=1, allow_decimals=False, short=True)
+    match value_type:
+        case 'press':
+            return shorten_number(value, limit=max_length, sig_figures=min_length, decimal_units=decimal_units)
+        case 'time':
+            return ticks_to_seconds(value, 60, output_length=1, allow_decimals=False, short=True)
+    raise ValueError(value_type)
 
 
-def shorten_number(n: int, limit: int = 5, sig_figures: int | None = None, decimal_units: bool = True) -> str:
+def shorten_number(n: float, limit: int = 5, sig_figures: int | None = None, decimal_units: bool = True) -> str:
     """Set a number over a certain length to something shorter.
     For example, 2000000 can be shortened to 2m.
     The numbers will be kept as long as possible,
@@ -501,8 +523,43 @@ def shorten_number(n: int, limit: int = 5, sig_figures: int | None = None, decim
         return 'inf'
 
 
+def ticks_to_seconds(amount: float, tick_rate: int = 1, output_length: int = 2,
+                     allow_decimals: bool = True, short: bool = False) -> str:
+    """Simple function to convert ticks to a readable time for use in sentences."""
+    current: float | int
+    output = []
+    time_elapsed = amount / tick_rate
+    for time_unit in TIME_UNITS[::-1]:
+        if time_unit.decimals is None or not allow_decimals:
+            current = int(time_elapsed // time_unit.length)
+        else:
+            current = round(time_elapsed / time_unit.length, time_unit.decimals)
+
+        if time_unit.limit is not None:
+            current %= time_unit.limit
+
+        if current:
+            if short:
+                output.append(f'{current}{time_unit.name[0]}')
+            else:
+                output.append(f'{current} {time_unit.name}{"" if current == 1 else "s"}')
+            if len(output) == output_length:
+                break
+
+    if not output:
+        if short:
+            output.append(f'{current}{time_unit.name[0]}')
+        else:
+            output.append(f'{current} {time_unit.name}s')
+
+    if len(output) > 1:
+        return ' and '.join((', '.join(output[:-1]), output[-1]))
+    return output[-1]
+
+
 class DrawKeyboard(object):
-    def __init__(self, profile_name, ticks: int, pressed_keys: dict[int, int], held_keys: dict[int, int]) -> None:
+    def __init__(self, profile_name: str, ticks: int, pressed_keys: dict[int, int],
+                 held_keys: dict[int, int]) -> None:
         self.name = profile_name
 
         self.ticks = ticks
@@ -617,6 +674,6 @@ class DrawKeyboard(object):
 
             text = format_amount(values['Counts'][output_type], output_type,
                                  max_length=max_width, min_length=max_width-1, decimal_units=False)
-            draw.text((x, y), 'x{}'.format(text), font=font_amount, fill=text_colour)
+            draw.text((x, y), f'x{text}', font=font_amount, fill=text_colour)
 
         return image

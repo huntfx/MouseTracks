@@ -43,7 +43,7 @@ DUPLICATES: dict[str, int] = {
 SEPERATORS: list[str] = ['to', 'then']
 
 
-def to_lower(value: str, extra_chars='') -> str:
+def to_lower(value: str, extra_chars: str = '') -> str:
     return re.sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', value).lower()
 
 
@@ -52,9 +52,8 @@ class ColourRange(object):
     All possible colours within the range are cached for quick access.
     """
 
-    def __init__(self, min_amount: int, max_amount: int, colours: list[tuple[int, ...]],
-                 offset: int = 0, colour_steps: int = 256, loop: bool = False, background=None):
-
+    def __init__(self, min_amount: int, max_amount: int, colours: list[tuple[int, ...]], offset: int = 0,
+                 colour_steps: int = 256, loop: bool = False, background: tuple[int, ...] | None = None) -> None:
         if min_amount >= max_amount:
             colours = [colours[0]]
             max_amount = min_amount + 1

@@ -32,7 +32,7 @@ class DefaultList(list[T], Generic[T]):
     15
     """
 
-    def __init__(self, default_factory: Callable[[], T], *args) -> None:
+    def __init__(self, default_factory: Callable[[], T], *args: T) -> None:
         self.default_factory = default_factory
         super().__init__(*args)
 

@@ -24,7 +24,7 @@ if errorlevel 1 (
 )
 
 :: Run mypy on the entry point
-python -m mypy mousetracks2 launch.py
+python -m mypy mousetracks2 launch.py --disallow-untyped-defs --disallow-incomplete-defs
 
 :: Exit the virtual environment
 call deactivate
