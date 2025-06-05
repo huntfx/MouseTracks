@@ -336,9 +336,9 @@ class KeyboardGrid(object):
 
         # Setup the colour range
         if GLOBALS.data_set == 'time':
-            data = self.held_keys.values()
-        elif GLOBALS.data_set == 'count':
             data = self.pressed_keys.values()
+        elif GLOBALS.data_set == 'count':
+            data = self.held_keys.values()
         else:
             raise ValueError('invalid dataset')
 
@@ -382,9 +382,9 @@ class KeyboardGrid(object):
                         count_time = self.held_keys.get(key_name, 0)
                         count_press = self.pressed_keys.get(key_name, 0)
                         if GLOBALS.data_set == 'time':
-                            key_count = count_time
-                        elif GLOBALS.data_set == 'count':
                             key_count = count_press
+                        elif GLOBALS.data_set == 'count':
+                            key_count = count_time
                         else:
                             key_count = 0
 
