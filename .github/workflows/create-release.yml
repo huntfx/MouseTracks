@@ -1,4 +1,4 @@
-name: Create Release on Version Update
+name: Create Release (on Version Update)
 
 on:
   push:

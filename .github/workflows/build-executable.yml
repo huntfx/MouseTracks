@@ -1,4 +1,4 @@
-name: Build Executable on Release
+name: Build Executable (on Release)
 
 on:
   release:
