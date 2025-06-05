@@ -126,7 +126,7 @@ class Processing(Component):
         # Get all resolutions and how much data they contain
         resolutions: dict[tuple[int, int], tuple[int, bool]] = {}
         for resolution, array in profile.cursor_map.density_arrays.items():
-            resolutions[resolution] = (np.sum(array), resolution not in profile.config.disabled_resolutions)
+            resolutions[resolution] = (int(np.sum(array)), resolution not in profile.config.disabled_resolutions)
 
         # Send data back to the GUI
         self.send_data(ipc.ProfileData(
@@ -138,7 +138,7 @@ class Processing(Component):
             clicks=clicks,
             scrolls=scrolls,
             keys_pressed=keys,
-            buttons_pressed=sum(np.sum(array) for array in profile.button_presses.values()),
+            buttons_pressed=sum(int(np.sum(array)) for array in profile.button_presses.values()),
             elapsed_ticks=profile.elapsed,
             active_ticks=profile.active,
             inactive_ticks=profile.inactive,

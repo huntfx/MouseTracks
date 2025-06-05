@@ -5,10 +5,11 @@ import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Self
+from typing import Any, Generic, Iterator, Self, Sequence, Type, TypeVar
 from uuid import uuid4
 
 import numpy as np
+import numpy.typing as npt
 
 from .config.cli import CLI
 from .config.settings import ProfileConfig
@@ -23,13 +24,28 @@ EXTENSION = 'mtk'
 
 PROFILE_DIR = CLI.data_dir / 'Profiles'
 
+_DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
+
+_ScalarType_co = TypeVar('_ScalarType_co', covariant=True)
+
 
 class UnsupportedVersionError(Exception):
     """When a file can't be loaded due to an unsupported version"""
 
 
-class TrackingArray:
-    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, dtype, auto_pad: bool | list[bool] = False) -> None:
+class TrackingArray(Generic[_DType_co, _ScalarType_co]):
+    """Create a savable array with support for auto padding.
+
+    Ideally this would inherit `np.ndarray`, but changing the dtype of
+    an array in-place isn't supported.
+    """
+
+    array: npt.NDArray[_DType_co]
+    auto_pad: list[bool]
+
+    def __init__(self, shape: int | Sequence[int] | npt.NDArray[Any],
+                 dtype: Type[_DType_co] | np.dtype[_DType_co],
+                 auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -45,17 +61,17 @@ class TrackingArray:
 
         # Set auto padding settings
         if isinstance(auto_pad, bool):
-            self.auto_pad = [auto_pad] * self.array.ndim
-        elif len(auto_pad) != self.array.ndim:
+            self.auto_pad = [auto_pad] * self.ndim
+        elif len(auto_pad) != self.ndim:
             raise ValueError('length of auto_pad must match number of array dimensions')
         else:
             self.auto_pad = auto_pad
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
-        return type(self)(self.array.shape, self.array.dtype, self.auto_pad)
+        return type(self)(self.shape, self.dtype, self.auto_pad)
 
-    def __array__(self) -> np.ndarray:
+    def __array__(self) -> npt.NDArray[_DType_co]:
         """For internal numpy usage."""
         return self.array
 
@@ -65,22 +81,37 @@ class TrackingArray:
     def __repr__(self) -> str:
         return repr(self.array)
 
+    @property
+    def dtype(self) -> np.dtype[_DType_co]:
+        """Get the array dtype."""
+        return self.array.dtype
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Get the array shape."""
+        return self.array.shape
+
+    @property
+    def ndim(self) -> int:
+        """Get the array dimensions."""
+        return self.array.ndim
+
     def _check_padding(self, index: int | list[int]) -> bool:
         """Check if padding needs to be added.
         The index must be of the same dimensions of the array.
         """
         if isinstance(index, int):
-            if self.array.ndim == 1 and self.auto_pad[0]:
-                self.array = np.pad(self.array, (0, max(0, 1 + index - self.array.shape[0])))
+            if self.ndim == 1 and self.auto_pad[0]:
+                self.array = np.pad(self.array, (0, max(0, 1 + index - self.shape[0])))
                 return True
             return False
 
-        if len(index) != self.array.ndim:
+        if len(index) != self.ndim:
             return False
 
         diff = []
         padding_required = False
-        for idx, size, pad in zip(index, self.array.shape, self.auto_pad):
+        for idx, size, pad in zip(index, self.shape, self.auto_pad):
             if pad and idx >= size:
                 diff.append((0, idx - size + 1))
                 padding_required = True
@@ -93,7 +124,7 @@ class TrackingArray:
         self.array = np.pad(self.array, diff)
         return True
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Any) -> _ScalarType_co | npt.NDArray[_DType_co]:
         try:
             return self.array[item]
         except IndexError:
@@ -101,7 +132,7 @@ class TrackingArray:
                 raise
             return self.array[item]
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: Any, value: Any) -> None:
         try:
             self.array[item] = value
         except IndexError:
@@ -118,19 +149,17 @@ class TrackingArray:
             self.array = np.load(f, allow_pickle=False)
 
 
-class TrackingIntArray(TrackingArray):
+class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
     """Create an integer array and update the dtype when required.
     This is for memory optimisation as the arrays are large.
-
-    Ideally this would inherit `np.ndarray`, but changing the dtype of
-    an array in-place isn't supported.
     """
 
     DTYPES: list[type[np.unsignedinteger]] = [np.uint8, np.uint16, np.uint32, np.uint64]
 
     MAX_VALUES: list[int] = [np.iinfo(dtype).max for dtype in DTYPES]
 
-    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+    def __init__(self, shape: int | Sequence[int] | npt.NDArray[Any],
+                 auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -153,7 +182,7 @@ class TrackingIntArray(TrackingArray):
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
-        return type(self)(self.array.shape, self.auto_pad)
+        return type(self)(self.shape, self.auto_pad)
 
     def __getitem__(self, item: Any) -> int:
         """Get an array item."""
@@ -173,7 +202,7 @@ class TrackingIntArray(TrackingArray):
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         """Load data and update the internal max value."""
         super()._load_from_zip(zf, path)
-        self.max_value = np.iinfo(self.array.dtype).max
+        self.max_value = np.iinfo(self.dtype).max
 
 
 class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
@@ -185,7 +214,7 @@ class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
         self[key] = TrackingIntArray((key[1], key[0]))
         return self[key]
 
-    def __setitem__(self, key: tuple[int, int], array: np.ndarray | TrackingIntArray) -> None:
+    def __setitem__(self, key: tuple[int, int], array: npt.NDArray[np.unsignedinteger] | TrackingIntArray) -> None:
         if isinstance(array, np.ndarray):
             self[key].array = array
         else:
