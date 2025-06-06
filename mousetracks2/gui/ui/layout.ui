@@ -1066,7 +1066,7 @@ This may take a few seconds to complete.</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
               <item>
-               <widget class="QGroupBox" name="groupBox_7">
+               <widget class="QGroupBox" name="opts_status">
                 <property name="title">
                  <string>Status</string>
                 </property>
@@ -1112,7 +1112,7 @@ This may take a few seconds to complete.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_8">
+               <widget class="QGroupBox" name="opts_resolution">
                 <property name="title">
                  <string>Resolutions</string>
                 </property>
@@ -1186,7 +1186,7 @@ This may take a few seconds to complete.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="override_monitor">
+               <widget class="QGroupBox" name="opts_monitor">
                 <property name="toolTip">
                  <string>Set how multiple monitors are handled.</string>
                 </property>
@@ -1248,7 +1248,7 @@ This is the default behaviour.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="tracking_group">
+               <widget class="QGroupBox" name="opts_tracking">
                 <property name="title">
                  <string>Tracking</string>
                 </property>

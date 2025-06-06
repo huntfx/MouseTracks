@@ -324,7 +324,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.export_network_stats.triggered.connect(self.export_network_stats)
         self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
         self.ui.multi_monitor.toggled.connect(self.multi_monitor_change)
-        self.ui.override_monitor.toggled.connect(self.multi_monitor_override_toggle)
+        self.ui.opts_monitor.toggled.connect(self.multi_monitor_override_toggle)
         self.ui.stat_app_add.clicked.connect(self.add_application)
         self.ui.link_facebook.triggered.connect(self.open_url)
         self.ui.link_github.triggered.connect(self.open_url)
@@ -657,7 +657,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def multi_monitor_change(self) -> None:
         """Change the multiple monitor option."""
-        if not self.ui.override_monitor.isChecked():
+        if not self.ui.opts_monitor.isChecked():
             return
         profile = self.ui.current_profile.currentData()
         self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked()))
@@ -665,7 +665,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def multi_monitor_override_toggle(self, checked: bool) -> None:
         """Enable or disable the multi monitor override."""
-        if not self.ui.override_monitor.isEnabled():
+        if not self.ui.opts_monitor.isEnabled():
             return
         profile = self.ui.current_profile.currentData()
         self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked() if checked else None))
@@ -810,7 +810,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
         profile_name = self.ui.current_profile.itemData(idx)
-        self.ui.tab_options.setTabText(1, f'{profile_name} Options')
 
         if not self._redrawing_profiles:
             self.request_profile_data(profile_name)
@@ -818,11 +817,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.auto_switch_profile.setChecked(False)
             self.set_profile_modified_text()
 
-        self.ui.tracking_group.setEnabled(profile_name != TRACKING_DISABLE)
-
     def request_profile_data(self, profile_name: str) -> None:
         """Request loading profile data."""
         self.component.send_data(ipc.ProfileDataRequest(profile_name))
+
+        # Pause the signals on the track options
+        if not self._is_loading_profile:
+            self.ui.track_mouse.setEnabled(False)
+            self.ui.track_keyboard.setEnabled(False)
+            self.ui.track_gamepad.setEnabled(False)
+            self.ui.track_network.setEnabled(False)
+            self.ui.opts_status.setEnabled(False)
+            self.ui.opts_resolution.setEnabled(False)
+            self.ui.opts_monitor.setEnabled(False)
+            self.ui.opts_tracking.setEnabled(False)
+
         self._is_loading_profile += 1
         self.start_rendering_timer()
 
@@ -982,7 +991,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
-        single_monitor = self.ui.single_monitor.isChecked() if self.ui.override_monitor.isChecked() else CLI.single_monitor
+        single_monitor = self.ui.single_monitor.isChecked() if self.ui.opts_monitor.isChecked() else CLI.single_monitor
         if single_monitor:
             x_min, y_min, x_max, y_max = monitor_data[0]
             for x1, y1, x2, y2 in monitor_data[1:]:
@@ -1394,14 +1403,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Show the correct distance
             case ipc.ProfileData():
                 self._is_loading_profile -= 1
-                finished_loading = not self._is_loading_profile
-
-                # Pause the signals on the track options
-                self.ui.track_mouse.setEnabled(False)
-                self.ui.track_keyboard.setEnabled(False)
-                self.ui.track_gamepad.setEnabled(False)
-                self.ui.track_network.setEnabled(False)
-                self.ui.override_monitor.setEnabled(False)
+                self.ui.tab_options.setTabText(1, f'{message.profile_name} Options')
 
                 self.cursor_data.distance = message.distance
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1427,11 +1429,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     multi_monitor = message.multi_monitor
                 self.ui.single_monitor.setChecked(single_monitor)
                 self.ui.multi_monitor.setChecked(multi_monitor)
-                self.ui.override_monitor.setChecked(message.multi_monitor is not None)
-                self.ui.override_monitor.setEnabled(True)
-
-                if finished_loading:
-                    self.request_thumbnail()
+                self.ui.opts_monitor.setChecked(message.multi_monitor is not None)
 
                 self.ui.track_mouse.setChecked(message.config.track_mouse)
                 self.ui.track_keyboard.setChecked(message.config.track_keyboard)
@@ -1450,19 +1448,27 @@ class MainWindow(QtWidgets.QMainWindow):
                 if CLI.disable_mouse:
                     self.ui.track_mouse.setChecked(False)
                 else:
-                    self.ui.track_mouse.setEnabled(finished_loading)
+                    self.ui.track_mouse.setEnabled(not self._is_loading_profile)
                 if CLI.disable_keyboard:
                     self.ui.track_keyboard.setChecked(False)
                 else:
-                    self.ui.track_keyboard.setEnabled(finished_loading)
+                    self.ui.track_keyboard.setEnabled(not self._is_loading_profile)
                 if CLI.disable_gamepad:
                     self.ui.track_gamepad.setChecked(False)
                 else:
-                    self.ui.track_gamepad.setEnabled(finished_loading)
+                    self.ui.track_gamepad.setEnabled(not self._is_loading_profile)
                 if CLI.disable_network:
                     self.ui.track_network.setChecked(False)
                 else:
-                    self.ui.track_network.setEnabled(finished_loading)
+                    self.ui.track_network.setEnabled(not self._is_loading_profile)
+
+                # Enable widgets and redraw when loading has finished
+                if not self._is_loading_profile:
+                    self.request_thumbnail()
+                    self.ui.opts_status.setEnabled(True)
+                    self.ui.opts_resolution.setEnabled(True)
+                    self.ui.opts_monitor.setEnabled(True)
+                    self.ui.opts_tracking.setEnabled(message.profile_name != TRACKING_DISABLE)
 
             case ipc.DataTransfer():
                 if self.is_live and self.ui.track_network.isChecked():
