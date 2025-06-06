@@ -24,6 +24,8 @@ class GlobalConfig:
         track_network: Enable network tracking.
         inactivity_time: How long before the user is classed as inactive.
         save_frequency: How often to autosave.
+        max_loaded_profiles: Maximum amount of loaded profiles.
+            This will only affect profiles without unsaved changes.
         gamepad_check_frequency: How often to check the connected gamepads.
         monitor_check_frequency: How often to check the current resolutions.
         application_check_frequency: How often to check the current focused application.
@@ -44,6 +46,7 @@ class GlobalConfig:
     track_network: bool = True
     inactivity_time: float = 300.0
     save_frequency: float = 600.0
+    max_loaded_profiles: int = 8
     gamepad_check_frequency: float = 1.0
     monitor_check_frequency: float = 1.0
     application_check_frequency: float = 1.0

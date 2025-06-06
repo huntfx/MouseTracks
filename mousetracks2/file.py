@@ -349,6 +349,8 @@ class TrackingProfile:
     daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
 
+    _last_accessed: float = field(default_factory=lambda: time.time(), init=False)
+
     def _write_to_zip(self, zf: zipfile.ZipFile, modified: float | None = None) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
@@ -401,6 +403,8 @@ class TrackingProfile:
         self.daily_buttons._write_to_zip(zf, 'stats/gamepad/buttons.npy')
         self.daily_upload._write_to_zip(zf, 'stats/network/upload.npy')
         self.daily_download._write_to_zip(zf, 'stats/network/download.npy')
+
+        self._last_accessed = time.time()
 
     def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
@@ -461,6 +465,8 @@ class TrackingProfile:
 
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
+
+        self._last_accessed = time.time()
 
     def save(self, path: str | None = None, _is_fix: bool = False) -> bool:
         """Save the profile.
@@ -650,16 +656,6 @@ class TrackingProfile:
 class TrackingProfileLoader(dict[str, TrackingProfile]):
     """Act like a defaultdict to load data if available."""
 
-    def __getitem__(self, profile_name: str) -> TrackingProfile:
-        """Load the profile and update the current name.
-
-        This is due to the name being stored internally and will not
-        update even if the profile is manually renamed.
-        """
-        profile: TrackingProfile = super().__getitem__(profile_name)
-        profile.name = profile_name
-        return profile
-
     def __missing__(self, profile_name: str) -> TrackingProfile:
         """Load in any missing data or create a new profile."""
         filename = get_filename(profile_name)
@@ -667,9 +663,11 @@ class TrackingProfileLoader(dict[str, TrackingProfile]):
             profile = self[profile_name] = TrackingProfile.load(filename)
         else:
             profile = self[profile_name] = TrackingProfile()
+        self._autoUnload(ignore=profile_name)
 
-        # Update the name
+        # Update the data
         profile.name = profile_name
+        profile._last_accessed = time.time()
 
         # Force disabled profile config
         if profile_name == TRACKING_DISABLE:
@@ -679,6 +677,19 @@ class TrackingProfileLoader(dict[str, TrackingProfile]):
             profile.config.track_network = False
 
         return profile
+
+    def _autoUnload(self, max_profiles: int = 5, ignore: str | None = None) -> None:
+        """Unload if too many profiles are loaded into memory at once."""
+        data = [(profile.is_modified,  # Sort modified profiles first
+                 profile._last_accessed,  # Sort by recently accessed
+                 name, profile)
+                for name, profile in self.items()]
+        data.sort(reverse=True)
+
+        for i, (is_modified, load_time, name, profile) in enumerate(data):
+            if i < max_profiles or is_modified or name == ignore:
+                continue
+            del self[name]
 
 
 def get_filename(application: str) -> str:

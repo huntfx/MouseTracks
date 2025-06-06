@@ -1,5 +1,6 @@
 import math
 import os
+import time
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -90,12 +91,13 @@ class Processing(Component):
             return
         self._current_application = application
 
-        # Reset the cursor position
+        # Reset the data
         self.profile.cursor_map.position = None
 
     def _send_profile_data(self, name: str) -> None:
         """Send all the stats for the profile."""
         profile = self.all_profiles[name]
+        profile._last_accessed = time.time()
 
         # Count total clicks
         clicks = 0
