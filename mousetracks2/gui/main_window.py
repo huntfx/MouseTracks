@@ -749,9 +749,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self._current_profile = profile
 
-        # Update the profile order
-        with suppress(ValueError):
-            del self._profile_names[self._profile_names.index(profile.name)]
+        # Update the profile order by removing the record and inserting it at the top
+        name_lower = profile.name.lower()
+        for i, name in enumerate(map(str.lower, self._profile_names)):
+            if name == name_lower:
+                del self._profile_names[i]
+                break
+
         self._profile_names.insert(0, profile.name)
         self.mark_profiles_unsaved(profile.name)
         self._redraw_profile_combobox()
