@@ -356,6 +356,7 @@ class TrackingProfile:
             assert (self.active + self.inactive) == self.elapsed
         if modified is None:
             modified = time.time()
+        self.modified = int(modified)
 
         with zf.open('config.yaml', 'w') as f:
             self.config.save(f)
@@ -363,7 +364,7 @@ class TrackingProfile:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/time/created', str(self.created))
-        zf.writestr('metadata/time/modified', str(int(modified)))
+        zf.writestr('metadata/time/modified', str(self.modified))
         zf.writestr('metadata/ticks/elapsed', str(self.elapsed))
         zf.writestr('metadata/ticks/active', str(self.active))
         zf.writestr('metadata/ticks/inactive', str(self.inactive))
