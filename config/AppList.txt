@@ -604,7 +604,7 @@ GeForceNOW.exe[Quake II RTX on GeForce NOW]: Quake 2
 GeForceNOW.exe[Teardown on GeForce NOW]: Teardown
 GeForceNOW.exe[Titan Quest Anniversary Edition on GeForce NOW]: Titan Quest
 GeForceNOW.exe[Warframe on GeForce NOW]: Warframe
-GeForceNOW.exe[Warhammer: Vermintide 2 on GeForce NOW]: Warhammer: End Times - Vermintide 2
+GeForceNOW.exe[Warhammer: Vermintide 2 on GeForce NOW]: Warhammer: Vermintide 2
 GeForceNOW.exe[Watch Dogs®: Legion on GeForce NOW]: Watch Dogs: Legion
 generals.exe: Command & Conquer Generals: Zero Hour
 Geographical Adventures.exe
@@ -723,6 +723,7 @@ hl2TF.exe: Team Fortress 2
 HMA.exe: Hitman: Absolution
 HMM.exe: Heavy Metal Machines
 hng.exe: Heroes and Generals
+HogwartsLegacy.exe: Hogwarts Legacy
 HolyPurge-Win64-Shipping.exe: Holy Purge
 HolyPurge.exe: Holy Purge
 HoM.exe: Hero of Many
@@ -948,11 +949,11 @@ MonkeyIsland105.exe: Tales of Monkey Island
 Monster Hunter Online/TCLS/Client.exe: Monster Hunter Online
 morrowind.exe: Morrowind
 Mountain.exe
+MOUTHOLE.exe
 mow_assualt_squad.exe: Men Of War: Assault Squad
 mowas2.exe: Men Of War: Assault Squad 2
 MSI-Kombustor-x64.exe: Untracked
 mspaint.exe: Paint
-mstsc.exe[<*> Remote Desktop Connection]: Remote Desktop
 mstsc.exe[<*>Remote Desktop Connection]: Remote Desktop
 mudlet.exe: Mudlet
 mugen.exe: M.U.G.E.N
@@ -1056,7 +1057,7 @@ payday_win32_release.exe: PAYDAY
 pbbg_win32.exe: Phantom Break: Baggle Grounds
 pCARS.exe: Project Cars
 pcoip_client.exe: Remote Desktop
-pcoip_client_cli.exe: HP Anyware
+pcoip_client_cli.exe: Remote Desktop
 pcsx2-r5875.exe: PCSX2
 pcsx2.exe: PCSX2
 PCTomb5.exe: Tomb Raider: Chronicles
@@ -1616,9 +1617,9 @@ Valley.exe: Untracked
 Vampire.exe: Vampire: The Masquerade - Bloodlines
 VampireSurvivors.exe: Vampire Survivors
 Verdun.exe
-vermintide.exe: Warhammer: End Times - Vermintide
-vermintide2.exe: Warhammer: End Times - Vermintide 2
-vermintide2_dx12.exe: Warhammer: End Times - Vermintide 2
+vermintide.exe: Warhammer: Vermintide
+vermintide2.exe: Warhammer: Vermintide 2
+vermintide2_dx12.exe: Warhammer: Vermintide 2
 VFRacer.exe: Mantis Burn Racing
 vindictus.exe: Vindictus
 VisualBoyAdvance.exe
