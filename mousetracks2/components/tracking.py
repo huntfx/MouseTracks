@@ -384,22 +384,22 @@ class Tracking(Component):
                 mouse_position = get_cursor_pos()
 
                 # Check if mouse position is inactive (such as a screensaver)
-                # If so then pause everything
                 if mouse_position is None:
                     if not data.mouse_inactive:
                         print('[Tracking] Mouse Undetected.')
                         data.mouse_inactive = True
-                    continue
-                if data.mouse_inactive:
-                    print('[Tracking] Mouse detected.')
-                    data.mouse_inactive = False
 
-                # Update mouse movement
-                if mouse_position != data.mouse_position:
-                    self.data.tick_modified = self.data.tick_current
-                    self.data.mouse_position = mouse_position
-                    self._check_monitor_data(mouse_position)
-                    self.send_data(ipc.MouseMove(mouse_position))
+                else:
+                    if data.mouse_inactive:
+                        print('[Tracking] Mouse detected.')
+                        data.mouse_inactive = False
+
+                    # Update mouse movement
+                    if mouse_position != data.mouse_position:
+                        self.data.tick_modified = self.data.tick_current
+                        self.data.mouse_position = mouse_position
+                        self._check_monitor_data(mouse_position)
+                        self.send_data(ipc.MouseMove(mouse_position))
 
             # Check resolution and update if required
             if tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.monitor_check_frequency):
