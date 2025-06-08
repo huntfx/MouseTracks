@@ -7,14 +7,7 @@ class Interface:
     """Store the interface name and MAC address."""
 
     name: str
-    _mac: str | None
-
-    @property
-    def mac(self) -> str:
-        """Get the MAC address or return a default one."""
-        if self._mac is None:
-            return '00-00-00-00-00-00'
-        return self._mac
+    mac: str | None
 
 
 class Interfaces:

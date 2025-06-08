@@ -485,7 +485,8 @@ class Tracking(Component):
 
                     if bytes_sent or bytes_recv:
                         mac_address = Interfaces.get_from_name(interface_name).mac
-                        self.send_data(ipc.DataTransfer(mac_address, bytes_sent, bytes_recv))
+                        if mac_address is not None:
+                            self.send_data(ipc.DataTransfer(mac_address, bytes_sent, bytes_recv))
 
             self._calculate_inactivity()
 
