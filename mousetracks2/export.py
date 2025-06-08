@@ -23,7 +23,7 @@ class Export:
         yield ('Date', 'Time (seconds)', 'Active (seconds)', 'Inactive (seconds)',
                'Cursor Distance (pixels)', 'Mouse Clicks', 'Mouse Scrolls',
                'Keyboard Presses', 'Gamepad Presses', 'Download (bytes)', 'Upload (bytes)')
-        for i in reversed(range(2 + modified_day - creation_day)):
+        for i in reversed(range(1 + modified_day - creation_day)):
             # Skip if no data
             if not self.profile.daily_ticks[i, 0]:
                 continue

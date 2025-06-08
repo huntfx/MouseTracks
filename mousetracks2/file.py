@@ -351,12 +351,9 @@ class TrackingProfile:
 
     _last_accessed: float = field(default_factory=lambda: time.time(), init=False)
 
-    def _write_to_zip(self, zf: zipfile.ZipFile, modified: float | None = None) -> None:
+    def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
-        if modified is None:
-            modified = time.time()
-        self.modified = int(modified)
 
         with zf.open('config.yaml', 'w') as f:
             self.config.save(f)
@@ -469,16 +466,10 @@ class TrackingProfile:
 
         self._last_accessed = time.time()
 
-    def save(self, path: str | None = None, _is_fix: bool = False) -> bool:
-        """Save the profile.
-        The `_is_fix` parameter can be used when manually making edits
-        to profiles to avoid updating the modified date.
-        """
+    def _save_main(self, path: str | None = None) -> bool:
+        """Save the profile."""
         if path is None:
             path = get_filename(self.name)
-        if _is_fix and self.is_modified:
-            raise RuntimeError('fixes can only be done on unmodified profiles')
-        self.is_modified = False
 
         # Ensure the folder exists
         base_dir = os.path.dirname(path)
@@ -492,7 +483,7 @@ class TrackingProfile:
 
         try:
             with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-                self._write_to_zip(zf, modified=self.modified)
+                self._write_to_zip(zf)
 
             # Quickly swap over the files to reduce chances of a race condition
             if os.path.exists(path):
@@ -510,13 +501,10 @@ class TrackingProfile:
                         break
                 else:
                     print(f'[File] Unable to overwrite {path}, saving failed!')
-                    if not _is_fix:
-                        self.is_modified = True
                     return False
 
-            # Copy modified date if required
-            if _is_fix:
-                os.utime(temp_file, (self.modified, self.modified))
+            # Copy modified date
+            os.utime(temp_file, (self.modified, self.modified))
 
             # Replace file
             os.rename(temp_file, path)
@@ -529,6 +517,16 @@ class TrackingProfile:
                 os.remove(del_file)
 
         return True
+
+    def save(self) -> bool:
+        """Save the profile and handle the modified state."""
+        if self.is_modified:
+            previous, self.modified = self.modified, int(time.time())
+        if self._save_main():
+            self.is_modified = False
+            return True
+        self.modified = previous
+        return False
 
     @classmethod
     def load(cls, path: str) -> Self:
