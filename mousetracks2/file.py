@@ -587,22 +587,22 @@ class TrackingProfile:
                                 self.cursor_map.speed_arrays[resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Single"]["Left"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[0]][resolution] = TrackingIntArray(array)
+                                self.mouse_single_clicks[int(CLICK_CODES[0])][resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Single"]["Middle"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[1]][resolution] = TrackingIntArray(array)
+                                self.mouse_single_clicks[int(CLICK_CODES[1])][resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Single"]["Right"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[2]][resolution] = TrackingIntArray(array)
+                                self.mouse_single_clicks[int(CLICK_CODES[2])][resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Double"]["Left"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[0]][resolution] = TrackingIntArray(array)
+                                self.mouse_double_clicks[int(CLICK_CODES[0])][resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Double"]["Middle"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[1]][resolution] = TrackingIntArray(array)
+                                self.mouse_double_clicks[int(CLICK_CODES[1])][resolution] = TrackingIntArray(array)
                         with zf.open(f'maps/{values["Clicks"]["Double"]["Right"]}.npy') as f:
                             if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[2]][resolution] = TrackingIntArray(array)
+                                self.mouse_double_clicks[int(CLICK_CODES[2])][resolution] = TrackingIntArray(array)
 
         # Load the data using the legacy library
         else:
@@ -624,13 +624,13 @@ class TrackingProfile:
                 for i, mb in enumerate(('Left', 'Middle', 'Right')):
                     array = single_clicks[mb]
                     if np.any(array > 0):
-                        self.mouse_single_clicks[CLICK_CODES[i]][array.shape[::-1]] = TrackingIntArray(array)
+                        self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
                 double_clicks = values['Clicks']['Double']
                 for i, mb in enumerate(('Left', 'Middle', 'Right')):
                     array = double_clicks[mb]
                     if np.any(array > 0):
-                        self.mouse_double_clicks[CLICK_CODES[i]][array.shape[::-1]] = TrackingIntArray(array)
+                        self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
         self.created = int(data['Time']['Created'])
