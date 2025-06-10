@@ -98,3 +98,5 @@ map.Matrix.background.keyboard=Black
 map.Nature.colour=WhiteToWhiteLightYellowLightGreenDoubleLightGreyToLightYellowGreenLightGreenToDarkGreen
 map.Nature.colour.Linear=WhiteToDarkGreen
 map.Nature.keyboard=True
+map.Cloud.colour=LightBlueLightCyanGreyToBlackToWhite
+map.Cloud.tracks=True
