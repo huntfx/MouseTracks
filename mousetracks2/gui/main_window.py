@@ -2270,7 +2270,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if not accept:
                 return
 
-            # Check if the profile exists
+            # Check if the profile already exists
+            if not PROFILE_DIR.exists():
+                break
             name = name.strip() or filename
             if os.path.basename(get_filename(name)) not in os.listdir(PROFILE_DIR):
                 break
