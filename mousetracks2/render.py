@@ -223,7 +223,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         # Prevent overflow errors by reducing the array range
         if True:
             target = limit / contrast
-            if np.log(max_value) > target:
+            if max_value and np.log(max_value) > target:
                 new_max = int(np.exp(target))  # int conversion to round down
                 combined_array /= (max_value / new_max)
 
