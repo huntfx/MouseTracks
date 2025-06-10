@@ -26,7 +26,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
-from ..file import PROFILE_DIR, get_profile_names, get_filename
+from ..file import PROFILE_DIR, get_profile_names, get_filename, santise_profile_name
 from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
         self._delete_network_pressed = False
-        self._profile_names = get_profile_names()
+        self._profile_names = {santise_profile_name(name): name for name in get_profile_names()}
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self._is_loading_profile = 0
@@ -750,15 +750,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self._current_profile = profile
 
-        # Update the profile order by removing the record and inserting it at the top
-        name_lower = profile.name.lower()
-        for i, name in enumerate(map(str.lower, self._profile_names)):
-            if name == name_lower:
-                del self._profile_names[i]
-                break
-
-        self._profile_names.insert(0, profile.name)
-        self.mark_profiles_unsaved(profile.name)
+        # Update the profile order
+        sanitised = santise_profile_name(profile.name)
+        if sanitised in self._profile_names:
+            del self._profile_names[sanitised]
+        self._profile_names = {sanitised: profile.name} | self._profile_names
+        self.mark_profiles_unsaved(sanitised)
         self._redraw_profile_combobox()
 
     def _redraw_profile_combobox(self) -> None:
@@ -773,11 +770,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Add the profiles
         self.ui.current_profile.clear()
-        for profile in self._profile_names:
-            if profile in self._unsaved_profiles:
-                self.ui.current_profile.addItem(f'*{profile}', profile)
+        for sanitised, profile_name in self._profile_names.items():
+            if sanitised in self._unsaved_profiles:
+                self.ui.current_profile.addItem(f'*{profile_name}', profile_name)
             else:
-                self.ui.current_profile.addItem(profile, profile)
+                self.ui.current_profile.addItem(profile_name, profile_name)
 
         # Change back to the previously selected profile
         if self.ui.auto_switch_profile.isChecked():
@@ -1573,10 +1570,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Load a legacy profile and switch to it
             case ipc.LoadLegacyProfile():
-                self._profile_names.append(message.name)
-                self._unsaved_profiles.add(message.name)
+                sanitised = santise_profile_name(message.name)
+                self._profile_names[sanitised] = message.name
+                self._unsaved_profiles.add(sanitised)
                 self._redraw_profile_combobox()
-                self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
+                self.ui.current_profile.setCurrentIndex(tuple(self._profile_names).index(sanitised))
 
             case ipc.ExportStatsSuccessful():
                 msg = AutoCloseMessageBox(self)
@@ -1869,7 +1867,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def is_live(self) -> bool:
         """Determine if the visible data is live."""
-        return self.ui.current_profile.currentData() == self.current_profile.name
+        current_profile = self.ui.current_profile.currentData()
+        if current_profile is None:
+            return False
+        return santise_profile_name(current_profile) == santise_profile_name(self.current_profile.name)
 
     @property
     def mouse_tracking_enabled(self) -> bool:
@@ -2044,8 +2045,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self.component.send_data(ipc.DeleteProfile(profile))
             self.mark_profiles_saved(profile)
-            del self._profile_names[self._profile_names.index(profile)]
-            self._unsaved_profiles.discard(profile)
+
+            sanitised = santise_profile_name(profile)
+            del self._profile_names[sanitised]
+            self._unsaved_profiles.discard(sanitised)
 
             self._redraw_profile_combobox()
             self.profile_changed(0)
@@ -2112,17 +2115,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def mark_profiles_saved(self, *profile_names: str) -> None:
         """Mark profiles as saved."""
-        self._unsaved_profiles -= set(profile_names)
+        self._unsaved_profiles -= set(map(santise_profile_name, profile_names))
         self.set_profile_modified_text()
 
     def mark_profiles_unsaved(self, *profile_names: str) -> None:
         """Mark profiles as unsaved."""
-        self._unsaved_profiles |= set(profile_names)
+        self._unsaved_profiles |= set(map(santise_profile_name, profile_names))
         self.set_profile_modified_text()
 
     def set_profile_modified_text(self) -> None:
         """Set the text if the profile has been modified."""
-        if self.ui.current_profile.currentData() in self._unsaved_profiles:
+        current_profile = self.ui.current_profile.currentData()
+        if current_profile is not None and santise_profile_name(current_profile) in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
             self.ui.profile_save.setEnabled(self.state != ipc.TrackingState.Stopped)
         else:

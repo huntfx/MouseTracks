@@ -58,7 +58,7 @@ class Processing(Component):
         self.previous_monitor = None
 
         # Load in the default profile
-        self.all_profiles: dict[str, TrackingProfile] = TrackingProfileLoader()
+        self.all_profiles = TrackingProfileLoader()
         self._current_application = Application('', [])
         self.current_application = Application(DEFAULT_PROFILE_NAME, [])
 

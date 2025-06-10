@@ -4,6 +4,7 @@ import re
 import time
 import zipfile
 from collections import defaultdict
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from typing import Any, Generic, Iterator, Self, Sequence, Type, TypeVar
 from uuid import uuid4
@@ -662,17 +663,47 @@ class TrackingProfile:
         self.is_modified = True
 
 
-class TrackingProfileLoader(dict[str, TrackingProfile]):
+class TrackingProfileLoader(MutableMapping):
     """Act like a defaultdict to load data if available."""
 
-    def __missing__(self, profile_name: str) -> TrackingProfile:
-        """Load in any missing data or create a new profile."""
+    def __init__(self, max_profiles: int = 5):
+        self.max_profiles = max_profiles
+        self._profiles: dict[str, TrackingProfile] = {}
+
+    def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
+        sanitised = santise_profile_name(profile_name)
+        self._profiles[sanitised] = profile
+
+    def __getitem__(self, profile_name: str) -> TrackingProfile:
+        """Load or get a profile."""
+        sanitised = santise_profile_name(profile_name)
+        try:
+            return self._profiles[sanitised]
+        except KeyError:
+            self._profiles[sanitised] = self._load_or_create_profile(profile_name)
+        return self._profiles[sanitised]
+
+    def __delitem__(self, profile_name: str) -> None:
+        sanitised = santise_profile_name(profile_name)
+        del self._profiles[sanitised]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._profiles)
+
+    def __len__(self) -> int:
+        return len(self._profiles)
+
+    def _load_or_create_profile(self, profile_name: str) -> TrackingProfile:
+        """Load in any missing data or create a new profile.
+        This is in the place of `__missing__`, as the profile name gets
+        sanitised before it reaches that point.
+        """
         filename = get_filename(profile_name)
         if os.path.exists(filename):
-            profile = self[profile_name] = TrackingProfile.load(filename)
+            profile = self._profiles[profile_name] = TrackingProfile.load(filename)
         else:
-            profile = self[profile_name] = TrackingProfile()
-        self._autoUnload(ignore=profile_name)
+            profile = self._profiles[profile_name] = TrackingProfile()
+        self._evict(keep_loaded=santise_profile_name(profile_name))
 
         # Update the data
         profile.name = profile_name
@@ -687,24 +718,30 @@ class TrackingProfileLoader(dict[str, TrackingProfile]):
 
         return profile
 
-    def _autoUnload(self, max_profiles: int = 5, ignore: str | None = None) -> None:
-        """Unload if too many profiles are loaded into memory at once."""
-        data = [(profile.is_modified,  # Sort modified profiles first
+    def _evict(self, keep_loaded: str) -> None:
+        """Unload if too many profiles are loaded into memory at once.
+        The argument to `keep_loaded` must be sanitised already.
+        """
+        sanitised = santise_profile_name(keep_loaded)
+        data = ((profile.is_modified,  # Sort modified profiles first
                  profile._last_accessed,  # Sort by recently accessed
                  name, profile)
-                for name, profile in self.items()]
-        data.sort(reverse=True)
+                for name, profile in self._profiles.items())
 
-        for i, (is_modified, load_time, name, profile) in enumerate(data):
-            if i < max_profiles or is_modified or name == ignore:
+        for i, (is_modified, load_time, name, profile) in enumerate(sorted(data, reverse=True)):
+            if i < self.max_profiles or is_modified or name == sanitised:
                 continue
-            del self[name]
+            del self._profiles[name]
 
 
-def get_filename(application: str) -> str:
-    """Get the filename for an application."""
-    sanitised = re.sub(r'[^a-zA-Z0-9]', '', application.lower())
-    return os.path.join(PROFILE_DIR, f'{sanitised}.{EXTENSION}')
+def santise_profile_name(profile_name: str) -> str:
+    """Get the sanitised version of a profile name."""
+    return re.sub(r'[^a-zA-Z0-9]', '', profile_name.lower())
+
+
+def get_filename(profile_name: str) -> str:
+    """Get the filename for a profile."""
+    return os.path.join(PROFILE_DIR, f'{santise_profile_name(profile_name)}.{EXTENSION}')
 
 
 def get_profile_names() -> list[str]:
