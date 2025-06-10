@@ -1138,9 +1138,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         match self.render_type:
             case ipc.RenderType.Time:
-                name = 'Mouse Tracks'
+                name = 'Mouse Movement'
             case ipc.RenderType.TimeHeatmap:
-                name = 'Mouse Heatmap'
+                name = 'Mouse Position'
             case ipc.RenderType.Speed:
                 name = 'Mouse Speed'
             case ipc.RenderType.SingleClick:
@@ -1150,13 +1150,15 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.HeldClick:
                 name = 'Mouse Held Clicks'
             case ipc.RenderType.Thumbstick_Time:
-                name = 'Gamepad Thumbstick Tracks'
+                name = 'Gamepad Thumbstick Movement'
             case ipc.RenderType.Thumbstick_Heatmap:
-                name = 'Gamepad Thumbstick Heatmap'
+                name = 'Gamepad Thumbstick Position'
             case ipc.RenderType.Thumbstick_Speed:
                 name = 'Gamepad Thumbstick Speed'
+            case ipc.RenderType.Keyboard:
+                name = 'Keyboard Heatmap'
             case _:
-                name = 'Tracks'
+                name = 'Data'
 
         profile = self.ui.current_profile.currentData()
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
