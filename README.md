@@ -102,52 +102,71 @@ Ensure all modules in [requirements-legacy.txt](requirements-legacy.txt) are ins
 
 ---
 
-## Example Output
-<img src="http://i.imgur.com/UJgf0up.jpg">
-<img src="http://i.imgur.com/HL023Cr.jpg">
+## Render Types
+Multiple data types can be rendered.<br>
+There are additional options, but the main ones are highlighted below.
 
-### Colour Maps
-#### Chalk
-<img src="http://i.imgur.com/ReRbDnF.jpg">
+The majority of these renders are from 500 hours of general PC use, excluding coding and gaming.<br>
+The gamepad renders are from a game that was played for 30 hours.
 
-#### Citrus
-<img src="http://i.imgur.com/wRRsFhn.jpg">
+### Mouse Movement
+<img src="media/render-types/mouse-movement.jpg">
 
-#### Demon
-<img src="http://i.imgur.com/IDLRgGn.jpg">
+### Mouse Speed
+<img src="media/render-types/mouse-speed.jpg">
 
-#### Sunburst
-<img src="http://i.imgur.com/HtVF8In.jpg">
+### Mouse Position
+<img src="media/render-types/mouse-position.jpg">
 
-#### Ice
-<img src="http://i.imgur.com/KniZy9q.jpg">
+### Mouse Clicks
+<img src="media/render-types/mouse-clicks.jpg">
 
-#### Hazard
-<img src="http://i.imgur.com/zy9v3in.jpg">
+## Keyboard Heatmap
+<img src="media/render-types/keyboard-heatmap.jpg">
 
-#### Spiderman
-<img src="http://i.imgur.com/CwGlzfa.jpg">
+### Gamepad Thumbstick Movement
+<img src="media/render-types/gamepad-thumbstick-movement.jpg">
 
-#### Graffiti
-<img src="http://i.imgur.com/z1s0iTg.jpg">
+### Gamepad Thumbstick Position
+<img src="media/render-types/gamepad-thumbstick-position.jpg">
 
-#### Lightning
-<img src="http://i.imgur.com/yB5udPO.jpg">
+## Colour Maps
+Each render is given a colour map.<br>
+There are additional options, but the main ones are highlighted below.<br>
+It's also possible to [define your own](https://github.com/huntfx/MouseTracks/wiki/Colour-Maps).
 
-#### Razer
-<img src="http://i.imgur.com/Xfu0i8E.jpg">
+### Ice
+<img src="media/render-types/mouse-movement.jpg">
 
-#### BlackWidow
-<img src="http://i.imgur.com/1AqOHxC.jpg">
+### Citrus
+<img src="media/render-colours/tracks/citrus.jpg">
 
-#### Grape
-<img src="http://i.imgur.com/fcOji6t.jpg">
+### Demon
+<img src="media/render-colours/tracks/demon.jpg">
 
-#### Neon
-<img src="http://i.imgur.com/hd8oshz.jpg">
+### Sunburst
+<img src="media/render-colours/tracks/sunburst.jpg">
 
-#### Shroud
-<img src="http://i.imgur.com/HmP4kSJ.jpg">
+### Jet
+<img src="media/render-types/mouse-clicks.jpg">
+
+### Explosion
+<img src="media/render-colours/heatmaps/explosion.jpg">
+
+### Submerged
+<img src="media/render-colours/heatmaps/submerged.jpg">
+
+### Aqua
+<img src="media/render-types/keyboard-heatmap.jpg">
+
+### Nature
+<img src="media/render-colours/keyboard/nature.jpg">
+
+### Fire
+<img src="media/render-colours/keyboard/fire.jpg">
+
+### Chalk
+<img src="media/render-colours/keyboard/chalk.jpg">
 
 ## Game Genres
 #### Twin Stick
