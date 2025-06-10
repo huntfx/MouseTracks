@@ -1,5 +1,6 @@
 import math
 from collections import defaultdict
+from typing import Literal
 
 import numpy as np
 from scipy import ndimage
@@ -73,7 +74,7 @@ def gaussian_size(width: int, height: int, multiplier: float = 0.0125) -> float:
 
 
 def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: int,
-                  sampling: int, interpolation_order: int = 0) -> np.ndarray:
+                  sampling: int, interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
     """Rescale the array with the correct filtering.
 
     If sampling is set, then the downscaling is disabled.
@@ -134,7 +135,7 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
            linear: bool = False, blur: float = 0.0, contrast: float = 1.0, clipping: float = 0.0,
-           interpolation_order: int = 0) -> np.ndarray:
+           interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:

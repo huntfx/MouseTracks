@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import Iterator, Literal
 
 import numpy as np
 
@@ -333,7 +333,7 @@ class Processing(Component):
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
-                      interpolation_order: int = 0) -> np.ndarray:
+                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
