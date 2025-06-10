@@ -1574,6 +1574,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Load a legacy profile and switch to it
             case ipc.LoadLegacyProfile():
                 self._profile_names.append(message.name)
+                self._unsaved_profiles.add(message.name)
                 self._redraw_profile_combobox()
                 self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
 

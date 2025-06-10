@@ -190,19 +190,22 @@ class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
 
     def __setitem__(self, item: int | tuple[int, ...], value: int) -> None:
         """Set an array item, changing dtype if required."""
-        if value >= self.max_value:
-            for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
-                if value < max_value:
-                    self.max_value = max_value
-                    self.array = self.array.astype(dtype)
-                    break
-
+        self._check_dtype(value)
         super().__setitem__(item, value)
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         """Load data and update the internal max value."""
         super()._load_from_zip(zf, path)
         self.max_value = np.iinfo(self.dtype).max
+
+    def _check_dtype(self, value: int) -> None:
+        """Check that the dtype is valid for the given value."""
+        if value >= self.max_value:
+            for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
+                if value < max_value:
+                    self.max_value = max_value
+                    self.array = self.array.astype(dtype)
+                    break
 
 
 class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
@@ -607,26 +610,27 @@ class TrackingProfile:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
 
             # Process main tracking data
-            for resolution, values in data['Resolution'].items():
+            # Use the array shape as it does not always match the correct resolution
+            for values in data['Resolution'].values():
                 tracks = values['Tracks']
                 if np.any(tracks > 0):
-                    self.cursor_map.sequential_arrays[resolution] = TrackingIntArray(tracks)
+                    self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
 
                 speed = values['Speed']
                 if np.any(speed > 0):
-                    self.cursor_map.speed_arrays[resolution] = TrackingIntArray(speed)
+                    self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
 
                 single_clicks = values['Clicks']['Single']
                 for i, mb in enumerate(('Left', 'Middle', 'Right')):
                     array = single_clicks[mb]
                     if np.any(array > 0):
-                        self.mouse_single_clicks[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
+                        self.mouse_single_clicks[CLICK_CODES[i]][array.shape[::-1]] = TrackingIntArray(array)
 
                 double_clicks = values['Clicks']['Double']
                 for i, mb in enumerate(('Left', 'Middle', 'Right')):
                     array = double_clicks[mb]
                     if np.any(array > 0):
-                        self.mouse_double_clicks[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
+                        self.mouse_double_clicks[CLICK_CODES[i]][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
         self.created = int(data['Time']['Created'])
@@ -650,6 +654,12 @@ class TrackingProfile:
             self.button_presses[0][keycode] = count
         for keycode, count in data['Gamepad']['All']['Buttons']['Held'].items():
             self.button_held[0][keycode] = count
+
+        # Simple way to get the density array populated
+        for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
+            self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
+
+        self.is_modified = True
 
 
 class TrackingProfileLoader(dict[str, TrackingProfile]):
