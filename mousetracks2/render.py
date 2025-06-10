@@ -72,7 +72,8 @@ def gaussian_size(width: int, height: int, multiplier: float = 0.0125) -> float:
     return min(width, height) * multiplier
 
 
-def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: int, sampling: int) -> np.ndarray:
+def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: int,
+                  sampling: int, interpolation_order: int = 0) -> np.ndarray:
     """Rescale the array with the correct filtering.
 
     If sampling is set, then the downscaling is disabled.
@@ -87,7 +88,7 @@ def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: 
     # Upscale without blurring
     if sampling:
         zoom_factor = (target_height / input_height, target_width / input_width)
-        return ndimage.zoom(array, zoom_factor, order=0)
+        return ndimage.zoom(array, zoom_factor, order=interpolation_order)
 
     # Downscale without losing detail (credit to ChatGPT)
     block_height = input_height / target_height
@@ -132,7 +133,8 @@ def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.nd
 
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
-           linear: bool = False, blur: float = 0.0, contrast: float = 1.0, clipping: float = 0.0) -> np.ndarray:
+           linear: bool = False, blur: float = 0.0, contrast: float = 1.0, clipping: float = 0.0,
+           interpolation_order: int = 0) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -159,6 +161,9 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         clipping: Clip the upper range to a percentage.
             This can be used on a heatmap if there's a single hotspot
             dominating the image.
+        interpolation_order: The order of interpolation for upscaling.
+            Recommended to leave at 0, otherwise the arrays will be
+            interpolated before the colours are mapped.
     """
     # Calculate width / height
     all_arrays = []
@@ -176,7 +181,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     combined_arrays: dict[tuple[int, int], np.ndarray] = {}
     for pos, arrays in positional_arrays.items():
         if arrays:
-            rescaled = [array_rescale(array, scale_width, scale_height, sampling) for array in arrays]
+            rescaled = [array_rescale(array, scale_width, scale_height, sampling, interpolation_order) for array in arrays]
             combined_arrays[pos] = np.maximum.reduce(rescaled)
         else:
             combined_arrays[pos] = np.zeros([scale_height, scale_width], dtype=np.uint8)

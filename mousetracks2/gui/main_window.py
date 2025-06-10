@@ -287,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.enable_custom_width.stateChanged.connect(self.custom_width_toggle)
         self.ui.enable_custom_height.stateChanged.connect(self.custom_height_toggle)
         self.ui.thumbnail_sampling.valueChanged.connect(self.sampling_preview_changed)
+        self.ui.interpolation_order.valueChanged.connect(self.interpolation_order_changed)
         self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
@@ -983,6 +984,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if state == QtCore.Qt.CheckState.Unchecked.value:
             self.ui.custom_height.setValue(self.ui.thumbnail.size().height())
 
+    @QtCore.Slot(int)
+    def interpolation_order_changed(self, value: int) -> None:
+        """Update the render when the interpolation order changes."""
+        self.request_thumbnail()
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
         """Switch to the current profile when auto switch is checked."""
@@ -1102,7 +1108,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                    show_right_clicks=self.ui.show_right_clicks.isChecked(),
                                                    show_count=self.ui.show_count.isChecked(),
-                                                   show_time=self.ui.show_time.isChecked()))
+                                                   show_time=self.ui.show_time.isChecked(),
+                                                   interpolation_order=self.ui.interpolation_order.value()))
         return True
 
     @QtCore.Slot(QtCore.QSize)
@@ -1183,7 +1190,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                        show_right_clicks=self.ui.show_right_clicks.isChecked(),
                                                        show_count=self.ui.show_count.isChecked(),
-                                                       show_time=self.ui.show_time.isChecked()))
+                                                       show_time=self.ui.show_time.isChecked(),
+                                                       interpolation_order=self.ui.interpolation_order.value()))
 
     def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -2227,6 +2235,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.blur.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.blur].setVisible(show_advanced and not is_keyboard)
         self.ui.linear.setVisible(show_advanced and not is_keyboard)
+        self.ui.interpolation_order.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.interpolation_order].setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
 

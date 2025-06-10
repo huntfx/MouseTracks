@@ -332,7 +332,8 @@ class Processing(Component):
                       width: int | None, height: int | None, colour_map: str, sampling: int = 1,
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False,
-                      left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True) -> np.ndarray:
+                      left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
+                      interpolation_order: int = 0) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
@@ -352,7 +353,8 @@ class Processing(Component):
         try:
             image = render(colour_map, positional_arrays, width, height, sampling,
                            lock_aspect=lock_aspect, linear=linear,
-                           blur=blur, contrast=contrast, clipping=clipping)
+                           blur=blur, contrast=contrast, clipping=clipping,
+                           interpolation_order=interpolation_order)
         except EmptyRenderError:
             image = np.ndarray([0, 0, 3])
 
@@ -498,7 +500,8 @@ class Processing(Component):
                                                blur=message.blur, linear=message.linear,
                                                left_clicks=message.show_left_clicks,
                                                middle_clicks=message.show_middle_clicks,
-                                               right_clicks=message.show_right_clicks)
+                                               right_clicks=message.show_right_clicks,
+                                               interpolation_order=message.interpolation_order)
                 self.send_data(ipc.Render(image, message))
 
                 print('[Processing] Render request completed')

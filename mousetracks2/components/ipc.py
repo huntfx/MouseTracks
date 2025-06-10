@@ -223,6 +223,7 @@ class RenderRequest(Message):
     show_right_clicks: bool = True
     show_count: bool = True
     show_time: bool = False
+    interpolation_order: int = 0
 
     def __post_init__(self) -> None:
         assert self.show_count != self.show_time

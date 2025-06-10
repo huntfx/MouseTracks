@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>999</height>
+               <height>1027</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -398,8 +398,18 @@ If this is disabled, the width will be set based on the available data.</string>
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <item>
                   <layout class="QGridLayout" name="gridLayout_12">
-                   <item row="9" column="1">
-                    <widget class="QSpinBox" name="padding">
+                   <item row="1" column="1">
+                    <widget class="QCheckBox" name="linear">
+                     <property name="toolTip">
+                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
+                     </property>
+                     <property name="text">
+                      <string>Linear Mapping</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="colour_option">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                        <horstretch>0</horstretch>
@@ -407,57 +417,26 @@ If this is disabled, the width will be set based on the available data.</string>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>Adjust the padding around the render.
-
-Note that this may affect the intensity of heatmap edges.</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the colour map for the render.&lt;br/&gt;The preset maps are shown, but custom maps can be input.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Colours&lt;br/&gt;&lt;/span&gt;Preset colour names or hex values can be used.&lt;br/&gt;Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Groups&lt;br/&gt;&lt;/span&gt;A group of colours are mixed together to create the final colour.&lt;br/&gt;Combine multiple colours by writing them next to each other.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;eg. YellowPinkRed will result in a deep orange.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Transitions&lt;br/&gt;&lt;/span&gt;Separate groups with a &amp;quot;To&amp;quot; to create a transition between the two.&lt;br/&gt;eg. BlackTo&lt;span style=&quot; font-style:italic;&quot;&gt;YellowPinkRed&lt;/span&gt; will create a colour map from black to that deep orange.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Modifiers&lt;br/&gt;&lt;/span&gt;Used as prefixes to modify an individual colour.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: dark, light, transparent, translucent, opaque&lt;br/&gt;eg. LightYellowOrange will combine orange with light yellow.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Duplicates&lt;br/&gt;&lt;/span&gt;Multiply the effect of the next word.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: single, double, triple, quadruple, ...&lt;br/&gt;eg. TripleDarkRed is red with the dark modifier applied 3 times&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Examples&lt;br/&gt;&lt;/span&gt;The default &lt;span style=&quot; font-style:italic;&quot;&gt;Ice&lt;/span&gt; colour map is defined as &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite&lt;/span&gt;.&lt;br/&gt;The &lt;span style=&quot; font-style:italic;&quot;&gt;Citrus&lt;/span&gt; map is &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkDarkGreyToDarkGreenToYellow&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
-                     <property name="suffix">
-                      <string>px</string>
+                     <property name="editable">
+                      <bool>true</bool>
                      </property>
-                     <property name="maximum">
-                      <number>4096</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>8</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="11" column="0">
-                    <widget class="QLabel" name="label_18">
-                     <property name="toolTip">
-                      <string>!inherit blur</string>
-                     </property>
-                     <property name="text">
-                      <string>Blur:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>blur</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="9" column="0">
-                    <widget class="QLabel" name="label_16">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit padding</string>
-                     </property>
-                     <property name="text">
-                      <string>Padding:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>padding</cstring>
-                     </property>
+                     <item>
+                      <property name="text">
+                       <string>Default</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Citrus</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Sunburst</string>
+                      </property>
+                     </item>
                     </widget>
                    </item>
                    <item row="11" column="1">
@@ -481,6 +460,29 @@ This is primarily designed for use with heatmaps.</string>
                      </property>
                     </widget>
                    </item>
+                   <item row="13" column="1">
+                    <widget class="QSpinBox" name="thumbnail_sampling">
+                     <property name="toolTip">
+                      <string>Set the level of sampling used for the preview render.
+
+The default behaviour is a sample level of 0, which is optimised for
+low resolution previews, but is not representative of the final render.
+
+A sample level of 1 or higher will match the output render. Lower
+sample levels will be aliased however, and higher sample levels
+require more processing.</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>0</number>
+                     </property>
+                    </widget>
+                   </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_24">
                      <property name="toolTip">
@@ -494,6 +496,30 @@ This is primarily designed for use with heatmaps.</string>
                      </property>
                      <property name="buddy">
                       <cstring>colour_option</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="9" column="1">
+                    <widget class="QSpinBox" name="padding">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Adjust the padding around the render.
+
+Note that this may affect the intensity of heatmap edges.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>px</string>
+                     </property>
+                     <property name="maximum">
+                      <number>4096</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
                      </property>
                     </widget>
                    </item>
@@ -546,6 +572,28 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      </property>
                     </widget>
                    </item>
+                   <item row="9" column="0">
+                    <widget class="QLabel" name="label_16">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>!inherit padding</string>
+                     </property>
+                     <property name="text">
+                      <string>Padding:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>padding</cstring>
+                     </property>
+                    </widget>
+                   </item>
                    <item row="7" column="0">
                     <widget class="QLabel" name="contrast_label">
                      <property name="toolTip">
@@ -559,38 +607,6 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      </property>
                      <property name="buddy">
                       <cstring>contrast</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QCheckBox" name="linear">
-                     <property name="toolTip">
-                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
-                     </property>
-                     <property name="text">
-                      <string>Linear Mapping</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="12" column="0">
-                    <widget class="QLabel" name="sampling_label">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit sampling</string>
-                     </property>
-                     <property name="text">
-                      <string>Sampling (Render):</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>sampling</cstring>
                      </property>
                     </widget>
                    </item>
@@ -623,35 +639,26 @@ get thicker at lower resolutions.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="colour_option">
+                   <item row="12" column="0">
+                    <widget class="QLabel" name="sampling_label">
                      <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                        <horstretch>0</horstretch>
                        <verstretch>0</verstretch>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the colour map for the render.&lt;br/&gt;The preset maps are shown, but custom maps can be input.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Colours&lt;br/&gt;&lt;/span&gt;Preset colour names or hex values can be used.&lt;br/&gt;Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Groups&lt;br/&gt;&lt;/span&gt;A group of colours are mixed together to create the final colour.&lt;br/&gt;Combine multiple colours by writing them next to each other.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;eg. YellowPinkRed will result in a deep orange.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Transitions&lt;br/&gt;&lt;/span&gt;Separate groups with a &amp;quot;To&amp;quot; to create a transition between the two.&lt;br/&gt;eg. BlackTo&lt;span style=&quot; font-style:italic;&quot;&gt;YellowPinkRed&lt;/span&gt; will create a colour map from black to that deep orange.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Modifiers&lt;br/&gt;&lt;/span&gt;Used as prefixes to modify an individual colour.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: dark, light, transparent, translucent, opaque&lt;br/&gt;eg. LightYellowOrange will combine orange with light yellow.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Duplicates&lt;br/&gt;&lt;/span&gt;Multiply the effect of the next word.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: single, double, triple, quadruple, ...&lt;br/&gt;eg. TripleDarkRed is red with the dark modifier applied 3 times&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Examples&lt;br/&gt;&lt;/span&gt;The default &lt;span style=&quot; font-style:italic;&quot;&gt;Ice&lt;/span&gt; colour map is defined as &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite&lt;/span&gt;.&lt;br/&gt;The &lt;span style=&quot; font-style:italic;&quot;&gt;Citrus&lt;/span&gt; map is &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkDarkGreyToDarkGreenToYellow&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      <string>!inherit sampling</string>
                      </property>
-                     <property name="editable">
-                      <bool>true</bool>
+                     <property name="text">
+                      <string>Sampling (Render):</string>
                      </property>
-                     <item>
-                      <property name="text">
-                       <string>Default</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>Citrus</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>Sunburst</string>
-                      </property>
-                     </item>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>sampling</cstring>
+                     </property>
                     </widget>
                    </item>
                    <item row="10" column="0">
@@ -667,6 +674,22 @@ get thicker at lower resolutions.</string>
                      </property>
                      <property name="buddy">
                       <cstring>clipping</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="11" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="toolTip">
+                      <string>!inherit blur</string>
+                     </property>
+                     <property name="text">
+                      <string>Blur:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>blur</cstring>
                      </property>
                     </widget>
                    </item>
@@ -686,26 +709,32 @@ get thicker at lower resolutions.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="13" column="1">
-                    <widget class="QSpinBox" name="thumbnail_sampling">
+                   <item row="14" column="0">
+                    <widget class="QLabel" name="label_31">
                      <property name="toolTip">
-                      <string>Set the level of sampling used for the preview render.
-
-The default behaviour is a sample level of 0, which is optimised for
-low resolution previews, but is not representative of the final render.
-
-A sample level of 1 or higher will match the output render. Lower
-sample levels will be aliased however, and higher sample levels
-require more processing.</string>
+                      <string>!inherit interpolation_order</string>
                      </property>
-                     <property name="minimum">
-                      <number>0</number>
+                     <property name="text">
+                      <string>Interpolation:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>interpolation_order</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="14" column="1">
+                    <widget class="QSpinBox" name="interpolation_order">
+                     <property name="toolTip">
+                      <string>Set the order of the spline interpolation to use when upscaling arrays.
+Any values other than 0 will cause inaccurate colour mappings.
+
+Preview Sampling must be greater than 0 to see the changes.</string>
                      </property>
                      <property name="maximum">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>0</number>
+                      <number>5</number>
                      </property>
                     </widget>
                    </item>
