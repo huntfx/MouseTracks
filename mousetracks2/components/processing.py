@@ -14,13 +14,13 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
-from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename, santise_profile_name
 from ..legacy import keyboard
 from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
-from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE
+from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError
 
 
@@ -374,15 +374,34 @@ class Processing(Component):
         # Convert back to array to send to GUI
         return np.asarray(image)
 
+    def _get_tick_diff(self, profile_name: str) -> int:
+        """Get the difference between elapsed ticks and recorded ticks.
+
+        This should always return a positive integer, but a check is
+        required as it's quite finicky and easy to break with updates.
+        """
+        profile = self.all_profiles[profile_name]
+        tick_diff = profile.elapsed - (profile.active + profile.inactive)
+        if tick_diff < 0:
+            raise RuntimeError(f'unexpected tick difference, should be a positive number, got {tick_diff} '
+                               f'(elapsed: {profile.elapsed}, active: {profile.active}, inactive: {profile.inactive})')
+        return tick_diff
+
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.active += ticks
         profile.daily_ticks[self.profile_age_days, 1] += ticks
 
+        if DEBUG:
+            self._get_tick_diff(profile_name)
+
     def _record_inactive_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.inactive += ticks
         profile.daily_ticks[self.profile_age_days, 2] += ticks
+
+        if DEBUG:
+            self._get_tick_diff(profile_name)
 
     def _export_stats(self, message: ipc.ExportStats) -> None:
         """Export a stats CSV file."""
@@ -409,7 +428,6 @@ class Processing(Component):
 
         self.send_data(ipc.ExportStatsSuccessful(message))
 
-
     def _save(self, profile_name: str) -> bool:
         """Save a profile to disk.
         See `ipc.SaveReady` for information on why the `inactivity`
@@ -425,12 +443,7 @@ class Processing(Component):
         # temporarily add the current data to the profile
         # This is the same logic in the GUI
         inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
-        tick_diff = profile.elapsed - (profile.active + profile.inactive)
-        # There's a bug where tick_diff is ending up as -1 and causing an error
-        # The cause is not known, so just check for it
-        if tick_diff < 0:
-            raise RuntimeError(f'unexpected tick difference, should be a positive number, got {tick_diff} '
-                               f'(elapsed: {profile.elapsed}, active: {profile.active}, inactive: {profile.inactive})')
+        tick_diff = self._get_tick_diff(profile_name)
         if tick_diff > inactivity_threshold:
             self._record_inactive_tick(profile_name, tick_diff)
         elif tick_diff:
@@ -631,7 +644,7 @@ class Processing(Component):
                     if message.profile_name in self.all_profiles:
                         profile_names.append(message.profile_name)
                 else:
-                    profile_names.extend(self.all_profiles)
+                    profile_names.extend(profile.name for profile in self.all_profiles.values())
 
                 for profile_name in profile_names:
                     profile = self.all_profiles[profile_name]

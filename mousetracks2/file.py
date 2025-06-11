@@ -693,16 +693,23 @@ class TrackingProfileLoader(MutableMapping):
     def __len__(self) -> int:
         return len(self._profiles)
 
+    def __contains__(self, key: Any) -> bool:
+        if not isinstance(key, str):
+            return False
+        sanitised = santise_profile_name(key)
+        return sanitised in self._profiles
+
     def _load_or_create_profile(self, profile_name: str) -> TrackingProfile:
         """Load in any missing data or create a new profile.
         This is in the place of `__missing__`, as the profile name gets
         sanitised before it reaches that point.
         """
         filename = get_filename(profile_name)
+        sanitised = santise_profile_name(profile_name)
         if os.path.exists(filename):
-            profile = self._profiles[profile_name] = TrackingProfile.load(filename)
+            profile = self._profiles[sanitised] = TrackingProfile.load(filename)
         else:
-            profile = self._profiles[profile_name] = TrackingProfile()
+            profile = self._profiles[sanitised] = TrackingProfile()
         self._evict(keep_loaded=santise_profile_name(profile_name))
 
         # Update the data
