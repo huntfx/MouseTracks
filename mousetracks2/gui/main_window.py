@@ -177,7 +177,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_context_menu.menuAction().setVisible(False)
         self.ui.prefs_autostart.setChecked(check_autostart())
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
-        self.ui.prefs_console.setChecked(not IS_EXE)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
@@ -1564,6 +1563,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)
+                self.ui.prefs_console.setChecked(False)
 
             case ipc.CloseSplashScreen():
                 self.close_splash_screen.emit()

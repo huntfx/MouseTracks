@@ -7,11 +7,14 @@ Components:
     - cli
 """
 
+from __future__ import annotations
+
 import sys
 import time
 import traceback
 import multiprocessing
 import queue
+from typing import TYPE_CHECKING
 
 from . import app_detection, gui, ipc, processing, tracking
 from ..gui.splash import SplashScreen
@@ -19,6 +22,9 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
+
+if TYPE_CHECKING:
+    from ..utils.system.win32 import WindowHandle
 
 
 class Hub:
@@ -37,6 +43,11 @@ class Hub:
         self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
         self._create_tracking_processes()
+
+        # Disable show/hide if console is already hidden
+        handle = self._get_console_handle()
+        if handle is None or not handle.visible or not handle.pid or not handle.title:
+            self._q_main.put(ipc.InvalidConsole())
 
     def start_tracking(self) -> None:
         """Start the tracking.
@@ -206,18 +217,22 @@ class Hub:
         if message.target & ipc.Target.AppDetection:
             self._q_app_detection.put(message)
 
+    def _get_console_handle(self) -> WindowHandle | None:
+        """Get the handle to the console."""
+        if sys.platform == 'win32':
+            from ..utils.system.win32 import WindowHandle, get_window_handle
+            return WindowHandle(get_window_handle(console=True))
+        return None
+
     def _toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
-        if sys.platform != 'win32':
-            return
-
-        from ..utils.system.win32 import WindowHandle, get_window_handle
-        hwnd = get_window_handle(console=True)
-        handle = WindowHandle(hwnd)
-        if handle.pid:
-            handle.show() if show else handle.hide()
-        else:
+        handle = self._get_console_handle()
+        if handle is None or not handle.pid or not handle.title:
             self._q_main.put(ipc.InvalidConsole())
+        elif show:
+            handle.show()
+        else:
+            handle.hide()
 
     def _test_components(self) -> None:
         """Check that all components are running.
