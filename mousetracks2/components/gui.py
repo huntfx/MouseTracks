@@ -83,6 +83,7 @@ class GUI(Component):
         win = MainWindow(self)
         if not should_minimise_on_start():
             win.show()
+        app.commitDataRequest.connect(win.handle_session_shutdown)
         self.receiver_worker.message_received.connect(win.process_message)
         win.exception_raised.connect(self.exception_raised)
         self.receiver_thread.start()

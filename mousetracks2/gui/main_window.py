@@ -1853,6 +1853,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
+    def handle_session_shutdown(self, manager: QtGui.QSessionManager) -> None:
+        """Force the app to close when the system is shutting down.
+        At this point, the queues are closed, so nothing more can be
+        done.
+        """
+        self.shut_down(force=True)
+        manager.release()
+
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         data.distance += calculate_distance(position, data.position)
 
