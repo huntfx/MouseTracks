@@ -515,8 +515,17 @@ class CloseSplashScreen(Message):
 
 
 @dataclass
-class LoadLegacyProfile(Message):
-    """Send a request to load an old profile."""
+class ImportProfile(Message):
+    """Send a request to import a profile."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    name: str
+    path: str
+
+
+@dataclass
+class ImportLegacyProfile(Message):
+    """Send a request to import a legacy profile."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     name: str

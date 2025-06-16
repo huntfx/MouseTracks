@@ -753,9 +753,14 @@ class Processing(Component):
                 with suppress(FileNotFoundError):
                     os.remove(get_filename(message.profile_name))
 
-            case ipc.LoadLegacyProfile():
-                self.all_profiles[message.name] = TrackingProfile(message.name)
-                self.all_profiles[message.name].import_legacy(message.path)
+            case ipc.ImportProfile():
+                profile = self.all_profiles[message.name] = TrackingProfile.load(message.path)
+                profile.is_modified = True
+
+            case ipc.ImportLegacyProfile():
+                profile = self.all_profiles[message.name] = TrackingProfile(message.name)
+                profile.import_legacy(message.path)
+                profile.is_modified = True
 
             case ipc.ExportStats():
                 self._export_stats(message)

@@ -534,10 +534,22 @@ class TrackingProfile:
 
     @classmethod
     def load(cls, path: str) -> Self:
+        """Load a profile."""
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
             profile._load_from_zip(zf)
         return profile
+
+    @classmethod
+    def get_name(self, path: str) -> str | None:
+        """Get the profile name if possible.
+        If not possible, it's likely a legacy profile.
+        """
+        try:
+            with zipfile.ZipFile(path, mode='r') as zf:
+                return zf.read('metadata/name').decode('utf-8')
+        except (KeyError, zipfile.BadZipFile):
+            return None
 
     def import_legacy(self, path: str) -> None:
         """Load in data from the legacy tracking.
@@ -660,8 +672,6 @@ class TrackingProfile:
         for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
             self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
 
-        self.is_modified = True
-
 
 class TrackingProfileLoader(MutableMapping):
     """Act like a defaultdict to load data if available."""
@@ -707,9 +717,12 @@ class TrackingProfileLoader(MutableMapping):
         filename = get_filename(profile_name)
         sanitised = santise_profile_name(profile_name)
         if os.path.exists(filename):
-            profile = self._profiles[sanitised] = TrackingProfile.load(filename)
+            profile = TrackingProfile.load(filename)
+            if profile is None:
+                raise KeyError(profile_name)
         else:
-            profile = self._profiles[sanitised] = TrackingProfile()
+            profile = TrackingProfile()
+        self._profiles[sanitised] = profile
         self._evict(keep_loaded=santise_profile_name(profile_name))
 
         # Update the data

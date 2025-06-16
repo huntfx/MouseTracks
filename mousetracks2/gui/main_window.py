@@ -26,7 +26,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
-from ..file import PROFILE_DIR, get_profile_names, get_filename, santise_profile_name
+from ..file import PROFILE_DIR, get_profile_names, get_filename, santise_profile_name, TrackingProfile
 from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
@@ -317,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
         self.ui.prefs_track_network.triggered.connect(self.set_network_tracking_enabled)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
-        self.ui.file_import.triggered.connect(self.import_legacy_profile)
+        self.ui.file_import.triggered.connect(self.import_profile)
         self.ui.export_mouse_stats.triggered.connect(self.export_mouse_stats)
         self.ui.export_keyboard_stats.triggered.connect(self.export_keyboard_stats)
         self.ui.export_gamepad_stats.triggered.connect(self.export_gamepad_stats)
@@ -1569,7 +1569,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.close_splash_screen.emit()
 
             # Load a legacy profile and switch to it
-            case ipc.LoadLegacyProfile():
+            case ipc.ImportProfile() | ipc.ImportLegacyProfile():
                 sanitised = santise_profile_name(message.name)
                 self._profile_names[sanitised] = message.name
                 self._unsaved_profiles.add(sanitised)
@@ -2268,48 +2268,67 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
 
     @QtCore.Slot()
-    def import_legacy_profile(self) -> None:
-        """Prompt the user to import a legacy profile.
+    def import_profile(self) -> None:
+        """Prompt the user to import a profile.
+        Legacy profiles are supported.
         A check is done to avoid name clashes.
         """
-         # Get the default legacy location if available
+        # Get the default legacy location if available
         documents_path = _get_docs_folder()
         default_dir = documents_path / 'Mouse Tracks' / 'Data'
         if not default_dir.exists():
-            default_dir = documents_path
+            if PROFILE_DIR.exists():
+                default_dir = PROFILE_DIR
+            else:
+                default_dir = documents_path
 
         # Select the profile
-        path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
+        path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Profile',
                                                              str(default_dir),
                                                              'MouseTracks Profile (*.mtk)')
         if not path:
             return
 
-        # Ask for the profile name
-        filename = QtCore.QFileInfo(path).baseName()
+        profile_name = TrackingProfile.get_name(path)
+        is_legacy = profile_name is None
+
         while True:
-            name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
-                                                          QtWidgets.QLineEdit.EchoMode.Normal, filename)
-            if not accept:
-                return
+            # Since legacy profiles don't store names, ask the user
+            if is_legacy:
+                filename = QtCore.QFileInfo(path).baseName()
+                profile_name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
+                                                                      QtWidgets.QLineEdit.EchoMode.Normal, filename)
+                if not accept:
+                    return
+                if not profile_name.strip():
+                    profile_name = filename
+            elif TYPE_CHECKING:
+                assert isinstance(profile_name, str)
 
             # Check if the profile already exists
             if not PROFILE_DIR.exists():
                 break
-            name = name.strip() or filename
-            if os.path.basename(get_filename(name)) not in os.listdir(PROFILE_DIR):
+            if os.path.basename(get_filename(profile_name)) not in os.listdir(PROFILE_DIR):
                 break
 
             # Show a warning
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
             msg.setWindowTitle('Error')
-            msg.setText('This profile already exists.\n\n'
-                        'To avoid accidental overwrites, please delete the existing profile or choose a new name.')
+            msg.setText('This profile already exists.')
+            if is_legacy:
+                msg.setText(f'{msg.text()}\n\nTo avoid accidental overwrites, '
+                            'please delete the existing profile or choose a new name.')
             msg.exec()
 
+            if not is_legacy:
+                return
+
         # Send the request
-        self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))
+        if is_legacy:
+            self.component.send_data(ipc.ImportLegacyProfile(profile_name, path))
+        else:
+            self.component.send_data(ipc.ImportProfile(profile_name, path))
 
     @QtCore.Slot()
     def export_mouse_stats(self) -> None:
