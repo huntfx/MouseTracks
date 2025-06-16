@@ -1125,10 +1125,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def thumbnail_click(self, state: bool) -> None:
         """Handle what to do when the thumbnail is clicked."""
         if state:
-            self.notify(f'{self.windowTitle()} has resumed tracking.')
             self.start_tracking()
         else:
-            self.notify(f'{self.windowTitle()} has paused tracking.')
             self.pause_tracking()
 
     def request_render(self) -> None:
@@ -1589,6 +1587,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the tracking."""
+        self.notify(f'{self.windowTitle()} has resumed tracking.')
         self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
         self.component.send_data(ipc.StartTracking())
         self.ui.save.setEnabled(True)
@@ -1598,6 +1597,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def pause_tracking(self) -> None:
         """Pause/unpause the tracking."""
+        self.notify(f'{self.windowTitle()} has paused tracking.')
         self.component.send_data(ipc.PauseTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)
