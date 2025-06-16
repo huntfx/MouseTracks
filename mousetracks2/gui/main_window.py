@@ -154,6 +154,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._force_close = False
         self._waiting_on_save = False
         self._last_save_message: ipc.SaveComplete | None
+        self._resolution_options: dict[tuple[int, int], bool] = {}
         self.state = ipc.TrackingState.Paused
 
         # Set default render values
@@ -624,9 +625,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._resolutions = resolutions
 
         # Delete all existing items in the layout
-        layout = self.ui.profile_resolutions.layout()
+        layout = self.ui.profile_resolutions
         while layout.count():
-            item = self.ui.profile_resolutions.layout().takeAt(0)
+            item = layout.takeAt(0)
             item.widget().deleteLater()
 
         # Populate with new widgets
@@ -643,6 +644,7 @@ class MainWindow(QtWidgets.QMainWindow):
                              f'Raw value: {count}')
             layout.addWidget(checkbox, row, 0)
             layout.addWidget(label, row, 1)
+        self._save_resolution_options()
 
     @QtCore.Slot(bool)
     def resolution_toggled(self, value: bool) -> None:
@@ -653,6 +655,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
         self.mark_profiles_unsaved(profile)
         self.request_thumbnail()
+        self._save_resolution_options()
+
+    def _save_resolution_options(self) -> None:
+        """Save the currently chosen resolution options."""
+        self._resolution_options.clear()
+        for item in map(self.ui.profile_resolutions.itemAt, range(self.ui.profile_resolutions.count())):
+            if isinstance(checkbox := item.widget(), QtWidgets.QCheckBox):
+                width, height = map(int, checkbox.text().split('x'))
+                self._resolution_options[(width, height)] = checkbox.isChecked()
 
     @QtCore.Slot()
     def multi_monitor_change(self) -> None:
@@ -1905,6 +1916,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 if result is None:
                     continue
                 current_monitor, pixel = result
+
+            # Avoid drawing if resolution option isn't ticked
+            if not self._resolution_options.get(current_monitor, True):
+                continue
+
             width_multiplier = (size.width() - 1) / current_monitor[0]
             height_multiplier = (size.height() - 1) / current_monitor[1]
 
