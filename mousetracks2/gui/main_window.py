@@ -2313,8 +2313,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Show a warning
             msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-            msg.setWindowTitle('Error')
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+            msg.setWindowTitle('Warning')
             msg.setText('This profile already exists.')
             if is_legacy:
                 msg.setText(f'{msg.text()}\n\nTo avoid accidental overwrites, '
