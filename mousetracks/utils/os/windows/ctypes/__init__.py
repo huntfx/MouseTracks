@@ -107,8 +107,14 @@ def _get_monitors():
         return 1
 
     cbfunc = CBFUNC(cb)
-    temp = ctypes.windll.user32.EnumDisplayMonitors(0, 0, cbfunc, 0)
-  
+    try:
+        ctypes.windll.user32.EnumDisplayMonitors(0, 0, cbfunc, 0)
+
+    # This only happens when running under MouseTracks 2
+    # as EnumDisplayMonitors is given different argtypes
+    except ctypes.ArgumentError:
+        return None
+
     return retval
 
 
@@ -118,6 +124,8 @@ def _monitor_areas():
     """
     retval = []
     monitors = _get_monitors()
+    if not monitors:
+        return []
     for hMonitor, extents in monitors:
         data = [hMonitor]
         mi = _MONITORINFO()
