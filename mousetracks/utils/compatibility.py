@@ -48,13 +48,9 @@ class PythonVersion(object):
         try:
             v_num = int(value)
         except ValueError:
-            try:
-                v_num = float(value)
-            except ValueError:
-                return str(self), value
             # Compare as tuple since otherwise 3.2 > 3.11
-            a = [int(x) for x in str(float(self)).split('.')]
-            b = [int(x) for x in str(v_num).split('.')]
+            a = [int(x) for x in str(self).split('.')]
+            b = [int(x) for x in value.split('.')]
             return a, b
         return int(self), v_num
     
