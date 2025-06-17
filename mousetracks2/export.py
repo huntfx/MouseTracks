@@ -53,7 +53,7 @@ class Export:
                 f.write(','.join(map(str, data)))
 
     def _mouse_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Button', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Name', 'Press Count', 'Press Time (seconds)'
         for keycode in MOUSE_CODES:
             presses = self.profile.key_presses[keycode]
             held = round(self.profile.key_held[keycode] / UPDATES_PER_SECOND, 2)
@@ -70,7 +70,7 @@ class Export:
                 f.write(','.join(map(str, data)))
 
     def _keyboard_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Key', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Key', 'Press Count', 'Press Time (seconds)'
         for keycode in KEYBOARD_CODES:
             presses = self.profile.key_presses[keycode]
             held = round(self.profile.key_held[keycode] / UPDATES_PER_SECOND, 2)
@@ -87,7 +87,7 @@ class Export:
 
     def _network_stats(self) -> Iterator[tuple[Any, ...]]:
         """Iterate over the data for the network stats."""
-        yield 'Name', 'MAC', 'Download (bytes)', 'Upload (bytes)', 'Total (bytes)'
+        yield 'Name', 'MAC Address', 'Download (bytes)', 'Upload (bytes)', 'Total (bytes)'
         totals = {mac_address: self.profile.data_download[mac_address]
                                + self.profile.data_upload[mac_address]
                   for mac_address in self.profile.data_interfaces}
@@ -105,19 +105,21 @@ class Export:
                 f.write(','.join(map(str, data)))
 
     def _gamepad_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Name', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Name', 'Press Count', 'Press Time (seconds)'
         presses: dict[int, int] = defaultdict(int)
         held: dict[int, int] = defaultdict(int)
+        gamepad_codes = {int(math.log2(int(keycode))): str(keycode)
+                         for keycode in GAMEPAD_CODES}
 
-        for keycode in GAMEPAD_CODES:
+        for keycode in gamepad_codes:
             for data in self.profile.button_presses.values():
-                presses[int(keycode)] += data[int(math.log2(int(keycode)))]
+                presses[keycode] += data[keycode]
             for data in self.profile.button_held.values():
-                held[int(keycode)] += data[int(math.log2(int(keycode)))]
+                held[keycode] += data[keycode]
 
-        for keycode in GAMEPAD_CODES:
+        for keycode, name in sorted(gamepad_codes.items()):
             if presses[keycode] or held[keycode]:
-                yield (int(keycode), str(keycode), presses[keycode],
+                yield (keycode, name, presses[keycode],
                        round(held[keycode] / UPDATES_PER_SECOND, 2))
 
     def gamepad_stats(self, path: str | os.PathLike) -> None:
