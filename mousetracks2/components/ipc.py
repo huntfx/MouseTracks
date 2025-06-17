@@ -337,7 +337,8 @@ class Load(Message):
 @dataclass
 class ProfileDataRequest(Message):
     target: int = field(default=Target.Processing, init=False)
-    profile_name: str | None = field(default=None)
+    sanitised_name: str
+    profile_name: str
 
 
 @dataclass

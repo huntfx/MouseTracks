@@ -26,7 +26,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
-from ..file import PROFILE_DIR, get_profile_names, get_filename, santise_profile_name, TrackingProfile
+from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
@@ -104,7 +104,6 @@ class RenderOption(Generic[T]):
                 raise NotImplementedError(f'Unsupported render type: {render_type}')
 
 
-
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -143,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
         self._delete_network_pressed = False
-        self._profile_names = {santise_profile_name(name): name for name in get_profile_names()}
+        self._profile_names = dict(get_profile_names())
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self._is_loading_profile = 0
@@ -650,10 +649,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def resolution_toggled(self, value: bool) -> None:
         """Toggle rendering of a particular resolution in a profile."""
         checkbox = cast(QtWidgets.QCheckBox, self.sender())
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
         width, height = map(int, checkbox.text().split('x'))
-        self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
-        self.mark_profiles_unsaved(profile)
+        self.component.send_data(ipc.ToggleProfileResolution(sanitised_profile_name, (width, height), value))
+        self.mark_profiles_unsaved(profile_name)
         self.request_thumbnail()
         self._save_resolution_options()
 
@@ -670,16 +671,20 @@ class MainWindow(QtWidgets.QMainWindow):
         """Change the multiple monitor option."""
         if not self.ui.opts_monitor.isChecked():
             return
-        profile = self.ui.current_profile.currentData()
-        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked()))
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked()))
 
     @QtCore.Slot(bool)
     def multi_monitor_override_toggle(self, checked: bool) -> None:
         """Enable or disable the multi monitor override."""
         if not self.ui.opts_monitor.isEnabled():
             return
-        profile = self.ui.current_profile.currentData()
-        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked() if checked else None))
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked() if checked else None))
 
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
@@ -761,7 +766,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._current_profile = profile
 
         # Update the profile order
-        sanitised = santise_profile_name(profile.name)
+        sanitised = sanitise_profile_name(profile.name)
         if sanitised in self._profile_names:
             del self._profile_names[sanitised]
         self._profile_names = {sanitised: profile.name} | self._profile_names
@@ -776,21 +781,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = True
 
         # Grab the currently selected profile
-        current = self.ui.current_profile.currentData()
+        current_profile = self.ui.current_profile.currentData()
 
         # Add the profiles
         self.ui.current_profile.clear()
-        for sanitised, profile_name in self._profile_names.items():
-            if sanitised in self._unsaved_profiles:
-                self.ui.current_profile.addItem(f'*{profile_name}', profile_name)
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if sanitised_profile_name in self._unsaved_profiles:
+                self.ui.current_profile.addItem(f'*{profile_name}', sanitised_profile_name)
             else:
-                self.ui.current_profile.addItem(profile_name, profile_name)
+                self.ui.current_profile.addItem(profile_name, sanitised_profile_name)
 
         # Change back to the previously selected profile
         if self.ui.auto_switch_profile.isChecked():
             self.ui.current_profile.setCurrentIndex(0)
         else:
-            idx = self.ui.current_profile.findData(current)
+            idx = self.ui.current_profile.findData(current_profile)
             if idx != -1:
                 self.ui.current_profile.setCurrentIndex(idx)
 
@@ -811,7 +816,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.save_profile_request_sent:
             return
         self.save_profile_request_sent = True
-        self.component.send_data(ipc.Save(self.ui.current_profile.currentData()))
+
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is not None:
+            self.component.send_data(ipc.Save(sanitised_profile_name))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_autosave(self, state: QtCore.Qt.CheckState) -> None:
@@ -821,17 +829,18 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        profile_name = self.ui.current_profile.itemData(idx)
+        sanitised_profile_name, profile_name = self._get_profile_data(idx)
 
-        if not self._redrawing_profiles:
-            self.request_profile_data(profile_name)
+        if sanitised_profile_name is not None and not self._redrawing_profiles:
+            self.request_profile_data(sanitised_profile_name)
             if idx:
                 self.ui.auto_switch_profile.setChecked(False)
             self.set_profile_modified_text()
 
-    def request_profile_data(self, profile_name: str) -> None:
+    def request_profile_data(self, sanitised_profile_name: str) -> None:
         """Request loading profile data."""
-        self.component.send_data(ipc.ProfileDataRequest(profile_name))
+        self.component.send_data(ipc.ProfileDataRequest(sanitised_profile_name,
+                                                        self._profile_names[sanitised_profile_name]))
 
         # Pause the signals on the track options
         if not self._is_loading_profile:
@@ -846,6 +855,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._is_loading_profile += 1
         self.start_rendering_timer()
+
+    def _get_profile_data(self, idx: int | None = None) -> tuple[str, str] | tuple[None, None]:
+        """Get the selected profile name from the combobox."""
+        if idx is None:
+            sanitised_profile_name = self.ui.current_profile.currentData()
+        else:
+            sanitised_profile_name = self.ui.current_profile.itemData(idx)
+        if sanitised_profile_name is not None:
+            return sanitised_profile_name, self._profile_names[sanitised_profile_name]
+        return None, None
 
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
@@ -1073,7 +1092,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         width = self.ui.thumbnail.width()
         height = self.ui.thumbnail.height()
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return False
 
         # Account for collapsed splitters
         if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
@@ -1106,7 +1127,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.component.send_data(ipc.RenderRequest(self.render_type,
                                                    width=width, height=height, lock_aspect=lock_aspect,
-                                                   profile=profile, file_path=None,
+                                                   profile=sanitised_profile_name, file_path=None,
                                                    colour_map=self.render_colour, padding=self.padding,
                                                    sampling=self.ui.thumbnail_sampling.value(),
                                                    contrast=self.contrast, clipping=self.clipping,
@@ -1172,8 +1193,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case _:
                 name = 'Data'
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         image_dir = Path.home() / 'Pictures'
         if image_dir.exists():
             image_dir /= 'MouseTracks'
@@ -1187,7 +1210,7 @@ class MainWindow(QtWidgets.QMainWindow):
             height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
             self.component.send_data(ipc.RenderRequest(self.render_type,
                                                        width=width, height=height, lock_aspect=False,
-                                                       profile=profile, file_path=file_path,
+                                                       profile=sanitised_profile_name, file_path=file_path,
                                                        colour_map=self.render_colour, sampling=self.sampling,
                                                        padding=self.padding, contrast=self.contrast,
                                                        clipping=self.clipping, blur=self.blur, linear=self.linear,
@@ -1412,7 +1435,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.current_profile = Profile(message.name, message.rects)
 
                 if self.is_live:
-                    self.request_profile_data(message.name)
+                    for sanitised_profile_name, profile_name in self._profile_names.items():
+                        if profile_name == message.name:
+                            self.request_profile_data(sanitised_profile_name)
+                            break
 
             case ipc.ApplicationFocusChanged():
                 self.ui.stat_app_exe.setText(os.path.basename(message.exe))
@@ -1579,11 +1605,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Load a legacy profile and switch to it
             case ipc.ImportProfile() | ipc.ImportLegacyProfile():
-                sanitised = santise_profile_name(message.name)
-                self._profile_names[sanitised] = message.name
-                self._unsaved_profiles.add(sanitised)
+                sanitised_profile_name = QtCore.QFileInfo(message.path).baseName()
+                self._profile_names[sanitised_profile_name] = message.name
+                self._unsaved_profiles.add(sanitised_profile_name)
                 self._redraw_profile_combobox()
-                self.ui.current_profile.setCurrentIndex(tuple(self._profile_names).index(sanitised))
+                self.ui.current_profile.setCurrentIndex(tuple(self._profile_names).index(sanitised_profile_name))
 
             case ipc.ExportStatsSuccessful():
                 msg = AutoCloseMessageBox(self)
@@ -1886,10 +1912,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def is_live(self) -> bool:
         """Determine if the visible data is live."""
-        current_profile = self.ui.current_profile.currentData()
-        if current_profile is None:
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
             return False
-        return santise_profile_name(current_profile) == santise_profile_name(self.current_profile.name)
+        return sanitised_profile_name == sanitise_profile_name(self.current_profile.name)
 
     @property
     def mouse_tracking_enabled(self) -> bool:
@@ -1969,12 +1995,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all mouse data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all mouse data for {profile_name}?\n'
                     'This involves the movement, click and scroll data.\n'
                     'It will not trigger an autosave, but it cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
@@ -1984,19 +2012,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_mouse_pressed = True
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteMouseData(profile))
-            self.mark_profiles_unsaved(profile)
+            self.component.send_data(ipc.DeleteMouseData(sanitised_profile_name))
+            self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+            self.request_profile_data(sanitised_profile_name)
 
     def delete_keyboard(self) -> None:
         """Request deletion of keyboard data for the current profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all keyboard data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all keyboard data for {profile_name}?\n'
                     'It will not trigger an autosave, but it cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
@@ -2005,19 +2035,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_keyboard_pressed = True
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteKeyboardData(profile))
-            self.mark_profiles_unsaved(profile)
+            self.component.send_data(ipc.DeleteKeyboardData(sanitised_profile_name))
+            self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+            self.request_profile_data(sanitised_profile_name)
 
     def delete_gamepad(self) -> None:
         """Request deletion of gamepad data for the current profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all gamepad data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all gamepad data for {profile_name}?\n'
                     'This involves both the buttons and the thumbstick maps.\n'
                     'It will not trigger an autosave, but it cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
@@ -2027,19 +2059,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_gamepad_pressed = True
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteGamepadData(profile))
-            self.mark_profiles_unsaved(profile)
+            self.component.send_data(ipc.DeleteGamepadData(sanitised_profile_name))
+            self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+            self.request_profile_data(sanitised_profile_name)
 
     def delete_network(self) -> None:
         """Request deletion of network data for the current profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setWindowTitle('Delete Network Data')
-        msg.setText(f'Are you sure you want to delete all upload and download data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all upload and download data for {profile_name}?\n'
                     'It will not trigger an autosave, but it cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
@@ -2048,31 +2082,32 @@ class MainWindow(QtWidgets.QMainWindow):
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self._delete_network_pressed = True
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteNetworkData(profile))
-            self.mark_profiles_unsaved(profile)
+            self.component.send_data(ipc.DeleteNetworkData(sanitised_profile_name))
+            self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+            self.request_profile_data(sanitised_profile_name)
 
     def delete_profile(self) -> None:
         """Delete the selected profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         msg.setWindowTitle('Delete Profile')
-        msg.setText(f'Are you sure you want to delete all data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all data for {profile_name}?\n'
                     'This action cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self.component.send_data(ipc.DeleteProfile(profile))
-            self.mark_profiles_saved(profile)
+            self.component.send_data(ipc.DeleteProfile(sanitised_profile_name))
+            self.mark_profiles_saved(profile_name)
 
-            sanitised = santise_profile_name(profile)
-            del self._profile_names[sanitised]
-            self._unsaved_profiles.discard(sanitised)
+            del self._profile_names[sanitised_profile_name]
+            self._unsaved_profiles.discard(sanitised_profile_name)
 
             self._redraw_profile_combobox()
             self.profile_changed(0)
@@ -2081,37 +2116,45 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_mouse.isEnabled():
             return
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
 
-        selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileMouseTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileMouseTracking(sanitised_profile_name, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_keyboard.isEnabled():
             return
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
 
-        selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileKeyboardTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileKeyboardTracking(sanitised_profile_name, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_gamepad.isEnabled():
             return
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
 
-        selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileGamepadTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileGamepadTracking(sanitised_profile_name, enable))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_network.isEnabled():
             return
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
 
-        selected_profile = self.ui.current_profile.currentData()
         enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileNetworkTracking(selected_profile, enable))
+        self.component.send_data(ipc.SetProfileNetworkTracking(sanitised_profile_name, enable))
 
     @QtCore.Slot(bool)
     def set_mouse_tracking_enabled(self, value: bool) -> None:
@@ -2139,18 +2182,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def mark_profiles_saved(self, *profile_names: str) -> None:
         """Mark profiles as saved."""
-        self._unsaved_profiles -= set(map(santise_profile_name, profile_names))
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if profile_name in profile_names:
+                self._unsaved_profiles.discard(sanitised_profile_name)
         self.set_profile_modified_text()
 
     def mark_profiles_unsaved(self, *profile_names: str) -> None:
         """Mark profiles as unsaved."""
-        self._unsaved_profiles |= set(map(santise_profile_name, profile_names))
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if profile_name in profile_names:
+                self._unsaved_profiles.add(sanitised_profile_name)
         self.set_profile_modified_text()
 
     def set_profile_modified_text(self) -> None:
         """Set the text if the profile has been modified."""
-        current_profile = self.ui.current_profile.currentData()
-        if current_profile is not None and santise_profile_name(current_profile) in self._unsaved_profiles:
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is not None and sanitised_profile_name in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
             self.ui.profile_save.setEnabled(self.state != ipc.TrackingState.Stopped)
         else:
@@ -2286,7 +2333,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def import_profile(self) -> None:
         """Prompt the user to import a profile.
-        Legacy profiles are supported.
+        Legacy profiles are supported, but will need to be given a name.
         A check is done to avoid name clashes.
         """
         # Get the default legacy location if available
@@ -2354,13 +2401,15 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Mouse Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportMouseStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
     def export_keyboard_stats(self) -> None:
@@ -2370,13 +2419,15 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Keyboard Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportKeyboardStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
     def export_gamepad_stats(self) -> None:
@@ -2386,13 +2437,15 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Gamepad Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportGamepadStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
     def export_network_stats(self) -> None:
@@ -2402,13 +2455,15 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Network Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportNetworkStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
     def export_daily_stats(self) -> None:
@@ -2418,11 +2473,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Daily Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
-
+            self.component.send_data(ipc.ExportDailyStats(sanitised_profile_name, file_path))

@@ -681,12 +681,12 @@ class TrackingProfileLoader(MutableMapping):
         self._profiles: dict[str, TrackingProfile] = {}
 
     def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
-        sanitised = santise_profile_name(profile_name)
+        sanitised = sanitise_profile_name(profile_name)
         self._profiles[sanitised] = profile
 
     def __getitem__(self, profile_name: str) -> TrackingProfile:
         """Load or get a profile."""
-        sanitised = santise_profile_name(profile_name)
+        sanitised = sanitise_profile_name(profile_name)
         try:
             return self._profiles[sanitised]
         except KeyError:
@@ -694,7 +694,7 @@ class TrackingProfileLoader(MutableMapping):
         return self._profiles[sanitised]
 
     def __delitem__(self, profile_name: str) -> None:
-        sanitised = santise_profile_name(profile_name)
+        sanitised = sanitise_profile_name(profile_name)
         del self._profiles[sanitised]
 
     def __iter__(self) -> Iterator[str]:
@@ -706,7 +706,7 @@ class TrackingProfileLoader(MutableMapping):
     def __contains__(self, key: Any) -> bool:
         if not isinstance(key, str):
             return False
-        sanitised = santise_profile_name(key)
+        sanitised = sanitise_profile_name(key)
         return sanitised in self._profiles
 
     def _load_or_create_profile(self, profile_name: str) -> TrackingProfile:
@@ -715,7 +715,7 @@ class TrackingProfileLoader(MutableMapping):
         sanitised before it reaches that point.
         """
         filename = get_filename(profile_name)
-        sanitised = santise_profile_name(profile_name)
+        sanitised = sanitise_profile_name(profile_name)
         if os.path.exists(filename):
             profile = TrackingProfile.load(filename)
             if profile is None:
@@ -723,10 +723,11 @@ class TrackingProfileLoader(MutableMapping):
         else:
             profile = TrackingProfile()
         self._profiles[sanitised] = profile
-        self._evict(keep_loaded=santise_profile_name(profile_name))
+        self._evict(keep_loaded=sanitised)
 
         # Update the data
-        profile.name = profile_name
+        if not profile.name or profile_name != sanitised:
+            profile.name = profile_name
         profile._last_accessed = time.time()
 
         # Force disabled profile config
@@ -742,7 +743,7 @@ class TrackingProfileLoader(MutableMapping):
         """Unload if too many profiles are loaded into memory at once.
         The argument to `keep_loaded` must be sanitised already.
         """
-        sanitised = santise_profile_name(keep_loaded)
+        sanitised = sanitise_profile_name(keep_loaded)
         data = ((profile.is_modified,  # Sort modified profiles first
                  profile._last_accessed,  # Sort by recently accessed
                  name, profile)
@@ -754,17 +755,17 @@ class TrackingProfileLoader(MutableMapping):
             del self._profiles[name]
 
 
-def santise_profile_name(profile_name: str) -> str:
+def sanitise_profile_name(profile_name: str) -> str:
     """Get the sanitised version of a profile name."""
     return re.sub(r'[^a-zA-Z0-9]', '', profile_name.lower())
 
 
 def get_filename(profile_name: str) -> str:
     """Get the filename for a profile."""
-    return os.path.join(PROFILE_DIR, f'{santise_profile_name(profile_name)}.{EXTENSION}')
+    return os.path.join(PROFILE_DIR, f'{sanitise_profile_name(profile_name)}.{EXTENSION}')
 
 
-def get_profile_names() -> list[str]:
+def get_profile_names() -> list[tuple[str, str]]:
     """Get all the profile_names, ordered by modified time."""
     if not os.path.exists(PROFILE_DIR):
         return []
@@ -773,6 +774,6 @@ def get_profile_names() -> list[str]:
         if os.path.splitext(file.name)[1] != f'.{EXTENSION}':
             continue
         with zipfile.ZipFile(file, 'r') as zf:
-            name = zf.read('metadata/name').decode('utf-8')
-        files.append((file.stat().st_mtime, name))
-    return [name for modified, name in sorted(files, reverse=True)]
+            profile_name = zf.read('metadata/name').decode('utf-8')
+        files.append((file.stat().st_mtime, profile_name, os.path.splitext(file.name)[0]))
+    return [(filename, profile_name) for modified, profile_name, filename in sorted(files, reverse=True)]

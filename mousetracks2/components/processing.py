@@ -14,7 +14,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
-from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename, santise_profile_name
+from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
@@ -94,9 +94,8 @@ class Processing(Component):
         # Reset the data
         self.profile.cursor_map.position = None
 
-    def _send_profile_data(self, name: str) -> None:
+    def _send_profile_data(self, profile: TrackingProfile) -> None:
         """Send all the stats for the profile."""
-        profile = self.all_profiles[name]
         profile._last_accessed = time.time()
 
         # Count total clicks
@@ -674,10 +673,10 @@ class Processing(Component):
                 if message.mac_address not in self.profile.data_interfaces:
                     self.profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
 
-            case ipc.ProfileDataRequest(profile_name=name):
-                if name is None:
-                    name = DEFAULT_PROFILE_NAME
-                self._send_profile_data(name)
+            case ipc.ProfileDataRequest():
+                profile = self.all_profiles[message.sanitised_name]
+                profile.name = message.profile_name  # Ensure the name gets updated
+                self._send_profile_data(profile)
 
             case ipc.SetProfileMouseTracking():
                 print(f'[Processing] Setting mouse tracking state on {message.profile_name}: {message.enable}')
