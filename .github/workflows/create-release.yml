@@ -103,9 +103,9 @@ jobs:
           title = f'## Release Notes ({date})'
           footer = [
             '---',
-            'For more details, please check out the [readme](README.md).',
+            'Please check out the [readme](README.md) for setup and usage instructions.',
             '',
-            'Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki/faq), '
+            'Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki), '
             ' or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can\'t find an answer.',
             '',
             '_MouseTracks is and will always remain free, but if you enjoy using it and would like to'
