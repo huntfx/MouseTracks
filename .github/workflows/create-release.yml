@@ -109,7 +109,7 @@ jobs:
             ' or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can\'t find an answer.',
             '',
             '_MouseTracks is and will always remain free, but if you enjoy using it and would like to'
-            ' [buy me a pint](https://www.paypal.me/PeterHunt999), your support would be very much appreciated!_',
+            ' [buy me a pint](https://ko-fi.com/huntfx), your support would be very much appreciated!_',
           ]
 
           print('Full commit message received by Python script:')
