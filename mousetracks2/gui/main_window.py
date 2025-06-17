@@ -770,7 +770,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if sanitised in self._profile_names:
             del self._profile_names[sanitised]
         self._profile_names = {sanitised: profile.name} | self._profile_names
-        self.mark_profiles_unsaved(sanitised)
+        self.mark_profiles_unsaved(profile.name)
         self._redraw_profile_combobox()
 
     def _redraw_profile_combobox(self) -> None:
