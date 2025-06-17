@@ -85,7 +85,7 @@ class Ui_Dialog(object):
         self.label.setText(QCoreApplication.translate("Dialog", u"<html><head/><body><p align=\"center\"><span style=\" font-size:14pt; font-weight:700;\">About MouseTracks</span></p></body></html>", None))
         self.version.setText(QCoreApplication.translate("Dialog", u"<span style=\" font-size:10pt;\">Version 2.0.0 (<a href=\"https://github.com/huntfx/MouseTracks/releases/tag/v2.0.0\">release notes</a>)</span>", None))
         self.latest.setText(QCoreApplication.translate("Dialog", u"You have the latest version.", None))
-        self.latest.setProperty(u"text_update", QCoreApplication.translate("Dialog", u"An update is available.<br/><a href=\"https://github.com/huntfx/MouseTracks/releases\">Click here</a> to visit the download page.", None))
+        self.latest.setProperty(u"text_update", QCoreApplication.translate("Dialog", u"An update is available.<br/><a href=\"https://github.com/huntfx/MouseTracks/releases/latest\">Click here</a> to visit the download page.", None))
         self.latest.setProperty(u"text_latest", QCoreApplication.translate("Dialog", u"You have the latest version.", None))
         self.close.setText(QCoreApplication.translate("Dialog", u"Close", None))
     # retranslateUi

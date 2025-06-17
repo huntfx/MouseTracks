@@ -6,7 +6,7 @@ from .config.cli import CLI
 from .version import VERSION
 
 
-RELEASES_URL = 'https://api.github.com/repos/huntfx/MouseTracks/releases'
+RELEASES_URL = 'https://api.github.com/repos/huntfx/MouseTracks/releases/latest'
 
 
 def get_latest_version() -> str:
@@ -17,13 +17,13 @@ def get_latest_version() -> str:
         return VERSION
     try:
         with urlopen(RELEASES_URL, timeout=5) as response:
-            data = json.load(response)
+            release = json.load(response)
     except (URLError, json.decoder.JSONDecodeError):
         return VERSION
-    if not data:
+    if not release:
         return VERSION
 
-    tag = data[0]['tag_name']
+    tag = release['tag_name']
     if tag is None:
         return VERSION
     return tag.lstrip('v')

@@ -1034,7 +1034,7 @@ Preview Sampling must be greater than 0 to see the changes.</string>
              <string>Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
             </property>
             <property name="tip_update" stdset="0">
-             <string>A new update is available. &lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
+             <string>A new update is available. &lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases/latest&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
             </property>
            </widget>
           </item>
