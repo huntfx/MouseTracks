@@ -765,15 +765,15 @@ def get_filename(profile_name: str) -> str:
     return os.path.join(PROFILE_DIR, f'{sanitise_profile_name(profile_name)}.{EXTENSION}')
 
 
-def get_profile_names() -> list[tuple[str, str]]:
+def get_profile_names() -> dict[str, str]:
     """Get all the profile_names, ordered by modified time."""
     if not os.path.exists(PROFILE_DIR):
-        return []
+        return {}
     files = []
     for file in os.scandir(PROFILE_DIR):
         if os.path.splitext(file.name)[1] != f'.{EXTENSION}':
             continue
-        with zipfile.ZipFile(file, 'r') as zf:
-            profile_name = zf.read('metadata/name').decode('utf-8')
-        files.append((file.stat().st_mtime, profile_name, os.path.splitext(file.name)[0]))
-    return [(filename, profile_name) for modified, profile_name, filename in sorted(files, reverse=True)]
+        profile_name = TrackingProfile.get_name(file.path)
+        if profile_name is not None:
+            files.append((file.stat().st_mtime, profile_name, os.path.splitext(file.name)[0]))
+    return {filename: profile_name for modified, profile_name, filename in sorted(files, reverse=True)}

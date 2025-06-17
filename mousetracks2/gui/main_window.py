@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._delete_keyboard_pressed = False
         self._delete_gamepad_pressed = False
         self._delete_network_pressed = False
-        self._profile_names = dict(get_profile_names())
+        self._profile_names = get_profile_names()
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self._is_loading_profile = 0
