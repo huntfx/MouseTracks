@@ -101,6 +101,16 @@ jobs:
           now = datetime.now()
           date = now.strftime(f'%b {now.day}, %Y')
           title = f'## Release Notes ({date})'
+          footer = [
+            '---',
+            'For more details, please check out the [readme](README.md).',
+            '',
+            'Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki/faq), '
+            ' or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can\'t find an answer.',
+            '',
+            '_MouseTracks is and will always remain free, but if you enjoy using it and would like to'
+            ' [buy me a pint](https://www.paypal.me/PeterHunt999), your support would be very much appreciated!_',
+          ]
 
           print('Full commit message received by Python script:')
           print('<<<<<<<<<<')
@@ -111,6 +121,8 @@ jobs:
           print('<<<<<<<<<<')
           print(title)
           print(comment)
+          for line in footer:
+            print(line)
           print('>>>>>>>>>>')
 
           delim = 'EOF_COMMIT_BODY'  # Can be any unique string
@@ -118,6 +130,8 @@ jobs:
             print(f'release_body<<{delim}', file=f)
             print(title, file=f)
             print(comment, file=f)
+            for line in footer:
+              print(line, file=f)
             print(delim, file=f)
 
       - name: Create Git Tag and Push
@@ -144,4 +158,3 @@ jobs:
           body: ${{ steps.prep_release_notes.outputs.release_body }}
           draft: false
           prerelease: false
-
