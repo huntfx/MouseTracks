@@ -532,7 +532,7 @@ Final Fantasy XIV.app: FINAL FANTASY XIV
 final_exam.exe: Final Exam
 FirefallCLient.exe: Firefall
 firefox.exe[OpenLara - Mozilla Firefox]: OpenLara
-firefox.exe[bonk.io - Official Site: Play Bonk Here! - Mozilla Firefox]: boink.io
+firefox.exe[bonk.io - Official Site: Play Bonk Here! - Mozilla Firefox]: bonk.io
 FishingPlanet.exe: Fishing Planet
 FlagAC4BFSP.exe: Assassin's Creed IV: Black Flag
 flamebreak.exe: Flamebreak
