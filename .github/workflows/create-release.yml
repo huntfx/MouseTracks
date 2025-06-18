@@ -102,14 +102,10 @@ jobs:
           date = now.strftime(f'%b {now.day}, %Y')
           title = f'## Release Notes ({date})'
           footer = [
+            '',
             '---',
             'Please check out the [readme](README.md) for setup and usage instructions.',
-            '',
-            'Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki), '
-            ' or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can\'t find an answer.',
-            '',
-            '_MouseTracks is and will always remain free, but if you enjoy using it and would like to'
-            ' [buy me a pint](https://ko-fi.com/huntfx), your support would be very much appreciated!_',
+            '_Available downloads can be found below._',
           ]
 
           print('Full commit message received by Python script:')
