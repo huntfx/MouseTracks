@@ -1197,12 +1197,19 @@ class MainWindow(QtWidgets.QMainWindow):
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
+
+        # Get the default save folder
         image_dir = Path.home() / 'Pictures'
         if image_dir.exists():
             image_dir /= 'MouseTracks'
             if not image_dir.exists():
                 image_dir.mkdir()
-        image_dir /= f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
+
+        # Generate the default image name
+        sort_key = f'{math.isqrt(self.elapsed_time // UPDATES_PER_SECOND):05}'
+        ticks_str = format_ticks(self.elapsed_time, UPDATES_PER_SECOND)
+        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
+
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
