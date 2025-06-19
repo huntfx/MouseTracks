@@ -33,7 +33,7 @@ def format_ticks(ticks: float, ups: int = UPDATES_PER_SECOND, accuracy: int = 1,
     diff = (5 if years else 4 if days else 3 if hours else 2 if minutes else 1) - length
 
     # Merge the smaller data into the minimum value
-    if diff:
+    if diff > 0:
         minutes += seconds / 60
     if diff > 1:
         hours += minutes / 60
