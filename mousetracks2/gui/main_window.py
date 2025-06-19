@@ -1612,7 +1612,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Load a legacy profile and switch to it
             case ipc.ImportProfile() | ipc.ImportLegacyProfile():
-                sanitised_profile_name = QtCore.QFileInfo(message.path).baseName()
+                sanitised_profile_name = sanitise_profile_name(message.name)
                 self._profile_names[sanitised_profile_name] = message.name
                 self._unsaved_profiles.add(sanitised_profile_name)
                 self._redraw_profile_combobox()
@@ -2359,19 +2359,19 @@ class MainWindow(QtWidgets.QMainWindow):
         if not path:
             return
 
+        is_legacy = False
         profile_name = TrackingProfile.get_name(path)
-        is_legacy = profile_name is None
+        if profile_name is None:
+            profile_name = QtCore.QFileInfo(path).baseName()
+            is_legacy = True
 
         while True:
-            # Since legacy profiles don't store names, ask the user
-            if is_legacy:
-                filename = QtCore.QFileInfo(path).baseName()
-                profile_name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
-                                                                      QtWidgets.QLineEdit.EchoMode.Normal, filename)
-                if not accept:
-                    return
-                if not profile_name.strip():
-                    profile_name = filename
+            profile_name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
+                                                                  QtWidgets.QLineEdit.EchoMode.Normal, profile_name)
+            if not accept:
+                return
+            if not profile_name.strip():
+                continue
             elif TYPE_CHECKING:
                 assert isinstance(profile_name, str)
 
@@ -2385,14 +2385,10 @@ class MainWindow(QtWidgets.QMainWindow):
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
             msg.setWindowTitle('Warning')
-            msg.setText('This profile already exists.')
-            if is_legacy:
-                msg.setText(f'{msg.text()}\n\nTo avoid accidental overwrites, '
-                            'please delete the existing profile or choose a new name.')
+            msg.setText('This profile already exists.\n\n'
+                        'To avoid accidental overwrites, '
+                        'please delete the existing profile or choose a new name.')
             msg.exec()
-
-            if not is_legacy:
-                return
 
         # Send the request
         if is_legacy:

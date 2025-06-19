@@ -754,6 +754,7 @@ class Processing(Component):
 
             case ipc.ImportProfile():
                 profile = self.all_profiles[message.name] = TrackingProfile.load(message.path)
+                profile.name = message.name
                 profile.is_modified = True
 
             case ipc.ImportLegacyProfile():
