@@ -1618,6 +1618,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._redraw_profile_combobox()
                 self.ui.current_profile.setCurrentIndex(tuple(self._profile_names).index(sanitised_profile_name))
 
+            case ipc.FailedProfileImport():
+                # Undo adding the profile
+                sanitised_profile_name = sanitise_profile_name(message.source.name)
+                del self._profile_names[sanitised_profile_name]
+                self._unsaved_profiles.discard(sanitised_profile_name)
+                self._redraw_profile_combobox()
+                self.ui.auto_switch_profile.setChecked(True)
+                self.profile_changed(self.ui.current_profile.currentIndex())
+
+                # Show error message
+                msg = QtWidgets.QMessageBox()
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+                msg.setWindowTitle('Failed Import')
+                msg.setText(f'Failed to import "{message.source.path}" as a profile.')
+                msg.exec()
+
             case ipc.ExportStatsSuccessful():
                 msg = AutoCloseMessageBox(self)
                 msg.setWindowTitle(f'Export Successful')

@@ -534,6 +534,14 @@ class ImportLegacyProfile(Message):
 
 
 @dataclass
+class FailedProfileImport(Message):
+    """Send a request to import a legacy profile."""
+
+    target: int = field(default=Target.GUI, init=False)
+    source: ImportProfile | ImportLegacyProfile
+
+
+@dataclass
 class ExportStats(Message):
     target: int = field(default=Target.Processing, init=False)
     profile: str

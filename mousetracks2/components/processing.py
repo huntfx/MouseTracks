@@ -758,9 +758,12 @@ class Processing(Component):
                 profile.is_modified = True
 
             case ipc.ImportLegacyProfile():
-                profile = self.all_profiles[message.name] = TrackingProfile(message.name)
-                profile.import_legacy(message.path)
-                profile.is_modified = True
+                profile = TrackingProfile(message.name)
+                if profile.import_legacy(message.path):
+                    profile.is_modified = True
+                    self.all_profiles[message.name] = profile
+                else:
+                    self.send_data(ipc.FailedProfileImport(message))
 
             case ipc.ExportStats():
                 self._export_stats(message)

@@ -551,7 +551,7 @@ class TrackingProfile:
         except (KeyError, zipfile.BadZipFile):
             return None
 
-    def import_legacy(self, path: str) -> None:
+    def import_legacy(self, path: str) -> bool:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -620,7 +620,11 @@ class TrackingProfile:
         # Load the data using the legacy library
         else:
             with CustomOpen(path, 'rb') as f:
-                data = upgrade_version(decode_file(f, legacy=f.zip is None))
+                try:
+                    data = upgrade_version(decode_file(f, legacy=f.zip is None))
+                except Exception as e:
+                    print(f'Error importing {path}: {e}')
+                    return False
 
             # Process main tracking data
             # Use the array shape as it does not always match the correct resolution
@@ -671,6 +675,8 @@ class TrackingProfile:
         # Simple way to get the density array populated
         for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
             self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
+
+        return True
 
 
 class TrackingProfileLoader(MutableMapping):
