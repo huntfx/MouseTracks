@@ -2379,7 +2379,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if not PROFILE_DIR.exists():
                 break
             if os.path.basename(get_filename(profile_name)) not in os.listdir(PROFILE_DIR):
-                break
+                if sanitise_profile_name(profile_name) not in self._profile_names:
+                    break
 
             # Show a warning
             msg = QtWidgets.QMessageBox()
