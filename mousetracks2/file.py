@@ -30,10 +30,6 @@ _DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
 _ScalarType_co = TypeVar('_ScalarType_co', covariant=True)
 
 
-class UnsupportedVersionError(Exception):
-    """When a file can't be loaded due to an unsupported version"""
-
-
 class TrackingArray(Generic[_DType_co, _ScalarType_co]):
     """Create a savable array with support for auto padding.
 
@@ -569,85 +565,38 @@ class TrackingProfile:
             Thumbstick data is discarded as X and Y were recorded separately
             and cannot be recombined.
         """
-        # Attempt to import the legacy libraries
-        try:
-            from mousetracks.files import CustomOpen, decode_file, upgrade_version
+        # Load the data using the legacy libraries
+        from mousetracks.files import CustomOpen, decode_file, upgrade_version
 
-        # Manually load the data
-        except ImportError:
+        with CustomOpen(path, 'rb') as f:
+            try:
+                data = upgrade_version(decode_file(f, legacy=f.zip is None))
+            except Exception as e:
+                print(f'Error importing {path}: {e}')
+                return False
 
-            with zipfile.ZipFile(path, mode='r') as zf:
-                # Check the version
-                # Manual parsing is only supported for version 34
-                try:
-                    version = int(zf.read('metadata/file.txt'))
-                except KeyError:
-                    version = None
-                if version != 34:
-                    raise UnsupportedVersionError(f'legacy profile cannot be imported as it does not have the most recent update')
+        # Process main tracking data
+        # Use the array shape as it does not always match the correct resolution
+        for values in data['Resolution'].values():
+            tracks = values['Tracks']
+            if np.any(tracks > 0):
+                self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
 
-                # Load in the data
-                with zf.open('data.pkl') as f:
-                    data: dict[str, Any] = pickle.load(f)
+            speed = values['Speed']
+            if np.any(speed > 0):
+                self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
 
-                    # Load in the arrays
-                    for resolution, values in data['Resolution'].items():
-                        with zf.open(f'maps/{values["Tracks"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.cursor_map.sequential_arrays[resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Speed"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.cursor_map.speed_arrays[resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Left"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[int(CLICK_CODES[0])][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Middle"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[int(CLICK_CODES[1])][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Right"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[int(CLICK_CODES[2])][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Left"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[int(CLICK_CODES[0])][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Middle"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[int(CLICK_CODES[1])][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Right"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[int(CLICK_CODES[2])][resolution] = TrackingIntArray(array)
+            single_clicks = values['Clicks']['Single']
+            for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                array = single_clicks[mb]
+                if np.any(array > 0):
+                    self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
-        # Load the data using the legacy library
-        else:
-            with CustomOpen(path, 'rb') as f:
-                try:
-                    data = upgrade_version(decode_file(f, legacy=f.zip is None))
-                except Exception as e:
-                    print(f'Error importing {path}: {e}')
-                    return False
-
-            # Process main tracking data
-            # Use the array shape as it does not always match the correct resolution
-            for values in data['Resolution'].values():
-                tracks = values['Tracks']
-                if np.any(tracks > 0):
-                    self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
-
-                speed = values['Speed']
-                if np.any(speed > 0):
-                    self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
-
-                single_clicks = values['Clicks']['Single']
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    array = single_clicks[mb]
-                    if np.any(array > 0):
-                        self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
-
-                double_clicks = values['Clicks']['Double']
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    array = double_clicks[mb]
-                    if np.any(array > 0):
-                        self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
+            double_clicks = values['Clicks']['Double']
+            for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                array = double_clicks[mb]
+                if np.any(array > 0):
+                    self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
         self.created = int(data['Time']['Created'])
