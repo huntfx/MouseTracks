@@ -7,7 +7,7 @@ from typing import Any, Literal, Iterator
 
 from PIL import Image, ImageFont, ImageDraw
 
-from .colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file
+from .colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file, parse_colour_text
 from ..constants import REPO_DIR, UPDATES_PER_SECOND
 from ..gui.utils import format_ticks
 from ..utils.math import calculate_circle
@@ -309,7 +309,9 @@ class KeyboardGrid(object):
         self.grid: list[list[dict[str, Any]]] = []
         self.pressed_keys = pressed_keys
         self.held_keys = held_keys
-        self.colours = parse_colour_file(COLOUR_FILE)['Colours']
+        parsed = parse_colour_file(COLOUR_FILE)
+        self.colours = parsed['Colours']
+        self.maps = parsed['Maps']
 
     def new_row(self) -> None:
         self.row: list[dict[str, Any]] = []
@@ -354,13 +356,12 @@ class KeyboardGrid(object):
         colour_range = ColourRange(0, max_range, colour_map_data)
 
         # Decide on background colour
-        # For now the options are black or while
-        if any(i > 128 for i in colour_map_data[0][:3]):
-            image['Background'] = self.colours['white']['Colour']
-            image['Shadow'] = self.colours['black']['Colour']
+        colour_map = self.maps[GLOBALS.colour_map.lower()]['Background']['keyboard']
+        if colour_map is None:
+            image['Background'] = colour_map_data[0]
         else:
-            image['Background'] = self.colours['black']['Colour']
-            image['Shadow'] = self.colours['white']['Colour']
+            image['Background'] = parse_colour_text(colour_map)[0]
+        image['Shadow'] = colour_map_data[-1]
 
         y_offset = GLOBALS.image_padding
         y_current = 0

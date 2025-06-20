@@ -112,7 +112,7 @@ class ColourRange(object):
                      for i, j in zip(base_colour, mix_colour))
 
 
-def _parse_colour_text(colours: str) -> list[tuple[int, ...]]:
+def parse_colour_text(colours: str) -> list[tuple[int, ...]]:
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
     as it was first written to only use capitals.
@@ -254,9 +254,9 @@ def calculate_colour_map(colour_map: str) -> list[tuple[int, ...]]:
     if not colour_map:
         raise ValueError('not enough colours to generate colour map')
     try:
-        return _parse_colour_text(parse_colour_file()['Maps'][to_lower(colour_map)]['Colour'])
+        return parse_colour_text(parse_colour_file()['Maps'][to_lower(colour_map)]['Colour'])
     except KeyError:
-        generated_map = _parse_colour_text(colour_map)
+        generated_map = parse_colour_text(colour_map)
         if generated_map:
             if len(generated_map) < 2:
                 raise ValueError('not enough colours to generate colour map')
@@ -336,7 +336,8 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
 
                 if map_name_l not in colour_maps:
                     colour_maps[map_name_l] = {'Colour': None, 'UpperCase': map_name,
-                                               'Type': {'tracks': False, 'clicks': False, 'keyboard': False}}
+                                               'Type': {'tracks': False, 'clicks': False, 'keyboard': False},
+                                               'Background': {'tracks': None, 'clicks': None, 'keyboard': None}}
 
                 if var_type == 'colour':
 
@@ -350,7 +351,10 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
                         colour_maps[map_name_ext_l]['Colour'] = value
 
                 elif var_type in ('clicks', 'tracks', 'keyboard'):
-                    if value.lower().startswith('t') or value.lower().startswith('y'):
+                    if len(var_parts) > 3 and var_parts[3].lower() == 'background':
+                        colour_maps[map_name_l]['Background'][var_type] = value
+
+                    elif value.lower().startswith('t') or value.lower().startswith('y'):
                         colour_maps[map_name_l]['Type'][var_type] = True
 
     return {'Colours': colours, 'Maps': colour_maps}
