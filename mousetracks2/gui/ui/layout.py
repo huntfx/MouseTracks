@@ -1523,7 +1523,7 @@ class Ui_MainWindow(object):
         self.save_render.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
 "This may take a few seconds to complete.", None))
 #endif // QT_CONFIG(tooltip)
-        self.save_render.setText(QCoreApplication.translate("MainWindow", u"Save Render", None))
+        self.save_render.setText(QCoreApplication.translate("MainWindow", u"Save 10 Renders", None))
 #if QT_CONFIG(tooltip)
         self.show_advanced.setToolTip(QCoreApplication.translate("MainWindow", u"Show advanced render settings.", None))
 #endif // QT_CONFIG(tooltip)

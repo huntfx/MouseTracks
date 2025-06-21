@@ -261,7 +261,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.menu_exit.triggered.connect(self.shut_down)
         self.ui.file_tracking_start.triggered.connect(self.start_tracking)
         self.ui.file_tracking_pause.triggered.connect(self.pause_tracking)
-        self.ui.save_render.clicked.connect(self.request_render)
+        for i in range(10):
+            self.ui.save_render.clicked.connect(self.request_render)
         self.ui.current_profile.currentIndexChanged.connect(self.profile_changed)
         self.ui.map_type.currentIndexChanged.connect(self.render_type_changed)
         self.ui.show_left_clicks.toggled.connect(self.show_clicks_changed)
@@ -1199,18 +1200,25 @@ class MainWindow(QtWidgets.QMainWindow):
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
 
         # Get the default save folder
-        image_dir = Path.home() / 'Pictures'
-        if image_dir.exists():
-            image_dir /= 'MouseTracks'
-            if not image_dir.exists():
-                image_dir.mkdir()
+        # image_dir = Path.home() / 'Pictures'
+        # if image_dir.exists():
+        #     image_dir /= 'MouseTracks'
+        #     if not image_dir.exists():
+        #         image_dir.mkdir()
+        image_dir = Path('R:/')
+
+        from mousetracks2.colour import generate_colour_schemes
+        cs = next(generate_colour_schemes())
 
         # Generate the default image name
         sort_key = f'{math.isqrt(self.elapsed_time // UPDATES_PER_SECOND):05}'
         ticks_str = format_ticks(self.elapsed_time, UPDATES_PER_SECOND)
-        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
+        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({cs})'
+        accept = True
+        file_path = f'{image_dir}.png'
 
-        file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
+
+        #file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
             width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
@@ -1218,7 +1226,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.RenderRequest(self.render_type,
                                                        width=width, height=height, lock_aspect=False,
                                                        profile=sanitised_profile_name, file_path=file_path,
-                                                       colour_map=self.render_colour, sampling=self.sampling,
+                                                       colour_map=cs, sampling=self.sampling,
                                                        padding=self.padding, contrast=self.contrast,
                                                        clipping=self.clipping, blur=self.blur, linear=self.linear,
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),

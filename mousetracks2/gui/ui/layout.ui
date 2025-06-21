@@ -621,7 +621,7 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      <property name="toolTip">
                       <string>Set the render sampling level.
 
-Higher sampling improves accuracy when combining data from 
+Higher sampling improves accuracy when combining data from
 different resolutions, especially for lower-resolution recordings.
 
 A value of 0 will turn off all upscaling, and will instead run the
@@ -1053,7 +1053,7 @@ Preview Sampling must be greater than 0 to see the changes.</string>
 This may take a few seconds to complete.</string>
               </property>
               <property name="text">
-               <string>Save Render</string>
+               <string>Save 10 Renders</string>
               </property>
              </widget>
             </item>
