@@ -356,7 +356,10 @@ class KeyboardGrid(object):
         colour_range = ColourRange(0, max_range, colour_map_data)
 
         # Decide on background colour
-        colour_map = self.maps[GLOBALS.colour_map.lower()]['Background']['keyboard']
+        try:
+            colour_map = self.maps[GLOBALS.colour_map.lower()]['Background']['keyboard']
+        except KeyError:
+            colour_map = None
         if colour_map is None:
             image['Background'] = colour_map_data[0]
         else:
