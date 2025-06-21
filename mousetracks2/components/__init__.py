@@ -9,6 +9,7 @@ Components:
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 import traceback
@@ -200,6 +201,9 @@ class Hub:
                 case ipc.CloseSplashScreen() if self.splash is not None:
                     self.splash.close()
                     self.splash = None
+
+                case ipc.RequestPID():
+                    self._q_main.put(ipc.SendPID(source=ipc.Target.Hub, pid=os.getpid()))
 
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:

@@ -360,6 +360,12 @@ class MainWindow(QtWidgets.QMainWindow):
             tips.append('tip_update')
         self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
 
+        self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
+        self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
+        self.component.send_data(ipc.RequestPID(ipc.Target.Processing))
+        self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
+        self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
+
     @QtCore.Slot()
     def open_url(self) -> None:
         """Open a URL from the selected action.
@@ -1587,21 +1593,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Update the GUI with the component statuses
             case ipc.QueueSize():
-                self.ui.stat_hub_queue.setText(str(message.hub))
-                self.ui.stat_tracking_queue.setText(str(message.tracking))
-                self.ui.stat_processing_queue.setText(str(message.processing))
-                self.ui.stat_gui_queue.setText(str(message.gui))
-                self.ui.stat_app_detection_queue.setText(str(message.app_detection))
+                widget_values = {
+                    (self.ui.status_hub_state, self.ui.status_hub_queue): message.hub,
+                    (self.ui.status_tracking_state, self.ui.status_tracking_queue): message.tracking,
+                    (self.ui.status_processing_state, self.ui.status_processing_queue): message.processing,
+                    (self.ui.status_gui_state, self.ui.status_gui_queue): message.gui,
+                    (self.ui.status_app_state, self.ui.status_app_queue): message.app_detection,
+                }
 
-                if self.state == ipc.TrackingState.Running:
-                    self.ui.stat_tracking_state.setText('Running' if message.tracking <= 5 else 'Busy')
-                    self.ui.stat_processing_state.setText('Running' if message.processing <= 5 else 'Busy')
-                    self.ui.stat_hub_state.setText('Running' if message.hub <= 5 else 'Busy')
-                    self.ui.stat_app_state.setText('Running' if message.app_detection <= 5 else 'Busy')
-                else:
-                    for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
-                                   self.ui.stat_hub_state, self.ui.stat_app_state):
-                        widget.setText('Paused' if self.state == ipc.TrackingState.Paused else 'Stopped')
+                for (status_widget, queue_widget), value in widget_values.items():
+                    match self.state:
+                        case ipc.TrackingState.Running:
+                            if value < 5:
+                                state = 'Running'
+                            else:
+                                state = 'Busy'
+                        case ipc.TrackingState.Paused:
+                            state = 'Paused'
+                        case ipc.TrackingState.Stopped:
+                            state = 'Stopped'
+                        case _:
+                            state = 'Unknown'
+                    status_widget.setText(state)
+                    queue_widget.setText(str(value))
 
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)
@@ -1643,6 +1657,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
+
+            case ipc.SendPID():
+                match message.source:
+                    case ipc.Target.Hub:
+                        self.ui.status_hub_pid.setText(str(message.pid))
+                    case ipc.Target.Tracking:
+                        self.ui.status_tracking_pid.setText(str(message.pid))
+                    case ipc.Target.Processing:
+                        self.ui.status_processing_pid.setText(str(message.pid))
+                    case ipc.Target.GUI:
+                        self.ui.status_gui_pid.setText(str(message.pid))
+                    case ipc.Target.AppDetection:
+                        self.ui.status_app_pid.setText(str(message.pid))
 
     @QtCore.Slot()
     def start_tracking(self) -> None:

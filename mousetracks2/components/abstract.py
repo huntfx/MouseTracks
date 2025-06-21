@@ -91,7 +91,14 @@ class Component:
                 continue
 
             # Read from the queue
-            yield self._q_recv.get()
+            message = self._q_recv.get()
+
+            # Intercept message if required, otherwise yield
+            match message:
+                case ipc.RequestPID():
+                    self.send_data(ipc.SendPID(source=self.target, pid=os.getpid()))
+                case _:
+                    yield message
 
     def run(self) -> None:
         """Run the component."""

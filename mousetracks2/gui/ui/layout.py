@@ -889,7 +889,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 588))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 261, 486))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_3)
@@ -989,109 +989,138 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.groupBox_10)
 
-        self.groupBox_13 = QGroupBox(self.scrollAreaWidgetContents_3)
-        self.groupBox_13.setObjectName(u"groupBox_13")
-        self.gridLayout_8 = QGridLayout(self.groupBox_13)
+        self.status_components = QGroupBox(self.scrollAreaWidgetContents_3)
+        self.status_components.setObjectName(u"status_components")
+        self.gridLayout_8 = QGridLayout(self.status_components)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
-        self.stat_tracking_state = QLabel(self.groupBox_13)
-        self.stat_tracking_state.setObjectName(u"stat_tracking_state")
+        self.status_hub_state = QLabel(self.status_components)
+        self.status_hub_state.setObjectName(u"status_hub_state")
 
-        self.gridLayout_8.addWidget(self.stat_tracking_state, 1, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.status_hub_state, 1, 2, 1, 1)
 
-        self.label_39 = QLabel(self.groupBox_13)
-        self.label_39.setObjectName(u"label_39")
+        self.status_app_state = QLabel(self.status_components)
+        self.status_app_state.setObjectName(u"status_app_state")
 
-        self.gridLayout_8.addWidget(self.label_39, 2, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.status_app_state, 5, 2, 1, 1)
 
-        self.stat_processing_state = QLabel(self.groupBox_13)
-        self.stat_processing_state.setObjectName(u"stat_processing_state")
+        self.status_hub_pid = QLabel(self.status_components)
+        self.status_hub_pid.setObjectName(u"status_hub_pid")
 
-        self.gridLayout_8.addWidget(self.stat_processing_state, 2, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.status_hub_pid, 1, 1, 1, 1)
 
-        self.label_34 = QLabel(self.groupBox_13)
-        self.label_34.setObjectName(u"label_34")
+        self.status_tracking_state = QLabel(self.status_components)
+        self.status_tracking_state.setObjectName(u"status_tracking_state")
 
-        self.gridLayout_8.addWidget(self.label_34, 1, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.status_tracking_state, 2, 2, 1, 1)
 
-        self.label_40 = QLabel(self.groupBox_13)
-        self.label_40.setObjectName(u"label_40")
+        self.status_header_name = QLabel(self.status_components)
+        self.status_header_name.setObjectName(u"status_header_name")
+        self.status_header_name.setTextFormat(Qt.TextFormat.MarkdownText)
 
-        self.gridLayout_8.addWidget(self.label_40, 4, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.status_header_name, 0, 0, 1, 1)
 
-        self.stat_app_state = QLabel(self.groupBox_13)
-        self.stat_app_state.setObjectName(u"stat_app_state")
+        self.status_gui_name = QLabel(self.status_components)
+        self.status_gui_name.setObjectName(u"status_gui_name")
 
-        self.gridLayout_8.addWidget(self.stat_app_state, 4, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.status_gui_name, 4, 0, 1, 1)
 
-        self.label_36 = QLabel(self.groupBox_13)
-        self.label_36.setObjectName(u"label_36")
+        self.status_processing_pid = QLabel(self.status_components)
+        self.status_processing_pid.setObjectName(u"status_processing_pid")
 
-        self.gridLayout_8.addWidget(self.label_36, 0, 0, 1, 1)
+        self.gridLayout_8.addWidget(self.status_processing_pid, 3, 1, 1, 1)
 
-        self.stat_hub_state = QLabel(self.groupBox_13)
-        self.stat_hub_state.setObjectName(u"stat_hub_state")
+        self.status_header_state = QLabel(self.status_components)
+        self.status_header_state.setObjectName(u"status_header_state")
+        self.status_header_state.setTextFormat(Qt.TextFormat.MarkdownText)
 
-        self.gridLayout_8.addWidget(self.stat_hub_state, 0, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.status_header_state, 0, 2, 1, 1)
+
+        self.status_app_pid = QLabel(self.status_components)
+        self.status_app_pid.setObjectName(u"status_app_pid")
+
+        self.gridLayout_8.addWidget(self.status_app_pid, 5, 1, 1, 1)
+
+        self.status_hub_name = QLabel(self.status_components)
+        self.status_hub_name.setObjectName(u"status_hub_name")
+
+        self.gridLayout_8.addWidget(self.status_hub_name, 1, 0, 1, 1)
+
+        self.status_header_pid = QLabel(self.status_components)
+        self.status_header_pid.setObjectName(u"status_header_pid")
+        self.status_header_pid.setTextFormat(Qt.TextFormat.MarkdownText)
+
+        self.gridLayout_8.addWidget(self.status_header_pid, 0, 1, 1, 1)
+
+        self.status_app_name = QLabel(self.status_components)
+        self.status_app_name.setObjectName(u"status_app_name")
+
+        self.gridLayout_8.addWidget(self.status_app_name, 5, 0, 1, 1)
+
+        self.status_tracking_name = QLabel(self.status_components)
+        self.status_tracking_name.setObjectName(u"status_tracking_name")
+
+        self.gridLayout_8.addWidget(self.status_tracking_name, 2, 0, 1, 1)
+
+        self.status_processing_state = QLabel(self.status_components)
+        self.status_processing_state.setObjectName(u"status_processing_state")
+
+        self.gridLayout_8.addWidget(self.status_processing_state, 3, 2, 1, 1)
+
+        self.status_gui_state = QLabel(self.status_components)
+        self.status_gui_state.setObjectName(u"status_gui_state")
+
+        self.gridLayout_8.addWidget(self.status_gui_state, 4, 2, 1, 1)
+
+        self.status_processing_name = QLabel(self.status_components)
+        self.status_processing_name.setObjectName(u"status_processing_name")
+
+        self.gridLayout_8.addWidget(self.status_processing_name, 3, 0, 1, 1)
+
+        self.status_tracking_pid = QLabel(self.status_components)
+        self.status_tracking_pid.setObjectName(u"status_tracking_pid")
+
+        self.gridLayout_8.addWidget(self.status_tracking_pid, 2, 1, 1, 1)
+
+        self.status_gui_pid = QLabel(self.status_components)
+        self.status_gui_pid.setObjectName(u"status_gui_pid")
+
+        self.gridLayout_8.addWidget(self.status_gui_pid, 4, 1, 1, 1)
+
+        self.status_header_queue = QLabel(self.status_components)
+        self.status_header_queue.setObjectName(u"status_header_queue")
+        sizePolicy1.setHeightForWidth(self.status_header_queue.sizePolicy().hasHeightForWidth())
+        self.status_header_queue.setSizePolicy(sizePolicy1)
+        self.status_header_queue.setTextFormat(Qt.TextFormat.MarkdownText)
+
+        self.gridLayout_8.addWidget(self.status_header_queue, 0, 3, 1, 1)
+
+        self.status_hub_queue = QLabel(self.status_components)
+        self.status_hub_queue.setObjectName(u"status_hub_queue")
+
+        self.gridLayout_8.addWidget(self.status_hub_queue, 1, 3, 1, 1)
+
+        self.status_tracking_queue = QLabel(self.status_components)
+        self.status_tracking_queue.setObjectName(u"status_tracking_queue")
+
+        self.gridLayout_8.addWidget(self.status_tracking_queue, 2, 3, 1, 1)
+
+        self.status_processing_queue = QLabel(self.status_components)
+        self.status_processing_queue.setObjectName(u"status_processing_queue")
+
+        self.gridLayout_8.addWidget(self.status_processing_queue, 3, 3, 1, 1)
+
+        self.status_gui_queue = QLabel(self.status_components)
+        self.status_gui_queue.setObjectName(u"status_gui_queue")
+
+        self.gridLayout_8.addWidget(self.status_gui_queue, 4, 3, 1, 1)
+
+        self.status_app_queue = QLabel(self.status_components)
+        self.status_app_queue.setObjectName(u"status_app_queue")
+
+        self.gridLayout_8.addWidget(self.status_app_queue, 5, 3, 1, 1)
 
 
-        self.verticalLayout.addWidget(self.groupBox_13)
-
-        self.groupBox_14 = QGroupBox(self.scrollAreaWidgetContents_3)
-        self.groupBox_14.setObjectName(u"groupBox_14")
-        self.gridLayout_9 = QGridLayout(self.groupBox_14)
-        self.gridLayout_9.setObjectName(u"gridLayout_9")
-        self.stat_tracking_queue = QLabel(self.groupBox_14)
-        self.stat_tracking_queue.setObjectName(u"stat_tracking_queue")
-
-        self.gridLayout_9.addWidget(self.stat_tracking_queue, 1, 1, 1, 1)
-
-        self.stat_processing_queue = QLabel(self.groupBox_14)
-        self.stat_processing_queue.setObjectName(u"stat_processing_queue")
-
-        self.gridLayout_9.addWidget(self.stat_processing_queue, 2, 1, 1, 1)
-
-        self.label_43 = QLabel(self.groupBox_14)
-        self.label_43.setObjectName(u"label_43")
-
-        self.gridLayout_9.addWidget(self.label_43, 1, 0, 1, 1)
-
-        self.label_45 = QLabel(self.groupBox_14)
-        self.label_45.setObjectName(u"label_45")
-
-        self.gridLayout_9.addWidget(self.label_45, 2, 0, 1, 1)
-
-        self.label_49 = QLabel(self.groupBox_14)
-        self.label_49.setObjectName(u"label_49")
-
-        self.gridLayout_9.addWidget(self.label_49, 4, 0, 1, 1)
-
-        self.stat_app_detection_queue = QLabel(self.groupBox_14)
-        self.stat_app_detection_queue.setObjectName(u"stat_app_detection_queue")
-
-        self.gridLayout_9.addWidget(self.stat_app_detection_queue, 4, 1, 1, 1)
-
-        self.label_44 = QLabel(self.groupBox_14)
-        self.label_44.setObjectName(u"label_44")
-
-        self.gridLayout_9.addWidget(self.label_44, 0, 0, 1, 1)
-
-        self.stat_hub_queue = QLabel(self.groupBox_14)
-        self.stat_hub_queue.setObjectName(u"stat_hub_queue")
-
-        self.gridLayout_9.addWidget(self.stat_hub_queue, 0, 1, 1, 1)
-
-        self.label_12 = QLabel(self.groupBox_14)
-        self.label_12.setObjectName(u"label_12")
-
-        self.gridLayout_9.addWidget(self.label_12, 3, 0, 1, 1)
-
-        self.stat_gui_queue = QLabel(self.groupBox_14)
-        self.stat_gui_queue.setObjectName(u"stat_gui_queue")
-
-        self.gridLayout_9.addWidget(self.stat_gui_queue, 3, 1, 1, 1)
-
-
-        self.verticalLayout.addWidget(self.groupBox_14)
+        self.verticalLayout.addWidget(self.status_components)
 
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -1456,7 +1485,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.sampling.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render sampling level.\n"
 "\n"
-"Higher sampling improves accuracy when combining data from \n"
+"Higher sampling improves accuracy when combining data from\n"
 "different resolutions, especially for lower-resolution recordings.\n"
 "\n"
 "A value of 0 will turn off all upscaling, and will instead run the\n"
@@ -1669,26 +1698,34 @@ class Ui_MainWindow(object):
 "This should be used after manually editing it.", None))
 #endif // QT_CONFIG(tooltip)
         self.applist_reload.setText(QCoreApplication.translate("MainWindow", u"Applist Reload", None))
-        self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
-        self.stat_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.label_39.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
-        self.stat_processing_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.label_34.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
-        self.label_40.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
-        self.stat_app_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.label_36.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
-        self.stat_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Command Backlog", None))
-        self.stat_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.stat_processing_queue.setText(QCoreApplication.translate("MainWindow", u"12", None))
-        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
-        self.label_45.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
-        self.label_49.setText(QCoreApplication.translate("MainWindow", u"Application Detection", None))
-        self.stat_app_detection_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.label_44.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
-        self.stat_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"GUI", None))
-        self.stat_gui_queue.setText(QCoreApplication.translate("MainWindow", u"1", None))
+#if QT_CONFIG(tooltip)
+        self.status_components.setToolTip(QCoreApplication.translate("MainWindow", u"Show the state of each component.", None))
+#endif // QT_CONFIG(tooltip)
+        self.status_components.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
+        self.status_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_app_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_hub_pid.setText("")
+        self.status_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_header_name.setText(QCoreApplication.translate("MainWindow", u"**Name**", None))
+        self.status_gui_name.setText(QCoreApplication.translate("MainWindow", u"GUI", None))
+        self.status_processing_pid.setText("")
+        self.status_header_state.setText(QCoreApplication.translate("MainWindow", u"**State**", None))
+        self.status_app_pid.setText("")
+        self.status_hub_name.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
+        self.status_header_pid.setText(QCoreApplication.translate("MainWindow", u"**PID**", None))
+        self.status_app_name.setText(QCoreApplication.translate("MainWindow", u"App Detection", None))
+        self.status_tracking_name.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
+        self.status_processing_state.setText(QCoreApplication.translate("MainWindow", u"Busy", None))
+        self.status_gui_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_processing_name.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
+        self.status_tracking_pid.setText("")
+        self.status_gui_pid.setText("")
+        self.status_header_queue.setText(QCoreApplication.translate("MainWindow", u"**Queue**", None))
+        self.status_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.status_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"3", None))
+        self.status_processing_queue.setText(QCoreApplication.translate("MainWindow", u"642", None))
+        self.status_gui_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.status_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
 
         __sortingEnabled = self.listWidget_3.isSortingEnabled()

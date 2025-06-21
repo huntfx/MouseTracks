@@ -621,7 +621,7 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      <property name="toolTip">
                       <string>Set the render sampling level.
 
-Higher sampling improves accuracy when combining data from 
+Higher sampling improves accuracy when combining data from
 different resolutions, especially for lower-resolution recordings.
 
 A value of 0 will turn off all upscaling, and will instead run the
@@ -1452,7 +1452,7 @@ any tracking is enabled.
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>588</height>
+               <height>486</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
@@ -1623,143 +1623,197 @@ This should be used after manually editing it.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_13">
+               <widget class="QGroupBox" name="status_components">
+                <property name="toolTip">
+                 <string>Show the state of each component.</string>
+                </property>
                 <property name="title">
                  <string>Components</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_8">
+                 <item row="1" column="2">
+                  <widget class="QLabel" name="status_hub_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="2">
+                  <widget class="QLabel" name="status_app_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="1" column="1">
-                  <widget class="QLabel" name="stat_tracking_state">
+                  <widget class="QLabel" name="status_hub_pid">
                    <property name="text">
-                    <string>Running</string>
+                    <string/>
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_39">
-                   <property name="text">
-                    <string>Processing</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_processing_state">
-                   <property name="text">
-                    <string>Running</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_34">
-                   <property name="text">
-                    <string>Tracking</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="label_40">
-                   <property name="text">
-                    <string>Application Detection</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_app_state">
+                 <item row="2" column="2">
+                  <widget class="QLabel" name="status_tracking_state">
                    <property name="text">
                     <string>Running</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QLabel" name="label_36">
+                  <widget class="QLabel" name="status_header_name">
                    <property name="text">
-                    <string>Hub</string>
+                    <string>**Name**</string>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_hub_state">
-                   <property name="text">
-                    <string>Running</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="groupBox_14">
-                <property name="title">
-                 <string>Command Backlog</string>
-                </property>
-                <layout class="QGridLayout" name="gridLayout_9">
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_tracking_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_processing_queue">
-                   <property name="text">
-                    <string>12</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_43">
-                   <property name="text">
-                    <string>Tracking</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_45">
-                   <property name="text">
-                    <string>Processing</string>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
                    </property>
                   </widget>
                  </item>
                  <item row="4" column="0">
-                  <widget class="QLabel" name="label_49">
-                   <property name="text">
-                    <string>Application Detection</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_app_detection_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_44">
-                   <property name="text">
-                    <string>Hub</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_hub_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="label_12">
+                  <widget class="QLabel" name="status_gui_name">
                    <property name="text">
                     <string>GUI</string>
                    </property>
                   </widget>
                  </item>
                  <item row="3" column="1">
-                  <widget class="QLabel" name="stat_gui_queue">
+                  <widget class="QLabel" name="status_processing_pid">
                    <property name="text">
-                    <string>1</string>
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="status_header_state">
+                   <property name="text">
+                    <string>**State**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="status_app_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="status_hub_name">
+                   <property name="text">
+                    <string>Hub</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="status_header_pid">
+                   <property name="text">
+                    <string>**PID**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="status_app_name">
+                   <property name="text">
+                    <string>App Detection</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="status_tracking_name">
+                   <property name="text">
+                    <string>Tracking</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="2">
+                  <widget class="QLabel" name="status_processing_state">
+                   <property name="text">
+                    <string>Busy</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="2">
+                  <widget class="QLabel" name="status_gui_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="status_processing_name">
+                   <property name="text">
+                    <string>Processing</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="status_tracking_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="status_gui_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLabel" name="status_header_queue">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>**Queue**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="status_hub_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLabel" name="status_tracking_queue">
+                   <property name="text">
+                    <string>3</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="3">
+                  <widget class="QLabel" name="status_processing_queue">
+                   <property name="text">
+                    <string>642</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="3">
+                  <widget class="QLabel" name="status_gui_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QLabel" name="status_app_queue">
+                   <property name="text">
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -2339,7 +2393,7 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>886</x>
-     <y>258</y>
+     <y>-24</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -2355,11 +2409,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>-67</y>
+     <y>316</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>-71</y>
+     <y>312</y>
     </hint>
    </hints>
   </connection>
@@ -2371,11 +2425,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>-37</y>
+     <y>346</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>-41</y>
+     <y>342</y>
     </hint>
    </hints>
   </connection>
@@ -2390,8 +2444,8 @@ This should be used after manually editing it.</string>
      <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>889</x>
-     <y>180</y>
+     <x>1000</x>
+     <y>-90</y>
     </hint>
    </hints>
   </connection>

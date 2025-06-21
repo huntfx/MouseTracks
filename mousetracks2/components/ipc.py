@@ -605,3 +605,17 @@ class ToggleProfileMultiMonitor(Message):
     target: int = field(default=Target.Processing, init=False)
     profile: str
     multi_monitor: bool | None
+
+
+@dataclass
+class RequestPID(Message):
+    """Request a components PID."""
+
+
+@dataclass
+class SendPID(Message):
+    """Send a components PID."""
+
+    target: int = field(default=Target.GUI, init=False)
+    source: int
+    pid: int
