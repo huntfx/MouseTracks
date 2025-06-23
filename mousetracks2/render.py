@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 from scipy import ndimage
 
 from .legacy import colours
@@ -101,33 +102,51 @@ def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: 
     return np.ascontiguousarray(pooled_full[indices_y][:, indices_x])
 
 
-def generate_colour_lookup(*colours: tuple[int, ...], steps: int = 256) -> np.ndarray:
-    """Generate a color lookup table transitioning smoothly between given colors."""
-    lookup = np.zeros((steps, 4), dtype=np.uint8)
+def _colour_to_np(bit_depth: int, r: int, g: int, b: int, a: int | None = None) -> npt.NDArray[np.float64]:
+    """Convert an integer colour to a numpy float array."""
+    max_value = 1 << bit_depth
+    if a is None:
+        a = max_value
+    colour = np.array((r, g, b, a), dtype=np.float64)
+    colour /= max_value
+    return colour
 
-    # Fix for single inputs
+
+def generate_colour_lookup(*colours: tuple[int, ...], bit_depth: int,
+                           steps: int = 256) -> npt.NDArray[np.float64]:
+    """Generate a color lookup transitioning smoothly between given colors.
+
+    Parameters:
+        *colours: A sequence of color tuples.
+        steps: The number of steps in the final lookup table.
+
+    Returns:
+        A NumPy array of shape (steps, 4) and dtype float64, with RGBA
+        values normalised between 0.0 and 1.0.
+    """
+    # Return transparent black
+    if not colours:
+        return np.zeros((steps, 4), dtype=np.float64)
+
+    # Return single colour
     if len(colours) == 1:
-        colours = (colours[0], colours[0])
+        return np.tile(_colour_to_np(bit_depth, *colours[0]), (steps, 1))
 
-    num_transitions = len(colours) - 1
-    steps_per_transition = steps // num_transitions
-    remaining_steps = steps % num_transitions  # Distribute extra steps evenly
+    # Prepare the input array
+    rgba_array = np.zeros((len(colours), 4), dtype=np.float64)
+    for i, colour in enumerate(colours):
+        rgba_array[i] = _colour_to_np(bit_depth, *colour)
 
-    start_index = 0
-    for i in range(num_transitions):
-        # Determine start and end colors for the current transition
-        start_color = np.array(colours[i])
-        end_color = np.array(colours[i + 1])
+    # Define evenly spread positions for the input colours
+    stops = np.linspace(0, steps - 1, num=len(colours))
 
-        # Adjust steps for the last transition to include any remaining steps
-        current_steps = steps_per_transition + (i < remaining_steps)
+    # Create the final lookup table by interpolating each channel
+    lookup_indices = np.arange(steps)
+    lookup = np.zeros((steps, 4), dtype=np.float64)
 
-        # Linearly interpolate between start_color and end_color
-        for j in range(current_steps):
-            t = j / (current_steps - 1)  # Normalized position (0 to 1)
-            lookup[start_index + j] = (1 - t) * start_color + t * end_color
-
-        start_index += current_steps
+    # Interpolate each channel in the normalized 0.0-1.0 range
+    for i in range(4):
+        lookup[:, i] = np.interp(lookup_indices, stops, rgba_array[:, i])
 
     return lookup
 
@@ -242,8 +261,8 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     except Exception:  # Old code - just fallback to tranparent
         colour_map_data = [(0, 0, 0, 0)]
 
-    colour_lookup = generate_colour_lookup(*colour_map_data)
-    return colour_lookup[array_to_uint8(combined_array)]
+    colour_lookup = generate_colour_lookup(*colour_map_data, bit_depth=8)
+    return array_to_uint8(colour_lookup)[array_to_uint8(combined_array)]
 
 
 def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
