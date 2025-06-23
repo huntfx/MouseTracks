@@ -330,7 +330,7 @@ class Processing(Component):
     def _render_array(self, profile: TrackingProfile, render_type: ipc.RenderType,
                       width: int | None, height: int | None, colour_map: str, sampling: int = 1,
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
-                      clipping: float = 0.0, blur: float = 0.0, linear: bool = False,
+                      clipping: float = 0.0, blur: float = 0.0, linear: bool = False, invert: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
                       interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
         """Render an array (tracks / heatmaps)."""
@@ -351,7 +351,7 @@ class Processing(Component):
         # Do the render
         try:
             image = render(colour_map, positional_arrays, width, height, sampling,
-                           lock_aspect=lock_aspect, linear=linear,
+                           lock_aspect=lock_aspect, linear=linear, invert=invert,
                            blur=blur, contrast=contrast, clipping=clipping,
                            interpolation_order=interpolation_order)
         except EmptyRenderError:
@@ -509,7 +509,7 @@ class Processing(Component):
                                                message.colour_map, sampling=message.sampling,
                                                padding=message.padding, contrast=message.contrast,
                                                lock_aspect=message.lock_aspect, clipping=message.clipping,
-                                               blur=message.blur, linear=message.linear,
+                                               blur=message.blur, linear=message.linear, invert=message.invert,
                                                left_clicks=message.show_left_clicks,
                                                middle_clicks=message.show_middle_clicks,
                                                right_clicks=message.show_right_clicks,

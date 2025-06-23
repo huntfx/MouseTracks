@@ -154,7 +154,7 @@ def generate_colour_lookup(*colours: tuple[int, ...], bit_depth: int,
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
            linear: bool = False, blur: float = 0.0, contrast: float = 1.0, clipping: float = 0.0,
-           interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
+           interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0, invert: bool = False) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -184,6 +184,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         interpolation_order: The order of interpolation for upscaling.
             Recommended to leave at 0, otherwise the arrays will be
             interpolated before the colours are mapped.
+        invert: Invert the values / colours.
     """
     # Calculate width / height
     all_arrays = []
@@ -260,6 +261,9 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         colour_map_data = colours.calculate_colour_map(colour_map)
     except Exception:  # Old code - just fallback to tranparent
         colour_map_data = [(0, 0, 0, 0)]
+
+    if invert:
+        colour_map_data.reverse()
 
     colour_lookup = generate_colour_lookup(*colour_map_data, bit_depth=8)
     return array_to_uint8(colour_lookup)[array_to_uint8(combined_array)]

@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>261</width>
-               <height>1027</height>
+               <height>1053</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -398,13 +398,116 @@ If this is disabled, the width will be set based on the available data.</string>
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <item>
                   <layout class="QGridLayout" name="gridLayout_12">
-                   <item row="1" column="1">
-                    <widget class="QCheckBox" name="linear">
+                   <item row="14" column="1">
+                    <widget class="QSpinBox" name="thumbnail_sampling">
                      <property name="toolTip">
-                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
+                      <string>Set the level of sampling used for the preview render.
+
+The default behaviour is a sample level of 0, which is optimised for
+low resolution previews, but is not representative of the final render.
+
+A sample level of 1 or higher will match the output render. Lower
+sample levels will be aliased however, and higher sample levels
+require more processing.</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>0</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="8" column="1">
+                    <widget class="QDoubleSpinBox" name="contrast">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set the contrast of the render.
+
+This applies an exponential adjustment to enhance or reduce colour variation.</string>
+                     </property>
+                     <property name="decimals">
+                      <number>3</number>
+                     </property>
+                     <property name="minimum">
+                      <double>0.050000000000000</double>
+                     </property>
+                     <property name="maximum">
+                      <double>99.950000000000003</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.050000000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>1.000000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="13" column="0">
+                    <widget class="QLabel" name="sampling_label">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>!inherit sampling</string>
                      </property>
                      <property name="text">
-                      <string>Linear Mapping</string>
+                      <string>Sampling (Render):</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>sampling</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="11" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="toolTip">
+                      <string>!inherit clipping</string>
+                     </property>
+                     <property name="text">
+                      <string>Clipping:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>clipping</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="10" column="0">
+                    <widget class="QLabel" name="label_16">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>!inherit padding</string>
+                     </property>
+                     <property name="text">
+                      <string>Padding:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>padding</cstring>
                      </property>
                     </widget>
                    </item>
@@ -439,178 +542,7 @@ If this is disabled, the width will be set based on the available data.</string>
                      </item>
                     </widget>
                    </item>
-                   <item row="11" column="1">
-                    <widget class="QDoubleSpinBox" name="blur">
-                     <property name="toolTip">
-                      <string>Set the strength of the gaussian blur.
-
-This is primarily designed for use with heatmaps.</string>
-                     </property>
-                     <property name="decimals">
-                      <number>8</number>
-                     </property>
-                     <property name="maximum">
-                      <double>1.000000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.000500000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>0.012500000000000</double>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="13" column="1">
-                    <widget class="QSpinBox" name="thumbnail_sampling">
-                     <property name="toolTip">
-                      <string>Set the level of sampling used for the preview render.
-
-The default behaviour is a sample level of 0, which is optimised for
-low resolution previews, but is not representative of the final render.
-
-A sample level of 1 or higher will match the output render. Lower
-sample levels will be aliased however, and higher sample levels
-require more processing.</string>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>0</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_24">
-                     <property name="toolTip">
-                      <string>!inherit colour_option</string>
-                     </property>
-                     <property name="text">
-                      <string>Colour Map:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>colour_option</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="9" column="1">
-                    <widget class="QSpinBox" name="padding">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Adjust the padding around the render.
-
-Note that this may affect the intensity of heatmap edges.</string>
-                     </property>
-                     <property name="suffix">
-                      <string>px</string>
-                     </property>
-                     <property name="maximum">
-                      <number>4096</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>8</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="10" column="1">
-                    <widget class="QDoubleSpinBox" name="clipping">
-                     <property name="toolTip">
-                      <string>Define a clipping threshold.
-
-Values in the highest percentage range will be clipped to
-prevent overly bright spots from dominating the image.</string>
-                     </property>
-                     <property name="decimals">
-                      <number>8</number>
-                     </property>
-                     <property name="maximum">
-                      <double>100.000000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.000100000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="7" column="1">
-                    <widget class="QDoubleSpinBox" name="contrast">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Set the contrast of the render.
-
-This applies an exponential adjustment to enhance or reduce colour variation.</string>
-                     </property>
-                     <property name="decimals">
-                      <number>3</number>
-                     </property>
-                     <property name="minimum">
-                      <double>0.050000000000000</double>
-                     </property>
-                     <property name="maximum">
-                      <double>99.950000000000003</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.050000000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>1.000000000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="9" column="0">
-                    <widget class="QLabel" name="label_16">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit padding</string>
-                     </property>
-                     <property name="text">
-                      <string>Padding:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>padding</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="7" column="0">
-                    <widget class="QLabel" name="contrast_label">
-                     <property name="toolTip">
-                      <string>!inherit contrast</string>
-                     </property>
-                     <property name="text">
-                      <string>Contrast:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>contrast</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="12" column="1">
                     <widget class="QSpinBox" name="sampling">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -640,44 +572,6 @@ get thicker at lower resolutions.</string>
                     </widget>
                    </item>
                    <item row="12" column="0">
-                    <widget class="QLabel" name="sampling_label">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit sampling</string>
-                     </property>
-                     <property name="text">
-                      <string>Sampling (Render):</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>sampling</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="10" column="0">
-                    <widget class="QLabel" name="label_14">
-                     <property name="toolTip">
-                      <string>!inherit clipping</string>
-                     </property>
-                     <property name="text">
-                      <string>Clipping:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>clipping</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="11" column="0">
                     <widget class="QLabel" name="label_18">
                      <property name="toolTip">
                       <string>!inherit blur</string>
@@ -693,23 +587,7 @@ get thicker at lower resolutions.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="13" column="0">
-                    <widget class="QLabel" name="label_28">
-                     <property name="toolTip">
-                      <string>!inherit thumbnail_sampling</string>
-                     </property>
-                     <property name="text">
-                      <string>Sampling (Preview):</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>thumbnail_sampling</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="14" column="0">
+                   <item row="15" column="0">
                     <widget class="QLabel" name="label_31">
                      <property name="toolTip">
                       <string>!inherit interpolation_order</string>
@@ -725,7 +603,57 @@ get thicker at lower resolutions.</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="14" column="1">
+                   <item row="8" column="0">
+                    <widget class="QLabel" name="contrast_label">
+                     <property name="toolTip">
+                      <string>!inherit contrast</string>
+                     </property>
+                     <property name="text">
+                      <string>Contrast:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>contrast</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="10" column="1">
+                    <widget class="QSpinBox" name="padding">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Adjust the padding around the render.
+
+Note that this may affect the intensity of heatmap edges.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>px</string>
+                     </property>
+                     <property name="maximum">
+                      <number>4096</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QCheckBox" name="linear">
+                     <property name="toolTip">
+                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
+                     </property>
+                     <property name="text">
+                      <string>Linear Mapping</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="15" column="1">
                     <widget class="QSpinBox" name="interpolation_order">
                      <property name="toolTip">
                       <string>Set the order of the spline interpolation to use when upscaling arrays.
@@ -735,6 +663,88 @@ Preview Sampling must be greater than 0 to see the changes.</string>
                      </property>
                      <property name="maximum">
                       <number>5</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="11" column="1">
+                    <widget class="QDoubleSpinBox" name="clipping">
+                     <property name="toolTip">
+                      <string>Define a clipping threshold.
+
+Values in the highest percentage range will be clipped to
+prevent overly bright spots from dominating the image.</string>
+                     </property>
+                     <property name="decimals">
+                      <number>8</number>
+                     </property>
+                     <property name="maximum">
+                      <double>100.000000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.000100000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="14" column="0">
+                    <widget class="QLabel" name="label_28">
+                     <property name="toolTip">
+                      <string>!inherit thumbnail_sampling</string>
+                     </property>
+                     <property name="text">
+                      <string>Sampling (Preview):</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>thumbnail_sampling</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="12" column="1">
+                    <widget class="QDoubleSpinBox" name="blur">
+                     <property name="toolTip">
+                      <string>Set the strength of the gaussian blur.
+
+This is primarily designed for use with heatmaps.</string>
+                     </property>
+                     <property name="decimals">
+                      <number>8</number>
+                     </property>
+                     <property name="maximum">
+                      <double>1.000000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.000500000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>0.012500000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_24">
+                     <property name="toolTip">
+                      <string>!inherit colour_option</string>
+                     </property>
+                     <property name="text">
+                      <string>Colour Map:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>colour_option</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QCheckBox" name="invert">
+                     <property name="toolTip">
+                      <string>Invert the colour map.</string>
+                     </property>
+                     <property name="text">
+                      <string>Invert</string>
                      </property>
                     </widget>
                    </item>
@@ -1089,7 +1099,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>251</width>
                <height>654</height>
               </rect>
              </property>
@@ -1451,7 +1461,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>239</width>
                <height>486</height>
               </rect>
              </property>

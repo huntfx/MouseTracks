@@ -220,6 +220,7 @@ class RenderRequest(Message):
     lock_aspect: bool = True
     clipping: float = 1.0
     blur: float = 0.0
+    invert: bool = False
     show_left_clicks: bool = True
     show_middle_clicks: bool = True
     show_right_clicks: bool = True

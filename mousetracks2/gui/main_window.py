@@ -148,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_loading_profile = 0
         self._is_closing = False
         self._is_changing_state = False
-        self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
+        self._pixel_colour_cache: dict[str, tuple[QtGui.QColor, QtGui.QColor] | None] = {}
         self._is_setting_click_state = False
         self._force_close = False
         self._waiting_on_save = False
@@ -165,6 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
         self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
         self._linear = RenderOption(False, True, True, False)
+        self._invert = RenderOption(False, False, False, False)
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -280,6 +281,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.clipping.valueChanged.connect(self.clipping_changed)
         self.ui.blur.valueChanged.connect(self.blur_changed)
         self.ui.linear.toggled.connect(self.linear_changed)
+        self.ui.invert.toggled.connect(self.invert_changed)
         self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
         self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
@@ -395,12 +397,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._pixel_colour_cache[colour_map] = None
 
             else:
-                self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1])
+                self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1]), QtGui.QColor(*generated_map[0])
 
         colour = self._pixel_colour_cache[colour_map]
         if colour is None:
             return QtGui.QColor(QtCore.Qt.GlobalColor.transparent)
-        return colour
+        return colour[self.invert]
 
     @property
     def render_type(self) -> ipc.RenderType:
@@ -442,6 +444,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.clipping.setValue(self.clipping)
         self.ui.blur.setValue(self.blur)
         self.ui.linear.setChecked(self.linear)
+        self.ui.invert.setChecked(self.invert)
         self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
@@ -527,6 +530,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def linear(self, value: bool) -> None:
         """Set if linear mapping is enabled for the current render type."""
         self._linear.set(self.render_type, value)
+
+    @property
+    def invert(self) -> bool:
+        """Get if inverting colours for the current render type."""
+        return self._invert.get(self.render_type)
+
+    @invert.setter
+    def invert(self, value: bool) -> None:
+        """Set if inverting colours for the current render type."""
+        self._invert.set(self.render_type, value)
 
     @property
     def mouse_click_count(self) -> int:
@@ -987,6 +1000,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.linear = value
         self.request_thumbnail()
 
+    @QtCore.Slot(bool)
+    def invert_changed(self, value: bool) -> None:
+        """Update the render when the invert option is changed."""
+        if self.pause_colour_change:
+            return
+        self.invert = value
+        self.request_thumbnail()
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def lock_aspect_changed(self, state: QtCore.Qt.CheckState) -> None:
         """Update the thumbnail when the aspect ratio is locked or unlocked."""
@@ -1137,7 +1158,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                    colour_map=self.render_colour, padding=self.padding,
                                                    sampling=self.ui.thumbnail_sampling.value(),
                                                    contrast=self.contrast, clipping=self.clipping,
-                                                   blur=self.blur, linear=self.linear,
+                                                   blur=self.blur, linear=self.linear, invert=self.invert,
                                                    show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                    show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                    show_right_clicks=self.ui.show_right_clicks.isChecked(),
@@ -1227,6 +1248,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        colour_map=self.render_colour, sampling=self.sampling,
                                                        padding=self.padding, contrast=self.contrast,
                                                        clipping=self.clipping, blur=self.blur, linear=self.linear,
+                                                       invert=self.invert,
                                                        show_left_clicks=self.ui.show_left_clicks.isChecked(),
                                                        show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
                                                        show_right_clicks=self.ui.show_right_clicks.isChecked(),
@@ -2363,6 +2385,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.linear.setVisible(show_advanced and not is_keyboard)
         self.ui.interpolation_order.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.interpolation_order].setVisible(show_advanced and not is_keyboard)
+        self.ui.invert.setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
 
