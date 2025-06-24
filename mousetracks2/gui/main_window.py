@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
 
+import numpy as np
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -1361,7 +1362,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.monitor_data = message.data
 
             case ipc.Render():
-                height, width, channels = message.array.shape
+                if message.array.any():
+                    height, width, channels = message.array.shape
+                else:
+                    height = width = channels = 0
                 failed = width == height == 0
 
                 target_height = int(height / (message.request.sampling or 1))
@@ -1371,24 +1375,39 @@ class MainWindow(QtWidgets.QMainWindow):
                 if message.request.file_path is None:
                     self._timer_rendering.stop()
                     self.ui.thumbnail.hide_rendering_text()
-
                     self._last_thumbnail_time = int(time.time() * 10)
-                    match channels:
-                        case 1:
-                            image_format = QtGui.QImage.Format.Format_Grayscale8
-                        case 3:
-                            image_format = QtGui.QImage.Format.Format_RGB888
-                        case 4:
-                            image_format = QtGui.QImage.Format.Format_RGBA8888
-                        case _:
-                            raise NotImplementedError(channels)
 
                     if failed:
                         self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
 
                     else:
                         stride = channels * width
-                        image = QtGui.QImage(message.array.data, width, height, stride, image_format)
+                        array = message.array
+
+                        # Normalise down to 8 bit arrays
+                        if array.dtype != np.uint8:
+                            match message.array.dtype:
+                                case np.uint16:
+                                    array = message.array / 257
+                                case np.uint32:
+                                    array = message.array / (65537 * 257)
+                                case np.uint64:
+                                    array = message.array / (4294967297 * 65537 * 257)
+                                case _:
+                                    raise NotImplementedError(array.dtype)
+                            array = array.round().astype(np.uint8)
+
+                        match channels:
+                            case 1:
+                                image_format = QtGui.QImage.Format.Format_Grayscale8
+                            case 3:
+                                image_format = QtGui.QImage.Format.Format_RGB888
+                            case 4:
+                                image_format = QtGui.QImage.Format.Format_RGBA8888
+                            case _:
+                                raise NotImplementedError(channels)
+
+                        image = QtGui.QImage(array.data, width, height, stride, image_format)
 
                         # Scale the QImage to fit the pixmap size
                         scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)

@@ -61,12 +61,11 @@ def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None
     return result_height
 
 
-def array_to_uint8(array: np.ndarray) -> np.ndarray:
-    """Normalise an array to map it's values from 0-255."""
-    max_value = np.max(array)
-    if not max_value:
-        return np.zeros(array.shape, dtype=np.uint8)
-    return (array.astype(np.float64) * (255 / max_value)).astype(np.uint8)
+def normalise_array(array: npt.NDArray[np.integer | np.floating]) -> npt.NDArray[np.float64]:
+    """Normalise an array so its values lie between 0 and 1."""
+    if max_value := np.max(array):
+        return array.astype(np.float64) / max_value
+    return np.zeros(array.shape, dtype=np.float64)
 
 
 def gaussian_size(width: int, height: int, multiplier: float = 0.0125) -> float:
@@ -104,20 +103,21 @@ def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: 
 
 def _colour_to_np(bit_depth: int, r: int, g: int, b: int, a: int | None = None) -> npt.NDArray[np.float64]:
     """Convert an integer colour to a numpy float array."""
-    max_value = 1 << bit_depth
+    peak = (1 << bit_depth) - 1
     if a is None:
-        a = max_value
+        a = peak
     colour = np.array((r, g, b, a), dtype=np.float64)
-    colour /= max_value
+    colour /= peak
     return colour
 
 
-def generate_colour_lookup(*colours: tuple[int, ...], bit_depth: int,
-                           steps: int = 256) -> npt.NDArray[np.float64]:
+def generate_colour_lut(*colours: tuple[int, ...], input_bit_depth: int,
+                        steps: int = 256) -> npt.NDArray[np.float64]:
     """Generate a color lookup transitioning smoothly between given colors.
 
     Parameters:
         *colours: A sequence of color tuples.
+        input_bit_depth: How many bits per colour the input has.
         steps: The number of steps in the final lookup table.
 
     Returns:
@@ -130,12 +130,12 @@ def generate_colour_lookup(*colours: tuple[int, ...], bit_depth: int,
 
     # Return single colour
     if len(colours) == 1:
-        return np.tile(_colour_to_np(bit_depth, *colours[0]), (steps, 1))
+        return np.tile(_colour_to_np(input_bit_depth, *colours[0]), (steps, 1))
 
     # Prepare the input array
     rgba_array = np.zeros((len(colours), 4), dtype=np.float64)
     for i, colour in enumerate(colours):
-        rgba_array[i] = _colour_to_np(bit_depth, *colour)
+        rgba_array[i] = _colour_to_np(input_bit_depth, *colour)
 
     # Define evenly spread positions for the input colours
     stops = np.linspace(0, steps - 1, num=len(colours))
@@ -265,8 +265,27 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     if invert:
         colour_map_data.reverse()
 
-    colour_lookup = generate_colour_lookup(*colour_map_data, bit_depth=8)
-    return array_to_uint8(colour_lookup)[array_to_uint8(combined_array)]
+    # Setup the output array settings
+    # This is hardcoded currently as PIL only supports writing 8 bit PNG images
+    bits_per_channel = 8
+    target_dtype = np.uint8
+
+    gradient_steps = 1 << bits_per_channel
+    bit_depth_peak = gradient_steps - 1
+
+    # Generate a floating-point color lookup table (LUT) with values from 0.0 to 1.0
+    colour_lut_float = generate_colour_lut(*colour_map_data, input_bit_depth=8, steps=gradient_steps)
+
+    # Normalize the high-precision input data
+    normalised_data_float = normalise_array(combined_array)
+    index_array_float = normalised_data_float * bit_depth_peak
+
+    # Convert the float LUT and the index array to the target integer type
+    colour_lut_int = (colour_lut_float * bit_depth_peak).round().astype(target_dtype)
+    index_array_int = index_array_float.round().astype(target_dtype)
+
+    # Use the LUT
+    return colour_lut_int[index_array_int]
 
 
 def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
