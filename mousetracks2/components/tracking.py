@@ -139,13 +139,16 @@ class Tracking(Component):
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
 
-                # Update the current profile
-                case ipc.TrackedApplicationDetected() if message.name != self.profile_name:
-                    self.data.tick_modified = self.data.tick_current
-                    self._calculate_inactivity()
-                    self.data.pynput_opcodes.clear()
-                    self.data.pynput_quick_press.clear()
-                    self.profile_name = message.name
+                case ipc.TrackedApplicationDetected():
+
+                    # Profile has changed, so reset the data
+                    if message.name != self.profile_name:
+                        self.data.tick_modified = self.data.tick_current
+                        self._calculate_inactivity()
+                        self.data.pynput_opcodes.clear()
+                        self.data.pynput_quick_press.clear()
+                        self.profile_name = message.name
+
                     self.send_data(ipc.CurrentProfileChanged(message.name, message.process_id, message.rects))
 
                 case ipc.Autosave():
