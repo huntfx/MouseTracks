@@ -11,12 +11,7 @@ from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
-
-if sys.platform == 'win32':
-    from ..utils.system.win32 import PID, WindowHandle, get_window_handle
-    SUPPORTED = True
-else:
-    SUPPORTED = False
+from ..utils.system import Window
 
 
 class AppDetection(Component):
@@ -37,7 +32,7 @@ class AppDetection(Component):
         # Cache each process in case the fallback is required
         deque(psutil.process_iter(attrs=['pid', 'exe', 'create_time']), maxlen=0)
 
-    def _pid_fallback(self, title: str) -> PID:
+    def _pid_fallback(self, title: str) -> int:
         """Guess the PID of the selected application.
         It will search through all loaded applications without any
         window handles to determine if there's a match to anything that
@@ -49,6 +44,8 @@ class AppDetection(Component):
         multiple times to try and make it work 100% of the time for the
         one use case I've come across.
         """
+        from ..utils.system.win32 import PID
+
         matched_procs = []  # type: list[psutil.Process]
         invalid_exes = set()  # type: set[str]
         for proc in psutil.process_iter(attrs=['pid', 'exe', 'create_time']):
@@ -73,35 +70,29 @@ class AppDetection(Component):
         # Find the first matched process without any valid hwnds
         for proc in matched_procs:
             if proc.info['exe'] not in invalid_exes:
-                matched = PID(proc.info['pid'])
+                matched = proc.info['pid']
                 break
         else:
-            matched = PID(0)
+            matched = 0
 
-        print(f'[Application Detection] Fallback returning PID {int(matched)}')
+        print(f'[Application Detection] Fallback returning PID {matched}')
         return matched
 
     def check_running_app(self) -> None:
-        if not SUPPORTED:
-            return
-
-        hwnd = get_window_handle()
-        handle = WindowHandle(hwnd)
-        title = handle.title
-        pid = handle.pid
+        window = Window.get_focused()
+        title = window.title
 
         # Fallback is required
-        if pid == 0 and title:
+        if sys.platform == 'win32' and window.pid == 0 and title:
             # The title matches so reuse the match
             if title == self._fallback_title:
-                pid = PID(self._fallback_pid)
+                window.pid = self._fallback_pid
 
             # Find a new match
             else:
                 print(f'[Application Detection] PID returned 0 for an app with title "{title}",'
                       'running fallback function...')
-                pid = self._pid_fallback(title)
-                self._fallback_pid = int(pid)
+                window.pid = self._fallback_pid = self._pid_fallback(title)
                 self._fallback_title = title
 
         # Reset the fallback data
@@ -109,7 +100,7 @@ class AppDetection(Component):
             self._fallback_pid = 0
             self._fallback_title = ''
 
-        exe = handle.pid.executable
+        exe = window.executable
         focus_changed = False
 
         # Display focus changes
@@ -120,17 +111,17 @@ class AppDetection(Component):
             focus_changed = True
 
         # Determine if the current application is tracked
-        current_app_name = self.applist.match(pid.executable, title)
+        current_app_name = self.applist.match(exe, title)
         if current_app_name is None or current_app_name == TRACKING_IGNORE:
             current_app = None
             rects = []
         else:
             current_app = current_app_name, exe
-            rects = pid.rects
+            rects = window.rects
 
         # Print out any changes
-        position = pid.position
-        resolution = pid.size
+        position = window.position
+        resolution = window.size
         if current_app is not None:
             if current_app == self._previous_app:
                 if resolution != self._previous_res:
@@ -166,9 +157,9 @@ class AppDetection(Component):
             if current_app is None:
                 self.send_data(ipc.TrackedApplicationDetected(DEFAULT_PROFILE_NAME, None))
             elif app_is_windowed:
-                self.send_data(ipc.TrackedApplicationDetected(current_app[0], int(pid), pid.rects))
+                self.send_data(ipc.TrackedApplicationDetected(current_app[0], window.pid, window.rects))
             else:
-                self.send_data(ipc.TrackedApplicationDetected(current_app[0], int(pid)))
+                self.send_data(ipc.TrackedApplicationDetected(current_app[0], window.pid))
 
         self._previous_app = current_app
         self._previous_rects = rects

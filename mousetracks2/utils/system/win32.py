@@ -8,10 +8,11 @@ import os
 import re
 import sys
 from contextlib import suppress
-from typing import Any
+from typing import Any, Self
 
 import winreg
 
+from .placeholders import Window as _Window
 from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 
 
@@ -363,3 +364,42 @@ def relaunch_as_elevated() -> None:
     params = ' '.join(f'"{arg}"' for arg in sys.argv)
     shell32.ShellExecuteW(None, 'runas', sys.executable, params, None, 1)
     sys.exit()
+
+
+class Window(_Window):
+    def __init__(self, hwnd: int) -> None:
+        self._hwnd = hwnd
+        self._handle = WindowHandle(self._hwnd)
+        self._pid = self._handle.pid
+
+    @classmethod
+    def get_focused(cls) -> Self:
+        return cls(get_window_handle())
+
+    @property
+    def pid(self) -> int:
+        return int(self._pid)
+
+    @pid.setter
+    def pid(self, pid: int) -> None:
+        self._pid = PID(pid)
+
+    @property
+    def title(self) -> str:
+        return self._handle.title
+
+    @property
+    def executable(self) -> str:
+        return self._pid.executable
+
+    @property
+    def rects(self) -> list[tuple[int, int, int, int]]:
+        return self._pid.rects
+
+    @property
+    def position(self) -> tuple[int, int]:
+        return self._pid.position
+
+    @property
+    def size(self) -> tuple[int, int]:
+        return self._pid.size
