@@ -13,7 +13,7 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 ## Features
 
 - ### Live Tracking
-  Continuously monitors mouse movements and clicks. Older movements gracefully fade, keeping the view focused on recent activity.
+  Continuously monitors mouse movements and clicks. Older movements gradually fade, keeping the view focused on recent activity.
 
   Keyboard heatmaps and gamepad inputs are also supported.
 
@@ -55,7 +55,7 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 
 ## Installation (v2.0)
 
-_Currently, only Windows is supported. Contributions for Linux or macOS support are welcome._
+_Currently, only Windows is fully supported. Contributions for Linux or macOS support are welcome._
 
 ### Prebuilt Executable
 
@@ -78,6 +78,10 @@ Recommended if running the code locally.
 Run `launch.py`.
 
 Ensure all modules in [requirements.txt](requirements.txt) are installed.
+
+### Under Linux
+It requires X11 - I've made notes on getting it running in [`linux.py`](mousetracks2/utils/system/linux.py) in Ubuntu and Arch Linux.<br>
+The `--no-keyboard` flag must also be passed in for now to avoid errors.
 
 ---
 
