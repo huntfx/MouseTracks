@@ -88,7 +88,7 @@ def _get_top_level_window(root: Xlib.xobject.drawable.Window, window: Xlib.xobje
     while True:
         parent: Xlib.xobject.drawable.Window = window.query_tree().parent
         if parent.id == root.id:
-            return parent
+            return window
         window = parent
 
 
