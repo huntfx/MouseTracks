@@ -185,6 +185,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
 
+        # Hide social links for now
+        self.ui.link_reddit.setVisible(False)
+        self.ui.link_facebook.setVisible(False)
+
         # Cache buddies
         self._buddies: dict[QtWidgets.QWidget, QtWidgets.QLabel] = {}
         for label in cast(Iterable[QtWidgets.QLabel], self.findChildren(QtWidgets.QLabel)):
