@@ -263,6 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_resize.setSingleShot(True)
         self._timer_rendering = QtCore.QTimer(self)
         self._timer_rendering.setSingleShot(True)
+        self._timer_tip = QtCore.QTimer(self)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -348,6 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
+        self._timer_tip.timeout.connect(self.set_random_tip_text)
 
         self.ui.debug_state_running.triggered.connect(self.start_tracking)
         self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
@@ -362,17 +364,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.profile_changed(0)
         self.ui.show_advanced.setChecked(False)
 
-        # Set tip
-        tips = ['tip_tracking']
-        if not is_latest_version():
-            tips.append('tip_update')
-        self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
-
         self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
         self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
         self.component.send_data(ipc.RequestPID(ipc.Target.Processing))
         self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
         self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
+
+    def set_tip_timer_state(self, enabled: bool) -> None:
+        """Set the state of the tip update timer.
+        The text update function is triggered every 10 minutes.
+        """
+        if enabled:
+            self.set_random_tip_text()
+            self._timer_tip.start(600000)
+        else:
+            self._timer_tip.stop()
+
+    @QtCore.Slot()
+    def set_random_tip_text(self) -> None:
+        """Text a random tip."""
+        tips = ['tip_tracking']
+        if not is_latest_version():
+            tips.append('tip_update')
+        self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
 
     @QtCore.Slot()
     def open_url(self) -> None:
@@ -1869,6 +1883,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer_activity.start(100)
             self.request_thumbnail()
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
+            self._timer_tip.start(600000)
+
+        self.set_tip_timer_state(True)
 
         event.accept()
 
@@ -1902,6 +1919,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer_activity.stop()
             self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
+
+        self.set_tip_timer_state(False)
 
         event.accept()
 
