@@ -7,6 +7,7 @@ import re
 import sys
 import time
 import webbrowser
+import zipfile
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1237,9 +1238,22 @@ class MainWindow(QtWidgets.QMainWindow):
             if not image_dir.exists():
                 image_dir.mkdir()
 
+        # Get the correct profile elapsed time
+        # It's only stored for the current profile, so load the data
+        # from disk if the requested profile isn't current
+        if self._is_loading_profile:
+            try:
+                _profile = TrackingProfile.load(get_filename(profile_name), metadata_only=True)
+            except FileNotFoundError:
+                elapsed_time = 0
+            else:
+                elapsed_time = _profile.elapsed
+        else:
+            elapsed_time = self.elapsed_time
+
         # Generate the default image name
-        sort_key = f'{math.isqrt(self.elapsed_time // UPDATES_PER_SECOND):05}'
-        ticks_str = format_ticks(self.elapsed_time, UPDATES_PER_SECOND)
+        sort_key = f'{math.isqrt(elapsed_time // UPDATES_PER_SECOND):05}'
+        ticks_str = format_ticks(elapsed_time, UPDATES_PER_SECOND)
         image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
 
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
