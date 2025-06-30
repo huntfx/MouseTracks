@@ -235,7 +235,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         combined_array[combined_array > max_value] = max_value
 
     # Update the contrast
-    if contrast != 1.0:
+    if contrast != 1.0 and np.any(combined_array):
 
         max_value = np.max(combined_array)
         max_value_log = np.log(max_value)

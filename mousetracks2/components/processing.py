@@ -344,7 +344,7 @@ class Processing(Component):
                 positional_arrays[position] = [np.pad(array, padding) for array in arrays]
 
         # Adjust width/height if not locking the aspect ratio
-        if not lock_aspect and width is not None and height is not None:
+        if positional_arrays and not lock_aspect and width is not None and height is not None:
             width //= max(x for x, y in positional_arrays) - min(x for x, y in positional_arrays) + 1
             height //= max(y for x, y in positional_arrays) - min(y for x, y in positional_arrays) + 1
 
