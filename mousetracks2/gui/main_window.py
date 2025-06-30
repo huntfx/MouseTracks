@@ -10,7 +10,7 @@ import webbrowser
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
+from typing import cast, Any, Generic, Iterable, Iterator, TypeVar, TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
@@ -1157,20 +1157,163 @@ class MainWindow(QtWidgets.QMainWindow):
         if use_custom_height:
             height = min(height, custom_height)
 
-        self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                   width=width, height=height, lock_aspect=lock_aspect,
-                                                   profile=sanitised_profile_name, file_path=None,
-                                                   colour_map=self.render_colour, padding=self.padding,
-                                                   sampling=self.ui.thumbnail_sampling.value(),
-                                                   contrast=self.contrast, clipping=self.clipping,
-                                                   blur=self.blur, linear=self.linear, invert=self.invert,
-                                                   show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                   show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                   show_count=self.ui.show_count.isChecked(),
-                                                   show_time=self.ui.show_time.isChecked(),
-                                                   interpolation_order=self.ui.interpolation_order.value()))
-        return True
+        # self.component.send_data(ipc.RenderRequest(self.render_type,
+        #                                            width=width, height=height, lock_aspect=lock_aspect,
+        #                                            profile=sanitised_profile_name, file_path=None,
+        #                                            colour_map=self.render_colour, padding=self.padding,
+        #                                            sampling=self.ui.thumbnail_sampling.value(),
+        #                                            contrast=self.contrast, clipping=self.clipping,
+        #                                            blur=self.blur, linear=self.linear, invert=self.invert,
+        #                                            show_left_clicks=self.ui.show_left_clicks.isChecked(),
+        #                                            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+        #                                            show_right_clicks=self.ui.show_right_clicks.isChecked(),
+        #                                            show_count=self.ui.show_count.isChecked(),
+        #                                            show_time=self.ui.show_time.isChecked(),
+        #                                            interpolation_order=self.ui.interpolation_order.value()))
+
+        self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data())))
+
+    def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
+
+        use_custom_width = self.ui.custom_width.isEnabled()
+        use_custom_height = self.ui.custom_height.isEnabled()
+        custom_width = self.ui.custom_width.value() if use_custom_width else None
+        custom_height = self.ui.custom_height.value() if use_custom_height else None
+        lock_aspect = self.ui.lock_aspect.isChecked()
+
+        if file_path is None:
+            width = self.ui.thumbnail.width()
+            height = self.ui.thumbnail.height()
+
+            # Account for collapsed splitters
+            if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
+                width += self.ui.horizontal_splitter.handleWidth()
+            if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
+                height += self.ui.vertical_splitter.handleWidth()
+
+            if not lock_aspect and (use_custom_width or use_custom_height):
+                # Set the aspect ratio to requested
+                aspect_ratio = width / height
+                if aspect_ratio > width / height:
+                    height = round(width / aspect_ratio)
+                else:
+                    width = round(height * aspect_ratio)
+
+            # Ensure resolutions aren't greater than requested
+            if use_custom_width:
+                width = min(width, custom_width)
+            if use_custom_height:
+                height = min(height, custom_height)
+
+        else:
+            width = custom_width
+            height = custom_height
+
+        layer0 = ipc.RenderRequest(
+            type=self.render_type,
+            width=width,
+            height=height,
+            lock_aspect=lock_aspect,
+            profile=sanitised_profile_name,
+            file_path=file_path,
+            colour_map=self.render_colour,
+            padding=self.padding,
+            sampling=self.ui.thumbnail_sampling.value(),
+            contrast=self.contrast,
+            clipping=self.clipping,
+            blur=self.blur,
+            linear=self.linear,
+            invert=self.invert,
+            show_left_clicks=self.ui.show_left_clicks.isChecked(),
+            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+            show_right_clicks=self.ui.show_right_clicks.isChecked(),
+            show_count=self.ui.show_count.isChecked(),
+            show_time=self.ui.show_time.isChecked(),
+            interpolation_order=self.ui.interpolation_order.value(),
+        )
+
+        yield ipc.RenderLayer(layer0, ipc.RenderLayerBlendMode.Replace, ipc.Channel.RGBA)
+
+        # For debugging
+        if self.render_type == ipc.RenderType.Time:
+            layer1 = ipc.RenderRequest(
+                type=ipc.RenderType.TimeHeatmap,
+                width=width,
+                height=height,
+                lock_aspect=lock_aspect,
+                profile=sanitised_profile_name,
+                file_path=file_path,
+                colour_map='TransparentWhiteToWhite',
+                padding=self.padding,
+                sampling=self.ui.thumbnail_sampling.value(),
+                contrast=0.5,
+                clipping=0.85,
+                blur=self.blur,
+                linear=self.linear,
+                invert=self.invert,
+                show_left_clicks=self.ui.show_left_clicks.isChecked(),
+                show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+                show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                show_count=self.ui.show_count.isChecked(),
+                show_time=self.ui.show_time.isChecked(),
+                interpolation_order=self.ui.interpolation_order.value(),
+            )
+
+            yield ipc.RenderLayer(layer1, ipc.RenderLayerBlendMode.Multiply, ipc.Channel.A)
+
+        test_colours = ['BlackToBlue', 'BlackToRed', 'BlackToGreen']
+        if self.render_type == ipc.RenderType.SingleClick and self.ui.show_left_clicks.isChecked() and not self.ui.show_middle_clicks.isChecked() and not self.ui.show_right_clicks.isChecked() and self.render_colour in test_colours:
+
+            layer1 = ipc.RenderRequest(
+                type=self.render_type,
+                width=width,
+                height=height,
+                lock_aspect=lock_aspect,
+                profile=sanitised_profile_name,
+                file_path=file_path,
+                colour_map=test_colours[(test_colours.index(self.render_colour) + 1) % 3],
+                padding=self.padding,
+                sampling=self.ui.thumbnail_sampling.value(),
+                contrast=self.contrast,
+                clipping=self.clipping,
+                blur=self.blur,
+                linear=self.linear,
+                invert=self.invert,
+                show_left_clicks=False,
+                show_middle_clicks=True,
+                show_right_clicks=False,
+                show_count=self.ui.show_count.isChecked(),
+                show_time=self.ui.show_time.isChecked(),
+                interpolation_order=self.ui.interpolation_order.value(),
+            )
+            yield ipc.RenderLayer(layer1, ipc.RenderLayerBlendMode.Add)
+
+            layer2 = ipc.RenderRequest(
+                type=self.render_type,
+                width=width,
+                height=height,
+                lock_aspect=lock_aspect,
+                profile=sanitised_profile_name,
+                file_path=file_path,
+                colour_map=test_colours[(test_colours.index(self.render_colour) + 2) % 3],
+                padding=self.padding,
+                sampling=self.ui.thumbnail_sampling.value(),
+                contrast=self.contrast,
+                clipping=self.clipping,
+                blur=self.blur,
+                linear=self.linear,
+                invert=self.invert,
+                show_left_clicks=False,
+                show_middle_clicks=False,
+                show_right_clicks=True,
+                show_count=self.ui.show_count.isChecked(),
+                show_time=self.ui.show_time.isChecked(),
+                interpolation_order=self.ui.interpolation_order.value(),
+            )
+            yield ipc.RenderLayer(layer2, ipc.RenderLayerBlendMode.Add)
 
     @QtCore.Slot(QtCore.QSize)
     def thumbnail_resize(self, size: QtCore.QSize) -> None:
@@ -1245,21 +1388,23 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
-            width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-            height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
-            self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                       width=width, height=height, lock_aspect=False,
-                                                       profile=sanitised_profile_name, file_path=file_path,
-                                                       colour_map=self.render_colour, sampling=self.sampling,
-                                                       padding=self.padding, contrast=self.contrast,
-                                                       clipping=self.clipping, blur=self.blur, linear=self.linear,
-                                                       invert=self.invert,
-                                                       show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                       show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                       show_count=self.ui.show_count.isChecked(),
-                                                       show_time=self.ui.show_time.isChecked(),
-                                                       interpolation_order=self.ui.interpolation_order.value()))
+            # width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
+            # height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
+            # self.component.send_data(ipc.RenderRequest(self.render_type,
+            #                                            width=width, height=height, lock_aspect=False,
+            #                                            profile=sanitised_profile_name, file_path=file_path,
+            #                                            colour_map=self.render_colour, sampling=self.sampling,
+            #                                            padding=self.padding, contrast=self.contrast,
+            #                                            clipping=self.clipping, blur=self.blur, linear=self.linear,
+            #                                            invert=self.invert,
+            #                                            show_left_clicks=self.ui.show_left_clicks.isChecked(),
+            #                                            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
+            #                                            show_right_clicks=self.ui.show_right_clicks.isChecked(),
+            #                                            show_count=self.ui.show_count.isChecked(),
+            #                                            show_time=self.ui.show_time.isChecked(),
+            #                                            interpolation_order=self.ui.interpolation_order.value()))
+
+            self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data(file_path))))
 
     def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""

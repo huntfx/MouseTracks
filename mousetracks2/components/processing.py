@@ -518,6 +518,103 @@ class Processing(Component):
 
                 print('[Processing] Render request completed')
 
+            case ipc.RenderLayerRequest():
+                print('[Processing] Render request received...')
+                if message.layers[0].request.profile:
+                    profile = self.all_profiles[message.layers[0].request.profile]
+                else:
+                    profile = self.profile
+
+                resolution_data = None
+
+                for i, layer in enumerate(message.layers):
+                    request = layer.request
+
+                    if resolution_data is None:
+                        layer_resolution_data = {
+                            'width': request.width,
+                            'height': request.height,
+                            'lock_aspect': request.lock_aspect,
+                        }
+                    else:
+                        layer_resolution_data = resolution_data
+
+                    image = self._render_array(profile, request.type,
+                                               colour_map=request.colour_map, sampling=request.sampling,
+                                               padding=request.padding, contrast=request.contrast,
+                                               clipping=request.clipping,
+                                               blur=request.blur, linear=request.linear, invert=request.invert,
+                                               left_clicks=request.show_left_clicks,
+                                               middle_clicks=request.show_middle_clicks,
+                                               right_clicks=request.show_right_clicks,
+                                               interpolation_order=request.interpolation_order,
+                                               **layer_resolution_data)
+                    image = image.astype(np.float64) / 255
+                    if resolution_data is None:
+                        resolution_data = {
+                            'width': image.shape[1] //  max(1, request.sampling),
+                            'height': image.shape[0] // max(1, request.sampling),
+                            'lock_aspect': False,
+                        }
+
+                    channel_indices = ipc.Channel.get_indices(layer.channels)
+
+                    match layer.blend_mode:
+                        case ipc.RenderLayerBlendMode.Replace:
+                            # On first run, set the render variable
+                            if layer.channels & ipc.Channel.RGBA:
+                                render = image
+
+                            else:
+                                for i in channel_indices:
+                                    render[:, :, i] = image[:, :, i]
+
+                        case ipc.RenderLayerBlendMode.Overlay:
+                            # Separate the color (RGB) and alpha channels of the overlay image
+                            overlay_rgb = image[:, :, :3]
+                            # Normalize alpha from 0-255 range to 0.0-1.0 range
+                            overlay_alpha = image[:, :, 3:]
+
+                            # Get the RGB channels of the base image
+                            base_rgb = render[:, :, :3]
+
+                            # Apply the alpha blending formula
+                            if layer.channels & ipc.Channel.RGB:
+                                blended_rgb = (overlay_rgb * overlay_alpha) + (base_rgb * (1.0 - overlay_alpha))
+                                # Update only the selected RGB channels
+                                for i in channel_indices:
+                                    if i < 3: # Only update R, G, or B
+                                        render[:, :, i] = blended_rgb[:, :, i]
+
+                            # If the alpha channel is specifically selected, replace it
+                            if layer.channels & ipc.Channel.A:
+                                render[:, :, 3] = overlay_alpha.squeeze() # Remove the last dimension for assignment
+
+                        case ipc.RenderLayerBlendMode.Add:
+                            for i in channel_indices:
+                                render[:, :, i] = np.add(render[:, :, i], image[:, :, i])
+                        case ipc.RenderLayerBlendMode.Subtract:
+                            for i in channel_indices:
+                                render[:, :, i] = np.subtract(render[:, :, i], image[:, :, i])
+                        case ipc.RenderLayerBlendMode.Multiply:
+                            for i in channel_indices:
+                                render[:, :, i] = np.multiply(render[:, :, i], image[:, :, i])
+                        case ipc.RenderLayerBlendMode.Divide:
+                            for i in channel_indices:
+                                mask = image[:, :, i] > 0
+                                render[:, :, i][mask] = np.divide(render[:, :, i][mask], image[:, :, i][mask])
+                        case ipc.RenderLayerBlendMode.Maximum:
+                            for i in channel_indices:
+                                render[:, :, i] = np.maximum(render[:, :, i], image[:, :, i])
+                        case ipc.RenderLayerBlendMode.Minimum:
+                            for i in channel_indices:
+                                render[:, :, i] = np.maximum(render[:, :, i], image[:, :, i])
+
+                render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
+
+                self.send_data(ipc.Render(render, request))
+                print('[Processing] Render request completed')
+
             case ipc.MouseMove():
                 if not self.profile.config.track_mouse:
                     return

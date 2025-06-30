@@ -1,7 +1,7 @@
 """Standard format for data to be sent through communication queues."""
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, IntFlag, auto
 from typing import Literal
 
 import numpy as np
@@ -620,3 +620,46 @@ class SendPID(Message):
     target: int = field(default=Target.GUI, init=False)
     source: int
     pid: int
+
+
+class RenderLayerBlendMode(Enum):
+    Overlay = auto()
+    Replace = auto()
+    Add = auto()
+    Subtract = auto()
+    Multiply = auto()
+    Divide = auto()
+    Maximum = auto()
+    Minimum = auto()
+
+
+
+class Channel(IntFlag):
+    R = auto()
+    G = auto()
+    B = auto()
+    A = auto()
+    RGB = R | G | B
+    RGBA = R | G | B | A
+    Alpha = A
+
+    @classmethod
+    def get_indices(cls, mask: int) -> list[int]:
+        """Converts the bitmask into a list of array indices."""
+        channels = [cls.R, cls.G, cls.B, cls.A]
+        return [i for i, val in enumerate(channels) if mask & val]
+
+
+@dataclass
+class RenderLayer:
+    request: RenderRequest
+    blend_mode: RenderLayerBlendMode
+    channels: Channel = Channel.RGBA
+
+
+@dataclass
+class RenderLayerRequest(Message):
+    """Request a render of multiple layers."""
+
+    target: int = field(default=Target.Processing, init=False)
+    layers: list[RenderLayer]
