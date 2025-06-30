@@ -22,16 +22,16 @@ class Target:
 class RenderType(Enum):
     """Possible types of renders."""
 
-    Time = auto()
-    TimeHeatmap = auto()
-    Speed = auto()
+    MouseMovement = auto()
+    MouseSpeed = auto()
+    MousePosition = auto()
     SingleClick = auto()
     DoubleClick = auto()
     HeldClick = auto()
-    Thumbstick_Time = auto()
-    Thumbstick_Speed = auto()
-    Thumbstick_Heatmap = auto()
-    Keyboard = auto()
+    ThumbstickMovement = auto()
+    ThumbstickSpeed = auto()
+    ThumbstickPosition = auto()
+    KeyboardHeatmap = auto()
 
 
 class TrackingState(Enum):
