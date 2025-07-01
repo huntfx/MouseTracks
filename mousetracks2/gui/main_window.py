@@ -155,6 +155,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._force_close = False
         self._waiting_on_save = False
         self._last_save_message: ipc.SaveComplete | None
+        self._thumbnail_redraw_required = False
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self.state = ipc.TrackingState.Paused
 
@@ -1134,6 +1135,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
+        # Prevent too many requests from queuing up
+        # This ensures there's at most 2
+        if self.pause_redraw:
+            self._thumbnail_redraw_required += True
+            return True
+
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
 
@@ -1446,6 +1453,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.ui.thumbnail.set_pixmap(scaled_image)
 
                     self.pause_redraw -= 1
+
+                    # Check if the flag was set that a new thumbnail was requested
+                    if not self.pause_redraw and self._thumbnail_redraw_required:
+                        self._request_thumbnail()
+                        self._thumbnail_redraw_required = False
 
                 # Save a render
                 elif failed:
