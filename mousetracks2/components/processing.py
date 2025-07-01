@@ -556,59 +556,66 @@ class Processing(Component):
                             'height': image.shape[0] // max(1, request.sampling),
                             'lock_aspect': False,
                         }
+                        render = np.zeros(image.shape)
 
                     channel_indices = ipc.Channel.get_indices(layer.channels)
 
-                    match layer.blend_mode:
-                        case ipc.RenderLayerBlendMode.Replace:
-                            # On first run, set the render variable
-                            if layer.channels & ipc.Channel.RGBA:
-                                render = image
+                    layer_opacity = layer.opacity / 100.0
+                    if layer.blend_mode == ipc.RenderLayerBlendMode.Overlay:
+                        # Get the opacity for the entire layer (0.0 to 1.0)
 
-                            else:
-                                for i in channel_indices:
-                                    render[:, :, i] = image[:, :, i]
+                        # The effective alpha for blending is the pixel's own alpha multiplied by the layer's overall opacity
+                        effective_alpha = image[:, :, 3:] * layer_opacity
 
-                        case ipc.RenderLayerBlendMode.Overlay:
-                            # Separate the color (RGB) and alpha channels of the overlay image
-                            overlay_rgb = image[:, :, :3]
-                            # Normalize alpha from 0-255 range to 0.0-1.0 range
-                            overlay_alpha = image[:, :, 3:]
+                        # Blend RGB channels if any are selected
+                        if layer.channels & ipc.Channel.RGB:
+                            # Get the specific R, G, B indices that were requested
+                            rgb_indices = [i for i in channel_indices if i < 3]
+                            if rgb_indices:
+                                # Perform the blend calculation only on the selected color channels
+                                new_colors = (image[:, :, rgb_indices] * effective_alpha) + \
+                                            (render[:, :, rgb_indices] * (1.0 - effective_alpha))
+                                render[:, :, rgb_indices] = new_colors
 
-                            # Get the RGB channels of the base image
-                            base_rgb = render[:, :, :3]
+                        # Blend Alpha channel if selected
+                        if layer.channels & ipc.Channel.A:
+                            # Standard alpha compositing: Alpha_Out = Alpha_Source + Alpha_Destination * (1 - Alpha_Source)
+                            # Here, Alpha_Source is our effective_alpha
+                            new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
+                            render[:, :, 3:] = new_alpha
 
-                            # Apply the alpha blending formula
-                            if layer.channels & ipc.Channel.RGB:
-                                blended_rgb = (overlay_rgb * overlay_alpha) + (base_rgb * (1.0 - overlay_alpha))
-                                # Update only the selected RGB channels
-                                for i in channel_indices:
-                                    if i < 3: # Only update R, G, or B
-                                        render[:, :, i] = blended_rgb[:, :, i]
+                    else:
+                        # --- Logic for all other blend modes ---
+                        original_render = render.copy()
+                        blend_result = render.copy()
 
-                            # If the alpha channel is specifically selected, replace it
-                            if layer.channels & ipc.Channel.A:
-                                render[:, :, 3] = overlay_alpha.squeeze() # Remove the last dimension for assignment
+                        match layer.blend_mode:
+                            case ipc.RenderLayerBlendMode.Replace:
+                                blend_result = image
+                            case ipc.RenderLayerBlendMode.Add:
+                                blend_result = np.add(render, image)
+                            case ipc.RenderLayerBlendMode.Subtract:
+                                blend_result = np.subtract(render, image)
+                            case ipc.RenderLayerBlendMode.Multiply:
+                                blend_result = np.multiply(render, image)
+                            case ipc.RenderLayerBlendMode.Divide:
+                                mask = image > 1e-6 # Use a small epsilon for float comparison
+                                blend_result[mask] = np.divide(render[mask], image[mask])
+                            case ipc.RenderLayerBlendMode.Maximum:
+                                blend_result = np.maximum(render, image)
+                            case ipc.RenderLayerBlendMode.Minimum:
+                                blend_result = np.minimum(render, image)
 
-                        case ipc.RenderLayerBlendMode.Add:
-                            for i in channel_indices:
-                                render[:, :, i] = np.add(render[:, :, i], image[:, :, i])
-                        case ipc.RenderLayerBlendMode.Subtract:
-                            for i in channel_indices:
-                                render[:, :, i] = np.subtract(render[:, :, i], image[:, :, i])
-                        case ipc.RenderLayerBlendMode.Multiply:
-                            for i in channel_indices:
-                                render[:, :, i] = np.multiply(render[:, :, i], image[:, :, i])
-                        case ipc.RenderLayerBlendMode.Divide:
-                            for i in channel_indices:
-                                mask = image[:, :, i] > 0
-                                render[:, :, i][mask] = np.divide(render[:, :, i][mask], image[:, :, i][mask])
-                        case ipc.RenderLayerBlendMode.Maximum:
-                            for i in channel_indices:
-                                render[:, :, i] = np.maximum(render[:, :, i], image[:, :, i])
-                        case ipc.RenderLayerBlendMode.Minimum:
-                            for i in channel_indices:
-                                render[:, :, i] = np.maximum(render[:, :, i], image[:, :, i])
+                        # Final Opacity Blending for non-overlay modes
+                        if layer_opacity < 1.0:
+                            final_result = (blend_result * layer_opacity) + (original_render * (1.0 - layer_opacity))
+                        else:
+                            final_result = blend_result
+
+                        # Apply the final calculated result only to the selected channels
+                        for i in channel_indices:
+                            if i < final_result.shape[2]: # Ensure the result has the channel
+                                render[:, :, i] = final_result[:, :, i]
 
                 render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
 

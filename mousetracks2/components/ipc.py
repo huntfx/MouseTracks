@@ -655,6 +655,7 @@ class RenderLayer:
     request: RenderRequest
     blend_mode: RenderLayerBlendMode
     channels: Channel = Channel.RGBA
+    opacity: int = 100
 
 
 @dataclass
