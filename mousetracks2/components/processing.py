@@ -601,6 +601,21 @@ class Processing(Component):
                             new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
                             render[:, :, 3:] = new_alpha
 
+                    elif layer.blend_mode == ipc.RenderLayerBlendMode.Screen:
+                        # Use the brightness (luminance) of the image's RGB channels as its alpha
+                        luminance_alpha = np.max(image[:, :, :3], axis=2, keepdims=True)
+                        effective_alpha = luminance_alpha * layer_opacity
+
+                        if layer.channels & ipc.Channel.RGB:
+                            rgb_indices = [i for i in channel_indices if i < 3]
+                            if rgb_indices:
+                                new_colors = (image[:, :, rgb_indices] * effective_alpha) + \
+                                            (render[:, :, rgb_indices] * (1.0 - effective_alpha))
+                                render[:, :, rgb_indices] = new_colors
+                        if layer.channels & ipc.Channel.A:
+                            new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
+                            render[:, :, 3:] = new_alpha
+
                     else:
                         # --- Logic for all other blend modes ---
                         original_render = render.copy()

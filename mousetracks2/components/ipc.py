@@ -631,6 +631,7 @@ class RenderLayerBlendMode(Enum):
     Divide = auto()
     Maximum = auto()
     Minimum = auto()
+    Screen = auto()
 
 
 

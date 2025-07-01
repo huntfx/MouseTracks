@@ -874,11 +874,17 @@ This is primarily designed for use with heatmaps.</string>
                   <layout class="QGridLayout" name="gridLayout_9">
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_33">
+                     <property name="toolTip">
+                      <string>!inherit blending_mode</string>
+                     </property>
                      <property name="text">
-                      <string>Blending Mope:</string>
+                      <string>Blending Mode:</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_blending</cstring>
                      </property>
                     </widget>
                    </item>
@@ -957,11 +963,17 @@ This is primarily designed for use with heatmaps.</string>
                    </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_32">
+                     <property name="toolTip">
+                      <string>!inherit opacity</string>
+                     </property>
                      <property name="text">
                       <string>Opacity:</string>
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_opacity</cstring>
                      </property>
                     </widget>
                    </item>
