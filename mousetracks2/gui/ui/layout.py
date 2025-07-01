@@ -176,7 +176,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 272, 1393))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 272, 1421))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -490,6 +490,12 @@ class Ui_MainWindow(object):
         self.label_12.setWordWrap(True)
 
         self.verticalLayout_14.addWidget(self.label_12)
+
+        self.layer_presets = QComboBox(self.layer_group)
+        self.layer_presets.addItem("")
+        self.layer_presets.setObjectName(u"layer_presets")
+
+        self.verticalLayout_14.addWidget(self.layer_presets)
 
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
@@ -1654,6 +1660,8 @@ class Ui_MainWindow(object):
         self.invert.setText(QCoreApplication.translate("MainWindow", u"Invert", None))
         self.layer_group.setTitle(QCoreApplication.translate("MainWindow", u"Render Layers", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Use render layers to combine multiple renders together. The options above are set per layer.", None))
+        self.layer_presets.setItemText(0, QCoreApplication.translate("MainWindow", u"Presets", None))
+
 
         __sortingEnabled = self.layer_list.isSortingEnabled()
         self.layer_list.setSortingEnabled(False)
