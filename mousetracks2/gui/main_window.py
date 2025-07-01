@@ -404,6 +404,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
         self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
 
+        self.ui.layer_presets.addItem('Reset')
+        self.ui.layer_presets.addItem('Heatmap Overlay')
         self.ui.layer_presets.addItem('Alpha Multiply')
         self.ui.layer_presets.addItem('Scratches')
 
@@ -2787,6 +2789,31 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         match self.ui.layer_presets.currentText():
+            case 'Reset':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+
+            case 'Heatmap Overlay':
+                colour = self.selected_layer.render_colour.get(ipc.RenderType.Time)
+
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_colour.movement = colour
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.opacity = 50
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Screen
+                self.selected_layer.clipping.heatmap = 0.01
+                self.selected_layer.contrast.heatmap = 1.5
+
             case 'Alpha Multiply':
                 colour = self.selected_layer.render_colour.get(ipc.RenderType.Time)
 
