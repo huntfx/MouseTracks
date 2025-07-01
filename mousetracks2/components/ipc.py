@@ -652,6 +652,7 @@ class Channel(IntFlag):
 
 @dataclass
 class RenderLayer:
+    """Hold a render request with layer data."""
     request: RenderRequest
     blend_mode: RenderLayerBlendMode
     channels: Channel = Channel.RGBA
@@ -660,7 +661,12 @@ class RenderLayer:
 
 @dataclass
 class RenderLayerRequest(Message):
-    """Request a render of multiple layers."""
+    """Request a render of multiple layers.
+
+    Note that this is only meant to be a wrapper over the rendering, so
+    for example this is why the resolution is stored per render request,
+    rather than once per render layer request.
+    """
 
     target: int = field(default=Target.Processing, init=False)
     layers: list[RenderLayer]

@@ -520,49 +520,66 @@ class Processing(Component):
 
             case ipc.RenderLayerRequest():
                 print('[Processing] Render request received...')
+                if not message.layers:
+                    return
+
                 if message.layers[0].request.profile:
                     profile = self.all_profiles[message.layers[0].request.profile]
                 else:
                     profile = self.profile
 
-                resolution_data = None
+                _width: int | None = None
+                _height: int | None = None
+                _lock_aspect: bool | None = None
+
+                # Intercept if a keyboard render
+                for layer in message.layers:
+                    if layer.request.type == ipc.RenderType.Keyboard:
+                        self.send_data(layer.request)
+                        return
 
                 for i, layer in enumerate(message.layers):
                     request = layer.request
 
-                    if resolution_data is None:
-                        layer_resolution_data = {
-                            'width': request.width,
-                            'height': request.height,
-                            'lock_aspect': request.lock_aspect,
-                        }
-                    else:
-                        layer_resolution_data = resolution_data
+                    width = request.width if _width is None else _width
+                    height = request.height if _height is None else _height
+                    lock_aspect = request.lock_aspect if _lock_aspect is None else _lock_aspect
 
-                    image = self._render_array(profile, request.type,
-                                               colour_map=request.colour_map, sampling=request.sampling,
-                                               padding=request.padding, contrast=request.contrast,
-                                               clipping=request.clipping,
-                                               blur=request.blur, linear=request.linear, invert=request.invert,
-                                               left_clicks=request.show_left_clicks,
-                                               middle_clicks=request.show_middle_clicks,
-                                               right_clicks=request.show_right_clicks,
-                                               interpolation_order=request.interpolation_order,
-                                               **layer_resolution_data)
-                    image = image.astype(np.float64) / 255
-                    if resolution_data is None:
-                        resolution_data = {
-                            'width': image.shape[1] //  max(1, request.sampling),
-                            'height': image.shape[0] // max(1, request.sampling),
-                            'lock_aspect': False,
-                        }
-                        render = np.zeros(image.shape)
+                    _image = self._render_array(
+                        profile=profile,
+                        render_type=request.type,
+                        colour_map=request.colour_map,
+                        width=width,
+                        height=height,
+                        lock_aspect=lock_aspect,
+                        sampling=request.sampling,
+                        padding=request.padding,
+                        contrast=request.contrast,
+                        clipping=request.clipping,
+                        blur=request.blur,
+                        linear=request.linear,
+                        invert=request.invert,
+                        left_clicks=request.show_left_clicks,
+                        middle_clicks=request.show_middle_clicks,
+                        right_clicks=request.show_right_clicks,
+                        interpolation_order=request.interpolation_order,
+                    )
+                    image = _image.astype(np.float64)
+                    image /= 255
+
+                    # Store actual width / height on first run, to reuse for other layers
+                    if _width is None:
+                        _width = image.shape[1] //  max(1, request.sampling)
+                    if _height is None:
+                        _height = image.shape[0] // max(1, request.sampling)
+                    if _lock_aspect is None:
+                        render = np.zeros(image.shape, dtype=np.float64)  # Create background
+                        _lock_aspect = False
 
                     channel_indices = ipc.Channel.get_indices(layer.channels)
 
                     layer_opacity = layer.opacity / 100.0
                     if layer.blend_mode == ipc.RenderLayerBlendMode.Overlay:
-                        # Get the opacity for the entire layer (0.0 to 1.0)
 
                         # The effective alpha for blending is the pixel's own alpha multiplied by the layer's overall opacity
                         effective_alpha = image[:, :, 3:] * layer_opacity
@@ -617,9 +634,9 @@ class Processing(Component):
                             if i < final_result.shape[2]: # Ensure the result has the channel
                                 render[:, :, i] = final_result[:, :, i]
 
-                render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
+                final_render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
 
-                self.send_data(ipc.Render(render, request))
+                self.send_data(ipc.Render(final_render, request))
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():

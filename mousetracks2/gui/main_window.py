@@ -105,6 +105,23 @@ class RenderOption(Generic[T]):
                 raise NotImplementedError(f'Unsupported render type: {render_type}')
 
 
+@dataclass
+class LayerOption:
+    render_type: ipc.RenderType
+    blend_mode: ipc.RenderLayerBlendMode
+    channels: ipc.Channel
+    opacity: int = 100
+    render_colour: RenderOption = field(default_factory=lambda: RenderOption('Ice', 'Ice', 'Jet', 'Aqua'))
+    contrast: RenderOption = field(default_factory=lambda: RenderOption(1.0, 1.0, 1.0, 1.0))
+    sampling: RenderOption = field(default_factory=lambda: RenderOption(4, 4, 4, 4))
+    sampling_preview: RenderOption = field(default_factory=lambda: RenderOption(0, 0, 0, 0))
+    padding: RenderOption = field(default_factory=lambda: RenderOption(0, 0, 0, 0))
+    clipping: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.001, 0.0))
+    blur: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.0125, 0.0))
+    linear: RenderOption = field(default_factory=lambda: RenderOption(False, True, True, False))
+    invert: RenderOption = field(default_factory=lambda: RenderOption(False, False, False, False))
+
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -155,18 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._waiting_on_save = False
         self._last_save_message: ipc.SaveComplete | None
         self._resolution_options: dict[tuple[int, int], bool] = {}
+        self._is_updating_layer_options = False
         self.state = ipc.TrackingState.Paused
-
-        # Set default render values
-        self._render_colour = RenderOption('Ice', 'Ice', 'Jet', 'Aqua')
-        self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
-        self._sampling = RenderOption(4, 4, 4, 4)
-        self._sampling_preview = RenderOption(0, 0, 0, 0)
-        self._padding = RenderOption(0, 0, 0, 0)
-        self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
-        self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
-        self._linear = RenderOption(False, True, True, False)
-        self._invert = RenderOption(False, False, False, False)
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -243,6 +250,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cursor_data = MapData(get_cursor_pos())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
+
+        self._layers: dict[int, LayerOption] = {}
+        self._layer_counter = 0
+        self._selected_layer = 0
+        self.ui.layer_list.clear()
+        for enum in ipc.RenderLayerBlendMode:
+            self.ui.layer_blending.addItem(enum.name, enum)
+        background_layer = self.add_render_layer()
+        background_layer.setCheckState(QtCore.Qt.CheckState.Checked)
+        background_layer.setSelected(True)
 
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
@@ -339,6 +356,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_donate.triggered.connect(self.open_url)
         self.ui.about.triggered.connect(self.about)
         self.ui.tip.linkActivated.connect(webbrowser.open)
+        self.ui.layer_list.currentItemChanged.connect(self.selected_layer_changed)
+        self.ui.layer_list.itemChanged.connect(self.selected_layer_toggled)
+        self.ui.layer_list.model().rowsMoved.connect(self.selected_layer_moved)
+        self.ui.layer_blending.currentIndexChanged.connect(self.layer_blend_mode_changed)
+        self.ui.layer_opacity.valueChanged.connect(self.layer_opacity_changed)
+        self.ui.layer_r.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_g.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_b.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_a.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_add.clicked.connect(self.add_render_layer)
+        self.ui.layer_remove.clicked.connect(self.delete_render_layer)
+        self.ui.layer_up.clicked.connect(self.move_layer_up)
+        self.ui.layer_down.clicked.connect(self.move_layer_down)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -412,14 +442,14 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def render_type(self) -> ipc.RenderType:
         """Get the render type."""
-        return self._render_type
+        return self.selected_layer.render_type
 
     @render_type.setter
     def render_type(self, render_type: ipc.RenderType) -> None:
         """Set the render type.
         This populates the available colour maps.
         """
-        self._render_type = render_type
+        self.selected_layer.render_type = render_type
 
         # Add items to render colour input
         self.pause_colour_change = True
@@ -457,94 +487,94 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def render_colour(self) -> str:
         """Get the render colour for the current render type."""
-        return self._render_colour.get(self.render_type)
+        return self.selected_layer.render_colour.get(self.render_type)
 
     @render_colour.setter
     def render_colour(self, colour: str) -> None:
         """Set the render colour for the current render type.
         This will update the current pixel colour too.
         """
-        self._render_colour.set(self.render_type, colour)
+        self.selected_layer.render_colour.set(self.render_type, colour)
 
     @property
     def contrast(self) -> float:
         """Get the contrast for the current render type."""
-        return self._contrast.get(self.render_type)
+        return self.selected_layer.contrast.get(self.render_type)
 
     @contrast.setter
     def contrast(self, value: float) -> None:
         """Set a new constrast value for the current render type."""
-        self._contrast.set(self.render_type, value)
+        self.selected_layer.contrast.set(self.render_type, value)
 
     @property
     def sampling(self) -> int:
         """Get the sampling for the current render type."""
-        return self._sampling.get(self.render_type)
+        return self.selected_layer.sampling.get(self.render_type)
 
     @sampling.setter
     def sampling(self, value: int) -> None:
         """Set a new sampling value for the current render type."""
-        self._sampling.set(self.render_type, value)
+        self.selected_layer.sampling.set(self.render_type, value)
 
     @property
     def sampling_preview(self) -> int:
         """Get the thumbnail sampling for the current render type."""
-        return self._sampling_preview.get(self.render_type)
+        return self.selected_layer.sampling_preview.get(self.render_type)
 
     @sampling_preview.setter
     def sampling_preview(self, value: int) -> None:
         """Set a new thumbnail sampling value for the current render type."""
-        self._sampling_preview.set(self.render_type, value)
+        self.selected_layer.sampling_preview.set(self.render_type, value)
 
     @property
     def padding(self) -> int:
         """Get the padding for the current render type."""
-        return self._padding.get(self.render_type)
+        return self.selected_layer.padding.get(self.render_type)
 
     @padding.setter
     def padding(self, value: int) -> None:
         """Set a new padding value for the current render type."""
-        self._padding.set(self.render_type, value)
+        self.selected_layer.padding.set(self.render_type, value)
 
     @property
     def clipping(self) -> float:
         """Get the clipping for the current render type."""
-        return self._clipping.get(self.render_type)
+        return self.selected_layer.clipping.get(self.render_type)
 
     @clipping.setter
     def clipping(self, value: float) -> None:
         """Set a new clipping value for the current render type."""
-        self._clipping.set(self.render_type, value)
+        self.selected_layer.clipping.set(self.render_type, value)
 
     @property
     def blur(self) -> float:
         """Get the blur for the current render type."""
-        return self._blur.get(self.render_type)
+        return self.selected_layer.blur.get(self.render_type)
 
     @blur.setter
     def blur(self, value: float) -> None:
         """Set a new blur value for the current render type."""
-        self._blur.set(self.render_type, value)
+        self.selected_layer.blur.set(self.render_type, value)
 
     @property
     def linear(self) -> bool:
         """Get if linear mapping is enabled for the current render type."""
-        return self._linear.get(self.render_type)
+        return self.selected_layer.linear.get(self.render_type)
 
     @linear.setter
     def linear(self, value: bool) -> None:
         """Set if linear mapping is enabled for the current render type."""
-        self._linear.set(self.render_type, value)
+        self.selected_layer.linear.set(self.render_type, value)
 
     @property
     def invert(self) -> bool:
         """Get if inverting colours for the current render type."""
-        return self._invert.get(self.render_type)
+        return self.selected_layer.invert.get(self.render_type)
 
     @invert.setter
     def invert(self, value: bool) -> None:
         """Set if inverting colours for the current render type."""
-        self._invert.set(self.render_type, value)
+        self.selected_layer.invert.set(self.render_type, value)
 
     @property
     def mouse_click_count(self) -> int:
@@ -894,7 +924,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
         self.render_type = self.ui.map_type.itemData(idx)
-        self.request_thumbnail()
+        if not self._is_updating_layer_options:
+            self.request_thumbnail()
 
     @QtCore.Slot(bool)
     def show_clicks_changed(self, enabled: bool) -> None:
@@ -1157,21 +1188,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if use_custom_height:
             height = min(height, custom_height)
 
-        # self.component.send_data(ipc.RenderRequest(self.render_type,
-        #                                            width=width, height=height, lock_aspect=lock_aspect,
-        #                                            profile=sanitised_profile_name, file_path=None,
-        #                                            colour_map=self.render_colour, padding=self.padding,
-        #                                            sampling=self.ui.thumbnail_sampling.value(),
-        #                                            contrast=self.contrast, clipping=self.clipping,
-        #                                            blur=self.blur, linear=self.linear, invert=self.invert,
-        #                                            show_left_clicks=self.ui.show_left_clicks.isChecked(),
-        #                                            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-        #                                            show_right_clicks=self.ui.show_right_clicks.isChecked(),
-        #                                            show_count=self.ui.show_count.isChecked(),
-        #                                            show_time=self.ui.show_time.isChecked(),
-        #                                            interpolation_order=self.ui.interpolation_order.value()))
-
         self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data())))
+        return True
 
     def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
         sanitised_profile_name, profile_name = self._get_profile_data()
@@ -1212,45 +1230,27 @@ class MainWindow(QtWidgets.QMainWindow):
             width = custom_width
             height = custom_height
 
-        layer0 = ipc.RenderRequest(
-            type=self.render_type,
-            width=width,
-            height=height,
-            lock_aspect=lock_aspect,
-            profile=sanitised_profile_name,
-            file_path=file_path,
-            colour_map=self.render_colour,
-            padding=self.padding,
-            sampling=self.ui.thumbnail_sampling.value(),
-            contrast=self.contrast,
-            clipping=self.clipping,
-            blur=self.blur,
-            linear=self.linear,
-            invert=self.invert,
-            show_left_clicks=self.ui.show_left_clicks.isChecked(),
-            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-            show_right_clicks=self.ui.show_right_clicks.isChecked(),
-            show_count=self.ui.show_count.isChecked(),
-            show_time=self.ui.show_time.isChecked(),
-            interpolation_order=self.ui.interpolation_order.value(),
-        )
+        old_layer = self._selected_layer
 
-        yield ipc.RenderLayer(layer0, ipc.RenderLayerBlendMode.Replace, ipc.Channel.RGBA)
+        for i in range(self.ui.layer_list.count(), 0, -1):
+            item = self.ui.layer_list.item(i - 1)
+            if item.checkState() == QtCore.Qt.CheckState.Unchecked:
+                continue
 
-        # For debugging
-        if self.render_type == ipc.RenderType.Time:
-            layer1 = ipc.RenderRequest(
-                type=ipc.RenderType.TimeHeatmap,
+            self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+
+            layer = ipc.RenderRequest(
+                type=self.render_type,
                 width=width,
                 height=height,
                 lock_aspect=lock_aspect,
                 profile=sanitised_profile_name,
                 file_path=file_path,
-                colour_map='TransparentWhiteToWhite',
+                colour_map=self.render_colour,
                 padding=self.padding,
                 sampling=self.ui.thumbnail_sampling.value(),
-                contrast=0.5,
-                clipping=0.85,
+                contrast=self.contrast,
+                clipping=self.clipping,
                 blur=self.blur,
                 linear=self.linear,
                 invert=self.invert,
@@ -1262,58 +1262,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 interpolation_order=self.ui.interpolation_order.value(),
             )
 
-            yield ipc.RenderLayer(layer1, ipc.RenderLayerBlendMode.Multiply, ipc.Channel.A)
+            yield ipc.RenderLayer(layer, self.selected_layer.blend_mode, self.selected_layer.channels, self.selected_layer.opacity)
 
-        test_colours = ['BlackToBlue', 'BlackToRed', 'BlackToGreen']
-        if self.render_type == ipc.RenderType.SingleClick and self.ui.show_left_clicks.isChecked() and not self.ui.show_middle_clicks.isChecked() and not self.ui.show_right_clicks.isChecked() and self.render_colour in test_colours:
-
-            layer1 = ipc.RenderRequest(
-                type=self.render_type,
-                width=width,
-                height=height,
-                lock_aspect=lock_aspect,
-                profile=sanitised_profile_name,
-                file_path=file_path,
-                colour_map=test_colours[(test_colours.index(self.render_colour) + 1) % 3],
-                padding=self.padding,
-                sampling=self.ui.thumbnail_sampling.value(),
-                contrast=self.contrast,
-                clipping=self.clipping,
-                blur=self.blur,
-                linear=self.linear,
-                invert=self.invert,
-                show_left_clicks=False,
-                show_middle_clicks=True,
-                show_right_clicks=False,
-                show_count=self.ui.show_count.isChecked(),
-                show_time=self.ui.show_time.isChecked(),
-                interpolation_order=self.ui.interpolation_order.value(),
-            )
-            yield ipc.RenderLayer(layer1, ipc.RenderLayerBlendMode.Add)
-
-            layer2 = ipc.RenderRequest(
-                type=self.render_type,
-                width=width,
-                height=height,
-                lock_aspect=lock_aspect,
-                profile=sanitised_profile_name,
-                file_path=file_path,
-                colour_map=test_colours[(test_colours.index(self.render_colour) + 2) % 3],
-                padding=self.padding,
-                sampling=self.ui.thumbnail_sampling.value(),
-                contrast=self.contrast,
-                clipping=self.clipping,
-                blur=self.blur,
-                linear=self.linear,
-                invert=self.invert,
-                show_left_clicks=False,
-                show_middle_clicks=False,
-                show_right_clicks=True,
-                show_count=self.ui.show_count.isChecked(),
-                show_time=self.ui.show_time.isChecked(),
-                interpolation_order=self.ui.interpolation_order.value(),
-            )
-            yield ipc.RenderLayer(layer2, ipc.RenderLayerBlendMode.Add)
+        self._selected_layer = old_layer
 
     @QtCore.Slot(QtCore.QSize)
     def thumbnail_resize(self, size: QtCore.QSize) -> None:
@@ -1388,22 +1339,6 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
-            # width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-            # height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
-            # self.component.send_data(ipc.RenderRequest(self.render_type,
-            #                                            width=width, height=height, lock_aspect=False,
-            #                                            profile=sanitised_profile_name, file_path=file_path,
-            #                                            colour_map=self.render_colour, sampling=self.sampling,
-            #                                            padding=self.padding, contrast=self.contrast,
-            #                                            clipping=self.clipping, blur=self.blur, linear=self.linear,
-            #                                            invert=self.invert,
-            #                                            show_left_clicks=self.ui.show_left_clicks.isChecked(),
-            #                                            show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-            #                                            show_right_clicks=self.ui.show_right_clicks.isChecked(),
-            #                                            show_count=self.ui.show_count.isChecked(),
-            #                                            show_time=self.ui.show_time.isChecked(),
-            #                                            interpolation_order=self.ui.interpolation_order.value()))
-
             self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data(file_path))))
 
     def thumbnail_render_check(self) -> None:
@@ -2556,6 +2491,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.invert.setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
+        self.ui.layer_group.setVisible(show_advanced and not is_keyboard)
 
     def notify(self, message: str) -> None:
         """Show a notification.
@@ -2720,3 +2656,124 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportDailyStats(sanitised_profile_name, file_path))
+
+    @property
+    def selected_layer(self) -> LayerOption:
+        return self._layers[self._selected_layer]
+
+    @QtCore.Slot()
+    def add_render_layer(self) -> QtWidgets.QListWidgetItem:
+        layer = QtWidgets.QListWidgetItem(f'Layer {self._layer_counter}')
+        layer.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        layer.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
+
+        selectedItems = self.ui.layer_list.selectedItems()
+        self.ui.layer_list.insertItem(0, layer)
+        for item in selectedItems:
+            item.setSelected(True)
+
+        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Overlay, ipc.Channel.RGBA)
+        self._layer_counter += 1
+        return layer
+
+    @QtCore.Slot()
+    def delete_render_layer(self) -> None:
+        for item in self.ui.layer_list.selectedItems():
+            self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
+    def selected_layer_changed(self, current: QtWidgets.QListWidgetItem,
+                                      previous: QtWidgets.QListWidgetItem) -> None:
+        if current == previous:
+            return
+
+        self._is_updating_layer_options = True
+        try:
+            self._selected_layer = current.data(QtCore.Qt.ItemDataRole.UserRole)
+            layer = self._layers[self._selected_layer]
+
+            # Set the render type which will update the other widgets
+            idx = self.ui.map_type.findData(layer.render_type)
+            if idx == self.ui.map_type.currentIndex():
+                self.render_type_changed(idx)
+            else:
+                self.ui.map_type.setCurrentIndex(idx)
+
+            # Set the layer blending
+            idx = self.ui.layer_blending.findData(layer.blend_mode)
+            self.ui.layer_blending.setCurrentIndex(idx)
+
+            # Set the channels
+            self.ui.layer_r.setChecked(layer.channels & ipc.Channel.R)
+            self.ui.layer_g.setChecked(layer.channels & ipc.Channel.G)
+            self.ui.layer_b.setChecked(layer.channels & ipc.Channel.B)
+            self.ui.layer_a.setChecked(layer.channels & ipc.Channel.A)
+
+            # Set the opacity
+            self.ui.layer_opacity.setValue(layer.opacity)
+
+        finally:
+            self._is_updating_layer_options = False
+
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem)
+    def selected_layer_toggled(self, item: QtWidgets.QListWidgetItem) -> None:
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtCore.QModelIndex, int, int, QtCore.QModelIndex, int)
+    def selected_layer_moved(self, srcParent: QtCore.QModelIndex, start: int, end: int,
+                             dstParent: QtCore.QModelIndex, dstRow: int) -> None:
+        self.request_thumbnail()
+
+    @QtCore.Slot(int)
+    def layer_blend_mode_changed(self, idx: int) -> None:
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.blend_mode = self.ui.layer_blending.itemData(idx)
+        self.request_thumbnail()
+
+    @QtCore.Slot()
+    def layer_channel_changed(self) -> None:
+        if self._is_updating_layer_options:
+            return
+        channels = 0
+        if self.ui.layer_r.isChecked():
+            channels |= ipc.Channel.R
+        if self.ui.layer_g.isChecked():
+            channels |= ipc.Channel.G
+        if self.ui.layer_b.isChecked():
+            channels |= ipc.Channel.B
+        if self.ui.layer_a.isChecked():
+            channels |= ipc.Channel.A
+        self.selected_layer.channels = ipc.Channel(channels)
+        self.request_thumbnail()
+
+    @QtCore.Slot(int)
+    def layer_opacity_changed(self, value: int) -> None:
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.opacity = value
+        self.request_thumbnail()
+
+    @QtCore.Slot()
+    def move_layer_up(self) -> None:
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row <= 0:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row - 1, item)
+            self.ui.layer_list.setCurrentItem(item)
+
+    @QtCore.Slot()
+    def move_layer_down(self) -> None:
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row < 0 or row >= self.ui.layer_list.count() - 1:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row + 1, item)
+            self.ui.layer_list.setCurrentItem(item)

@@ -16,12 +16,13 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
-    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QListWidget, QListWidgetItem, QMainWindow, QMenu,
-    QMenuBar, QPushButton, QRadioButton, QScrollArea,
-    QScrollBar, QSizePolicy, QSpacerItem, QSpinBox,
-    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
+    QLabel, QListWidget, QListWidgetItem, QMainWindow,
+    QMenu, QMenuBar, QPushButton, QRadioButton,
+    QScrollArea, QScrollBar, QSizePolicy, QSpacerItem,
+    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from mousetracks2.gui.widgets import (ResizableImage, Splitter)
 
@@ -175,7 +176,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 261, 1053))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 272, 1393))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
@@ -203,57 +204,6 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_3.addWidget(self.groupBox_2)
-
-        self.groupBox_3 = QGroupBox(self.scrollAreaWidgetContents)
-        self.groupBox_3.setObjectName(u"groupBox_3")
-        self.gridLayout_6 = QGridLayout(self.groupBox_3)
-        self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.horizontalLayout_4 = QHBoxLayout()
-        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.show_left_clicks = QCheckBox(self.groupBox_3)
-        self.show_left_clicks.setObjectName(u"show_left_clicks")
-        self.show_left_clicks.setChecked(True)
-
-        self.horizontalLayout_4.addWidget(self.show_left_clicks)
-
-        self.show_middle_clicks = QCheckBox(self.groupBox_3)
-        self.show_middle_clicks.setObjectName(u"show_middle_clicks")
-        self.show_middle_clicks.setChecked(True)
-
-        self.horizontalLayout_4.addWidget(self.show_middle_clicks)
-
-        self.show_right_clicks = QCheckBox(self.groupBox_3)
-        self.show_right_clicks.setObjectName(u"show_right_clicks")
-        self.show_right_clicks.setChecked(True)
-
-        self.horizontalLayout_4.addWidget(self.show_right_clicks)
-
-
-        self.gridLayout_6.addLayout(self.horizontalLayout_4, 1, 0, 1, 1)
-
-        self.map_type = QComboBox(self.groupBox_3)
-        self.map_type.setObjectName(u"map_type")
-
-        self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
-
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.show_count = QRadioButton(self.groupBox_3)
-        self.show_count.setObjectName(u"show_count")
-        self.show_count.setChecked(True)
-
-        self.horizontalLayout_2.addWidget(self.show_count)
-
-        self.show_time = QRadioButton(self.groupBox_3)
-        self.show_time.setObjectName(u"show_time")
-
-        self.horizontalLayout_2.addWidget(self.show_time)
-
-
-        self.gridLayout_6.addLayout(self.horizontalLayout_2, 2, 0, 1, 1)
-
-
-        self.verticalLayout_3.addWidget(self.groupBox_3)
 
         self.resolution_group = QGroupBox(self.scrollAreaWidgetContents)
         self.resolution_group.setObjectName(u"resolution_group")
@@ -329,6 +279,57 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_3.addWidget(self.resolution_group)
+
+        self.groupBox_3 = QGroupBox(self.scrollAreaWidgetContents)
+        self.groupBox_3.setObjectName(u"groupBox_3")
+        self.gridLayout_6 = QGridLayout(self.groupBox_3)
+        self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.show_left_clicks = QCheckBox(self.groupBox_3)
+        self.show_left_clicks.setObjectName(u"show_left_clicks")
+        self.show_left_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_left_clicks)
+
+        self.show_middle_clicks = QCheckBox(self.groupBox_3)
+        self.show_middle_clicks.setObjectName(u"show_middle_clicks")
+        self.show_middle_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_middle_clicks)
+
+        self.show_right_clicks = QCheckBox(self.groupBox_3)
+        self.show_right_clicks.setObjectName(u"show_right_clicks")
+        self.show_right_clicks.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.show_right_clicks)
+
+
+        self.gridLayout_6.addLayout(self.horizontalLayout_4, 1, 0, 1, 1)
+
+        self.map_type = QComboBox(self.groupBox_3)
+        self.map_type.setObjectName(u"map_type")
+
+        self.gridLayout_6.addWidget(self.map_type, 0, 0, 1, 1)
+
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.show_count = QRadioButton(self.groupBox_3)
+        self.show_count.setObjectName(u"show_count")
+        self.show_count.setChecked(True)
+
+        self.horizontalLayout_2.addWidget(self.show_count)
+
+        self.show_time = QRadioButton(self.groupBox_3)
+        self.show_time.setObjectName(u"show_time")
+
+        self.horizontalLayout_2.addWidget(self.show_time)
+
+
+        self.gridLayout_6.addLayout(self.horizontalLayout_2, 2, 0, 1, 1)
+
+
+        self.verticalLayout_3.addWidget(self.groupBox_3)
 
         self.groupBox_5 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_5.setObjectName(u"groupBox_5")
@@ -479,6 +480,129 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_3.addWidget(self.groupBox_5)
+
+        self.layer_group = QGroupBox(self.scrollAreaWidgetContents)
+        self.layer_group.setObjectName(u"layer_group")
+        self.verticalLayout_14 = QVBoxLayout(self.layer_group)
+        self.verticalLayout_14.setObjectName(u"verticalLayout_14")
+        self.label_12 = QLabel(self.layer_group)
+        self.label_12.setObjectName(u"label_12")
+        self.label_12.setWordWrap(True)
+
+        self.verticalLayout_14.addWidget(self.label_12)
+
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.layer_list = QListWidget(self.layer_group)
+        __qlistwidgetitem = QListWidgetItem(self.layer_list)
+        __qlistwidgetitem.setCheckState(Qt.Unchecked);
+        __qlistwidgetitem1 = QListWidgetItem(self.layer_list)
+        __qlistwidgetitem1.setCheckState(Qt.Checked);
+        self.layer_list.setObjectName(u"layer_list")
+        self.layer_list.setMaximumSize(QSize(16777215, 100))
+        self.layer_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+
+        self.horizontalLayout_3.addWidget(self.layer_list)
+
+        self.verticalLayout_17 = QVBoxLayout()
+        self.verticalLayout_17.setObjectName(u"verticalLayout_17")
+        self.layer_add = QPushButton(self.layer_group)
+        self.layer_add.setObjectName(u"layer_add")
+        self.layer_add.setMaximumSize(QSize(24, 24))
+
+        self.verticalLayout_17.addWidget(self.layer_add)
+
+        self.layer_remove = QPushButton(self.layer_group)
+        self.layer_remove.setObjectName(u"layer_remove")
+        self.layer_remove.setMaximumSize(QSize(24, 24))
+
+        self.verticalLayout_17.addWidget(self.layer_remove)
+
+        self.layer_up = QPushButton(self.layer_group)
+        self.layer_up.setObjectName(u"layer_up")
+        self.layer_up.setMaximumSize(QSize(24, 24))
+
+        self.verticalLayout_17.addWidget(self.layer_up)
+
+        self.layer_down = QPushButton(self.layer_group)
+        self.layer_down.setObjectName(u"layer_down")
+        self.layer_down.setMaximumSize(QSize(24, 24))
+
+        self.verticalLayout_17.addWidget(self.layer_down)
+
+
+        self.horizontalLayout_3.addLayout(self.verticalLayout_17)
+
+
+        self.verticalLayout_14.addLayout(self.horizontalLayout_3)
+
+        self.gridLayout_9 = QGridLayout()
+        self.gridLayout_9.setObjectName(u"gridLayout_9")
+        self.label_33 = QLabel(self.layer_group)
+        self.label_33.setObjectName(u"label_33")
+        self.label_33.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_9.addWidget(self.label_33, 1, 0, 1, 1)
+
+        self.horizontalLayout_10 = QHBoxLayout()
+        self.horizontalLayout_10.setObjectName(u"horizontalLayout_10")
+        self.layer_r = QCheckBox(self.layer_group)
+        self.layer_r.setObjectName(u"layer_r")
+        self.layer_r.setChecked(True)
+
+        self.horizontalLayout_10.addWidget(self.layer_r)
+
+        self.layer_g = QCheckBox(self.layer_group)
+        self.layer_g.setObjectName(u"layer_g")
+        self.layer_g.setChecked(True)
+
+        self.horizontalLayout_10.addWidget(self.layer_g)
+
+        self.layer_b = QCheckBox(self.layer_group)
+        self.layer_b.setObjectName(u"layer_b")
+        self.layer_b.setChecked(True)
+
+        self.horizontalLayout_10.addWidget(self.layer_b)
+
+        self.layer_a = QCheckBox(self.layer_group)
+        self.layer_a.setObjectName(u"layer_a")
+        self.layer_a.setChecked(True)
+
+        self.horizontalLayout_10.addWidget(self.layer_a)
+
+
+        self.gridLayout_9.addLayout(self.horizontalLayout_10, 2, 1, 1, 1)
+
+        self.layer_blending = QComboBox(self.layer_group)
+        self.layer_blending.setObjectName(u"layer_blending")
+
+        self.gridLayout_9.addWidget(self.layer_blending, 1, 1, 1, 1)
+
+        self.layer_opacity = QSpinBox(self.layer_group)
+        self.layer_opacity.setObjectName(u"layer_opacity")
+        self.layer_opacity.setMaximum(100)
+        self.layer_opacity.setSingleStep(10)
+        self.layer_opacity.setValue(100)
+
+        self.gridLayout_9.addWidget(self.layer_opacity, 0, 1, 1, 1)
+
+        self.label_34 = QLabel(self.layer_group)
+        self.label_34.setObjectName(u"label_34")
+        self.label_34.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_9.addWidget(self.label_34, 2, 0, 1, 1)
+
+        self.label_32 = QLabel(self.layer_group)
+        self.label_32.setObjectName(u"label_32")
+        self.label_32.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_9.addWidget(self.label_32, 0, 0, 1, 1)
+
+
+        self.verticalLayout_14.addLayout(self.gridLayout_9)
+
+
+        self.verticalLayout_3.addWidget(self.layer_group)
 
         self.groupBox_9 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_9.setObjectName(u"groupBox_9")
@@ -1281,14 +1405,15 @@ class Ui_MainWindow(object):
         self.menuTracking.addAction(self.prefs_track_network)
 
         self.retranslateUi(MainWindow)
+        self.tray_about.triggered.connect(self.about.trigger)
+        self.tray_donate.triggered.connect(self.link_donate.trigger)
         self.save.clicked.connect(self.file_save.trigger)
         self.enable_custom_width.toggled.connect(self.custom_width.setEnabled)
         self.enable_custom_height.toggled.connect(self.custom_height.setEnabled)
         self.tray_app_add.triggered.connect(self.stat_app_add.click)
-        self.tray_about.triggered.connect(self.about.trigger)
-        self.tray_donate.triggered.connect(self.link_donate.trigger)
 
         self.tab_options.setCurrentIndex(0)
+        self.layer_list.setCurrentRow(1)
         self.output_logs.setCurrentIndex(1)
 
 
@@ -1376,25 +1501,6 @@ class Ui_MainWindow(object):
 "When a new profile is recorded to, the GUI will immediately update.", None))
 #endif // QT_CONFIG(tooltip)
         self.auto_switch_profile.setText(QCoreApplication.translate("MainWindow", u"Keep currently loaded selected", None))
-        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Data Type", None))
-#if QT_CONFIG(tooltip)
-        self.show_left_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show left mouse clicks / left thumbstick.", None))
-#endif // QT_CONFIG(tooltip)
-        self.show_left_clicks.setText(QCoreApplication.translate("MainWindow", u"Left", None))
-#if QT_CONFIG(tooltip)
-        self.show_middle_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show middle mouse clicks.", None))
-#endif // QT_CONFIG(tooltip)
-        self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
-#if QT_CONFIG(tooltip)
-        self.show_right_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show right mouse clicks / right thumbstick.", None))
-#endif // QT_CONFIG(tooltip)
-        self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
-#if QT_CONFIG(tooltip)
-        self.map_type.setToolTip(QCoreApplication.translate("MainWindow", u"Select which dataset to render.\n"
-"If no data exists, then a blank image will be shown.", None))
-#endif // QT_CONFIG(tooltip)
-        self.show_count.setText(QCoreApplication.translate("MainWindow", u"Count", None))
-        self.show_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.resolution_group.setTitle(QCoreApplication.translate("MainWindow", u"Resolution", None))
 #if QT_CONFIG(tooltip)
         self.custom_height_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit custom_height", None))
@@ -1430,6 +1536,25 @@ class Ui_MainWindow(object):
         self.custom_width_label.setToolTip(QCoreApplication.translate("MainWindow", u"!inherit custom_width", None))
 #endif // QT_CONFIG(tooltip)
         self.custom_width_label.setText(QCoreApplication.translate("MainWindow", u"Width Override:", None))
+        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Data Type", None))
+#if QT_CONFIG(tooltip)
+        self.show_left_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show left mouse clicks / left thumbstick.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_left_clicks.setText(QCoreApplication.translate("MainWindow", u"Left", None))
+#if QT_CONFIG(tooltip)
+        self.show_middle_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show middle mouse clicks.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_middle_clicks.setText(QCoreApplication.translate("MainWindow", u"Middle", None))
+#if QT_CONFIG(tooltip)
+        self.show_right_clicks.setToolTip(QCoreApplication.translate("MainWindow", u"Show right mouse clicks / right thumbstick.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_right_clicks.setText(QCoreApplication.translate("MainWindow", u"Right", None))
+#if QT_CONFIG(tooltip)
+        self.map_type.setToolTip(QCoreApplication.translate("MainWindow", u"Select which dataset to render.\n"
+"If no data exists, then a blank image will be shown.", None))
+#endif // QT_CONFIG(tooltip)
+        self.show_count.setText(QCoreApplication.translate("MainWindow", u"Count", None))
+        self.show_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Render Settings", None))
 #if QT_CONFIG(tooltip)
         self.thumbnail_sampling.setToolTip(QCoreApplication.translate("MainWindow", u"Set the level of sampling used for the preview render.\n"
@@ -1527,6 +1652,29 @@ class Ui_MainWindow(object):
         self.invert.setToolTip(QCoreApplication.translate("MainWindow", u"Invert the colour map.", None))
 #endif // QT_CONFIG(tooltip)
         self.invert.setText(QCoreApplication.translate("MainWindow", u"Invert", None))
+        self.layer_group.setTitle(QCoreApplication.translate("MainWindow", u"Render Layers", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Use render layers to combine multiple renders together. The options above are set per layer.", None))
+
+        __sortingEnabled = self.layer_list.isSortingEnabled()
+        self.layer_list.setSortingEnabled(False)
+        ___qlistwidgetitem = self.layer_list.item(0)
+        ___qlistwidgetitem.setText(QCoreApplication.translate("MainWindow", u"Layer 1", None));
+        ___qlistwidgetitem1 = self.layer_list.item(1)
+        ___qlistwidgetitem1.setText(QCoreApplication.translate("MainWindow", u"Layer 0", None));
+        self.layer_list.setSortingEnabled(__sortingEnabled)
+
+        self.layer_add.setText(QCoreApplication.translate("MainWindow", u"+", None))
+        self.layer_remove.setText(QCoreApplication.translate("MainWindow", u"-", None))
+        self.layer_up.setText(QCoreApplication.translate("MainWindow", u"\u2191", None))
+        self.layer_down.setText(QCoreApplication.translate("MainWindow", u"\u2193", None))
+        self.label_33.setText(QCoreApplication.translate("MainWindow", u"Blending Mope:", None))
+        self.layer_r.setText(QCoreApplication.translate("MainWindow", u"R", None))
+        self.layer_g.setText(QCoreApplication.translate("MainWindow", u"G", None))
+        self.layer_b.setText(QCoreApplication.translate("MainWindow", u"B", None))
+        self.layer_a.setText(QCoreApplication.translate("MainWindow", u"A", None))
+        self.layer_opacity.setSuffix(QCoreApplication.translate("MainWindow", u"%", None))
+        self.label_34.setText(QCoreApplication.translate("MainWindow", u"Channels:", None))
+        self.label_32.setText(QCoreApplication.translate("MainWindow", u"Opacity:", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Stats", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Mouse Scrolls:", None))
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"Elapsed Time:", None))
@@ -1737,47 +1885,47 @@ class Ui_MainWindow(object):
         self.status_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
 
-        __sortingEnabled = self.listWidget_3.isSortingEnabled()
+        __sortingEnabled1 = self.listWidget_3.isSortingEnabled()
         self.listWidget_3.setSortingEnabled(False)
-        ___qlistwidgetitem = self.listWidget_3.item(0)
-        ___qlistwidgetitem.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1480, 730).", None));
-        ___qlistwidgetitem1 = self.listWidget_3.item(1)
-        ___qlistwidgetitem1.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1454, 658).", None));
-        ___qlistwidgetitem2 = self.listWidget_3.item(2)
-        ___qlistwidgetitem2.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1447, 639).", None));
-        ___qlistwidgetitem3 = self.listWidget_3.item(3)
-        ___qlistwidgetitem3.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1447, 639).", None));
-        ___qlistwidgetitem4 = self.listWidget_3.item(4)
-        ___qlistwidgetitem4.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button clicked at (1448, 835).", None));
-        ___qlistwidgetitem5 = self.listWidget_3.item(5)
-        ___qlistwidgetitem5.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1427, 740).", None));
-        ___qlistwidgetitem6 = self.listWidget_3.item(6)
-        ___qlistwidgetitem6.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1424, 660).", None));
-        ___qlistwidgetitem7 = self.listWidget_3.item(7)
-        ___qlistwidgetitem7.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1425, 643).", None));
-        ___qlistwidgetitem8 = self.listWidget_3.item(8)
-        ___qlistwidgetitem8.setText(QCoreApplication.translate("MainWindow", u"[11:05:41] Left mouse button being held at (1425, 643).", None));
-        ___qlistwidgetitem9 = self.listWidget_3.item(9)
-        ___qlistwidgetitem9.setText(QCoreApplication.translate("MainWindow", u"[11:05:41] Finished loading data. | 170 commands queued for processing.", None));
-        ___qlistwidgetitem10 = self.listWidget_3.item(10)
-        ___qlistwidgetitem10.setText(QCoreApplication.translate("MainWindow", u"[11:05:43] Left mouse button clicked at (1109, 705).", None));
-        ___qlistwidgetitem11 = self.listWidget_3.item(11)
-        ___qlistwidgetitem11.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Application gained focus: Qt Designer | Application resolution is 2576x1416.", None));
-        ___qlistwidgetitem12 = self.listWidget_3.item(12)
-        ___qlistwidgetitem12.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Switching profile to Qt Designer. | Preparing data to save...", None));
-        ___qlistwidgetitem13 = self.listWidget_3.item(13)
-        ___qlistwidgetitem13.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Left mouse button clicked at (1493, 996).", None));
-        ___qlistwidgetitem14 = self.listWidget_3.item(14)
-        ___qlistwidgetitem14.setText(QCoreApplication.translate("MainWindow", u"[11:05:45] Left mouse button clicked at (1506, 1024).", None));
-        ___qlistwidgetitem15 = self.listWidget_3.item(15)
-        ___qlistwidgetitem15.setText(QCoreApplication.translate("MainWindow", u"[11:05:51] Left mouse button clicked at (781, 412).", None));
-        ___qlistwidgetitem16 = self.listWidget_3.item(16)
-        ___qlistwidgetitem16.setText(QCoreApplication.translate("MainWindow", u"[11:05:55] Left mouse button clicked at (2128, 162).", None));
-        ___qlistwidgetitem17 = self.listWidget_3.item(17)
-        ___qlistwidgetitem17.setText(QCoreApplication.translate("MainWindow", u"[11:05:56] 348 commands queued for processing.", None));
-        ___qlistwidgetitem18 = self.listWidget_3.item(18)
-        ___qlistwidgetitem18.setText(QCoreApplication.translate("MainWindow", u"[11:06:02] Left mouse button clicked at (89, 535).", None));
-        self.listWidget_3.setSortingEnabled(__sortingEnabled)
+        ___qlistwidgetitem2 = self.listWidget_3.item(0)
+        ___qlistwidgetitem2.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1480, 730).", None));
+        ___qlistwidgetitem3 = self.listWidget_3.item(1)
+        ___qlistwidgetitem3.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1454, 658).", None));
+        ___qlistwidgetitem4 = self.listWidget_3.item(2)
+        ___qlistwidgetitem4.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1447, 639).", None));
+        ___qlistwidgetitem5 = self.listWidget_3.item(3)
+        ___qlistwidgetitem5.setText(QCoreApplication.translate("MainWindow", u"[11:05:38] Left mouse button being held at (1447, 639).", None));
+        ___qlistwidgetitem6 = self.listWidget_3.item(4)
+        ___qlistwidgetitem6.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button clicked at (1448, 835).", None));
+        ___qlistwidgetitem7 = self.listWidget_3.item(5)
+        ___qlistwidgetitem7.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1427, 740).", None));
+        ___qlistwidgetitem8 = self.listWidget_3.item(6)
+        ___qlistwidgetitem8.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1424, 660).", None));
+        ___qlistwidgetitem9 = self.listWidget_3.item(7)
+        ___qlistwidgetitem9.setText(QCoreApplication.translate("MainWindow", u"[11:05:40] Left mouse button being held at (1425, 643).", None));
+        ___qlistwidgetitem10 = self.listWidget_3.item(8)
+        ___qlistwidgetitem10.setText(QCoreApplication.translate("MainWindow", u"[11:05:41] Left mouse button being held at (1425, 643).", None));
+        ___qlistwidgetitem11 = self.listWidget_3.item(9)
+        ___qlistwidgetitem11.setText(QCoreApplication.translate("MainWindow", u"[11:05:41] Finished loading data. | 170 commands queued for processing.", None));
+        ___qlistwidgetitem12 = self.listWidget_3.item(10)
+        ___qlistwidgetitem12.setText(QCoreApplication.translate("MainWindow", u"[11:05:43] Left mouse button clicked at (1109, 705).", None));
+        ___qlistwidgetitem13 = self.listWidget_3.item(11)
+        ___qlistwidgetitem13.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Application gained focus: Qt Designer | Application resolution is 2576x1416.", None));
+        ___qlistwidgetitem14 = self.listWidget_3.item(12)
+        ___qlistwidgetitem14.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Switching profile to Qt Designer. | Preparing data to save...", None));
+        ___qlistwidgetitem15 = self.listWidget_3.item(13)
+        ___qlistwidgetitem15.setText(QCoreApplication.translate("MainWindow", u"[11:05:44] Left mouse button clicked at (1493, 996).", None));
+        ___qlistwidgetitem16 = self.listWidget_3.item(14)
+        ___qlistwidgetitem16.setText(QCoreApplication.translate("MainWindow", u"[11:05:45] Left mouse button clicked at (1506, 1024).", None));
+        ___qlistwidgetitem17 = self.listWidget_3.item(15)
+        ___qlistwidgetitem17.setText(QCoreApplication.translate("MainWindow", u"[11:05:51] Left mouse button clicked at (781, 412).", None));
+        ___qlistwidgetitem18 = self.listWidget_3.item(16)
+        ___qlistwidgetitem18.setText(QCoreApplication.translate("MainWindow", u"[11:05:55] Left mouse button clicked at (2128, 162).", None));
+        ___qlistwidgetitem19 = self.listWidget_3.item(17)
+        ___qlistwidgetitem19.setText(QCoreApplication.translate("MainWindow", u"[11:05:56] 348 commands queued for processing.", None));
+        ___qlistwidgetitem20 = self.listWidget_3.item(18)
+        ___qlistwidgetitem20.setText(QCoreApplication.translate("MainWindow", u"[11:06:02] Left mouse button clicked at (89, 535).", None));
+        self.listWidget_3.setSortingEnabled(__sortingEnabled1)
 
         self.output_logs.setTabText(self.output_logs.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"Tracking", None))
         self.output_logs.setTabText(self.output_logs.indexOf(self.tab_7), QCoreApplication.translate("MainWindow", u"Processing", None))
