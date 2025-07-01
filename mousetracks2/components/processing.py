@@ -21,7 +21,7 @@ from ..utils.math import calculate_line, calculate_distance, calculate_pixel_off
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
-from ..render import render, EmptyRenderError
+from ..render import render, apply_checkerboard_background, EmptyRenderError
 
 
 @dataclass
@@ -633,6 +633,10 @@ class Processing(Component):
                         for i in channel_indices:
                             if i < final_result.shape[2]: # Ensure the result has the channel
                                 render[:, :, i] = final_result[:, :, i]
+
+                # Add checkerboards to preview render backgrounds
+                if message.layers[0].request.file_path is None:
+                    render = apply_checkerboard_background(render)
 
                 final_render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
 

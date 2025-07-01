@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -313,3 +313,44 @@ def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
         combined_array[y: y + scale_height, x:x + scale_width] = array
 
     return combined_array
+
+
+def apply_checkerboard_background(rgba_image: npt.NDArray[np.float64], square_size: int = 16,
+                                  light_colour: tuple[float, float, float] = (0.8, 0.8, 0.8),
+                                  dark_colour: tuple[float, float, float] = (0.6, 0.6, 0.6)) -> npt.NDArray[np.float64]:
+    """Blends a floating-point RGBA image onto a checkerboard background.
+
+    Parameters:
+        rgba_image: The source image as a NumPy array with shape (height, width, 4)
+                    and float values between 0.0 and 1.0.
+        square_size: The size of each square in the checkerboard pattern.
+        light_color: The (R, G, B) float tuple for the light squares.
+        dark_color: The (R, G, B) float tuple for the dark squares.
+
+    Returns:
+        A NumPy array of shape (height, width, 3) representing the final
+        RGB image blended onto the checkerboard.
+    """
+    height, width, channels = rgba_image.shape
+    if channels < 4:
+        return rgba_image
+
+    background = np.zeros((height, width, 3), dtype=np.float64)
+
+    # Create the checkerboard pattern using modulo arithmetic
+    # This results in a 2D array of 0s and 1s
+    rows, cols = np.indices((height, width))
+    checkerboard_mask = ((rows // square_size) % 2) != ((cols // square_size) % 2)
+
+    # Use the mask to fill in the two colors
+    background[checkerboard_mask] = light_colour
+    background[~checkerboard_mask] = dark_colour
+
+    # Perform alpha blending
+    foreground_rgb = rgba_image[:, :, :3]
+    alpha = rgba_image[:, :, 3:]
+
+    # The alpha blending formula: Final = Foreground * Alpha + Background * (1 - Alpha)
+    composite_image = (foreground_rgb * alpha) + (background * (1.0 - alpha))
+
+    return cast(npt.NDArray[np.float64], composite_image)
