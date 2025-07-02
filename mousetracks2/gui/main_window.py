@@ -2684,7 +2684,16 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def delete_render_layer(self) -> None:
         for item in self.ui.layer_list.selectedItems():
-            self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
+            if self.ui.layer_list.count() <= 1:
+                msg = QtWidgets.QMessageBox(self)
+                msg.setWindowTitle('Error')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText('Failed to remove layer, no other layers exit.')
+                msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+                msg.exec()
+
+            else:
+                self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
 
     @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
     def selected_layer_changed(self, current: QtWidgets.QListWidgetItem,
