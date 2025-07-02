@@ -384,7 +384,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def set_random_tip_text(self) -> None:
         """Text a random tip."""
-        tips = ['tip_tracking']
+        tips = ['tip_tracking', 'tip_tooltip']
         if not is_latest_version():
             tips.append('tip_update')
         self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
