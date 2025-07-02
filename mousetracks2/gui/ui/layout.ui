@@ -88,7 +88,7 @@ combat aliasing.</string>
                <x>0</x>
                <y>0</y>
                <width>272</width>
-               <height>1421</height>
+               <height>1327</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -755,22 +755,20 @@ This is primarily designed for use with heatmaps.</string>
               </item>
               <item>
                <widget class="QGroupBox" name="layer_group">
+                <property name="toolTip">
+                 <string>Use render layers to combine multiple renders together, making use of opacity and blending modes.
+The &quot;Render Settings&quot; and &quot;Data Type&quot; options above are set per layer.</string>
+                </property>
                 <property name="title">
                  <string>Render Layers</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
                  <item>
-                  <widget class="QLabel" name="label_12">
-                   <property name="text">
-                    <string>Use render layers to combine multiple renders together. The options above are set per layer.</string>
-                   </property>
-                   <property name="wordWrap">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QComboBox" name="layer_presets">
+                   <property name="toolTip">
+                    <string>Choose a layer setup from a few defined presets.
+This will overwrite your current setup.</string>
+                   </property>
                    <item>
                     <property name="text">
                      <string>Presets</string>
@@ -785,8 +783,12 @@ This is primarily designed for use with heatmaps.</string>
                      <property name="maximumSize">
                       <size>
                        <width>16777215</width>
-                       <height>100</height>
+                       <height>114</height>
                       </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>List of all the current layers, which can be reordered by dragging.
+Use the checkbox to enable / disable layers.</string>
                      </property>
                      <property name="dragDropMode">
                       <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
@@ -822,6 +824,10 @@ This is primarily designed for use with heatmaps.</string>
                          <height>24</height>
                         </size>
                        </property>
+                       <property name="toolTip">
+                        <string>Add a new layer.
+The new layer will be unchecked by default, so will not be initially shown.</string>
+                       </property>
                        <property name="text">
                         <string>+</string>
                        </property>
@@ -834,6 +840,9 @@ This is primarily designed for use with heatmaps.</string>
                          <width>24</width>
                          <height>24</height>
                         </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Remove the selected layer.</string>
                        </property>
                        <property name="text">
                         <string>-</string>
@@ -848,6 +857,9 @@ This is primarily designed for use with heatmaps.</string>
                          <height>24</height>
                         </size>
                        </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer up.</string>
+                       </property>
                        <property name="text">
                         <string>↑</string>
                        </property>
@@ -860,6 +872,9 @@ This is primarily designed for use with heatmaps.</string>
                          <width>24</width>
                          <height>24</height>
                         </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer down.</string>
                        </property>
                        <property name="text">
                         <string>↓</string>
@@ -875,7 +890,7 @@ This is primarily designed for use with heatmaps.</string>
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_33">
                      <property name="toolTip">
-                      <string>!inherit blending_mode</string>
+                      <string>!inherit layer_blending</string>
                      </property>
                      <property name="text">
                       <string>Blending Mode:</string>
@@ -892,6 +907,9 @@ This is primarily designed for use with heatmaps.</string>
                     <layout class="QHBoxLayout" name="horizontalLayout_10">
                      <item>
                       <widget class="QCheckBox" name="layer_r">
+                       <property name="toolTip">
+                        <string>Enable the red channel for the current layer.</string>
+                       </property>
                        <property name="text">
                         <string>R</string>
                        </property>
@@ -902,6 +920,9 @@ This is primarily designed for use with heatmaps.</string>
                      </item>
                      <item>
                       <widget class="QCheckBox" name="layer_g">
+                       <property name="toolTip">
+                        <string>Enable the green channel for the current layer.</string>
+                       </property>
                        <property name="text">
                         <string>G</string>
                        </property>
@@ -912,6 +933,9 @@ This is primarily designed for use with heatmaps.</string>
                      </item>
                      <item>
                       <widget class="QCheckBox" name="layer_b">
+                       <property name="toolTip">
+                        <string>Enable the blue channel for the current layer.</string>
+                       </property>
                        <property name="text">
                         <string>B</string>
                        </property>
@@ -922,6 +946,9 @@ This is primarily designed for use with heatmaps.</string>
                      </item>
                      <item>
                       <widget class="QCheckBox" name="layer_a">
+                       <property name="toolTip">
+                        <string>Enable the alpha channel for the current layer.</string>
+                       </property>
                        <property name="text">
                         <string>A</string>
                        </property>
@@ -933,10 +960,17 @@ This is primarily designed for use with heatmaps.</string>
                     </layout>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QComboBox" name="layer_blending"/>
+                    <widget class="QComboBox" name="layer_blending">
+                     <property name="toolTip">
+                      <string>Set the blending mode of the current layer.</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="1">
                     <widget class="QSpinBox" name="layer_opacity">
+                     <property name="toolTip">
+                      <string>Set the opacity of the selected layer.</string>
+                     </property>
                      <property name="suffix">
                       <string>%</string>
                      </property>
@@ -953,6 +987,10 @@ This is primarily designed for use with heatmaps.</string>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_34">
+                     <property name="toolTip">
+                      <string>Set which channels to use from the current layer.
+For example, it can be limited to Alpha to copy the transparency.</string>
+                     </property>
                      <property name="text">
                       <string>Channels:</string>
                      </property>
@@ -964,7 +1002,7 @@ This is primarily designed for use with heatmaps.</string>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_32">
                      <property name="toolTip">
-                      <string>!inherit opacity</string>
+                      <string>!inherit layer_opacity</string>
                      </property>
                      <property name="text">
                       <string>Opacity:</string>
