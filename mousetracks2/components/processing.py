@@ -545,25 +545,43 @@ class Processing(Component):
                     height = request.height if _height is None else _height
                     lock_aspect = request.lock_aspect if _lock_aspect is None else _lock_aspect
 
-                    _image = self._render_array(
-                        profile=profile,
-                        render_type=request.type,
-                        colour_map=request.colour_map,
-                        width=width,
-                        height=height,
-                        lock_aspect=lock_aspect,
-                        sampling=request.sampling,
-                        padding=request.padding,
-                        contrast=request.contrast,
-                        clipping=request.clipping,
-                        blur=request.blur,
-                        linear=request.linear,
-                        invert=request.invert,
-                        left_clicks=request.show_left_clicks,
-                        middle_clicks=request.show_middle_clicks,
-                        right_clicks=request.show_right_clicks,
-                        interpolation_order=request.interpolation_order,
-                    )
+                    if request.layer_visible:
+                        _image = self._render_array(
+                            profile=profile,
+                            render_type=request.type,
+                            colour_map=request.colour_map,
+                            width=width,
+                            height=height,
+                            lock_aspect=lock_aspect,
+                            sampling=request.sampling,
+                            padding=request.padding,
+                            contrast=request.contrast,
+                            clipping=request.clipping,
+                            blur=request.blur,
+                            linear=request.linear,
+                            invert=request.invert,
+                            left_clicks=request.show_left_clicks,
+                            middle_clicks=request.show_middle_clicks,
+                            right_clicks=request.show_right_clicks,
+                            interpolation_order=request.interpolation_order,
+                        )
+                    elif i:
+                        continue
+
+                    # If the first layer, then do a quick render to get the correct resolution
+                    else:
+                        _image = self._render_array(
+                            profile=profile,
+                            render_type=request.type,
+                            colour_map=request.colour_map,
+                            width=width,
+                            height=height,
+                            lock_aspect=lock_aspect,
+                            left_clicks=False,
+                            middle_clicks=False,
+                            right_clicks=False,
+                        )
+
                     image = _image.astype(np.float64)
                     image /= 255
 
@@ -575,6 +593,10 @@ class Processing(Component):
                     if _lock_aspect is None:
                         render = np.zeros(image.shape, dtype=np.float64)  # Create background
                         _lock_aspect = False
+
+                    # If the first layer is disabled then stop here
+                    if not request.layer_visible:
+                        continue
 
                     channel_indices = ipc.Channel.get_indices(layer.channels)
 

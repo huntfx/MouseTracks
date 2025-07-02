@@ -1240,9 +1240,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for i in range(self.ui.layer_list.count(), 0, -1):
             item = self.ui.layer_list.item(i - 1)
-            if item.checkState() == QtCore.Qt.CheckState.Unchecked:
-                continue
-
             self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
             layer = ipc.RenderRequest(
@@ -1266,6 +1263,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 show_count=self.ui.show_count.isChecked(),
                 show_time=self.ui.show_time.isChecked(),
                 interpolation_order=self.ui.interpolation_order.value(),
+                layer_visible=item.checkState() == QtCore.Qt.CheckState.Checked,
             )
 
             yield ipc.RenderLayer(layer, self.selected_layer.blend_mode, self.selected_layer.channels, self.selected_layer.opacity)
