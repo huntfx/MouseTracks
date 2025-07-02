@@ -932,6 +932,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render_type = self.ui.map_type.itemData(idx)
         if not self._is_updating_layer_options:
             self.request_thumbnail()
+            self.update_layer_item_name()
 
     @QtCore.Slot(bool)
     def show_clicks_changed(self, enabled: bool) -> None:
@@ -2666,18 +2667,19 @@ class MainWindow(QtWidgets.QMainWindow):
         return self._layers[self._selected_layer]
 
     def add_render_layer(self) -> QtWidgets.QListWidgetItem:
-        layer = QtWidgets.QListWidgetItem(f'Layer {self._layer_counter}')
-        layer.setCheckState(QtCore.Qt.CheckState.Unchecked)
-        layer.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
+        item = QtWidgets.QListWidgetItem()
+        item.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
 
         selectedItems = self.ui.layer_list.selectedItems()
-        self.ui.layer_list.insertItem(0, layer)
+        self.ui.layer_list.insertItem(0, item)
         for item in selectedItems:
             item.setSelected(True)
 
         self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Overlay, ipc.Channel.RGBA)
         self._layer_counter += 1
-        return layer
+        self.update_layer_item_name(item)
+        return item
 
     @QtCore.Slot()
     def delete_render_layer(self) -> None:
@@ -2744,6 +2746,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.selected_layer.blend_mode = self.ui.layer_blending.itemData(idx)
         self.request_thumbnail()
+        self.update_layer_item_name()
 
     @QtCore.Slot()
     def layer_channel_changed(self) -> None:
@@ -2760,6 +2763,7 @@ class MainWindow(QtWidgets.QMainWindow):
             channels |= ipc.Channel.A
         self.selected_layer.channels = ipc.Channel(channels)
         self.request_thumbnail()
+        self.update_layer_item_name()
 
     @QtCore.Slot(int)
     def layer_opacity_changed(self, value: int) -> None:
@@ -2767,6 +2771,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.selected_layer.opacity = value
         self.request_thumbnail()
+        self.update_layer_item_name()
 
     @QtCore.Slot()
     def move_layer_up(self) -> None:
@@ -2802,8 +2807,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
 
             case 'Heatmap Overlay':
-                colour = self.selected_layer.render_colour.get(ipc.RenderType.Time)
-
                 self.ui.layer_list.clear()
                 layer_0 = self.add_render_layer()
                 layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -2812,7 +2815,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.Time
-                self.selected_layer.render_colour.movement = colour
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.opacity = 50
@@ -2822,8 +2824,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.contrast.heatmap = 1.5
 
             case 'Alpha Multiply':
-                colour = self.selected_layer.render_colour.get(ipc.RenderType.Time)
-
                 self.ui.layer_list.clear()
                 layer_0 = self.add_render_layer()
                 layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -2832,7 +2832,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.Time
-                self.selected_layer.render_colour.movement = colour
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.TimeHeatmap
@@ -2861,3 +2860,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self._selected_layer = 0
         self.ui.layer_presets.setCurrentIndex(0)
         self.ui.layer_list.setCurrentItem(layer_0)
+
+        for item in map(self.ui.layer_list.item, range(self.ui.layer_list.count())):
+            self.update_layer_item_name(item)
+
+    def update_layer_item_name(self, item: QtWidgets.QListWidgetItem | None = None) -> None:
+        if item is None:
+            item = self.ui.layer_list.selectedItems()[0]
+
+        layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        data = self._layers[layer]
+
+        name_parts: list[Any] = [
+            f'Layer {layer}',
+            self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:],
+            data.blend_mode.name,
+            f'{data.opacity}%',
+            ipc.Channel(data.channels).name,
+        ]
+        item.setText(' | '.join(map(str, name_parts)))
