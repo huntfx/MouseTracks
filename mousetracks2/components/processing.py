@@ -601,7 +601,7 @@ class Processing(Component):
                     channel_indices = ipc.Channel.get_indices(layer.channels)
 
                     layer_opacity = layer.opacity / 100.0
-                    if layer.blend_mode == ipc.RenderLayerBlendMode.Overlay:
+                    if layer.blend_mode == ipc.RenderLayerBlendMode.Normal:
 
                         # The effective alpha for blending is the pixel's own alpha multiplied by the layer's overall opacity
                         effective_alpha = image[:, :, 3:] * layer_opacity
@@ -623,7 +623,7 @@ class Processing(Component):
                             new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
                             render[:, :, 3:] = new_alpha
 
-                    elif layer.blend_mode == ipc.RenderLayerBlendMode.Screen:
+                    elif layer.blend_mode == ipc.RenderLayerBlendMode.LuminanceMask:
                         # Use the brightness (luminance) of the image's RGB channels as its alpha
                         luminance_alpha = np.max(image[:, :, :3], axis=2, keepdims=True)
                         effective_alpha = luminance_alpha * layer_opacity
@@ -653,12 +653,20 @@ class Processing(Component):
                             case ipc.RenderLayerBlendMode.Multiply:
                                 blend_result = np.multiply(render, image)
                             case ipc.RenderLayerBlendMode.Divide:
-                                mask = image > 1e-6 # Use a small epsilon for float comparison
+                                mask = image > 1e-6
                                 blend_result[mask] = np.divide(render[mask], image[mask])
                             case ipc.RenderLayerBlendMode.Maximum:
                                 blend_result = np.maximum(render, image)
                             case ipc.RenderLayerBlendMode.Minimum:
                                 blend_result = np.minimum(render, image)
+                            case ipc.RenderLayerBlendMode.Screen:
+                                blend_result = 1 - (1 - render) * (1 - image)
+                            case ipc.RenderLayerBlendMode.Difference:
+                                blend_result = np.abs(render - image)
+                            case ipc.RenderLayerBlendMode.SoftLight:
+                                blend_result = np.where(image <= 0.5,
+                                                        render - (1 - 2 * image) * render * (1 - render),
+                                                        render + (2 * image - 1) * (np.sqrt(render) - render))
 
                         # Final Opacity Blending for non-overlay modes
                         if layer_opacity < 1.0:

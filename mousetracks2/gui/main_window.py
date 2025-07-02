@@ -108,7 +108,7 @@ class RenderOption(Generic[T]):
 @dataclass
 class LayerOption:
     render_type: ipc.RenderType
-    blend_mode: ipc.RenderLayerBlendMode = ipc.RenderLayerBlendMode.Overlay
+    blend_mode: ipc.RenderLayerBlendMode = ipc.RenderLayerBlendMode.Normal
     channels: ipc.Channel = ipc.Channel.RGBA
     opacity: int = 100
     render_colour: RenderOption = field(default_factory=lambda: RenderOption('Ice', 'Ice', 'Jet', 'Aqua'))
@@ -408,8 +408,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.layer_presets.addItem('Reset')
         self.ui.layer_presets.addItem('Heatmap Overlay')
+        self.ui.layer_presets.addItem('Heatmap Tracks')
         self.ui.layer_presets.addItem('Alpha Multiply')
-        self.ui.layer_presets.addItem('Scratches')
+        self.ui.layer_presets.addItem('Urban Grass')
+        self.ui.layer_presets.addItem('Eraser')
 
     def eventFilter(self, obj: QtWidgets.QWidget, event: QtCore.QEvent) -> bool:
         # Ignore scroll events on the layer presets combobox
@@ -2685,7 +2687,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for item in selectedItems:
             item.setSelected(True)
 
-        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Overlay, ipc.Channel.RGBA)
+        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Normal, ipc.Channel.RGBA)
         self._layer_counter += 1
         self.update_layer_item_name(item)
         return item
@@ -2828,9 +2830,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.opacity = 50
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Screen
+                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.LuminanceMask
                 self.selected_layer.clipping.heatmap = 0.01
                 self.selected_layer.contrast.heatmap = 1.5
+
+            case 'Heatmap Tracks':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_colour.movement = 'Chalk'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Multiply
+                self.selected_layer.render_type = ipc.RenderType.TimeHeatmap
+                self.selected_layer.render_colour.heatmap = 'Inferno'
+                self.selected_layer.blur.heatmap = 0.001
 
             case 'Alpha Multiply':
                 self.ui.layer_list.clear()
@@ -2851,7 +2870,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.clipping.heatmap = 0.85
                 self.selected_layer.contrast.heatmap = 0.5
 
-            case 'Scratches':
+            case 'Urban Grass':
                 self.ui.layer_list.clear()
                 layer_0 = self.add_render_layer()
                 layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -2865,6 +2884,25 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.Speed
                 self.selected_layer.render_colour.speed = 'TransparentBlackToBlackToGreen'
+
+            case 'Eraser':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_colour.movement = 'Flare'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Subtract
+                self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
+                self.selected_layer.channels = ipc.Channel.A
+                self.selected_layer.clipping.heatmap = 0.2
+                self.selected_layer.contrast.heatmap = 1.5
 
         self._selected_layer = 0
         self.ui.layer_presets.setCurrentIndex(0)

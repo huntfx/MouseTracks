@@ -624,16 +624,18 @@ class SendPID(Message):
 
 
 class RenderLayerBlendMode(Enum):
-    Overlay = auto()
+    Normal = auto()
     Replace = auto()
+    Screen = auto()
+    SoftLight = auto()
+    LuminanceMask = auto()
     Add = auto()
     Subtract = auto()
     Multiply = auto()
     Divide = auto()
+    Difference = auto()
     Maximum = auto()
     Minimum = auto()
-    Screen = auto()
-
 
 
 class Channel(IntFlag):
