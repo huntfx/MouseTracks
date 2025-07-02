@@ -192,6 +192,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
 
+        self.ui.layer_presets.installEventFilter(self)
+
         # Hide social links for now
         self.ui.link_reddit.setVisible(False)
         self.ui.link_facebook.setVisible(False)
@@ -408,6 +410,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.addItem('Heatmap Overlay')
         self.ui.layer_presets.addItem('Alpha Multiply')
         self.ui.layer_presets.addItem('Scratches')
+
+    def eventFilter(self, obj: QtWidgets.QWidget, event: QtCore.QEvent) -> bool:
+        # Ignore scroll events on the layer presets combobox
+        if obj is self.ui.layer_presets and event.type() == QtCore.QEvent.Type.Wheel:
+            event.ignore()
+            return True
+        return super().eventFilter(obj, event)
 
     @QtCore.Slot()
     def open_url(self) -> None:

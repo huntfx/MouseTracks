@@ -765,6 +765,9 @@ The &quot;Render Settings&quot; and &quot;Data Type&quot; options above are set 
                 <layout class="QVBoxLayout" name="verticalLayout_14">
                  <item>
                   <widget class="QComboBox" name="layer_presets">
+                   <property name="focusPolicy">
+                    <enum>Qt::FocusPolicy::StrongFocus</enum>
+                   </property>
                    <property name="toolTip">
                     <string>Choose a layer setup from a few defined presets.
 This will overwrite your current setup.</string>

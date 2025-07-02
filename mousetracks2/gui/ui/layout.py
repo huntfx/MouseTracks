@@ -488,6 +488,7 @@ class Ui_MainWindow(object):
         self.layer_presets = QComboBox(self.layer_group)
         self.layer_presets.addItem("")
         self.layer_presets.setObjectName(u"layer_presets")
+        self.layer_presets.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.verticalLayout_14.addWidget(self.layer_presets)
 
