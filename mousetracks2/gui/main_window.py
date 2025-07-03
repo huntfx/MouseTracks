@@ -411,7 +411,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.addItem('Urban Grass')
         self.ui.layer_presets.addItem('Eraser')
 
-    def eventFilter(self, obj: QtWidgets.QWidget, event: QtCore.QEvent) -> bool:
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
         # Ignore scroll events on the layer presets combobox
         if obj is self.ui.layer_presets and event.type() == QtCore.QEvent.Type.Wheel:
             event.ignore()

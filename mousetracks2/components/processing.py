@@ -4,9 +4,10 @@ import time
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Iterator, Literal
+from typing import Iterator, Literal, cast
 
 import numpy as np
+import numpy.typing as npt
 
 from . import ipc
 from .abstract import Component
@@ -660,7 +661,8 @@ class Processing(Component):
                             case ipc.RenderLayerBlendMode.Minimum:
                                 blend_result = np.minimum(render, image)
                             case ipc.RenderLayerBlendMode.Screen:
-                                blend_result = 1 - (1 - render) * (1 - image)
+                                _blend_result = 1.0 - (1.0 - render) * (1.0 - image)
+                                blend_result = cast(npt.NDArray[np.float64], _blend_result)
                             case ipc.RenderLayerBlendMode.Difference:
                                 blend_result = np.abs(render - image)
                             case ipc.RenderLayerBlendMode.SoftLight:
