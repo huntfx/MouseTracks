@@ -2894,7 +2894,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.Time
-                self.selected_layer.render_colour.movement = 'Flare'
+                self.selected_layer.render_colour.movement = 'Graphite'
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
