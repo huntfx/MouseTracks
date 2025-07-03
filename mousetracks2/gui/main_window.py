@@ -411,6 +411,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.addItem('Alpha Multiply')
         self.ui.layer_presets.addItem('Urban Grass')
         self.ui.layer_presets.addItem('Eraser')
+        self.ui.layer_presets.addItem('Plasma')
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
         # Ignore scroll events on the layer presets combobox
@@ -2949,6 +2950,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.channels = Channel.A
                 self.selected_layer.clipping.heatmap = 0.2
                 self.selected_layer.contrast.heatmap = 1.5
+
+            case 'Plasma':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+                self.selected_layer.render_colour.movement = 'Demon'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = BlendMode.HardLight
+                self.selected_layer.render_colour.heatmap = 'Riptide'
+                self.selected_layer.clipping.heatmap = 0.01
+                self.selected_layer.blur.heatmap = 0.02
 
         self._selected_layer = 0
         self.ui.layer_presets.setCurrentIndex(0)
