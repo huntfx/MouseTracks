@@ -1138,7 +1138,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Prevent too many requests from queuing up
         # This ensures there's at most 2
         if self.pause_redraw:
-            self._thumbnail_redraw_required += True
+            self._thumbnail_redraw_required = True
             return True
 
         # Flag if drawing to prevent building up duplicate commands
