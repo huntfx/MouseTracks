@@ -7,6 +7,7 @@ import re
 import sys
 import time
 import webbrowser
+import zipfile
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -77,14 +78,14 @@ class RenderOption(Generic[T]):
     def get(self, render_type: ipc.RenderType) -> T:
         """Get the value for a render type."""
         match render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
+            case (ipc.RenderType.MouseMovement | ipc.RenderType.ThumbstickMovement):
                 return self.movement
-            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
+            case ipc.RenderType.MouseSpeed | ipc.RenderType.ThumbstickSpeed:
                 return self.speed
             case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                  | ipc.RenderType.ThumbstickPosition | ipc.RenderType.MousePosition):
                 return self.heatmap
-            case ipc.RenderType.Keyboard:
+            case ipc.RenderType.KeyboardHeatmap:
                 return self.keyboard
             case _:
                 raise NotImplementedError(f'Unsupported render type: {render_type}')
@@ -92,14 +93,14 @@ class RenderOption(Generic[T]):
     def set(self, render_type: ipc.RenderType, value: T) -> None:
         """Set the value for a render type."""
         match render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
+            case (ipc.RenderType.MouseMovement | ipc.RenderType.ThumbstickMovement):
                 self.movement = value
-            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
+            case ipc.RenderType.MouseSpeed | ipc.RenderType.ThumbstickSpeed:
                 self.speed = value
             case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
+                  | ipc.RenderType.ThumbstickPosition | ipc.RenderType.MousePosition):
                 self.heatmap = value
-            case ipc.RenderType.Keyboard:
+            case ipc.RenderType.KeyboardHeatmap:
                 self.keyboard = value
             case _:
                 raise NotImplementedError(f'Unsupported render type: {render_type}')
@@ -169,6 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._force_close = False
         self._waiting_on_save = False
         self._last_save_message: ipc.SaveComplete | None
+        self._thumbnail_redraw_required = False
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self._is_updating_layer_options = False
         self.state = ipc.TrackingState.Paused
@@ -236,16 +238,16 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
 
         # self.ui.map_type = QtWidgets.QComboBox()
-        self.ui.map_type.addItem('[Mouse] Movement', ipc.RenderType.Time)
-        self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.Speed)
-        self.ui.map_type.addItem('[Mouse] Position', ipc.RenderType.TimeHeatmap)
+        self.ui.map_type.addItem('[Mouse] Movement', ipc.RenderType.MouseMovement)
+        self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.MouseSpeed)
+        self.ui.map_type.addItem('[Mouse] Position', ipc.RenderType.MousePosition)
         self.ui.map_type.addItem('[Mouse] Clicks', ipc.RenderType.SingleClick)
         self.ui.map_type.addItem('[Mouse] Double Clicks', ipc.RenderType.DoubleClick)
         self.ui.map_type.addItem('[Mouse] Held Clicks', ipc.RenderType.HeldClick)
-        self.ui.map_type.addItem('[Keyboard] Key Presses', ipc.RenderType.Keyboard)
-        self.ui.map_type.addItem('[Thumbsticks] Movement', ipc.RenderType.Thumbstick_Time)
-        self.ui.map_type.addItem('[Thumbsticks] Speed', ipc.RenderType.Thumbstick_Speed)
-        self.ui.map_type.addItem('[Thumbsticks] Position', ipc.RenderType.Thumbstick_Heatmap)
+        self.ui.map_type.addItem('[Keyboard] Key Presses', ipc.RenderType.KeyboardHeatmap)
+        self.ui.map_type.addItem('[Thumbsticks] Movement', ipc.RenderType.ThumbstickMovement)
+        self.ui.map_type.addItem('[Thumbsticks] Speed', ipc.RenderType.ThumbstickSpeed)
+        self.ui.map_type.addItem('[Thumbsticks] Position', ipc.RenderType.ThumbstickPosition)
 
         self.cursor_data = MapData(get_cursor_pos())
         self.thumbstick_l_data = MapData((0, 0))
@@ -267,7 +269,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
         self.monitor_data = monitor_locations()
-        self.render_type = ipc.RenderType.Time
+        self.render_type = ipc.RenderType.MouseMovement
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
         self.save_all_request_sent = self.save_profile_request_sent = False
@@ -281,6 +283,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_resize.setSingleShot(True)
         self._timer_rendering = QtCore.QTimer(self)
         self._timer_rendering.setSingleShot(True)
+        self._timer_tip = QtCore.QTimer(self)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -380,6 +383,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
+        self._timer_tip.timeout.connect(self.set_random_tip_text)
 
         self.ui.debug_state_running.triggered.connect(self.start_tracking)
         self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
@@ -393,12 +397,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Trigger initial setup
         self.profile_changed(0)
         self.ui.show_advanced.setChecked(False)
-
-        # Set tip
-        tips = ['tip_tracking']
-        if not is_latest_version():
-            tips.append('tip_update')
-        self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
 
         self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
         self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
@@ -419,6 +417,24 @@ class MainWindow(QtWidgets.QMainWindow):
             event.ignore()
             return True
         return super().eventFilter(obj, event)
+
+    def set_tip_timer_state(self, enabled: bool) -> None:
+        """Set the state of the tip update timer.
+        The text update function is triggered every 10 minutes.
+        """
+        if enabled:
+            self.set_random_tip_text()
+            self._timer_tip.start(600000)
+        else:
+            self._timer_tip.stop()
+
+    @QtCore.Slot()
+    def set_random_tip_text(self) -> None:
+        """Text a random tip."""
+        tips = ['tip_tracking', 'tip_tooltip']
+        if not is_latest_version():
+            tips.append('tip_update')
+        self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
 
     @QtCore.Slot()
     def open_url(self) -> None:
@@ -474,11 +490,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.clear()
 
         colour_maps = colours.get_map_matches(
-            tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.Speed,
-                                   ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed),
+            tracks=render_type in (ipc.RenderType.MouseMovement, ipc.RenderType.MouseSpeed,
+                                   ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickSpeed),
             clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
-                                   ipc.RenderType.Thumbstick_Heatmap, ipc.RenderType.TimeHeatmap),
-            keyboard=render_type == ipc.RenderType.Keyboard,
+                                   ipc.RenderType.ThumbstickPosition, ipc.RenderType.MousePosition),
+            keyboard=render_type == ipc.RenderType.KeyboardHeatmap,
         )
         self.ui.colour_option.addItems(sorted(colour_maps))
 
@@ -1168,6 +1184,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
+        # Prevent too many requests from queuing up
+        # This ensures there's at most 2
+        if self.pause_redraw:
+            self._thumbnail_redraw_required = True
+            return True
+
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
 
@@ -1312,11 +1334,11 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setDefaultSuffix('png')
 
         match self.render_type:
-            case ipc.RenderType.Time:
+            case ipc.RenderType.MouseMovement:
                 name = 'Mouse Movement'
-            case ipc.RenderType.TimeHeatmap:
+            case ipc.RenderType.MousePosition:
                 name = 'Mouse Position'
-            case ipc.RenderType.Speed:
+            case ipc.RenderType.MouseSpeed:
                 name = 'Mouse Speed'
             case ipc.RenderType.SingleClick:
                 name = 'Mouse Clicks'
@@ -1324,13 +1346,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = 'Mouse Double Clicks'
             case ipc.RenderType.HeldClick:
                 name = 'Mouse Held Clicks'
-            case ipc.RenderType.Thumbstick_Time:
+            case ipc.RenderType.ThumbstickMovement:
                 name = 'Gamepad Thumbstick Movement'
-            case ipc.RenderType.Thumbstick_Heatmap:
+            case ipc.RenderType.ThumbstickPosition:
                 name = 'Gamepad Thumbstick Position'
-            case ipc.RenderType.Thumbstick_Speed:
+            case ipc.RenderType.ThumbstickSpeed:
                 name = 'Gamepad Thumbstick Speed'
-            case ipc.RenderType.Keyboard:
+            case ipc.RenderType.KeyboardHeatmap:
                 name = 'Keyboard Heatmap'
             case _:
                 name = 'Data'
@@ -1347,9 +1369,22 @@ class MainWindow(QtWidgets.QMainWindow):
             if not image_dir.exists():
                 image_dir.mkdir()
 
+        # Get the correct profile elapsed time
+        # It's only stored for the current profile, so load the data
+        # from disk if the requested profile isn't current
+        if self._is_loading_profile:
+            try:
+                _profile = TrackingProfile.load(get_filename(profile_name), metadata_only=True)
+            except FileNotFoundError:
+                elapsed_time = 0
+            else:
+                elapsed_time = _profile.elapsed
+        else:
+            elapsed_time = self.elapsed_time
+
         # Generate the default image name
-        sort_key = f'{math.isqrt(self.elapsed_time // UPDATES_PER_SECOND):05}'
-        ticks_str = format_ticks(self.elapsed_time, UPDATES_PER_SECOND)
+        sort_key = f'{math.isqrt(elapsed_time // UPDATES_PER_SECOND):05}'
+        ticks_str = format_ticks(elapsed_time, UPDATES_PER_SECOND)
         image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
 
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
@@ -1361,11 +1396,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """Check if the thumbnail should be re-rendered."""
         match self.render_type:
             # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-            case ipc.RenderType.Time:
+            case ipc.RenderType.MouseMovement:
                 count = self.cursor_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             # With speed it must be constant, doesn't work as well live
-            case ipc.RenderType.Speed | ipc.RenderType.TimeHeatmap:
+            case ipc.RenderType.MouseSpeed | ipc.RenderType.MousePosition:
                 update_frequency = 50
                 count = self.cursor_data.counter
             case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
@@ -1374,13 +1409,13 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.HeldClick:
                 update_frequency = 50
                 count = self.mouse_held_count
-            case ipc.RenderType.Thumbstick_Time:
+            case ipc.RenderType.ThumbstickMovement:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.Thumbstick_Speed | ipc.RenderType.Thumbstick_Heatmap:
+            case ipc.RenderType.ThumbstickSpeed | ipc.RenderType.ThumbstickPosition:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = 50
-            case ipc.RenderType.Keyboard:
+            case ipc.RenderType.KeyboardHeatmap:
                 update_frequency = 1
                 count = self.key_press_count
             case _:
@@ -1515,6 +1550,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     self.pause_redraw -= 1
 
+                    # Check if the flag was set that a new thumbnail was requested
+                    if not self.pause_redraw and self._thumbnail_redraw_required:
+                        self._request_thumbnail()
+                        self._thumbnail_redraw_required = False
+
                 # Save a render
                 elif failed:
                     msg = QtWidgets.QMessageBox(self)
@@ -1534,7 +1574,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mouse_held_count += 1
 
             case ipc.MouseMove() if self.is_live and self.mouse_tracking_enabled:
-                if self.render_type == ipc.RenderType.Time:
+                if self.render_type == ipc.RenderType.MouseMovement:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1554,7 +1594,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 x = x * 0.5 + offset  # Required for the side by side display
 
                 remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
-                if self.render_type == ipc.RenderType.Thumbstick_Time:
+                if self.render_type == ipc.RenderType.ThumbstickMovement:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
@@ -1951,6 +1991,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer_activity.start(100)
             self.request_thumbnail()
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
+            self._timer_tip.start(600000)
+
+        self.set_tip_timer_state(True)
 
         event.accept()
 
@@ -1984,6 +2027,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer_activity.stop()
             self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
+
+        self.set_tip_timer_state(False)
 
         event.accept()
 
@@ -2479,8 +2524,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_advanced_options(self, show_advanced: bool) -> None:
         """Set the visibility of render option widgets."""
         is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
-        is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
-        is_keyboard = self.render_type == ipc.RenderType.Keyboard
+        is_thumbstick = self.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickSpeed, ipc.RenderType.ThumbstickPosition)
+        is_keyboard = self.render_type == ipc.RenderType.KeyboardHeatmap
 
         self.ui.show_left_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
         self.ui.show_middle_clicks.setVisible(show_advanced and is_click)

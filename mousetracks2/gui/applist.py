@@ -32,6 +32,7 @@ class AppListWindow(QtWidgets.QDialog):
         self.ui.create.clicked.connect(self.create_new_rule)
         self.ui.remove.clicked.connect(self.remove_selected_rule)
         self.ui.open.clicked.connect(self.open_applist)
+        self.ui.browse.clicked.connect(self.browse_executable)
 
         self._populate_process_list()
 
@@ -194,3 +195,19 @@ class AppListWindow(QtWidgets.QDialog):
         """Save the data and exit."""
         self.applist.save()
         self.accept()
+
+    @QtCore.Slot()
+    def browse_executable(self) -> None:
+        """Select an executable file."""
+        file_path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Executable File',
+                                                                  '',
+                                                                  'Executable Files (*.exe);;All Files (*)')
+        if not file_path:
+            return
+
+        executable = os.path.basename(file_path)
+        idx = self.ui.executable.findText(executable)
+        if idx > 0:
+            self.ui.executable.setCurrentIndex(idx)
+        else:
+            self.ui.executable.setCurrentText(os.path.basename(file_path))

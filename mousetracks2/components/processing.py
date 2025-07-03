@@ -253,13 +253,13 @@ class Processing(Component):
 
         arrays: dict[tuple[int, int], list[np.typing.ArrayLike]] = defaultdict(list)
         match render_type:
-            case ipc.RenderType.Time:
+            case ipc.RenderType.MouseMovement:
                 arrays[0, 0].extend(get_arrays(profile.cursor_map.sequential_arrays))
 
-            case ipc.RenderType.TimeHeatmap:
+            case ipc.RenderType.MousePosition:
                 arrays[0, 0].extend(get_arrays(profile.cursor_map.density_arrays))
 
-            case ipc.RenderType.Speed:
+            case ipc.RenderType.MouseSpeed:
                 arrays[0, 0].extend(get_arrays(profile.cursor_map.speed_arrays))
 
             case ipc.RenderType.SingleClick:
@@ -292,7 +292,7 @@ class Processing(Component):
                         continue
                     arrays[0, 0].extend(get_arrays(map))
 
-            case ipc.RenderType.Thumbstick_Time:
+            case ipc.RenderType.ThumbstickMovement:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
                         map = gamepad_maps.sequential_arrays
@@ -302,7 +302,7 @@ class Processing(Component):
                         map = gamepad_maps.sequential_arrays
                         arrays[int(left_clicks), 0].extend(map.values())
 
-            case ipc.RenderType.Thumbstick_Speed:
+            case ipc.RenderType.ThumbstickSpeed:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
                         map = gamepad_maps.speed_arrays
@@ -312,7 +312,7 @@ class Processing(Component):
                         map = gamepad_maps.speed_arrays
                         arrays[int(left_clicks), 0].extend(map.values())
 
-            case ipc.RenderType.Thumbstick_Heatmap:
+            case ipc.RenderType.ThumbstickPosition:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
                         map = gamepad_maps.density_arrays
@@ -491,7 +491,7 @@ class Processing(Component):
                 else:
                     profile = self.profile
 
-                if message.type == ipc.RenderType.Keyboard:
+                if message.type == ipc.RenderType.KeyboardHeatmap:
                     # Double the sampling, since the default render is too small
                     sampling = message.sampling
                     if message.file_path is not None:

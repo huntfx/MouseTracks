@@ -45,11 +45,26 @@ class Ui_Form(object):
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.verticalLayout_3 = QVBoxLayout(self.groupBox_3)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.executable = QComboBox(self.groupBox_3)
         self.executable.setObjectName(u"executable")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.executable.sizePolicy().hasHeightForWidth())
+        self.executable.setSizePolicy(sizePolicy)
         self.executable.setEditable(True)
 
-        self.verticalLayout_3.addWidget(self.executable)
+        self.horizontalLayout.addWidget(self.executable)
+
+        self.browse = QPushButton(self.groupBox_3)
+        self.browse.setObjectName(u"browse")
+
+        self.horizontalLayout.addWidget(self.browse)
+
+
+        self.verticalLayout_3.addLayout(self.horizontalLayout)
 
         self.label_6 = QLabel(self.groupBox_3)
         self.label_6.setObjectName(u"label_6")
@@ -151,11 +166,11 @@ class Ui_Form(object):
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
         self.create = QPushButton(self.layoutWidget)
         self.create.setObjectName(u"create")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.create.sizePolicy().hasHeightForWidth())
-        self.create.setSizePolicy(sizePolicy)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.create.sizePolicy().hasHeightForWidth())
+        self.create.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_5.addWidget(self.create)
 
@@ -241,6 +256,7 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.groupBox_3.setTitle(QCoreApplication.translate("Form", u"Executable", None))
         self.executable.setCurrentText(QCoreApplication.translate("Form", u"Game_Win64.exe", None))
+        self.browse.setText(QCoreApplication.translate("Form", u"Search", None))
         self.label_6.setText(QCoreApplication.translate("Form", u"- Case sensitive<br>- The wildcard character sequence <strong><code>&#60;*&#62;</code></strong> is supported.<br>- Partial paths are supported for a narrower search scope.", None))
 #if QT_CONFIG(tooltip)
         self.groupBox_6.setToolTip(QCoreApplication.translate("Form", u"Set the name of the profile.\n"
