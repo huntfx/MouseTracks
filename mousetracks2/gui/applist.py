@@ -199,9 +199,16 @@ class AppListWindow(QtWidgets.QDialog):
     @QtCore.Slot()
     def browse_executable(self) -> None:
         """Select an executable file."""
+        match sys.platform:
+            case 'win32':
+                file_filter = 'Executable Files (*.exe);;All Files (*)'
+            case 'darwin':
+                file_filter = 'Applications (*.app);;All Files (*)'
+            case _:
+                file_filter = 'All Files (*)'
+
         file_path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Executable File',
-                                                                  '',
-                                                                  'Executable Files (*.exe);;All Files (*)')
+                                                                  '', file_filter)
         if not file_path:
             return
 
