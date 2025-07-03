@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from functools import wraps
-from typing import Callable, Literal, Self, cast
+from typing import Callable, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -515,7 +515,9 @@ class LayerBlend:
     @_simple_blend
     def overlay(self, image: npt.NDArray[np.float64], opacity: float,
                 channels: Channel) -> npt.NDArray[np.float64]:
-        return np.where(self.image <= 0.5, 2 * self.image * image, 1 - 2 * (1 - self.image) * (1 - image))
+        return np.where(self.image <= 0.5,
+                        2 * self.image * image,
+                        1 - 2 * (1 - self.image) * (1 - image))
 
     @_simple_blend
     def soft_light(self, image: npt.NDArray[np.float64], opacity: float,

@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Iterator, Literal, cast
+from typing import Iterator, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -591,7 +591,7 @@ class Processing(Component):
                             middle_clicks=False,
                             right_clicks=False,
                         )
-                    image = cast(npt.NDArray[np.float64], _image.astype(np.float64) / 255)
+                    image = np.divide(_image.astype(np.float64), 255)
 
                     # Setup the base layer
                     if layer_blend is None:
