@@ -113,8 +113,6 @@ class LayerOption:
     opacity: int = 100
     render_colour: RenderOption = field(default_factory=lambda: RenderOption('Ice', 'Ice', 'Jet', 'Aqua'))
     contrast: RenderOption = field(default_factory=lambda: RenderOption(1.0, 1.0, 1.0, 1.0))
-    sampling: RenderOption = field(default_factory=lambda: RenderOption(4, 4, 4, 4))
-    sampling_preview: RenderOption = field(default_factory=lambda: RenderOption(0, 0, 0, 0))
     padding: RenderOption = field(default_factory=lambda: RenderOption(0, 0, 0, 0))
     clipping: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.001, 0.0))
     blur: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.0125, 0.0))
@@ -252,6 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cursor_data = MapData(get_cursor_pos())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
+        self._sampling = 4
+        self._sampling_preview = 0
 
         self._layers: dict[int, LayerOption] = {}
         self._layer_counter = 0
@@ -526,22 +526,22 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def sampling(self) -> int:
         """Get the sampling for the current render type."""
-        return self.selected_layer.sampling.get(self.render_type)
+        return self._sampling
 
     @sampling.setter
     def sampling(self, value: int) -> None:
         """Set a new sampling value for the current render type."""
-        self.selected_layer.sampling.set(self.render_type, value)
+        self._sampling = value
 
     @property
     def sampling_preview(self) -> int:
         """Get the thumbnail sampling for the current render type."""
-        return self.selected_layer.sampling_preview.get(self.render_type)
+        return self._sampling_preview
 
     @sampling_preview.setter
     def sampling_preview(self, value: int) -> None:
         """Set a new thumbnail sampling value for the current render type."""
-        self.selected_layer.sampling_preview.set(self.render_type, value)
+        self._sampling_preview = value
 
     @property
     def padding(self) -> int:
