@@ -2682,10 +2682,10 @@ class MainWindow(QtWidgets.QMainWindow):
         item.setCheckState(QtCore.Qt.CheckState.Unchecked)
         item.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
 
-        selectedItems = self.ui.layer_list.selectedItems()
+        selected_items = self.ui.layer_list.selectedItems()
         self.ui.layer_list.insertItem(0, item)
-        for item in selectedItems:
-            item.setSelected(True)
+        for previous in selected_items:
+            previous.setSelected(True)
 
         self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Normal, ipc.Channel.RGBA)
         self._layer_counter += 1
