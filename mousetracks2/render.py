@@ -378,12 +378,9 @@ def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Chan
                 opacity: float, channels: Channel) -> LayerBlend:
         original_render = self.image.copy()
         result = fn(self, image, opacity, channels)
-        multiplied = alpha_blend(original_render, result, opacity)
 
-        # Apply the final calculated result only to the selected channels
-        for i in Channel.get_indices(channels):
-            if i < multiplied.shape[2]:
-                self.image[:, :, i] = multiplied[:, :, i]
+        idx: tuple[slice | list[int], ...] = (slice(None), slice(None), Channel.get_indices(channels))  # [:, :, indexes]
+        self.image[idx] = alpha_blend(original_render, result, opacity, idx)
 
         return self
     return wrapper
@@ -407,7 +404,7 @@ def _effective_alpha_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], fl
 
         # Blend Alpha channel
         if channels & Channel.A:
-            idx = slice(None), slice(None), slice(3, None)
+            idx = slice(None), slice(None), slice(3, None)  # [:, :, 3:]
             self.image[idx] = alpha_blend(self.image, np.ones(self.image.shape), effective_alpha, idx)
 
         return self
