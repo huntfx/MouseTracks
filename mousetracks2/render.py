@@ -446,8 +446,16 @@ class LayerBlend:
                 self.screen(image, opacity, channels)
             case BlendMode.Difference:
                 self.difference(image, opacity, channels)
+            case BlendMode.Overlay:
+                self.overlay(image, opacity, channels)
             case BlendMode.SoftLight:
                 self.soft_light(image, opacity, channels)
+            case BlendMode.HardLight:
+                self.hard_light(image, opacity, channels)
+            case BlendMode.ColourDodge:
+                self.colour_dodge(image, opacity, channels)
+            case BlendMode.ColourBurn:
+                self.colour_burn(image, opacity, channels)
         return self
 
     @_effective_alpha_blend
@@ -484,10 +492,7 @@ class LayerBlend:
     @_simple_blend
     def divide(self, image: npt.NDArray[np.float64], opacity: float,
                channels: Channel) -> npt.NDArray[np.float64]:
-        mask = image > 1e-6
-        result = self.image.copy()
-        result[mask] = np.divide(self.image[mask], image[mask])
-        return result
+        return np.divide(self.image, image, where=image > 1e-6)
 
     @_simple_blend
     def maximum(self, image: npt.NDArray[np.float64], opacity: float,
@@ -511,11 +516,31 @@ class LayerBlend:
         return np.abs(self.image - image)
 
     @_simple_blend
+    def overlay(self, image: npt.NDArray[np.float64], opacity: float,
+                channels: Channel) -> npt.NDArray[np.float64]:
+        return np.where(self.image <= 0.5, 2 * self.image * image, 1 - 2 * (1 - self.image) * (1 - image))
+
+    @_simple_blend
     def soft_light(self, image: npt.NDArray[np.float64], opacity: float,
                    channels: Channel) -> npt.NDArray[np.float64]:
         return np.where(image <= 0.5,
                         self.image - (1 - 2 * image) * self.image * (1 - self.image),
                         self.image + (2 * image - 1) * (np.sqrt(self.image) - self.image))
+
+    @_simple_blend
+    def hard_light(self, image: npt.NDArray[np.float64], opacity: float,
+                   channels: Channel) -> npt.NDArray[np.float64]:
+        return np.where(self.image <= 0.5, 2 * self.image * image, 1 - 2 * (1 - self.image) * (1 - image))
+
+    @_simple_blend
+    def colour_dodge(self, image: npt.NDArray[np.float64], opacity: float,
+                     channels: Channel) -> npt.NDArray[np.float64]:
+        return np.divide(self.image, 1 - image, where=(1 - image) > 1e-6)
+
+    @_simple_blend
+    def colour_burn(self, image: npt.NDArray[np.float64], opacity: float,
+                    channels: Channel) -> npt.NDArray[np.float64]:
+        return 1 - np.divide(1 - self.image, image, where=image > 1e-6)
 
     def add_checkerbox(self) -> Self:
         """Apply the checkerbox background."""
