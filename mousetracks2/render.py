@@ -319,6 +319,17 @@ def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
     return combined_array
 
 
+def alpha_blend(background: npt.NDArray[np.float64], foreground: npt.NDArray[np.float64],
+                alpha: npt.NDArray[np.float64] | float, index: tuple[slice | list[int], ...] = ()) -> npt.NDArray[np.float64]:
+    """Blend two images together."""
+    if isinstance(alpha, float):
+        if alpha >= 1:
+            return foreground[index]
+        if alpha < 1e6:
+            return background[index]
+    return np.add(foreground[index] * alpha, background[index] * (1 - alpha))
+
+
 def apply_checkerboard_background(rgba_image: npt.NDArray[np.float64], square_size: int = 16,
                                   light_colour: tuple[float, float, float] = (0.8, 0.8, 0.8),
                                   dark_colour: tuple[float, float, float] = (0.6, 0.6, 0.6)) -> npt.NDArray[np.float64]:
@@ -354,10 +365,7 @@ def apply_checkerboard_background(rgba_image: npt.NDArray[np.float64], square_si
     foreground_rgb = rgba_image[:, :, :3]
     alpha = rgba_image[:, :, 3:]
 
-    # The alpha blending formula: Final = Foreground * Alpha + Background * (1 - Alpha)
-    composite_image = (foreground_rgb * alpha) + (background * (1.0 - alpha))
-
-    return cast(npt.NDArray[np.float64], composite_image)
+    return alpha_blend(background, foreground_rgb, alpha)
 
 
 def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], npt.NDArray[np.float64]],
@@ -370,17 +378,12 @@ def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Chan
                 opacity: float, channels: Channel) -> LayerBlend:
         original_render = self.image.copy()
         result = fn(self, image, opacity, channels)
-
-        if opacity < 1.0:
-            _final_result = (result * opacity) + (original_render * (1.0 - opacity))
-            final_result = cast(npt.NDArray[np.float64], _final_result)
-        else:
-            final_result = result
+        multiplied = alpha_blend(original_render, result, opacity)
 
         # Apply the final calculated result only to the selected channels
         for i in Channel.get_indices(channels):
-            if i < final_result.shape[2]:
-                self.image[:, :, i] = final_result[:, :, i]
+            if i < multiplied.shape[2]:
+                self.image[:, :, i] = multiplied[:, :, i]
 
         return self
     return wrapper
@@ -389,25 +392,23 @@ def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Chan
 def _effective_alpha_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], npt.NDArray[np.float64]],
                            ) -> Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], LayerBlend]:
     """Wrap a layer blend to apply an effective alpha.
-    The formula for blending is `src + dst * (1 - src)`.
     This is done on the RGB channels and alpha channel separately.
     """
     @wraps(fn)
     def wrapper(self: LayerBlend, image: npt.NDArray[np.float64],
                 opacity: float, channels: Channel) -> LayerBlend:
         effective_alpha = fn(self, image, opacity, channels)
+        idx: tuple[slice | list[int], ...]
 
         # Blend RGB channels
         if channels & Channel.RGB:
-            rgb_indices = [i for i in Channel.get_indices(channels) if i < 3]
-            new_colours = (image[:, :, rgb_indices] * effective_alpha
-                            + self.image[:, :, rgb_indices] * (1.0 - effective_alpha))
-            self.image[:, :, rgb_indices] = new_colours
+            idx = slice(None), slice(None), [i for i in Channel.get_indices(channels) if i < 3]  # [:, :, indexes]
+            self.image[idx] = alpha_blend(self.image, image, effective_alpha, idx)
 
         # Blend Alpha channel
         if channels & Channel.A:
-            new_alpha = effective_alpha + (self.image[:, :, 3:] * (1.0 - effective_alpha))
-            self.image[:, :, 3:] = new_alpha
+            idx = slice(None), slice(None), slice(3, None)
+            self.image[idx] = alpha_blend(self.image, np.ones(self.image.shape), effective_alpha, idx)
 
         return self
     return wrapper
@@ -461,7 +462,7 @@ class LayerBlend:
     @_effective_alpha_blend
     def normal(self, image: npt.NDArray[np.float64], opacity: float,
                channels: Channel) -> npt.NDArray[np.float64]:
-        return cast(npt.NDArray[np.float64], image[:, :, 3:] * opacity)
+        return np.multiply(image[:, :, 3:], opacity)
 
     @_effective_alpha_blend
     def luminance_mask(self, image: npt.NDArray[np.float64], opacity: float,
@@ -507,8 +508,7 @@ class LayerBlend:
     @_simple_blend
     def screen(self, image: npt.NDArray[np.float64], opacity: float,
                channels: Channel) -> npt.NDArray[np.float64]:
-        _blend_result = 1.0 - (1.0 - self.image) * (1.0 - image)
-        return cast(npt.NDArray[np.float64], _blend_result)
+        return np.subtract(1, (1 - self.image) * (1 - image))
 
     @_simple_blend
     def difference(self, image: npt.NDArray[np.float64], opacity: float,
@@ -530,7 +530,9 @@ class LayerBlend:
     @_simple_blend
     def hard_light(self, image: npt.NDArray[np.float64], opacity: float,
                    channels: Channel) -> npt.NDArray[np.float64]:
-        return np.where(self.image <= 0.5, 2 * self.image * image, 1 - 2 * (1 - self.image) * (1 - image))
+        return np.where(self.image <= 0.5,
+                        2 * self.image * image,
+                        1 - 2 * (1 - self.image) * (1 - image))
 
     @_simple_blend
     def colour_dodge(self, image: npt.NDArray[np.float64], opacity: float,
@@ -540,7 +542,7 @@ class LayerBlend:
     @_simple_blend
     def colour_burn(self, image: npt.NDArray[np.float64], opacity: float,
                     channels: Channel) -> npt.NDArray[np.float64]:
-        return 1 - np.divide(1 - self.image, image, where=image > 1e-6)
+        return np.subtract(1, np.divide(1 - self.image, image, where=image > 1e-6))
 
     def add_checkerbox(self) -> Self:
         """Apply the checkerbox background."""
