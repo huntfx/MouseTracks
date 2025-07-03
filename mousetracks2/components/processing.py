@@ -534,7 +534,7 @@ class Processing(Component):
 
                 # Intercept if a keyboard render
                 for layer in message.layers:
-                    if layer.request.type == ipc.RenderType.Keyboard:
+                    if layer.request.type == ipc.RenderType.KeyboardHeatmap:
                         self.send_data(layer.request)
                         return
 

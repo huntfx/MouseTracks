@@ -2732,7 +2732,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for previous in selected_items:
             previous.setSelected(True)
 
-        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.Time, ipc.RenderLayerBlendMode.Normal, ipc.Channel.RGBA)
+        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, ipc.RenderLayerBlendMode.Normal, ipc.Channel.RGBA)
         self._layer_counter += 1
         self.update_layer_item_name(item)
         return item
@@ -2870,7 +2870,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.opacity = 50
@@ -2887,12 +2887,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
                 self.selected_layer.render_colour.movement = 'Chalk'
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Multiply
-                self.selected_layer.render_type = ipc.RenderType.TimeHeatmap
+                self.selected_layer.render_type = ipc.RenderType.MousePosition
                 self.selected_layer.render_colour.heatmap = 'Inferno'
                 self.selected_layer.blur.heatmap = 0.001
 
@@ -2904,10 +2904,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.TimeHeatmap
+                self.selected_layer.render_type = ipc.RenderType.MousePosition
                 self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Multiply
                 self.selected_layer.channels = ipc.Channel.A
                 self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
@@ -2923,11 +2923,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
                 self.selected_layer.render_colour.movement = 'Chalk'
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Speed
+                self.selected_layer.render_type = ipc.RenderType.MouseSpeed
                 self.selected_layer.render_colour.speed = 'TransparentBlackToBlackToGreen'
 
             case 'Eraser':
@@ -2938,7 +2938,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
 
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.Time
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
                 self.selected_layer.render_colour.movement = 'Graphite'
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
