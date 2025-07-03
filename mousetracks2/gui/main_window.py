@@ -28,6 +28,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
+from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..legacy import colours
 from ..update import is_latest_version
@@ -109,8 +110,8 @@ class RenderOption(Generic[T]):
 @dataclass
 class LayerOption:
     render_type: ipc.RenderType
-    blend_mode: ipc.RenderLayerBlendMode = ipc.RenderLayerBlendMode.Normal
-    channels: ipc.Channel = ipc.Channel.RGBA
+    blend_mode: BlendMode = BlendMode.Normal
+    channels: Channel = Channel.RGBA
     opacity: int = 100
     render_colour: RenderOption = field(default_factory=lambda: RenderOption('Ice', 'Ice', 'Jet', 'Aqua'))
     contrast: RenderOption = field(default_factory=lambda: RenderOption(1.0, 1.0, 1.0, 1.0))
@@ -259,7 +260,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._layer_counter = 0
         self._selected_layer = 0
         self.ui.layer_list.clear()
-        for enum in ipc.RenderLayerBlendMode:
+        for enum in BlendMode:
             self.ui.layer_blending.addItem(enum.name, enum)
         background_layer = self.add_render_layer()
         background_layer.setCheckState(QtCore.Qt.CheckState.Checked)
@@ -2732,7 +2733,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for previous in selected_items:
             previous.setSelected(True)
 
-        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, ipc.RenderLayerBlendMode.Normal, ipc.Channel.RGBA)
+        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
         self._layer_counter += 1
         self.update_layer_item_name(item)
         return item
@@ -2774,10 +2775,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.layer_blending.setCurrentIndex(idx)
 
             # Set the channels
-            self.ui.layer_r.setChecked(layer.channels & ipc.Channel.R)
-            self.ui.layer_g.setChecked(layer.channels & ipc.Channel.G)
-            self.ui.layer_b.setChecked(layer.channels & ipc.Channel.B)
-            self.ui.layer_a.setChecked(layer.channels & ipc.Channel.A)
+            self.ui.layer_r.setChecked(layer.channels & Channel.R)
+            self.ui.layer_g.setChecked(layer.channels & Channel.G)
+            self.ui.layer_b.setChecked(layer.channels & Channel.B)
+            self.ui.layer_a.setChecked(layer.channels & Channel.A)
 
             # Set the opacity
             self.ui.layer_opacity.setValue(layer.opacity)
@@ -2810,14 +2811,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         channels = 0
         if self.ui.layer_r.isChecked():
-            channels |= ipc.Channel.R
+            channels |= Channel.R
         if self.ui.layer_g.isChecked():
-            channels |= ipc.Channel.G
+            channels |= Channel.G
         if self.ui.layer_b.isChecked():
-            channels |= ipc.Channel.B
+            channels |= Channel.B
         if self.ui.layer_a.isChecked():
-            channels |= ipc.Channel.A
-        self.selected_layer.channels = ipc.Channel(channels)
+            channels |= Channel.A
+        self.selected_layer.channels = Channel(channels)
         self.request_thumbnail()
         self.update_layer_item_name()
 
@@ -2875,7 +2876,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.opacity = 50
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.LuminanceMask
+                self.selected_layer.blend_mode = BlendMode.LuminanceMask
                 self.selected_layer.clipping.heatmap = 0.01
                 self.selected_layer.contrast.heatmap = 1.5
 
@@ -2891,7 +2892,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.render_colour.movement = 'Chalk'
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Multiply
+                self.selected_layer.blend_mode = BlendMode.Multiply
                 self.selected_layer.render_type = ipc.RenderType.MousePosition
                 self.selected_layer.render_colour.heatmap = 'Inferno'
                 self.selected_layer.blur.heatmap = 0.001
@@ -2908,8 +2909,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.MousePosition
-                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Multiply
-                self.selected_layer.channels = ipc.Channel.A
+                self.selected_layer.blend_mode = BlendMode.Multiply
+                self.selected_layer.channels = Channel.A
                 self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
                 self.selected_layer.blur.heatmap = 0
                 self.selected_layer.clipping.heatmap = 0.85
@@ -2943,9 +2944,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = ipc.RenderLayerBlendMode.Subtract
+                self.selected_layer.blend_mode = BlendMode.Subtract
                 self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
-                self.selected_layer.channels = ipc.Channel.A
+                self.selected_layer.channels = Channel.A
                 self.selected_layer.clipping.heatmap = 0.2
                 self.selected_layer.contrast.heatmap = 1.5
 
@@ -2968,6 +2969,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:],
             data.blend_mode.name,
             f'{data.opacity}%',
-            ipc.Channel(data.channels).name,
+            Channel(data.channels).name,
         ]
         item.setText(' | '.join(map(str, name_parts)))

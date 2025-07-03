@@ -22,8 +22,7 @@ from ..utils.math import calculate_line, calculate_distance, calculate_pixel_off
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
-from ..render import render, apply_checkerboard_background, EmptyRenderError
-
+from ..render import render, EmptyRenderError, LayerBlend
 
 @dataclass
 class PreviousMouseClick:
@@ -333,7 +332,7 @@ class Processing(Component):
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False, invert: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
-                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
+                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> npt.NDArray[np.uint8]:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
@@ -356,7 +355,7 @@ class Processing(Component):
                            blur=blur, contrast=contrast, clipping=clipping,
                            interpolation_order=interpolation_order)
         except EmptyRenderError:
-            image = np.ndarray([0, 0, 3])
+            image = np.ndarray([0, 0, 4], dtype=np.uint8)
 
         return image
 
@@ -529,23 +528,30 @@ class Processing(Component):
                 else:
                     profile = self.profile
 
-                _width: int | None = None
-                _height: int | None = None
-                _lock_aspect: bool | None = None
-
                 # Intercept if a keyboard render
                 for layer in message.layers:
                     if layer.request.type == ipc.RenderType.KeyboardHeatmap:
                         self.send_data(layer.request)
                         return
 
+                layer_blend = None
+
                 for i, layer in enumerate(message.layers):
                     request = layer.request
 
-                    width = request.width if _width is None else _width
-                    height = request.height if _height is None else _height
-                    lock_aspect = request.lock_aspect if _lock_aspect is None else _lock_aspect
+                    # Use the resolution of the first layer
+                    if layer_blend is None:
+                        width = request.width
+                        height = request.height
+                        lock_aspect = request.lock_aspect
+                    # Reuse the same resolution
+                    else:
+                        height, width = layer_blend.image.shape[:2]
+                        width //= max(1, request.sampling)
+                        height //= max(1, request.sampling)
+                        lock_aspect = False
 
+                    # Render the layer
                     if request.layer_visible:
                         _image = self._render_array(
                             profile=profile,
@@ -566,128 +572,43 @@ class Processing(Component):
                             right_clicks=request.show_right_clicks,
                             interpolation_order=request.interpolation_order,
                         )
-                    elif i:
+
+                    # If not visible, skip here unless there aren't any other visible layers
+                    elif i or any(_layer.request.layer_visible for _layer in message.layers):
                         continue
 
-                    # If the first layer, then do a quick render to get the correct resolution
+                    # If a single invisible layer, then do a quick render to get the resolution
                     else:
                         _image = self._render_array(
                             profile=profile,
                             render_type=request.type,
-                            colour_map=request.colour_map,
+                            colour_map='BlackToWhite',
                             width=width,
                             height=height,
                             lock_aspect=lock_aspect,
+                            blur=0,
                             left_clicks=False,
                             middle_clicks=False,
                             right_clicks=False,
                         )
+                    image = cast(npt.NDArray[np.float64], _image.astype(np.float64) / 255)
 
-                    image = _image.astype(np.float64)
-                    image /= 255
+                    # Setup the base layer
+                    if layer_blend is None:
+                        layer_blend = LayerBlend(np.zeros(image.shape, dtype=np.float64) )
 
-                    # Store actual width / height on first run, to reuse for other layers
-                    if _width is None:
-                        _width = image.shape[1] //  max(1, request.sampling)
-                    if _height is None:
-                        _height = image.shape[0] // max(1, request.sampling)
-                    if _lock_aspect is None:
-                        render = np.zeros(image.shape, dtype=np.float64)  # Create background
-                        _lock_aspect = False
+                    # Add the new layer
+                    if request.layer_visible:
+                        layer_blend.blend(layer.blend_mode, image, opacity=layer.opacity / 100.0, channels=layer.channels)
 
-                    # If the first layer is disabled then stop here
-                    if not request.layer_visible:
-                        continue
-
-                    channel_indices = ipc.Channel.get_indices(layer.channels)
-
-                    layer_opacity = layer.opacity / 100.0
-                    if layer.blend_mode == ipc.RenderLayerBlendMode.Normal:
-
-                        # The effective alpha for blending is the pixel's own alpha multiplied by the layer's overall opacity
-                        effective_alpha = image[:, :, 3:] * layer_opacity
-
-                        # Blend RGB channels if any are selected
-                        if layer.channels & ipc.Channel.RGB:
-                            # Get the specific R, G, B indices that were requested
-                            rgb_indices = [i for i in channel_indices if i < 3]
-                            if rgb_indices:
-                                # Perform the blend calculation only on the selected color channels
-                                new_colors = (image[:, :, rgb_indices] * effective_alpha) + \
-                                            (render[:, :, rgb_indices] * (1.0 - effective_alpha))
-                                render[:, :, rgb_indices] = new_colors
-
-                        # Blend Alpha channel if selected
-                        if layer.channels & ipc.Channel.A:
-                            # Standard alpha compositing: Alpha_Out = Alpha_Source + Alpha_Destination * (1 - Alpha_Source)
-                            # Here, Alpha_Source is our effective_alpha
-                            new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
-                            render[:, :, 3:] = new_alpha
-
-                    elif layer.blend_mode == ipc.RenderLayerBlendMode.LuminanceMask:
-                        # Use the brightness (luminance) of the image's RGB channels as its alpha
-                        luminance_alpha = np.max(image[:, :, :3], axis=2, keepdims=True)
-                        effective_alpha = luminance_alpha * layer_opacity
-
-                        if layer.channels & ipc.Channel.RGB:
-                            rgb_indices = [i for i in channel_indices if i < 3]
-                            if rgb_indices:
-                                new_colors = (image[:, :, rgb_indices] * effective_alpha) + \
-                                            (render[:, :, rgb_indices] * (1.0 - effective_alpha))
-                                render[:, :, rgb_indices] = new_colors
-                        if layer.channels & ipc.Channel.A:
-                            new_alpha = effective_alpha + (render[:, :, 3:] * (1.0 - effective_alpha))
-                            render[:, :, 3:] = new_alpha
-
-                    else:
-                        # --- Logic for all other blend modes ---
-                        original_render = render.copy()
-                        blend_result = render.copy()
-
-                        match layer.blend_mode:
-                            case ipc.RenderLayerBlendMode.Replace:
-                                blend_result = image
-                            case ipc.RenderLayerBlendMode.Add:
-                                blend_result = np.add(render, image)
-                            case ipc.RenderLayerBlendMode.Subtract:
-                                blend_result = np.subtract(render, image)
-                            case ipc.RenderLayerBlendMode.Multiply:
-                                blend_result = np.multiply(render, image)
-                            case ipc.RenderLayerBlendMode.Divide:
-                                mask = image > 1e-6
-                                blend_result[mask] = np.divide(render[mask], image[mask])
-                            case ipc.RenderLayerBlendMode.Maximum:
-                                blend_result = np.maximum(render, image)
-                            case ipc.RenderLayerBlendMode.Minimum:
-                                blend_result = np.minimum(render, image)
-                            case ipc.RenderLayerBlendMode.Screen:
-                                _blend_result = 1.0 - (1.0 - render) * (1.0 - image)
-                                blend_result = cast(npt.NDArray[np.float64], _blend_result)
-                            case ipc.RenderLayerBlendMode.Difference:
-                                blend_result = np.abs(render - image)
-                            case ipc.RenderLayerBlendMode.SoftLight:
-                                blend_result = np.where(image <= 0.5,
-                                                        render - (1 - 2 * image) * render * (1 - render),
-                                                        render + (2 * image - 1) * (np.sqrt(render) - render))
-
-                        # Final Opacity Blending for non-overlay modes
-                        if layer_opacity < 1.0:
-                            final_result = (blend_result * layer_opacity) + (original_render * (1.0 - layer_opacity))
-                        else:
-                            final_result = blend_result
-
-                        # Apply the final calculated result only to the selected channels
-                        for i in channel_indices:
-                            if i < final_result.shape[2]: # Ensure the result has the channel
-                                render[:, :, i] = final_result[:, :, i]
+                if layer_blend is None:
+                    return
 
                 # Add checkerboards to preview render backgrounds
                 if message.layers[0].request.file_path is None:
-                    render = apply_checkerboard_background(render)
+                    layer_blend.add_checkerbox()
 
-                final_render = (np.clip(render, 0, 1) * 255).astype(np.uint8)
-
-                self.send_data(ipc.Render(final_render, request))
+                self.send_data(ipc.Render(layer_blend.to_uint8(), request))
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():

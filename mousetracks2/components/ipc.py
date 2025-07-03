@@ -5,8 +5,10 @@ from enum import Enum, IntFlag, auto
 from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from ..config.settings import ProfileConfig
+from ..enums import BlendMode, Channel
 
 
 class Target:
@@ -238,7 +240,7 @@ class Render(Message):
     """A render has been completed."""
 
     target: int = field(default=Target.GUI, init=False)
-    array: np.ndarray
+    array: npt.NDArray[np.uint8]
     request: RenderRequest
 
 
@@ -623,42 +625,11 @@ class SendPID(Message):
     pid: int
 
 
-class RenderLayerBlendMode(Enum):
-    Normal = auto()
-    Replace = auto()
-    Screen = auto()
-    SoftLight = auto()
-    LuminanceMask = auto()
-    Add = auto()
-    Subtract = auto()
-    Multiply = auto()
-    Divide = auto()
-    Difference = auto()
-    Maximum = auto()
-    Minimum = auto()
-
-
-class Channel(IntFlag):
-    R = auto()
-    G = auto()
-    B = auto()
-    A = auto()
-    RGB = R | G | B
-    RGBA = R | G | B | A
-    Alpha = A
-
-    @classmethod
-    def get_indices(cls, mask: int) -> list[int]:
-        """Converts the bitmask into a list of array indices."""
-        channels = [cls.R, cls.G, cls.B, cls.A]
-        return [i for i, val in enumerate(channels) if mask & val]
-
-
 @dataclass
 class RenderLayer:
     """Hold a render request with layer data."""
     request: RenderRequest
-    blend_mode: RenderLayerBlendMode
+    blend_mode: BlendMode
     channels: Channel = Channel.RGBA
     opacity: int = 100
 
