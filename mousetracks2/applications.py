@@ -34,7 +34,7 @@ REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
 APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
-MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/Appist.txt'
+MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/AppList.txt'
 
 
 def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
