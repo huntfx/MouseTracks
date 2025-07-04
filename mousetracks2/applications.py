@@ -1,7 +1,6 @@
 import os
 import re
 from collections import defaultdict
-from contextlib import suppress
 from pathlib import Path
 from typing import Iterable, Iterator
 from urllib.request import urlopen
@@ -130,10 +129,12 @@ class AppList:
 
         # Update with the latest online data
         if not CLI.offline:
-            with suppress(URLError):
+            try:
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')
                     self.import_(_parse_data(data))
+            except URLError as e:
+                print(f'Error downloading applist: {e}')
 
         # Update with any local changes
         if LOCAL_PATH.exists():

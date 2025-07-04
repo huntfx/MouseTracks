@@ -48,8 +48,6 @@ binaries = [
             '_decimal.pyd',  # 248 kb
             '_lzma.pyd',  # 156 kb
         )
-        or name.startswith('libcrypto-3') and name.endswith('.dll')  # 5071 kb
-        or name.startswith('libssl-3') and name.endswith('.dll')  # 5071 kb
 
         # Extra files added by Github Actions
         or name == 'ucrtbase.dll' or name.startswith('api-ms-win-')

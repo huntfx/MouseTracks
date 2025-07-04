@@ -18,7 +18,8 @@ def get_latest_version() -> str:
     try:
         with urlopen(RELEASES_URL, timeout=5) as response:
             release = json.load(response)
-    except (URLError, json.decoder.JSONDecodeError):
+    except (URLError, json.decoder.JSONDecodeError) as e:
+        print(f'Error reading version: {e}')
         return VERSION
     if not release:
         return VERSION
