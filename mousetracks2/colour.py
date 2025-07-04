@@ -15,7 +15,7 @@ def generate_colour_schemes() -> Iterator[str]:
     def _hsl_to_hex(h: float, s: float, l: float) -> str:
         """Converts HSL values (0-1 range) to an RGB hex string."""
         r, g, b = colorsys.hls_to_rgb(h, l, s)
-        return f'#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}'
+        return f'#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}'
 
     def _generate_complementary() -> list[tuple[float, float, float]]:
         """Generates a high-contrast palette from two opposite colours on the wheel."""

@@ -1273,7 +1273,7 @@ class MainWindow(QtWidgets.QMainWindow):
             elapsed_time = self.elapsed_time
 
         # Generate the default image name
-        sort_key = f'{math.isqrt(elapsed_time // UPDATES_PER_SECOND):05}'
+        sort_key = f'{math.isqrt(round(elapsed_time / UPDATES_PER_SECOND)):05}'
         ticks_str = format_ticks(elapsed_time, UPDATES_PER_SECOND)
         image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
 
@@ -1407,8 +1407,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     height = width = channels = 0
                 failed = width == height == 0
 
-                target_height = int(height / (message.request.sampling or 1))
-                target_width = int(width / (message.request.sampling or 1))
+                target_height = round(height / (message.request.sampling or 1))
+                target_width = round(width / (message.request.sampling or 1))
 
                 # Draw the new pixmap
                 if message.request.file_path is None:
@@ -1497,7 +1497,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 x, y = message.position
                 x = x * 0.5 + offset  # Required for the side by side display
 
-                remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
+                remapped = round(x * 1024 + 1024), round(-y * 1024 + 1024)
                 if self.render_type == ipc.RenderType.ThumbstickMovement:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
@@ -2047,7 +2047,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Check if array compression has been done
         if data.counter > COMPRESSION_THRESHOLD:
-            data.counter = int(data.counter / COMPRESSION_FACTOR)
+            data.counter = round(data.counter / COMPRESSION_FACTOR)
 
     @property
     def is_live(self) -> bool:
@@ -2091,8 +2091,8 @@ class MainWindow(QtWidgets.QMainWindow):
             height_multiplier = (size.height() - 1) / current_monitor[1]
 
             # Downscale the pixel to match the pixmap
-            x = int(pixel[0] * width_multiplier)
-            y = int(pixel[1] * height_multiplier)
+            x = round(pixel[0] * width_multiplier)
+            y = round(pixel[1] * height_multiplier)
             unique_pixels.add((x, y))
 
         # Send unique pixels to be drawn

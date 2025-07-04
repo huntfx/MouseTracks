@@ -80,7 +80,7 @@ class ColourRange(object):
         if self.background is not None and not n:
             return self.background
 
-        value_index = int(round((n - self.min) / self._step_size))
+        value_index = round((n - self.min) / self._step_size)
 
         if self.loop:
             if value_index != self.steps:

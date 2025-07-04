@@ -518,10 +518,7 @@ def ticks_to_seconds(amount: float, tick_rate: int = 1, output_length: int = 2,
     output = []
     time_elapsed = amount / tick_rate
     for time_unit in TIME_UNITS[::-1]:
-        if time_unit.decimals is None or not allow_decimals:
-            current = int(time_elapsed // time_unit.length)
-        else:
-            current = round(time_elapsed / time_unit.length, time_unit.decimals)
+        current = round(time_elapsed / time_unit.length, time_unit.decimals if allow_decimals else None)
 
         if time_unit.limit is not None:
             current %= time_unit.limit

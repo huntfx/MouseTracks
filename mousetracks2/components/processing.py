@@ -227,7 +227,7 @@ class Processing(Component):
             data.sequential_arrays[current_monitor][index] = data.counter
             data.density_arrays[current_monitor][index] += 1
             if distance and moving:
-                data.speed_arrays[current_monitor][index] = max(data.speed_arrays[current_monitor][index], int(100 * distance))
+                data.speed_arrays[current_monitor][index] = max(data.speed_arrays[current_monitor][index], round(100 * distance))
 
         # Update the saved data
         data.position = position
@@ -612,8 +612,8 @@ class Processing(Component):
                     return
 
                 width = height = RADIAL_ARRAY_SIZE
-                x = int((message.position[0] + 1) * (width - 1) / 2)
-                y = int((message.position[1] + 1) * (height - 1) / 2)
+                x = round((message.position[0] + 1) * (width - 1) / 2)
+                y = round((message.position[1] + 1) * (height - 1) / 2)
                 remapped = (x, height - y - 1)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:

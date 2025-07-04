@@ -41,9 +41,9 @@ def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None
 
     # Calculate the resolutions from the given width / height
     if width is not None:
-        result_width = width, int(width / aspect)
+        result_width = width, round(width / aspect)
     if height is not None:
-        result_height = int(height * aspect), height
+        result_height = round(height * aspect), height
 
     # Handle when only one resolution is given
     if width is None:
@@ -94,7 +94,7 @@ def array_rescale(array: np.typing.ArrayLike, target_width: int, target_height: 
     # Downscale without losing detail (credit to ChatGPT)
     block_height = input_height / target_height
     block_width = input_width / target_width
-    pooled_full = ndimage.maximum_filter(array, size=(int(math.ceil(block_height)), int(math.ceil(block_width))))
+    pooled_full = ndimage.maximum_filter(array, size=(math.ceil(block_height), math.ceil(block_width)))
 
     indices_y = np.linspace(0, input_height - 1, target_height).astype(np.uint64)
     indices_x = np.linspace(0, input_width - 1, target_width).astype(np.uint64)
@@ -231,7 +231,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     # Clip the maximum values
     if clipping:
         sorted_values, linear_mapping = np.unique(combined_array, return_inverse=True)
-        max_value = sorted_values[int(np.max(linear_mapping) * (1 - clipping))]
+        max_value = sorted_values[round(np.max(linear_mapping) * (1 - clipping))]
         combined_array[combined_array > max_value] = max_value
 
     # Update the contrast

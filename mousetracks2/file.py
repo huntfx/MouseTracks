@@ -271,7 +271,7 @@ class MovementMaps:
                     del maps[res]
 
             # Compress the counter by the same amount
-            self.counter = int(self.counter // factor)
+            self.counter = round(self.counter / factor)
 
     def _iter_array_types(self) -> Iterator[tuple[str, ArrayResolutionMap]]:
         yield 'sequential', self.sequential_arrays
@@ -610,7 +610,7 @@ class TrackingProfile:
         # This was not recorded properly in the legacy code, so a very
         # rough formula is used to estimate based on the data available
         self.elapsed = data['Ticks']['Total']
-        self.active = int(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+        self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
         self.inactive = data['Ticks']['Total'] - self.active
 
         # Process key/button data
