@@ -120,6 +120,9 @@ class LayerOption:
     blur: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.0125, 0.0))
     linear: RenderOption = field(default_factory=lambda: RenderOption(False, True, True, False))
     invert: RenderOption = field(default_factory=lambda: RenderOption(False, False, False, False))
+    show_left_clicks: bool = True
+    show_middle_clicks: bool = True
+    show_right_clicks: bool = True
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -515,6 +518,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.blur.setValue(self.blur)
         self.ui.linear.setChecked(self.linear)
         self.ui.invert.setChecked(self.invert)
+        self.ui.show_left_clicks.setChecked(self.show_left_clicks)
+        self.ui.show_middle_clicks.setChecked(self.show_middle_clicks)
+        self.ui.show_right_clicks.setChecked(self.show_right_clicks)
         self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
@@ -610,6 +616,36 @@ class MainWindow(QtWidgets.QMainWindow):
     def invert(self, value: bool) -> None:
         """Set if inverting colours for the current render type."""
         self.selected_layer.invert.set(self.render_type, value)
+
+    @property
+    def show_left_clicks(self) -> bool:
+        """Get if left clicks should be shown for the current render type."""
+        return self.selected_layer.show_left_clicks
+
+    @show_left_clicks.setter
+    def show_left_clicks(self, value: bool) -> None:
+        """Set if left clicks should be shown for the current render type."""
+        self.selected_layer.show_left_clicks = value
+
+    @property
+    def show_middle_clicks(self) -> bool:
+        """Get if middle clicks should be shown for the current render type."""
+        return self.selected_layer.show_middle_clicks
+
+    @show_middle_clicks.setter
+    def show_middle_clicks(self, value: bool) -> None:
+        """Set if middle clicks should be shown for the current render type."""
+        self.selected_layer.show_middle_clicks = value
+
+    @property
+    def show_right_clicks(self) -> bool:
+        """Get if right clicks should be shown for the current render type."""
+        return self.selected_layer.show_right_clicks
+
+    @show_right_clicks.setter
+    def show_right_clicks(self, value: bool) -> None:
+        """Set if right clicks should be shown for the current render type."""
+        self.selected_layer.show_right_clicks = value
 
     @property
     def mouse_click_count(self) -> int:
@@ -972,7 +1008,7 @@ class MainWindow(QtWidgets.QMainWindow):
         unchecked. If shift clicking on an unchecked option, then all
         options will be checked.
         """
-        if self._is_setting_click_state:
+        if self._is_setting_click_state or self.pause_colour_change:
             return
         self._is_setting_click_state = True
 
@@ -995,6 +1031,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 for checkbox in checkboxes:
                     checkbox.setChecked(False)
                 sender.setChecked(True)
+
+        self.show_left_clicks = self.ui.show_left_clicks.isChecked()
+        self.show_middle_clicks = self.ui.show_middle_clicks.isChecked()
+        self.show_right_clicks = self.ui.show_right_clicks.isChecked()
 
         self.request_thumbnail()
         self._is_setting_click_state = False
@@ -1293,9 +1333,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 blur=self.blur,
                 linear=self.linear,
                 invert=self.invert,
-                show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                show_right_clicks=self.ui.show_right_clicks.isChecked(),
+                show_left_clicks=self.show_left_clicks,
+                show_middle_clicks=self.show_middle_clicks,
+                show_right_clicks=self.show_right_clicks,
                 show_count=self.ui.show_count.isChecked(),
                 show_time=self.ui.show_time.isChecked(),
                 interpolation_order=self.ui.interpolation_order.value(),
