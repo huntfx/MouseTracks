@@ -345,8 +345,10 @@ class Processing(Component):
 
         # Adjust width/height if not locking the aspect ratio
         if positional_arrays and not lock_aspect and width is not None and height is not None:
-            width //= max(x for x, y in positional_arrays) - min(x for x, y in positional_arrays) + 1
-            height //= max(y for x, y in positional_arrays) - min(y for x, y in positional_arrays) + 1
+            width_items = max(x for x, y in positional_arrays) - min(x for x, y in positional_arrays) + 1
+            height_items = max(y for x, y in positional_arrays) - min(y for x, y in positional_arrays) + 1
+            width = round(width / width_items)
+            height = round(height / height_items)
 
         # Do the render
         try:
