@@ -1,12 +1,14 @@
 """Standard format for data to be sent through communication queues."""
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, IntFlag, auto
 from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from ..config.settings import ProfileConfig
+from ..enums import BlendMode, Channel
 
 
 class Target:
@@ -227,6 +229,7 @@ class RenderRequest(Message):
     show_count: bool = True
     show_time: bool = False
     interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
+    layer_visible: bool = True
 
     def __post_init__(self) -> None:
         assert self.show_count != self.show_time
@@ -237,7 +240,7 @@ class Render(Message):
     """A render has been completed."""
 
     target: int = field(default=Target.GUI, init=False)
-    array: np.ndarray
+    array: npt.NDArray[np.uint8]
     request: RenderRequest
 
 
@@ -620,3 +623,25 @@ class SendPID(Message):
     target: int = field(default=Target.GUI, init=False)
     source: int
     pid: int
+
+
+@dataclass
+class RenderLayer:
+    """Hold a render request with layer data."""
+    request: RenderRequest
+    blend_mode: BlendMode
+    channels: Channel = Channel.RGBA
+    opacity: int = 100
+
+
+@dataclass
+class RenderLayerRequest(Message):
+    """Request a render of multiple layers.
+
+    Note that this is only meant to be a wrapper over the rendering, so
+    for example this is why the resolution is stored per render request,
+    rather than once per render layer request.
+    """
+
+    target: int = field(default=Target.Processing, init=False)
+    layers: list[RenderLayer]

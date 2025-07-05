@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Iterator, Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from . import ipc
 from .abstract import Component
@@ -21,8 +22,7 @@ from ..utils.math import calculate_line, calculate_distance, calculate_pixel_off
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
-from ..render import render, EmptyRenderError
-
+from ..render import render, EmptyRenderError, LayerBlend
 
 @dataclass
 class PreviousMouseClick:
@@ -332,7 +332,7 @@ class Processing(Component):
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False, invert: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
-                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> np.ndarray:
+                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> npt.NDArray[np.uint8]:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
@@ -357,7 +357,7 @@ class Processing(Component):
                            blur=blur, contrast=contrast, clipping=clipping,
                            interpolation_order=interpolation_order)
         except EmptyRenderError:
-            image = np.ndarray([0, 0, 3])
+            image = np.ndarray([0, 0, 4], dtype=np.uint8)
 
         return image
 
@@ -518,6 +518,99 @@ class Processing(Component):
                                                interpolation_order=message.interpolation_order)
                 self.send_data(ipc.Render(image, message))
 
+                print('[Processing] Render request completed')
+
+            case ipc.RenderLayerRequest():
+                print('[Processing] Render request received...')
+                if not message.layers:
+                    return
+
+                if message.layers[0].request.profile:
+                    profile = self.all_profiles[message.layers[0].request.profile]
+                else:
+                    profile = self.profile
+
+                # Intercept if a keyboard render
+                for layer in message.layers:
+                    if layer.request.type == ipc.RenderType.KeyboardHeatmap:
+                        self.send_data(layer.request)
+                        return
+
+                layer_blend = None
+
+                for i, layer in enumerate(message.layers):
+                    request = layer.request
+
+                    # Use the resolution of the first layer
+                    if layer_blend is None:
+                        width = request.width
+                        height = request.height
+                        lock_aspect = request.lock_aspect
+                    # Reuse the same resolution
+                    else:
+                        height, width = layer_blend.image.shape[:2]
+                        width //= max(1, request.sampling)
+                        height //= max(1, request.sampling)
+                        lock_aspect = False
+
+                    # Render the layer
+                    if request.layer_visible:
+                        _image = self._render_array(
+                            profile=profile,
+                            render_type=request.type,
+                            colour_map=request.colour_map,
+                            width=width,
+                            height=height,
+                            lock_aspect=lock_aspect,
+                            sampling=request.sampling,
+                            padding=request.padding,
+                            contrast=request.contrast,
+                            clipping=request.clipping,
+                            blur=request.blur,
+                            linear=request.linear,
+                            invert=request.invert,
+                            left_clicks=request.show_left_clicks,
+                            middle_clicks=request.show_middle_clicks,
+                            right_clicks=request.show_right_clicks,
+                            interpolation_order=request.interpolation_order,
+                        )
+
+                    # If not visible, skip here unless there aren't any other visible layers
+                    elif i or any(_layer.request.layer_visible for _layer in message.layers):
+                        continue
+
+                    # If a single invisible layer, then do a quick render to get the resolution
+                    else:
+                        _image = self._render_array(
+                            profile=profile,
+                            render_type=request.type,
+                            colour_map='BlackToWhite',
+                            width=width,
+                            height=height,
+                            lock_aspect=lock_aspect,
+                            blur=0,
+                            left_clicks=False,
+                            middle_clicks=False,
+                            right_clicks=False,
+                        )
+                    image = np.divide(_image.astype(np.float64), 255)
+
+                    # Setup the base layer
+                    if layer_blend is None:
+                        layer_blend = LayerBlend(np.zeros(image.shape, dtype=np.float64) )
+
+                    # Add the new layer
+                    if request.layer_visible:
+                        layer_blend.blend(layer.blend_mode, image, opacity=layer.opacity / 100.0, channels=layer.channels)
+
+                if layer_blend is None:
+                    return
+
+                # Add checkerboards to preview render backgrounds
+                if message.layers[0].request.file_path is None:
+                    layer_blend.add_checkerbox()
+
+                self.send_data(ipc.Render(layer_blend.to_uint8(), request))
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():

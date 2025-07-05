@@ -11,7 +11,7 @@ import zipfile
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
+from typing import cast, Any, Generic, Iterable, Iterator, TypeVar, TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
@@ -28,6 +28,7 @@ from ..config.cli import CLI
 from ..config.settings import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
+from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..legacy import colours
 from ..update import is_latest_version
@@ -106,6 +107,24 @@ class RenderOption(Generic[T]):
                 raise NotImplementedError(f'Unsupported render type: {render_type}')
 
 
+@dataclass
+class LayerOption:
+    render_type: ipc.RenderType
+    blend_mode: BlendMode = BlendMode.Normal
+    channels: Channel = Channel.RGBA
+    opacity: int = 100
+    render_colour: RenderOption = field(default_factory=lambda: RenderOption('Ice', 'Ice', 'Jet', 'Aqua'))
+    contrast: RenderOption = field(default_factory=lambda: RenderOption(1.0, 1.0, 1.0, 1.0))
+    padding: RenderOption = field(default_factory=lambda: RenderOption(0, 0, 0, 0))
+    clipping: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.001, 0.0))
+    blur: RenderOption = field(default_factory=lambda: RenderOption(0.0, 0.0, 0.0125, 0.0))
+    linear: RenderOption = field(default_factory=lambda: RenderOption(False, True, True, False))
+    invert: RenderOption = field(default_factory=lambda: RenderOption(False, False, False, False))
+    show_left_clicks: bool = True
+    show_middle_clicks: bool = True
+    show_right_clicks: bool = True
+
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -157,18 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._last_save_message: ipc.SaveComplete | None
         self._thumbnail_redraw_required = False
         self._resolution_options: dict[tuple[int, int], bool] = {}
+        self._is_updating_layer_options = False
         self.state = ipc.TrackingState.Paused
-
-        # Set default render values
-        self._render_colour = RenderOption('Ice', 'Ice', 'Jet', 'Aqua')
-        self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
-        self._sampling = RenderOption(4, 4, 4, 4)
-        self._sampling_preview = RenderOption(0, 0, 0, 0)
-        self._padding = RenderOption(0, 0, 0, 0)
-        self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
-        self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
-        self._linear = RenderOption(False, True, True, False)
-        self._invert = RenderOption(False, False, False, False)
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -186,6 +195,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
+
+        self.ui.layer_presets.installEventFilter(self)
 
         # Hide social links for now
         self.ui.link_reddit.setVisible(False)
@@ -245,6 +256,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cursor_data = MapData(get_cursor_pos())
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
+        self._sampling = 4
+        self._sampling_preview = 0
+
+        self._layers: dict[int, LayerOption] = {}
+        self._layer_counter = 0
+        self._selected_layer = 0
+        self.ui.layer_list.clear()
+        for enum in BlendMode:
+            self.ui.layer_blending.addItem(enum.name, enum)
+        background_layer = self.add_render_layer()
+        background_layer.setCheckState(QtCore.Qt.CheckState.Checked)
+        background_layer.setSelected(True)
 
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
@@ -342,6 +365,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_donate.triggered.connect(self.open_url)
         self.ui.about.triggered.connect(self.about)
         self.ui.tip.linkActivated.connect(webbrowser.open)
+        self.ui.layer_list.currentItemChanged.connect(self.selected_layer_changed)
+        self.ui.layer_list.itemChanged.connect(self.selected_layer_toggled)
+        self.ui.layer_list.model().rowsMoved.connect(self.selected_layer_moved)
+        self.ui.layer_blending.currentIndexChanged.connect(self.layer_blend_mode_changed)
+        self.ui.layer_opacity.valueChanged.connect(self.layer_opacity_changed)
+        self.ui.layer_r.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_g.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_b.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_a.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_add.clicked.connect(self.add_render_layer)
+        self.ui.layer_remove.clicked.connect(self.delete_render_layer)
+        self.ui.layer_up.clicked.connect(self.move_layer_up)
+        self.ui.layer_down.clicked.connect(self.move_layer_down)
+        self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -370,6 +407,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.RequestPID(ipc.Target.Processing))
         self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
         self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
+
+        self.ui.layer_presets.addItem('Reset')
+        self.ui.layer_presets.addItem('Heatmap Overlay')
+        self.ui.layer_presets.addItem('Heatmap Tracks')
+        self.ui.layer_presets.addItem('Alpha Multiply')
+        self.ui.layer_presets.addItem('Urban Grass')
+        self.ui.layer_presets.addItem('Eraser')
+        self.ui.layer_presets.addItem('Plasma')
+        self.ui.layer_presets.addItem('RGB Clicks')
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        # Ignore scroll events on the layer presets combobox
+        if obj is self.ui.layer_presets and event.type() == QtCore.QEvent.Type.Wheel:
+            event.ignore()
+            return True
+        return super().eventFilter(obj, event)
 
     def set_tip_timer_state(self, enabled: bool) -> None:
         """Set the state of the tip update timer.
@@ -428,14 +481,14 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def render_type(self) -> ipc.RenderType:
         """Get the render type."""
-        return self._render_type
+        return self.selected_layer.render_type
 
     @render_type.setter
     def render_type(self, render_type: ipc.RenderType) -> None:
         """Set the render type.
         This populates the available colour maps.
         """
-        self._render_type = render_type
+        self.selected_layer.render_type = render_type
 
         # Add items to render colour input
         self.pause_colour_change = True
@@ -466,6 +519,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.blur.setValue(self.blur)
         self.ui.linear.setChecked(self.linear)
         self.ui.invert.setChecked(self.invert)
+        self.ui.show_left_clicks.setChecked(self.show_left_clicks)
+        self.ui.show_middle_clicks.setChecked(self.show_middle_clicks)
+        self.ui.show_right_clicks.setChecked(self.show_right_clicks)
         self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
@@ -473,94 +529,124 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def render_colour(self) -> str:
         """Get the render colour for the current render type."""
-        return self._render_colour.get(self.render_type)
+        return self.selected_layer.render_colour.get(self.render_type)
 
     @render_colour.setter
     def render_colour(self, colour: str) -> None:
         """Set the render colour for the current render type.
         This will update the current pixel colour too.
         """
-        self._render_colour.set(self.render_type, colour)
+        self.selected_layer.render_colour.set(self.render_type, colour)
 
     @property
     def contrast(self) -> float:
         """Get the contrast for the current render type."""
-        return self._contrast.get(self.render_type)
+        return self.selected_layer.contrast.get(self.render_type)
 
     @contrast.setter
     def contrast(self, value: float) -> None:
         """Set a new constrast value for the current render type."""
-        self._contrast.set(self.render_type, value)
+        self.selected_layer.contrast.set(self.render_type, value)
 
     @property
     def sampling(self) -> int:
         """Get the sampling for the current render type."""
-        return self._sampling.get(self.render_type)
+        return self._sampling
 
     @sampling.setter
     def sampling(self, value: int) -> None:
         """Set a new sampling value for the current render type."""
-        self._sampling.set(self.render_type, value)
+        self._sampling = value
 
     @property
     def sampling_preview(self) -> int:
         """Get the thumbnail sampling for the current render type."""
-        return self._sampling_preview.get(self.render_type)
+        return self._sampling_preview
 
     @sampling_preview.setter
     def sampling_preview(self, value: int) -> None:
         """Set a new thumbnail sampling value for the current render type."""
-        self._sampling_preview.set(self.render_type, value)
+        self._sampling_preview = value
 
     @property
     def padding(self) -> int:
         """Get the padding for the current render type."""
-        return self._padding.get(self.render_type)
+        return self.selected_layer.padding.get(self.render_type)
 
     @padding.setter
     def padding(self, value: int) -> None:
         """Set a new padding value for the current render type."""
-        self._padding.set(self.render_type, value)
+        self.selected_layer.padding.set(self.render_type, value)
 
     @property
     def clipping(self) -> float:
         """Get the clipping for the current render type."""
-        return self._clipping.get(self.render_type)
+        return self.selected_layer.clipping.get(self.render_type)
 
     @clipping.setter
     def clipping(self, value: float) -> None:
         """Set a new clipping value for the current render type."""
-        self._clipping.set(self.render_type, value)
+        self.selected_layer.clipping.set(self.render_type, value)
 
     @property
     def blur(self) -> float:
         """Get the blur for the current render type."""
-        return self._blur.get(self.render_type)
+        return self.selected_layer.blur.get(self.render_type)
 
     @blur.setter
     def blur(self, value: float) -> None:
         """Set a new blur value for the current render type."""
-        self._blur.set(self.render_type, value)
+        self.selected_layer.blur.set(self.render_type, value)
 
     @property
     def linear(self) -> bool:
         """Get if linear mapping is enabled for the current render type."""
-        return self._linear.get(self.render_type)
+        return self.selected_layer.linear.get(self.render_type)
 
     @linear.setter
     def linear(self, value: bool) -> None:
         """Set if linear mapping is enabled for the current render type."""
-        self._linear.set(self.render_type, value)
+        self.selected_layer.linear.set(self.render_type, value)
 
     @property
     def invert(self) -> bool:
         """Get if inverting colours for the current render type."""
-        return self._invert.get(self.render_type)
+        return self.selected_layer.invert.get(self.render_type)
 
     @invert.setter
     def invert(self, value: bool) -> None:
         """Set if inverting colours for the current render type."""
-        self._invert.set(self.render_type, value)
+        self.selected_layer.invert.set(self.render_type, value)
+
+    @property
+    def show_left_clicks(self) -> bool:
+        """Get if left clicks should be shown for the current render type."""
+        return self.selected_layer.show_left_clicks
+
+    @show_left_clicks.setter
+    def show_left_clicks(self, value: bool) -> None:
+        """Set if left clicks should be shown for the current render type."""
+        self.selected_layer.show_left_clicks = value
+
+    @property
+    def show_middle_clicks(self) -> bool:
+        """Get if middle clicks should be shown for the current render type."""
+        return self.selected_layer.show_middle_clicks
+
+    @show_middle_clicks.setter
+    def show_middle_clicks(self, value: bool) -> None:
+        """Set if middle clicks should be shown for the current render type."""
+        self.selected_layer.show_middle_clicks = value
+
+    @property
+    def show_right_clicks(self) -> bool:
+        """Get if right clicks should be shown for the current render type."""
+        return self.selected_layer.show_right_clicks
+
+    @show_right_clicks.setter
+    def show_right_clicks(self, value: bool) -> None:
+        """Set if right clicks should be shown for the current render type."""
+        self.selected_layer.show_right_clicks = value
 
     @property
     def mouse_click_count(self) -> int:
@@ -910,7 +996,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
         self.render_type = self.ui.map_type.itemData(idx)
-        self.request_thumbnail()
+        if not self._is_updating_layer_options:
+            self.request_thumbnail()
+            self.update_layer_item_name()
 
     @QtCore.Slot(bool)
     def show_clicks_changed(self, enabled: bool) -> None:
@@ -921,7 +1009,7 @@ class MainWindow(QtWidgets.QMainWindow):
         unchecked. If shift clicking on an unchecked option, then all
         options will be checked.
         """
-        if self._is_setting_click_state:
+        if self._is_setting_click_state or self.pause_colour_change:
             return
         self._is_setting_click_state = True
 
@@ -945,7 +1033,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     checkbox.setChecked(False)
                 sender.setChecked(True)
 
+        self.show_left_clicks = self.ui.show_left_clicks.isChecked()
+        self.show_middle_clicks = self.ui.show_middle_clicks.isChecked()
+        self.show_right_clicks = self.ui.show_right_clicks.isChecked()
+
         self.request_thumbnail()
+        self.update_layer_item_name()
         self._is_setting_click_state = False
 
     @QtCore.Slot(bool)
@@ -1179,20 +1272,81 @@ class MainWindow(QtWidgets.QMainWindow):
         if use_custom_height:
             height = min(height, custom_height)
 
-        self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                   width=width, height=height, lock_aspect=lock_aspect,
-                                                   profile=sanitised_profile_name, file_path=None,
-                                                   colour_map=self.render_colour, padding=self.padding,
-                                                   sampling=self.ui.thumbnail_sampling.value(),
-                                                   contrast=self.contrast, clipping=self.clipping,
-                                                   blur=self.blur, linear=self.linear, invert=self.invert,
-                                                   show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                   show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                   show_count=self.ui.show_count.isChecked(),
-                                                   show_time=self.ui.show_time.isChecked(),
-                                                   interpolation_order=self.ui.interpolation_order.value()))
+        self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data())))
         return True
+
+    def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
+        sanitised_profile_name, profile_name = self._get_profile_data()
+        if sanitised_profile_name is None:
+            return
+
+        use_custom_width = self.ui.custom_width.isEnabled()
+        use_custom_height = self.ui.custom_height.isEnabled()
+        custom_width = self.ui.custom_width.value() if use_custom_width else None
+        custom_height = self.ui.custom_height.value() if use_custom_height else None
+        lock_aspect = self.ui.lock_aspect.isChecked()
+
+        if file_path is None:
+            width = self.ui.thumbnail.width()
+            height = self.ui.thumbnail.height()
+
+            # Account for collapsed splitters
+            if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
+                width += self.ui.horizontal_splitter.handleWidth()
+            if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
+                height += self.ui.vertical_splitter.handleWidth()
+
+            if not lock_aspect and (use_custom_width or use_custom_height):
+                # Set the aspect ratio to requested
+                aspect_ratio = width / height
+                if aspect_ratio > width / height:
+                    height = round(width / aspect_ratio)
+                else:
+                    width = round(height * aspect_ratio)
+
+            # Ensure resolutions aren't greater than requested
+            if use_custom_width:
+                width = min(width, custom_width)
+            if use_custom_height:
+                height = min(height, custom_height)
+
+        else:
+            width = custom_width
+            height = custom_height
+
+        old_layer = self._selected_layer
+
+        for i in range(self.ui.layer_list.count(), 0, -1):
+            item = self.ui.layer_list.item(i - 1)
+            self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+
+            layer = ipc.RenderRequest(
+                type=self.render_type,
+                width=width,
+                height=height,
+                lock_aspect=lock_aspect,
+                profile=sanitised_profile_name,
+                file_path=file_path,
+                colour_map=self.render_colour,
+                padding=self.padding,
+                sampling=self.ui.thumbnail_sampling.value(),
+                contrast=self.contrast,
+                clipping=self.clipping,
+                blur=self.blur,
+                linear=self.linear,
+                invert=self.invert,
+                show_left_clicks=self.show_left_clicks,
+                show_middle_clicks=self.show_middle_clicks,
+                show_right_clicks=self.show_right_clicks,
+                show_count=self.ui.show_count.isChecked(),
+                show_time=self.ui.show_time.isChecked(),
+                interpolation_order=self.ui.interpolation_order.value(),
+                layer_visible=item.checkState() == QtCore.Qt.CheckState.Checked,
+            )
+
+            yield ipc.RenderLayer(layer, self.selected_layer.blend_mode, self.selected_layer.channels, self.selected_layer.opacity)
+
+        self._selected_layer = old_layer
 
     @QtCore.Slot(QtCore.QSize)
     def thumbnail_resize(self, size: QtCore.QSize) -> None:
@@ -1280,21 +1434,7 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
-            width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-            height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
-            self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                       width=width, height=height, lock_aspect=False,
-                                                       profile=sanitised_profile_name, file_path=file_path,
-                                                       colour_map=self.render_colour, sampling=self.sampling,
-                                                       padding=self.padding, contrast=self.contrast,
-                                                       clipping=self.clipping, blur=self.blur, linear=self.linear,
-                                                       invert=self.invert,
-                                                       show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                       show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked(),
-                                                       show_count=self.ui.show_count.isChecked(),
-                                                       show_time=self.ui.show_time.isChecked(),
-                                                       interpolation_order=self.ui.interpolation_order.value()))
+            self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data(file_path))))
 
     def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""
@@ -2456,6 +2596,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.invert.setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
+        self.ui.layer_group.setVisible(show_advanced and not is_keyboard)
 
     def notify(self, message: str) -> None:
         """Show a notification.
@@ -2620,3 +2761,347 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
             self.component.send_data(ipc.ExportDailyStats(sanitised_profile_name, file_path))
+
+    @property
+    def selected_layer(self) -> LayerOption:
+        """Get the selected layer data."""
+        return self._layers[self._selected_layer]
+
+    def add_render_layer(self) -> QtWidgets.QListWidgetItem:
+        """Add a new disabled render layer."""
+        item = QtWidgets.QListWidgetItem()
+        item.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
+
+        selected_items = self.ui.layer_list.selectedItems()
+        self.ui.layer_list.insertItem(0, item)
+        for previous in selected_items:
+            previous.setSelected(True)
+
+        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
+        self._layer_counter += 1
+        self.update_layer_item_name(item)
+        return item
+
+    @QtCore.Slot()
+    def delete_render_layer(self) -> None:
+        """Delete the selected render layer."""
+        for item in self.ui.layer_list.selectedItems():
+            if self.ui.layer_list.count() <= 1:
+                msg = QtWidgets.QMessageBox(self)
+                msg.setWindowTitle('Error')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText('Failed to remove layer, no other layers exit.')
+                msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+                msg.exec()
+
+            else:
+                self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
+    def selected_layer_changed(self, current: QtWidgets.QListWidgetItem,
+                               previous: QtWidgets.QListWidgetItem) -> None:
+        """Update widgets when the selected layer changes."""
+        if current == previous or current is None:
+            return
+
+        self._is_updating_layer_options = True
+        try:
+            self._selected_layer = current.data(QtCore.Qt.ItemDataRole.UserRole)
+            layer = self._layers[self._selected_layer]
+
+            # Set the render type which will update the other widgets
+            idx = self.ui.map_type.findData(layer.render_type)
+            if idx == self.ui.map_type.currentIndex():
+                self.render_type_changed(idx)
+            else:
+                self.ui.map_type.setCurrentIndex(idx)
+
+            # Set the layer blending
+            idx = self.ui.layer_blending.findData(layer.blend_mode)
+            self.ui.layer_blending.setCurrentIndex(idx)
+
+            # Set the channels
+            self.ui.layer_r.setChecked(layer.channels & Channel.R)
+            self.ui.layer_g.setChecked(layer.channels & Channel.G)
+            self.ui.layer_b.setChecked(layer.channels & Channel.B)
+            self.ui.layer_a.setChecked(layer.channels & Channel.A)
+
+            # Set the opacity
+            self.ui.layer_opacity.setValue(layer.opacity)
+
+        finally:
+            self._is_updating_layer_options = False
+
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem)
+    def selected_layer_toggled(self, item: QtWidgets.QListWidgetItem) -> None:
+        """Update when a layer is enabled or disabled."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtCore.QModelIndex, int, int, QtCore.QModelIndex, int)
+    def selected_layer_moved(self, srcParent: QtCore.QModelIndex, start: int, end: int,
+                             dstParent: QtCore.QModelIndex, dstRow: int) -> None:
+        """Update when a layer is removed."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(int)
+    def layer_blend_mode_changed(self, idx: int) -> None:
+        """Update when the blend mode is changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.blend_mode = self.ui.layer_blending.itemData(idx)
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot()
+    def layer_channel_changed(self) -> None:
+        """Update when the channels are changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        channels = 0
+        if self.ui.layer_r.isChecked():
+            channels |= Channel.R
+        if self.ui.layer_g.isChecked():
+            channels |= Channel.G
+        if self.ui.layer_b.isChecked():
+            channels |= Channel.B
+        if self.ui.layer_a.isChecked():
+            channels |= Channel.A
+        self.selected_layer.channels = Channel(channels)
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot(int)
+    def layer_opacity_changed(self, value: int) -> None:
+        """Update when the opacity is changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.opacity = value
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot()
+    def move_layer_up(self) -> None:
+        """Move the selected layer up if possible."""
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row <= 0:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row - 1, item)
+            self.ui.layer_list.setCurrentItem(item)
+
+    @QtCore.Slot()
+    def move_layer_down(self) -> None:
+        """Move the selected layer down if possible."""
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row < 0 or row >= self.ui.layer_list.count() - 1:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row + 1, item)
+            self.ui.layer_list.setCurrentItem(item)
+
+    @QtCore.Slot(int)
+    def layer_preset_chosen(self, idx: int) -> None:
+        """Load in a layer preset.
+        This is hardcoded for now as the current system wouldn't work
+        well with loading from a file.
+        """
+        if not idx:
+            return
+
+        match self.ui.layer_presets.currentText():
+            case 'Reset':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+
+            case 'Heatmap Overlay':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.opacity = 50
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = BlendMode.LuminanceMask
+                self.selected_layer.clipping.heatmap = 0.01
+                self.selected_layer.contrast.heatmap = 1.5
+
+            case 'Heatmap Tracks':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+                self.selected_layer.render_colour.movement = 'Chalk'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Multiply
+                self.selected_layer.render_type = ipc.RenderType.MousePosition
+                self.selected_layer.render_colour.heatmap = 'Inferno'
+                self.selected_layer.blur.heatmap = 0.001
+
+            case 'Alpha Multiply':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MousePosition
+                self.selected_layer.blend_mode = BlendMode.Multiply
+                self.selected_layer.channels = Channel.A
+                self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
+                self.selected_layer.blur.heatmap = 0
+                self.selected_layer.clipping.heatmap = 0.85
+                self.selected_layer.contrast.heatmap = 0.5
+
+            case 'Urban Grass':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+                self.selected_layer.render_colour.movement = 'Chalk'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseSpeed
+                self.selected_layer.render_colour.speed = 'TransparentBlackToBlackToGreen'
+
+            case 'Eraser':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+                self.selected_layer.render_colour.movement = 'Graphite'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = BlendMode.Subtract
+                self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
+                self.selected_layer.channels = Channel.A
+                self.selected_layer.clipping.heatmap = 0.2
+                self.selected_layer.contrast.heatmap = 1.5
+
+            case 'Plasma':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.MouseMovement
+                self.selected_layer.render_colour.movement = 'Demon'
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.blend_mode = BlendMode.HardLight
+                self.selected_layer.render_colour.heatmap = 'Riptide'
+                self.selected_layer.clipping.heatmap = 0.01
+                self.selected_layer.blur.heatmap = 0.02
+
+            case 'RGB Clicks':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_2 = self.add_render_layer()
+                layer_2.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToRed'
+                self.selected_layer.show_middle_clicks = False
+                self.selected_layer.show_right_clicks = False
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToGreen'
+                self.selected_layer.show_left_clicks = False
+                self.selected_layer.show_right_clicks = False
+
+                self._selected_layer = layer_2.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToBlue'
+                self.selected_layer.show_left_clicks = False
+                self.selected_layer.show_middle_clicks = False
+
+        self._selected_layer = 0
+        self.ui.layer_presets.setCurrentIndex(0)
+        self.ui.layer_list.setCurrentItem(layer_0)
+
+        for item in map(self.ui.layer_list.item, range(self.ui.layer_list.count())):
+            self.update_layer_item_name(item)
+
+    def update_layer_item_name(self, item: QtWidgets.QListWidgetItem | None = None) -> None:
+        """Generate the name of each layer."""
+        if item is None:
+            item = self.ui.layer_list.selectedItems()[0]
+
+        # Read the layer from the given item
+        layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        data = self._layers[layer]
+
+        tyoe_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
+
+        # Override the type name if any click options are disabled
+        if data.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('LMB')
+            if data.show_middle_clicks:
+                enabled.append('MMB')
+            if data.show_right_clicks:
+                enabled.append('RMB')
+            if enabled and len(enabled) < 3:
+                tyoe_name = '|'.join(enabled)
+
+        # Override the type name if any thumbstick options are disabled
+        if data.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickPosition, ipc.RenderType.ThumbstickSpeed):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('Left')
+            if data.show_right_clicks:
+                enabled.append('Right')
+            if enabled and len(enabled) < 2:
+                tyoe_name = f'{enabled[0]} {tyoe_name}'
+
+        # Generate the name
+        name_parts: list[Any] = [
+            f'Layer {layer}',
+            tyoe_name,
+            data.blend_mode.name,
+            f'{data.opacity}%',
+            Channel(data.channels).name,
+        ]
+        item.setText(' | '.join(map(str, name_parts)))

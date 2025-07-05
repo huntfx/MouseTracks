@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import math
 from collections import defaultdict
-from typing import Literal
+from functools import wraps
+from typing import Callable, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
 from scipy import ndimage
 
+from .enums import BlendMode, Channel
 from .legacy import colours
 
 
@@ -231,7 +235,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     # Clip the maximum values
     if clipping:
         sorted_values, linear_mapping = np.unique(combined_array, return_inverse=True)
-        max_value = sorted_values[round(np.max(linear_mapping) * (1 - clipping))]
+        max_value = sorted_values[int(np.ceil(np.max(linear_mapping) * (1 - clipping)))]
         combined_array[combined_array > max_value] = max_value
 
     # Update the contrast
@@ -313,3 +317,238 @@ def combine_array_grid(positional_arrays: dict[tuple[int, int], np.ndarray],
         combined_array[y: y + scale_height, x:x + scale_width] = array
 
     return combined_array
+
+
+def alpha_blend(background: npt.NDArray[np.float64], foreground: npt.NDArray[np.float64],
+                alpha: npt.NDArray[np.float64] | float, index: tuple[slice | list[int], ...] = ()) -> npt.NDArray[np.float64]:
+    """Blend two images together."""
+    if isinstance(alpha, float):
+        if alpha >= 1:
+            return foreground[index]
+        if alpha < 1e6:
+            return background[index]
+    return np.add(foreground[index] * alpha, background[index] * (1 - alpha))
+
+
+def apply_checkerboard_background(rgba_image: npt.NDArray[np.float64], square_size: int = 16,
+                                  light_colour: tuple[float, float, float] = (0.8, 0.8, 0.8),
+                                  dark_colour: tuple[float, float, float] = (0.6, 0.6, 0.6)) -> npt.NDArray[np.float64]:
+    """Blends a floating-point RGBA image onto a checkerboard background.
+
+    Parameters:
+        rgba_image: The source image as a NumPy array with shape (height, width, 4)
+                    and float values between 0.0 and 1.0.
+        square_size: The size of each square in the checkerboard pattern.
+        light_color: The (R, G, B) float tuple for the light squares.
+        dark_color: The (R, G, B) float tuple for the dark squares.
+
+    Returns:
+        A NumPy array of shape (height, width, 3) representing the final
+        RGB image blended onto the checkerboard.
+    """
+    height, width, channels = rgba_image.shape
+    if channels < 4:
+        return rgba_image
+
+    background = np.zeros((height, width, 3), dtype=np.float64)
+
+    # Create the checkerboard pattern using modulo arithmetic
+    # This results in a 2D array of 0s and 1s
+    rows, cols = np.indices((height, width))
+    checkerboard_mask = ((rows // square_size) % 2) != ((cols // square_size) % 2)
+
+    # Use the mask to fill in the two colors
+    background[checkerboard_mask] = light_colour
+    background[~checkerboard_mask] = dark_colour
+
+    # Perform alpha blending
+    foreground_rgb = rgba_image[:, :, :3]
+    alpha = rgba_image[:, :, 3:]
+
+    return alpha_blend(background, foreground_rgb, alpha)
+
+
+def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], npt.NDArray[np.float64]],
+                  ) -> Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], LayerBlend]:
+    """Wrap a layer blend to correctly apply the opacity.
+    This works for non overlay modes.
+    """
+    @wraps(fn)
+    def wrapper(self: LayerBlend, image: npt.NDArray[np.float64],
+                opacity: float, channels: Channel) -> LayerBlend:
+        original_render = self.image.copy()
+        result = fn(self, image, opacity, channels)
+
+        idx: tuple[slice | list[int], ...] = (slice(None), slice(None), Channel.get_indices(channels))  # [:, :, indexes]
+        self.image[idx] = alpha_blend(original_render, result, opacity, idx)
+
+        return self
+    return wrapper
+
+
+def _effective_alpha_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], npt.NDArray[np.float64]],
+                           ) -> Callable[[LayerBlend, npt.NDArray[np.float64], float, Channel], LayerBlend]:
+    """Wrap a layer blend to apply an effective alpha.
+    This is done on the RGB channels and alpha channel separately.
+    """
+    @wraps(fn)
+    def wrapper(self: LayerBlend, image: npt.NDArray[np.float64],
+                opacity: float, channels: Channel) -> LayerBlend:
+        effective_alpha = fn(self, image, opacity, channels)
+        idx: tuple[slice | list[int], ...]
+
+        # Blend RGB channels
+        if channels & Channel.RGB:
+            idx = slice(None), slice(None), [i for i in Channel.get_indices(channels) if i < 3]  # [:, :, indexes]
+            self.image[idx] = alpha_blend(self.image, image, effective_alpha, idx)
+
+        # Blend Alpha channel
+        if channels & Channel.A:
+            idx = slice(None), slice(None), slice(3, None)  # [:, :, 3:]
+            self.image[idx] = alpha_blend(self.image, np.ones(self.image.shape), effective_alpha, idx)
+
+        return self
+    return wrapper
+
+
+class LayerBlend:
+    """Composite multiple layers together with blending modes.
+    Requires all arrays to be of the same shape.
+    """
+
+    def __init__(self, base_layer: npt.NDArray[np.float64]):
+        self.image = base_layer
+
+    def blend(self, mode: BlendMode, image: npt.NDArray[np.float64],
+              opacity: float, channels: Channel) -> Self:
+        match mode:
+            case BlendMode.Normal:
+                self.normal(image, opacity, channels)
+            case BlendMode.LuminanceMask:
+                self.luminance_mask(image, opacity, channels)
+            case BlendMode.Replace:
+                self.replace(image, opacity, channels)
+            case BlendMode.Add:
+                self.add(image, opacity, channels)
+            case BlendMode.Subtract:
+                self.subtract(image, opacity, channels)
+            case BlendMode.Multiply:
+                self.multiply(image, opacity, channels)
+            case BlendMode.Divide:
+                self.divide(image, opacity, channels)
+            case BlendMode.Maximum:
+                self.maximum(image, opacity, channels)
+            case BlendMode.Minimum:
+                self.minimum(image, opacity, channels)
+            case BlendMode.Screen:
+                self.screen(image, opacity, channels)
+            case BlendMode.Difference:
+                self.difference(image, opacity, channels)
+            case BlendMode.Overlay:
+                self.overlay(image, opacity, channels)
+            case BlendMode.SoftLight:
+                self.soft_light(image, opacity, channels)
+            case BlendMode.HardLight:
+                self.hard_light(image, opacity, channels)
+            case BlendMode.ColourDodge:
+                self.colour_dodge(image, opacity, channels)
+            case BlendMode.ColourBurn:
+                self.colour_burn(image, opacity, channels)
+        return self
+
+    @_effective_alpha_blend
+    def normal(self, image: npt.NDArray[np.float64], opacity: float,
+               channels: Channel) -> npt.NDArray[np.float64]:
+        return np.multiply(image[:, :, 3:], opacity)
+
+    @_effective_alpha_blend
+    def luminance_mask(self, image: npt.NDArray[np.float64], opacity: float,
+                       channels: Channel) -> npt.NDArray[np.float64]:
+        luminance_alpha = np.max(image[:, :, :3], axis=2, keepdims=True)
+        return luminance_alpha * opacity
+
+    @_simple_blend
+    def replace(self, image: npt.NDArray[np.float64], opacity: float,
+                channels: Channel) -> npt.NDArray[np.float64]:
+        return image
+
+    @_simple_blend
+    def add(self, image: npt.NDArray[np.float64], opacity: float,
+            channels: Channel) -> npt.NDArray[np.float64]:
+        return np.add(self.image, image)
+
+    @_simple_blend
+    def subtract(self, image: npt.NDArray[np.float64], opacity: float,
+                 channels: Channel) -> npt.NDArray[np.float64]:
+        return np.subtract(self.image, image)
+
+    @_simple_blend
+    def multiply(self, image: npt.NDArray[np.float64], opacity: float,
+                 channels: Channel) -> npt.NDArray[np.float64]:
+        return np.multiply(self.image, image)
+
+    @_simple_blend
+    def divide(self, image: npt.NDArray[np.float64], opacity: float,
+               channels: Channel) -> npt.NDArray[np.float64]:
+        return np.divide(self.image, image, where=image > 1e-6)
+
+    @_simple_blend
+    def maximum(self, image: npt.NDArray[np.float64], opacity: float,
+                channels: Channel) -> npt.NDArray[np.float64]:
+        return np.maximum(self.image, image)
+
+    @_simple_blend
+    def minimum(self, image: npt.NDArray[np.float64], opacity: float,
+                channels: Channel) -> npt.NDArray[np.float64]:
+        return np.minimum(self.image, image)
+
+    @_simple_blend
+    def screen(self, image: npt.NDArray[np.float64], opacity: float,
+               channels: Channel) -> npt.NDArray[np.float64]:
+        return np.subtract(1, (1 - self.image) * (1 - image))
+
+    @_simple_blend
+    def difference(self, image: npt.NDArray[np.float64], opacity: float,
+                   channels: Channel) -> npt.NDArray[np.float64]:
+        return np.abs(self.image - image)
+
+    @_simple_blend
+    def overlay(self, image: npt.NDArray[np.float64], opacity: float,
+                channels: Channel) -> npt.NDArray[np.float64]:
+        return np.where(self.image <= 0.5,
+                        2 * self.image * image,
+                        1 - 2 * (1 - self.image) * (1 - image))
+
+    @_simple_blend
+    def soft_light(self, image: npt.NDArray[np.float64], opacity: float,
+                   channels: Channel) -> npt.NDArray[np.float64]:
+        return np.where(image <= 0.5,
+                        self.image - (1 - 2 * image) * self.image * (1 - self.image),
+                        self.image + (2 * image - 1) * (np.sqrt(self.image) - self.image))
+
+    @_simple_blend
+    def hard_light(self, image: npt.NDArray[np.float64], opacity: float,
+                   channels: Channel) -> npt.NDArray[np.float64]:
+        return np.where(self.image <= 0.5,
+                        2 * self.image * image,
+                        1 - 2 * (1 - self.image) * (1 - image))
+
+    @_simple_blend
+    def colour_dodge(self, image: npt.NDArray[np.float64], opacity: float,
+                     channels: Channel) -> npt.NDArray[np.float64]:
+        return np.divide(self.image, 1 - image, where=(1 - image) > 1e-6)
+
+    @_simple_blend
+    def colour_burn(self, image: npt.NDArray[np.float64], opacity: float,
+                    channels: Channel) -> npt.NDArray[np.float64]:
+        return np.subtract(1, np.divide(1 - self.image, image, where=image > 1e-6))
+
+    def add_checkerbox(self) -> Self:
+        """Apply the checkerbox background."""
+        self.image = apply_checkerboard_background(self.image)
+        return self
+
+    def to_uint8(self) -> npt.NDArray[np.uint8]:
+        """Convert the float array to uint8."""
+        clipped = np.clip(self.image, 0, 1) * 255
+        return clipped.round().astype(np.uint8)

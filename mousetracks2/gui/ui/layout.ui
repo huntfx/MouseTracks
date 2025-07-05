@@ -87,8 +87,8 @@ combat aliasing.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>1053</height>
+               <width>272</width>
+               <height>1327</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -141,87 +141,6 @@ When a new profile is recorded to, the GUI will immediately update.</string>
                     <bool>true</bool>
                    </property>
                   </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="groupBox_3">
-                <property name="title">
-                 <string>Data Type</string>
-                </property>
-                <layout class="QGridLayout" name="gridLayout_6">
-                 <item row="1" column="0">
-                  <layout class="QHBoxLayout" name="horizontalLayout_4">
-                   <item>
-                    <widget class="QCheckBox" name="show_left_clicks">
-                     <property name="toolTip">
-                      <string>Show left mouse clicks / left thumbstick.</string>
-                     </property>
-                     <property name="text">
-                      <string>Left</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="show_middle_clicks">
-                     <property name="toolTip">
-                      <string>Show middle mouse clicks.</string>
-                     </property>
-                     <property name="text">
-                      <string>Middle</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="show_right_clicks">
-                     <property name="toolTip">
-                      <string>Show right mouse clicks / right thumbstick.</string>
-                     </property>
-                     <property name="text">
-                      <string>Right</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QComboBox" name="map_type">
-                   <property name="toolTip">
-                    <string>Select which dataset to render.
-If no data exists, then a blank image will be shown.</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <layout class="QHBoxLayout" name="horizontalLayout_2">
-                   <item>
-                    <widget class="QRadioButton" name="show_count">
-                     <property name="text">
-                      <string>Count</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="show_time">
-                     <property name="text">
-                      <string>Time</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
                  </item>
                 </layout>
                </widget>
@@ -386,6 +305,87 @@ If this is disabled, the width will be set based on the available data.</string>
                     <cstring>custom_width</cstring>
                    </property>
                   </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_3">
+                <property name="title">
+                 <string>Data Type</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_6">
+                 <item row="1" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <item>
+                    <widget class="QCheckBox" name="show_left_clicks">
+                     <property name="toolTip">
+                      <string>Show left mouse clicks / left thumbstick.</string>
+                     </property>
+                     <property name="text">
+                      <string>Left</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_middle_clicks">
+                     <property name="toolTip">
+                      <string>Show middle mouse clicks.</string>
+                     </property>
+                     <property name="text">
+                      <string>Middle</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_right_clicks">
+                     <property name="toolTip">
+                      <string>Show right mouse clicks / right thumbstick.</string>
+                     </property>
+                     <property name="text">
+                      <string>Right</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QComboBox" name="map_type">
+                   <property name="toolTip">
+                    <string>Select which dataset to render.
+If no data exists, then a blank image will be shown.</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_2">
+                   <item>
+                    <widget class="QRadioButton" name="show_count">
+                     <property name="text">
+                      <string>Count</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="show_time">
+                     <property name="text">
+                      <string>Time</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>
@@ -754,6 +754,276 @@ This is primarily designed for use with heatmaps.</string>
                </widget>
               </item>
               <item>
+               <widget class="QGroupBox" name="layer_group">
+                <property name="toolTip">
+                 <string>Use render layers to combine multiple renders together, making use of opacity and blending modes.
+The &quot;Render Settings&quot; and &quot;Data Type&quot; options above are set per layer.</string>
+                </property>
+                <property name="title">
+                 <string>Render Layers</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <item>
+                  <widget class="QComboBox" name="layer_presets">
+                   <property name="focusPolicy">
+                    <enum>Qt::FocusPolicy::StrongFocus</enum>
+                   </property>
+                   <property name="toolTip">
+                    <string>Choose a layer setup from a few defined presets.
+This will overwrite your current setup.</string>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Presets</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
+                   <item>
+                    <widget class="QListWidget" name="layer_list">
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>114</height>
+                      </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>List of all the current layers, which can be reordered by dragging.
+Use the checkbox to enable / disable layers.</string>
+                     </property>
+                     <property name="dragDropMode">
+                      <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+                     </property>
+                     <property name="currentRow">
+                      <number>1</number>
+                     </property>
+                     <item>
+                      <property name="text">
+                       <string>Layer 1</string>
+                      </property>
+                      <property name="checkState">
+                       <enum>Unchecked</enum>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Layer 0</string>
+                      </property>
+                      <property name="checkState">
+                       <enum>Checked</enum>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_17">
+                     <item>
+                      <widget class="QPushButton" name="layer_add">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Add a new layer.
+The new layer will be unchecked by default, so will not be initially shown.</string>
+                       </property>
+                       <property name="text">
+                        <string>+</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_remove">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Remove the selected layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>-</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_up">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer up.</string>
+                       </property>
+                       <property name="text">
+                        <string>↑</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_down">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer down.</string>
+                       </property>
+                       <property name="text">
+                        <string>↓</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_9">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_33">
+                     <property name="toolTip">
+                      <string>!inherit layer_blending</string>
+                     </property>
+                     <property name="text">
+                      <string>Blending Mode:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_blending</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <layout class="QHBoxLayout" name="horizontalLayout_10">
+                     <item>
+                      <widget class="QCheckBox" name="layer_r">
+                       <property name="toolTip">
+                        <string>Enable the red channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>R</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_g">
+                       <property name="toolTip">
+                        <string>Enable the green channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>G</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_b">
+                       <property name="toolTip">
+                        <string>Enable the blue channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>B</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_a">
+                       <property name="toolTip">
+                        <string>Enable the alpha channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>A</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="layer_blending">
+                     <property name="toolTip">
+                      <string>Set the blending mode of the current layer.</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QSpinBox" name="layer_opacity">
+                     <property name="toolTip">
+                      <string>Set the opacity of the selected layer.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>%</string>
+                     </property>
+                     <property name="maximum">
+                      <number>100</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>10</number>
+                     </property>
+                     <property name="value">
+                      <number>100</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_34">
+                     <property name="toolTip">
+                      <string>Set which channels to use from the current layer.
+For example, it can be limited to Alpha to copy the transparency.</string>
+                     </property>
+                     <property name="text">
+                      <string>Channels:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_32">
+                     <property name="toolTip">
+                      <string>!inherit layer_opacity</string>
+                     </property>
+                     <property name="text">
+                      <string>Opacity:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_opacity</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
                <widget class="QGroupBox" name="groupBox_9">
                 <property name="title">
                  <string>Stats</string>
@@ -1102,7 +1372,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>251</width>
+               <width>261</width>
                <height>654</height>
               </rect>
              </property>
@@ -1464,7 +1734,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>239</width>
+               <width>261</width>
                <height>486</height>
               </rect>
              </property>
@@ -2399,6 +2669,38 @@ This should be used after manually editing it.</string>
  <resources/>
  <connections>
   <connection>
+   <sender>tray_about</sender>
+   <signal>triggered()</signal>
+   <receiver>about</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_donate</sender>
+   <signal>triggered()</signal>
+   <receiver>link_donate</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>save</sender>
    <signal>clicked()</signal>
    <receiver>file_save</receiver>
@@ -2459,38 +2761,6 @@ This should be used after manually editing it.</string>
     <hint type="destinationlabel">
      <x>1000</x>
      <y>-90</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tray_about</sender>
-   <signal>triggered()</signal>
-   <receiver>about</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tray_donate</sender>
-   <signal>triggered()</signal>
-   <receiver>link_donate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
     </hint>
    </hints>
   </connection>
