@@ -1047,7 +1047,7 @@ This is primarily designed for use with heatmaps.</string>
              <string>A new update is available. &lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases/latest&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
             </property>
             <property name="tip_tooltip" stdset="0">
-             <string>Don't understand an option? Hover over to show its tooltip, or &lt;a href=&quot;https://github.com/huntfx/MouseTracks/issues&quot;&gt;raise an issue&lt;/a&gt; on GitHub if it's still not clear.</string>
+             <string>Don't understand an option? Hover over to show its tooltip, or &lt;a href=&quot;https://github.com/huntfx/MouseTracks/issues&quot;&gt;raise an issue&lt;/a&gt; if it needs improvement.</string>
             </property>
            </widget>
           </item>
