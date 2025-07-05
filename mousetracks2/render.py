@@ -235,7 +235,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     # Clip the maximum values
     if clipping:
         sorted_values, linear_mapping = np.unique(combined_array, return_inverse=True)
-        max_value = sorted_values[int(np.ceil(np.max(linear_mapping) * (1 - clipping)))]
+        max_value = sorted_values[math.ceil(np.max(linear_mapping) * (1 - clipping))]
         combined_array[combined_array > max_value] = max_value
 
     # Update the contrast
