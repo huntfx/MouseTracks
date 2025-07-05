@@ -1038,6 +1038,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show_right_clicks = self.ui.show_right_clicks.isChecked()
 
         self.request_thumbnail()
+        self.update_layer_item_name()
         self._is_setting_click_state = False
 
     @QtCore.Slot(bool)
@@ -3051,12 +3052,38 @@ class MainWindow(QtWidgets.QMainWindow):
         if item is None:
             item = self.ui.layer_list.selectedItems()[0]
 
+        # Read the layer from the given item
         layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
         data = self._layers[layer]
 
+        tyoe_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
+
+        # Override the type name if any click options are disabled
+        if data.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('LMB')
+            if data.show_middle_clicks:
+                enabled.append('MMB')
+            if data.show_right_clicks:
+                enabled.append('RMB')
+            if enabled and len(enabled) < 3:
+                tyoe_name = '|'.join(enabled)
+
+        # Override the type name if any thumbstick options are disabled
+        if data.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickPosition, ipc.RenderType.ThumbstickSpeed):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('Left')
+            if data.show_right_clicks:
+                enabled.append('Right')
+            if enabled and len(enabled) < 2:
+                tyoe_name = f'{enabled[0]} {tyoe_name}'
+
+        # Generate the name
         name_parts: list[Any] = [
             f'Layer {layer}',
-            self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:],
+            tyoe_name,
             data.blend_mode.name,
             f'{data.opacity}%',
             Channel(data.channels).name,
