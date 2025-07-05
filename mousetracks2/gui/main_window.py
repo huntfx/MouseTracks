@@ -2764,9 +2764,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @property
     def selected_layer(self) -> LayerOption:
+        """Get the selected layer data."""
         return self._layers[self._selected_layer]
 
     def add_render_layer(self) -> QtWidgets.QListWidgetItem:
+        """Add a new disabled render layer."""
         item = QtWidgets.QListWidgetItem()
         item.setCheckState(QtCore.Qt.CheckState.Unchecked)
         item.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
@@ -2783,6 +2785,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def delete_render_layer(self) -> None:
+        """Delete the selected render layer."""
         for item in self.ui.layer_list.selectedItems():
             if self.ui.layer_list.count() <= 1:
                 msg = QtWidgets.QMessageBox(self)
@@ -2798,6 +2801,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
     def selected_layer_changed(self, current: QtWidgets.QListWidgetItem,
                                previous: QtWidgets.QListWidgetItem) -> None:
+        """Update widgets when the selected layer changes."""
         if current == previous or current is None:
             return
 
@@ -2833,15 +2837,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(QtWidgets.QListWidgetItem)
     def selected_layer_toggled(self, item: QtWidgets.QListWidgetItem) -> None:
+        """Update when a layer is enabled or disabled."""
         self.request_thumbnail()
 
     @QtCore.Slot(QtCore.QModelIndex, int, int, QtCore.QModelIndex, int)
     def selected_layer_moved(self, srcParent: QtCore.QModelIndex, start: int, end: int,
                              dstParent: QtCore.QModelIndex, dstRow: int) -> None:
+        """Update when a layer is removed."""
         self.request_thumbnail()
 
     @QtCore.Slot(int)
     def layer_blend_mode_changed(self, idx: int) -> None:
+        """Update when the blend mode is changed for the current layer."""
         if self._is_updating_layer_options:
             return
         self.selected_layer.blend_mode = self.ui.layer_blending.itemData(idx)
@@ -2850,6 +2857,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def layer_channel_changed(self) -> None:
+        """Update when the channels are changed for the current layer."""
         if self._is_updating_layer_options:
             return
         channels = 0
@@ -2867,6 +2875,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def layer_opacity_changed(self, value: int) -> None:
+        """Update when the opacity is changed for the current layer."""
         if self._is_updating_layer_options:
             return
         self.selected_layer.opacity = value
@@ -2875,6 +2884,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def move_layer_up(self) -> None:
+        """Move the selected layer up if possible."""
         for item in self.ui.layer_list.selectedItems():
             row = self.ui.layer_list.row(item)
             if row <= 0:
@@ -2886,6 +2896,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def move_layer_down(self) -> None:
+        """Move the selected layer down if possible."""
         for item in self.ui.layer_list.selectedItems():
             row = self.ui.layer_list.row(item)
             if row < 0 or row >= self.ui.layer_list.count() - 1:
@@ -2897,6 +2908,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def layer_preset_chosen(self, idx: int) -> None:
+        """Load in a layer preset.
+        This is hardcoded for now as the current system wouldn't work
+        well with loading from a file.
+        """
         if not idx:
             return
 
@@ -3049,6 +3064,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_layer_item_name(item)
 
     def update_layer_item_name(self, item: QtWidgets.QListWidgetItem | None = None) -> None:
+        """Generate the name of each layer."""
         if item is None:
             item = self.ui.layer_list.selectedItems()[0]
 
