@@ -415,6 +415,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.addItem('Urban Grass')
         self.ui.layer_presets.addItem('Eraser')
         self.ui.layer_presets.addItem('Plasma')
+        self.ui.layer_presets.addItem('RGB Clicks')
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
         # Ignore scroll events on the layer presets combobox
@@ -3008,6 +3009,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.render_colour.heatmap = 'Riptide'
                 self.selected_layer.clipping.heatmap = 0.01
                 self.selected_layer.blur.heatmap = 0.02
+
+            case 'RGB Clicks':
+                self.ui.layer_list.clear()
+                layer_0 = self.add_render_layer()
+                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_1 = self.add_render_layer()
+                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+                layer_2 = self.add_render_layer()
+                layer_2.setCheckState(QtCore.Qt.CheckState.Checked)
+
+                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToRed'
+                self.selected_layer.show_middle_clicks = False
+                self.selected_layer.show_right_clicks = False
+
+                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToGreen'
+                self.selected_layer.show_left_clicks = False
+                self.selected_layer.show_right_clicks = False
+
+                self._selected_layer = layer_2.data(QtCore.Qt.ItemDataRole.UserRole)
+                self.selected_layer.blend_mode = BlendMode.Screen
+                self.selected_layer.render_type = ipc.RenderType.SingleClick
+                self.selected_layer.render_colour.heatmap = 'BlackToBlue'
+                self.selected_layer.show_left_clicks = False
+                self.selected_layer.show_middle_clicks = False
 
         self._selected_layer = 0
         self.ui.layer_presets.setCurrentIndex(0)
