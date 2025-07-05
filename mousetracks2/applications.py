@@ -172,6 +172,8 @@ class AppList:
         The first item returned is a dict of `{window_title: profile_name}`.
         The second item returned is the executable.
         """
+        if not exe:
+            return
         exe = exe.replace('\\', '/')
 
         if '/' not in exe and '*' not in exe:
