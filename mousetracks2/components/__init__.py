@@ -267,7 +267,7 @@ class Hub:
             print('[Hub] Launching application...')
             if self.use_gui:
                 if IS_EXE or gui.should_minimise_on_start():
-                    self._toggle_console(False)
+                    self._process_message(ipc.ToggleConsole(False))
                 if not CLI.disable_splash:
                     self.splash = SplashScreen.standalone()
                 self._p_gui.start()

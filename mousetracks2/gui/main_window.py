@@ -1846,6 +1846,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.prefs_console.setEnabled(False)
                 self.ui.prefs_console.setChecked(False)
 
+            case ipc.ToggleConsole() if self.ui.prefs_console.isEnabled():
+                self.ui.prefs_console.setChecked(message.show)
+
             case ipc.CloseSplashScreen():
                 self.close_splash_screen.emit()
 

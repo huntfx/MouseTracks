@@ -500,12 +500,16 @@ class QueueSize(Message):
 
 @dataclass
 class ToggleConsole(Message):
-    target: int = field(default=Target.Hub, init=False)
+    """Change the visible state of the console."""
+    target: int = field(default=Target.Hub | Target.GUI, init=False)
     show: bool
 
 
 @dataclass
 class InvalidConsole(Message):
+    """Triggered if the console is determined to be not valid.
+    This may be the built in console in an IDE for example.
+    """
     target: int = field(default=Target.GUI, init=False)
 
 
