@@ -51,7 +51,7 @@ class KeyCode(int):
     _REGISTRY: dict[int, str] = {}
     _PYNPUT_MAP: dict[_Key, int] = {}
     _CHAR_MAP: dict[str, int] = {}
-    _SYMBOL_REMAP: dict[str, int] = {}
+    _SYMBOL_REMAP: dict[str, str] = {}
 
     def __new__(cls, code: int | _Key | _KeyCode) -> KeyCode:
         if not isinstance(code, int):
@@ -72,7 +72,9 @@ class KeyCode(int):
             else:
                 if key in cls._SYMBOL_REMAP:
                     raise RuntimeError(f'key "{key}" already remapped')
-                cls._SYMBOL_REMAP[key] = code
+                if name is None:
+                    raise ValueError('name must be set when remapping')
+                cls._SYMBOL_REMAP[key] = name
 
         if vk is None:
             vk = name
@@ -104,7 +106,7 @@ class GamepadCode(KeyCode):
     _REGISTRY: dict[int, str] = {}
     _PYNPUT_MAP: dict[_Key, int] = {}
     _CHAR_MAP: dict[str, int] = {}
-    _SYMBOL_REMAP: dict[str, int] = {}
+    _SYMBOL_REMAP: dict[str, str] = {}
 
 
 # Mouse buttons
