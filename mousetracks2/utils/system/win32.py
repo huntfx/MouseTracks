@@ -38,8 +38,6 @@ BOOL = ctypes.wintypes.BOOL
 
 DWORD = ctypes.wintypes.DWORD
 
-HDC = ctypes.wintypes.HDC
-
 HMONITOR = ctypes.wintypes.HMONITOR
 
 HWND = ctypes.wintypes.HWND
@@ -49,8 +47,6 @@ LPARAM = ctypes.wintypes.LPARAM
 LPWSTR = ctypes.wintypes.LPWSTR
 
 RECT = ctypes.wintypes.RECT
-
-MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, ctypes.POINTER(RECT), LPARAM)
 
 EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
 
@@ -93,30 +89,9 @@ user32.GetForegroundWindow.restype = HWND
 
 kernel32.GetConsoleWindow.restype = HWND
 
-user32.EnumDisplayMonitors.argtypes = [HDC, ctypes.POINTER(RECT), MonitorEnumProc, LPARAM]
-user32.EnumDisplayMonitors.restype = BOOL
-
 REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 
 AUTOSTART_NAME = 'MouseTracks'
-
-
-def monitor_locations() -> list[tuple[int, int, int, int]]:
-    """Get the location of each monitor.
-
-    Returns:
-        List of (x1, y1, x2, y2) tuples representing monitor bounds.
-    """
-    monitors: list[tuple[int, int, int, int]] = []
-
-    def callback(hMonitor: HMONITOR, hdc: HDC, lprcMonitor: ctypes._Pointer[RECT], lParam: LPARAM) -> bool:
-        """Callback function for EnumDisplayMonitors."""
-        rect = lprcMonitor.contents
-        monitors.append((rect.left, rect.top, rect.right, rect.bottom))
-        return True
-
-    user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
-    return monitors
 
 
 def get_window_handle(console: bool = False) -> int:

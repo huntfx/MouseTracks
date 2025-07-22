@@ -43,44 +43,12 @@ Issues:
 from __future__ import annotations
 
 import os
-import traceback
 from typing import Any, Self
 
 import Xlib.display
 import Xlib.xobject
 
 from .placeholders import Window as _Window
-
-
-def monitor_locations() -> list[tuple[int, int, int, int]]:
-    """Get the location of each monitor.
-
-    Returns:
-        List of (x1, y1, x2, y2) tuples representing monitor bounds.
-    """
-    monitors = []
-    display = Xlib.display.Display()
-    root = display.screen().root
-
-    # This is a suggestion from AI and not tested
-    try:
-        resources = root.xinerama_query_screens()
-
-    # This was available on Ubuntu and Arch Linux
-    except AttributeError:
-        res = root.xrandr_get_monitors()
-        for mon in res._data['monitors']:
-            x1, y1 = mon['x'], mon['y']
-            x2, y2 = x1 + mon['width_in_pixels'], y1 + mon['height_in_pixels']
-            monitors.append((x1, y1, x2, y2))
-
-    else:
-        for screen in resources:
-            x1, y1 = screen.x_org, screen.y_org
-            x2, y2 = x1 + screen.width, y1 + screen.height
-            monitors.append((x1, y1, x2, y2))
-
-    return monitors
 
 
 def _get_top_level_window(root: Xlib.xobject.drawable.Window, window: Xlib.xobject.drawable.Window) -> Xlib.xobject.drawable.Window:
