@@ -267,9 +267,10 @@ VK_OEM_PERIOD = KeyCode.register(0xBE, '.')
 VK_OEM_2 = KeyCode.register(0xBF, '/')
 VK_OEM_3 = KeyCode.register(0xC0, '\'')
 VK_OEM_4 = KeyCode.register(0xDB, '[')
-VK_OEM_5 = KeyCode.register(0xDC, '|')
+VK_OEM_5 = KeyCode.register(0xDC, '\\')
 VK_OEM_6 = KeyCode.register(0xDD, ']')
 VK_OEM_7 = KeyCode.register(0xDE, '#')
+VK_OEM_8 = KeyCode.register(0xDF, '`')
 
 # Custom events
 VK_SCROLL_UP = KeyCode.register(0xFF + 1, 'Scroll up')
