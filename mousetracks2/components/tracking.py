@@ -310,17 +310,8 @@ class Tracking(Component):
             return
 
         with self._exception_handler():
-            if isinstance(key, pynput.keyboard.KeyCode):
-                name = key.char
-                vk = key.vk
-            elif isinstance(key, pynput.keyboard.Key):
-                name = key.name
-                vk = key.value.vk
-            else:
-                raise NotImplementedError(type(key))
-
-            if vk is not None:
-                self.data.pynput_opcodes[vk] = self.data.tick_current
+            vk = keycodes.KeyCode(key)
+            self.data.pynput_opcodes[vk] = self.data.tick_current
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
@@ -328,16 +319,8 @@ class Tracking(Component):
             return
 
         with self._exception_handler():
-            if isinstance(key, pynput.keyboard.KeyCode):
-                name = key.char
-                vk = key.vk
-            elif isinstance(key, pynput.keyboard.Key):
-                name = key.name
-                vk = key.value.vk
-            else:
-                raise NotImplementedError(type(key))
-
-            if vk is not None and vk in self.data.pynput_opcodes:
+            vk = keycodes.KeyCode(key)
+            if vk in self.data.pynput_opcodes:
                 recorded_tick = self.data.pynput_opcodes.pop(vk)
 
                 # Some keyboard features may emit faster than a tick
