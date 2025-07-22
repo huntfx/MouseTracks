@@ -17,6 +17,14 @@ import sys
 from pynput.keyboard import Key as _Key, KeyCode as _KeyCode
 
 
+SHIFTED_SYMBOLS = {
+    '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
+    '^': '6', '&': '7', '*': '8', '(': '9', ')': '0',
+    '_': '-', '+': '=', '{': '[', '}': ']', '|': '\\',
+    ':': ';', '"': "'", '<': ',', '>': '.', '?': '/', '~': '`'
+}
+
+
 def from_pynput(key: _KeyCode | _Key) -> int:
     """Get the integer keycode from a pynput object."""
     # Handle special keys (eg. enter, shift, f1)
@@ -32,11 +40,12 @@ def from_pynput(key: _KeyCode | _Key) -> int:
     # On Linux/macOS, use the character itself.
     if sys.platform != 'win32' and key.char is not None:
         # Check the new auto-populated character map first
-        if key.char in KeyCode._CHAR_MAP:
-            return KeyCode._CHAR_MAP[key.char]
+        char = SHIFTED_SYMBOLS.get(key.char, key.char)
+        if char in KeyCode._CHAR_MAP:
+            return KeyCode._CHAR_MAP[char]
 
         # For A-Z and 0-9, the ASCII/Unicode value often matches the VK code.
-        char_upper = key.char.upper()
+        char_upper = char.upper()
         if 'A' <= char_upper <= 'Z' or '0' <= char_upper <= '9':
             return ord(char_upper)
 
