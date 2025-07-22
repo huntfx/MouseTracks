@@ -17,14 +17,6 @@ import sys
 from pynput.keyboard import Key as _Key, KeyCode as _KeyCode
 
 
-SHIFTED_SYMBOLS = {
-    '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
-    '^': '6', '&': '7', '*': '8', '(': '9', ')': '0',
-    '_': '-', '+': '=', '{': '[', '}': ']', '|': '\\',
-    ':': ';', '"': "'", '<': ',', '>': '.', '?': '/', '~': '`'
-}
-
-
 def from_pynput(key: _KeyCode | _Key) -> int:
     """Get the integer keycode from a pynput object."""
     # Handle special keys (eg. enter, shift, f1)
@@ -40,7 +32,7 @@ def from_pynput(key: _KeyCode | _Key) -> int:
     # On Linux/macOS, use the character itself.
     if sys.platform != 'win32' and key.char is not None:
         # Check the new auto-populated character map first
-        char = SHIFTED_SYMBOLS.get(key.char, key.char)
+        char = KeyCode._SYMBOL_REMAP.get(key.char, key.char)
         if char in KeyCode._CHAR_MAP:
             return KeyCode._CHAR_MAP[char]
 
@@ -59,6 +51,7 @@ class KeyCode(int):
     _REGISTRY: dict[int, str] = {}
     _PYNPUT_MAP: dict[_Key, int] = {}
     _CHAR_MAP: dict[str, int] = {}
+    _SYMBOL_REMAP: dict[str, int] = {}
 
     def __new__(cls, code: int | _Key | _KeyCode) -> KeyCode:
         if not isinstance(code, int):
@@ -66,15 +59,20 @@ class KeyCode(int):
         return int.__new__(cls, code)
 
     @classmethod
-    def register(cls, code: int, name: str | None = None, *pynput_keys: _Key, vk: str | None = None) -> KeyCode:
+    def register(cls, code: int, name: str | None = None, *alternative: _Key | str, vk: str | None = None) -> KeyCode:
         """Register a new keycode option."""
         if name is not None:
             cls._REGISTRY[code] = name
 
-        for key in set(pynput_keys):
-            if key in cls._PYNPUT_MAP:
-                raise RuntimeError(f'key "{key}" already remapped')
-            cls._PYNPUT_MAP[key] = code
+        for key in set(alternative):
+            if isinstance(key, _Key):
+                if key in cls._PYNPUT_MAP:
+                    raise RuntimeError(f'key "{key}" already remapped')
+                cls._PYNPUT_MAP[key] = code
+            else:
+                if key in cls._SYMBOL_REMAP:
+                    raise RuntimeError(f'key "{key}" already remapped')
+                cls._SYMBOL_REMAP[key] = code
 
         if vk is None:
             vk = name
@@ -106,6 +104,7 @@ class GamepadCode(KeyCode):
     _REGISTRY: dict[int, str] = {}
     _PYNPUT_MAP: dict[_Key, int] = {}
     _CHAR_MAP: dict[str, int] = {}
+    _SYMBOL_REMAP: dict[str, int] = {}
 
 
 # Mouse buttons
@@ -162,44 +161,44 @@ VK_DELETE = KeyCode.register(0x2E, 'Delete', _Key.delete)
 VK_HELP = KeyCode.register(0x2F, 'Help')
 
 # Number keys
-VK_0 = KeyCode.register(0x30, '0')
-VK_1 = KeyCode.register(0x31, '1')
-VK_2 = KeyCode.register(0x32, '2')
-VK_3 = KeyCode.register(0x33, '3')
-VK_4 = KeyCode.register(0x34, '4')
-VK_5 = KeyCode.register(0x35, '5')
-VK_6 = KeyCode.register(0x36, '6')
-VK_7 = KeyCode.register(0x37, '7')
-VK_8 = KeyCode.register(0x38, '8')
-VK_9 = KeyCode.register(0x39, '9')
+VK_0 = KeyCode.register(0x30, '0', ')')
+VK_1 = KeyCode.register(0x31, '1', '!')
+VK_2 = KeyCode.register(0x32, '2', '@')
+VK_3 = KeyCode.register(0x33, '3', '#')
+VK_4 = KeyCode.register(0x34, '4', '$')
+VK_5 = KeyCode.register(0x35, '5', '%')
+VK_6 = KeyCode.register(0x36, '6', '^')
+VK_7 = KeyCode.register(0x37, '7', '&')
+VK_8 = KeyCode.register(0x38, '8', '*')
+VK_9 = KeyCode.register(0x39, '9', '(')
 
 # Letter keys
-VK_A = KeyCode.register(0x41, 'A')
-VK_B = KeyCode.register(0x42, 'B')
-VK_C = KeyCode.register(0x43, 'C')
-VK_D = KeyCode.register(0x44, 'D')
-VK_E = KeyCode.register(0x45, 'E')
-VK_F = KeyCode.register(0x46, 'F')
-VK_G = KeyCode.register(0x47, 'G')
-VK_H = KeyCode.register(0x48, 'H')
-VK_I = KeyCode.register(0x49, 'I')
-VK_J = KeyCode.register(0x4A, 'J')
-VK_K = KeyCode.register(0x4B, 'K')
-VK_L = KeyCode.register(0x4C, 'L')
-VK_M = KeyCode.register(0x4D, 'M')
-VK_N = KeyCode.register(0x4E, 'N')
-VK_O = KeyCode.register(0x4F, 'O')
-VK_P = KeyCode.register(0x50, 'P')
-VK_Q = KeyCode.register(0x51, 'Q')
-VK_R = KeyCode.register(0x52, 'R')
-VK_S = KeyCode.register(0x53, 'S')
-VK_T = KeyCode.register(0x54, 'T')
-VK_U = KeyCode.register(0x55, 'U')
-VK_V = KeyCode.register(0x56, 'V')
-VK_W = KeyCode.register(0x57, 'W')
-VK_X = KeyCode.register(0x58, 'X')
-VK_Y = KeyCode.register(0x59, 'Y')
-VK_Z = KeyCode.register(0x5A, 'Z')
+VK_A = KeyCode.register(0x41, 'A', 'a')
+VK_B = KeyCode.register(0x42, 'B', 'b')
+VK_C = KeyCode.register(0x43, 'C', 'c')
+VK_D = KeyCode.register(0x44, 'D', 'd')
+VK_E = KeyCode.register(0x45, 'E', 'e')
+VK_F = KeyCode.register(0x46, 'F', 'f')
+VK_G = KeyCode.register(0x47, 'G', 'g')
+VK_H = KeyCode.register(0x48, 'H', 'h')
+VK_I = KeyCode.register(0x49, 'I', 'i')
+VK_J = KeyCode.register(0x4A, 'J', 'j')
+VK_K = KeyCode.register(0x4B, 'K', 'k')
+VK_L = KeyCode.register(0x4C, 'L', 'l')
+VK_M = KeyCode.register(0x4D, 'M', 'm')
+VK_N = KeyCode.register(0x4E, 'N', 'n')
+VK_O = KeyCode.register(0x4F, 'O', 'o')
+VK_P = KeyCode.register(0x50, 'P', 'p')
+VK_Q = KeyCode.register(0x51, 'Q', 'q')
+VK_R = KeyCode.register(0x52, 'R', 'r')
+VK_S = KeyCode.register(0x53, 'S', 's')
+VK_T = KeyCode.register(0x54, 'T', 't')
+VK_U = KeyCode.register(0x55, 'U', 'u')
+VK_V = KeyCode.register(0x56, 'V', 'v')
+VK_W = KeyCode.register(0x57, 'W', 'w')
+VK_X = KeyCode.register(0x58, 'X', 'x')
+VK_Y = KeyCode.register(0x59, 'Y', 'y')
+VK_Z = KeyCode.register(0x5A, 'Z', 'z')
 
 # Windows keys
 VK_LWIN = KeyCode.register(0x5B, 'Left Super', _Key.cmd, _Key.cmd_l)
@@ -259,18 +258,18 @@ VK_MEDIA_PREV_TRACK = KeyCode.register(0xB1, 'Previous Track', _Key.media_previo
 VK_MEDIA_PLAY_PAUSE = KeyCode.register(0xB3, 'Play/Pause', _Key.media_play_pause)
 
 # OEM keys (these may vary by region)
-VK_OEM_1 = KeyCode.register(0xBA, ';')
-VK_OEM_PLUS = KeyCode.register(0xBB, '+')
-VK_OEM_COMMA = KeyCode.register(0xBC, ',')
-VK_OEM_MINUS = KeyCode.register(0xBD, '-')
-VK_OEM_PERIOD = KeyCode.register(0xBE, '.')
-VK_OEM_2 = KeyCode.register(0xBF, '/')
-VK_OEM_3 = KeyCode.register(0xC0, '\'')
-VK_OEM_4 = KeyCode.register(0xDB, '[')
-VK_OEM_5 = KeyCode.register(0xDC, '\\')
-VK_OEM_6 = KeyCode.register(0xDD, ']')
+VK_OEM_1 = KeyCode.register(0xBA, ';', ':')
+VK_OEM_PLUS = KeyCode.register(0xBB, '+', '=')
+VK_OEM_COMMA = KeyCode.register(0xBC, ',', '<')
+VK_OEM_MINUS = KeyCode.register(0xBD, '-', '_')
+VK_OEM_PERIOD = KeyCode.register(0xBE, '.', '>')
+VK_OEM_2 = KeyCode.register(0xBF, '/', '?')
+VK_OEM_3 = KeyCode.register(0xC0, "'", '"')
+VK_OEM_4 = KeyCode.register(0xDB, '[', '{')
+VK_OEM_5 = KeyCode.register(0xDC, '\\', '|')
+VK_OEM_6 = KeyCode.register(0xDD, ']', '}')
 VK_OEM_7 = KeyCode.register(0xDE, '#')
-VK_OEM_8 = KeyCode.register(0xDF, '`')
+VK_OEM_8 = KeyCode.register(0xDF, '`', '~')
 
 # Custom events
 VK_SCROLL_UP = KeyCode.register(0xFF + 1, 'Scroll up')
