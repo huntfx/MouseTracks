@@ -16,7 +16,7 @@ a = Analysis(
         ('config/language/keyboard/layout/en_US.txt', 'config/language/keyboard/layout'),
         ('resources/images/icon.png', 'resources/images'),
     ],
-    hiddenimports=['resources.build.scipy'],
+    hiddenimports=['resources.build.scipy', 'pynput.keyboard._xorg', 'pynput.mouse._xorg'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
