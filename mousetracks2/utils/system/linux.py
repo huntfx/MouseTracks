@@ -5,17 +5,19 @@ get it running.
 
 Arch Linux:
     https://www.osboxes.org/arch-linux/
-    > rm /var/lib/pacman/db.lck
-    > sudo pacman -Sy
-    > sudo pacman -S git
+    > sudo rm /var/lib/pacman/db.lck
+    > sudo pacman -Sy archlinux-keyring
+    > sudo pacman-key --init
+    > sudo pacman-key --populate archlinux
+    > sudo pacman-key --refresh-keys  # Not currently required, but leaving for future reference
+    > sudo pacman -Syu --overwrite '*'
+    > sudo pacman -S git python-pip python-setuptools python-wheel python-build base-devel xcb-util-cursor
     > cd /home/osboxes
     > git clone https://github.com/huntfx/mousetracks
     > cd mousetracks
-    > sudo pacman -S python-pip python-setuptools python-wheel python-build base-devel
     > python -m venv .venv
     > source ./.venv/bin/activate
     > pip install --upgrade pip
-    > sudo pacman -S xcb-util-cursor
     > pip install -r requirements.txt
     > python launch.py
     > deactivate
