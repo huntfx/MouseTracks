@@ -55,33 +55,67 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 
 ## Installation (v2.0)
 
-_Currently, only Windows is fully supported. Contributions for Linux or macOS support are welcome._
+- Fully compatible with Windows.
+- Compatible with Linux.
 
-### Prebuilt Executable
+_On Linux, MouseTracks requires an __X11 (Xorg)__ session to work. On modern distributions like Ubuntu, you may need to select "Ubuntu on Xorg" from the gear icon on the login screen._
 
-Launch `MouseTracks.exe` from anywhere. Recommended for ease of use.
+---
 
-Download it from the [latest release](https://github.com/huntfx/MouseTracks/releases/latest), or build it yourself using [`build-pyinstaller.bat`](build-pyinstaller.bat)
+### Download the Prebuilt Executable (Recommended)
 
-It's also possible to run [`build-nuitka.bat`](build-nuitka.bat), but this is not recommended unless you have a commercial license, as it will be flagged by a lot of AV programs.
+This is the simplest way to get started. No installation is required.
 
-### Virtual Environment
+1. Go to the [latest release](https://github.com/huntfx/MouseTracks/releases/latest) page.
+2. Download the appropriate file for your system (eg. `MouseTracks-2.0.0-windows-x64.exe`).
+3. If on Linux, make the file executable: `chmod +x MouseTracks-2.0.0-linux-x64`
+4. Run the executable to launch the application.
 
-Recommended if running the code locally.
+#### Linux Prerequisites
 
-1. Run `python -m venv .venv` to create the virtual environment with Python 3.11 or above.
-2. Run `launch.bat`.
+MouseTracks requires the XCB cursor library to be installed.
 
+- Ubuntu/Debian:
+    ```bash
+    sudo apt install libxcb-cursor-dev
+    ```
+- Arch Linux:
+    ```bash
+    sudo pacman -Syu xcb-util-cursor
+    ```
 
-### Without a Virtual Environment
+---
 
-Run `launch.py`.
+### Running from Source
 
-Ensure all modules in [requirements.txt](requirements.txt) are installed.
+This is recommended if you want to view or contribute to the code.
+Python 3.11 or higher is required.
 
-### Under Linux
-It requires X11 - I've made notes on getting it running in [`linux.py`](mousetracks2/utils/system/linux.py) in Ubuntu and Arch Linux.<br>
-The `--no-keyboard` flag must also be passed in for now to avoid errors.
+1. Clone the repository and create the virtual environment:
+    ```cmd
+    git clone https://github.com/huntfx/MouseTracks.git
+    cd MouseTracks
+    python -m venv .venv
+    ```
+
+2. Run the launch script. It will automatically install dependencies and start the app:
+    - Windows:
+      ```cmd
+      launch.bat
+      ```
+    - Linux:
+      ```bash
+      chmod +x launch.sh
+      ./launch.sh
+      ```
+
+---
+
+### Building from Source
+
+This is only supported on Windows.
+
+Use [`build-pyinstaller.bat`](build-pyinstaller.bat) or [`build-nuitka.bat`](build-nuitka.bat) to create an executable.
 
 ---
 
@@ -89,21 +123,25 @@ The `--no-keyboard` flag must also be passed in for now to avoid errors.
 
 _The v1.0 version is no longer supported, but the launch process has been updated to bring it in line with v2.0._
 
+- Fully compatible with Windows.
+
 You will be prompted with a choice to start tracking or generate images. This can be skipped by passing the `--start-tracking` or `--generate-images` flags.
 
-### Virtual Environment
+### Running from Source
 
-Recommended if running the code locally.
+Any version of Python may be used.
 
-1. Run `python -m venv .venv-legacy` to create the virtual environment with any version of Python.
-2. Run `launch-legacy.bat`.
+1. Clone the repository and create the virtual environment:
+    ```cmd
+    git clone https://github.com/huntfx/MouseTracks.git
+    cd MouseTracks
+    python -m venv .venv-legacy
+    ```
 
-
-### Without a Virtual Environment
-
-Run `launch-legacy.py`.
-
-Ensure all modules in [requirements-legacy.txt](requirements-legacy.txt) are installed.
+2. Run the launch script. It will automatically install dependencies and start the app:
+    ```cmd
+    launch-legacy.bat
+    ```
 
 ---
 
