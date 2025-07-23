@@ -48,12 +48,16 @@ from .placeholders import Window as _Window
 
 
 def _get_top_level_window(root: Xlib.xobject.drawable.Window, window: Xlib.xobject.drawable.Window) -> Xlib.xobject.drawable.Window:
-    """Traverse up to the top level window."""
+    """Traverse up to the highest level window with a title."""
+    named_windows: list[Xlib.xobject.drawable.Window] = []
     while True:
         parent: Xlib.xobject.drawable.Window = window.query_tree().parent
         if parent.id == root.id:
-            return window
+            return named_windows[-1] if named_windows else window
+
         window = parent
+        if window.get_wm_name():
+            named_windows.append(window)
 
 
 def get_focused_window(display: Xlib.display.Display) -> Xlib.xobject.drawable.Window:
