@@ -196,6 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
+        self.update_focused_application('', '', False)
 
         self.ui.layer_presets.installEventFilter(self)
 
@@ -1687,9 +1688,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             break
 
             case ipc.ApplicationFocusChanged():
-                self.ui.stat_app_exe.setText(os.path.basename(message.exe))
-                self.ui.stat_app_title.setText(message.title)
-                self.ui.stat_app_tracked.setText('Yes' if message.tracked else 'No')
+                self.update_focused_application(message.exe, message.title, message.tracked)
 
             # Show the correct distance
             case ipc.ProfileData():
@@ -3120,3 +3119,9 @@ class MainWindow(QtWidgets.QMainWindow):
             Channel(data.channels).name,
         ]
         item.setText(' | '.join(map(str, name_parts)))
+
+    def update_focused_application(self, exe: str, title: str, tracked: bool) -> None:
+        """Update the focused application text."""
+        self.ui.stat_app_exe.setText(os.path.basename(exe))
+        self.ui.stat_app_title.setText(title)
+        self.ui.stat_app_tracked.setText('Yes' if tracked else 'No')
