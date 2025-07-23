@@ -50,15 +50,17 @@ from .placeholders import Window as _Window
 
 
 def _get_top_level_window(root: Xlib.xobject.drawable.Window, window: Xlib.xobject.drawable.Window) -> Xlib.xobject.drawable.Window:
-    """Traverse up to the highest level window with a title."""
-    named_windows: list[Xlib.xobject.drawable.Window] = []
+    """Traverse to the first window with a title."""
     while True:
+        # If the window has a name, it's likely this
         if window.get_wm_name():
-            named_windows.append(window)
+            return window
 
         parent: Xlib.xobject.drawable.Window = window.query_tree().parent
+
+        # If the root is reached, then return the top level window
         if parent.id == root.id:
-            return named_windows[-1] if named_windows else window
+            return window
 
         window = parent
 
