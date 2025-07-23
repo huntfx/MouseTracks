@@ -2,7 +2,7 @@ import json
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .config.cli import CLI
+from .config import CLI
 from .version import VERSION
 
 

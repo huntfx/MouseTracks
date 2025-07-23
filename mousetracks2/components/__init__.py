@@ -18,9 +18,7 @@ import queue
 from typing import TYPE_CHECKING
 
 from . import app_detection, gui, ipc, processing, tracking
-from ..gui.splash import SplashScreen
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
+from ..config import GlobalConfig, should_minimise_on_start
 from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 
@@ -35,14 +33,19 @@ class Hub:
         """Initialise the hub with queues and processes."""
         self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
-        self.splash: SplashScreen | None = None
         self._previous_component_check: float = 0.0
+
+        self._wait_to_load = {ipc.Target.AppDetection, ipc.Target.Tracking, ipc.Target.Processing}
+        if self.use_gui:
+            self._wait_to_load.add(ipc.Target.GUI)
 
         self._q_main: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
 
         self._q_gui: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
         self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
+        if self.use_gui:
+            self._p_gui.start()
         self._create_tracking_processes()
 
         # Disable show/hide if console is already hidden
@@ -198,12 +201,16 @@ class Hub:
                 case ipc.ToggleConsole():
                     self._toggle_console(message.show)
 
-                case ipc.CloseSplashScreen() if self.splash is not None:
-                    self.splash.close()
-                    self.splash = None
-
                 case ipc.RequestPID():
                     self._q_main.put(ipc.SendPID(source=ipc.Target.Hub, pid=os.getpid()))
+
+                case ipc.ComponentLoaded():
+                    self._wait_to_load.discard(message.component)
+                    if not self._wait_to_load:
+                        self._q_main.put(ipc.AllComponentsLoaded())
+
+                case ipc.AllComponentsLoaded():
+                    self.start_tracking()
 
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:
@@ -259,20 +266,13 @@ class Hub:
 
     def run(self) -> None:
         """Setup the tracking."""
+        print('[Hub] Launching application...')
         running = True
         error_occurred = False
 
         try:
-            # Start the app
-            print('[Hub] Launching application...')
-            if self.use_gui:
-                if IS_EXE or gui.should_minimise_on_start():
-                    self._process_message(ipc.ToggleConsole(False))
-                if not CLI.disable_splash:
-                    self.splash = SplashScreen.standalone()
-                self._p_gui.start()
-
-            self.start_tracking()
+            if self.use_gui and (IS_EXE or should_minimise_on_start()):
+                self._process_message(ipc.ToggleConsole(False))
 
             # Listen for events
             print('[Hub] Queue handler started.')

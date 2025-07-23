@@ -34,10 +34,6 @@ Ubuntu:
     > pip install -r requirements.txt
     > python3 launch.py
     > deactivate
-
-Issues:
-    Non alphanumeric keys have a totally different mapping.
-    Modifier keys are way out of range (close to 65535).
 """
 
 from __future__ import annotations

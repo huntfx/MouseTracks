@@ -24,8 +24,7 @@ from .utils import format_distance, format_ticks, format_bytes, format_network_s
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..constants import SYS_EXECUTABLE
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
+from ..config import should_minimise_on_start, CLI, GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
 from ..enums import BlendMode, Channel
@@ -147,8 +146,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     exception_raised = QtCore.Signal(Exception)
 
-    close_splash_screen = QtCore.Signal()
-
     def __init__(self, component: GUI) -> None:
         super().__init__()
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
@@ -177,6 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._thumbnail_redraw_required = False
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self._is_updating_layer_options = False
+        self._window_ready = False
         self.state = ipc.TrackingState.Paused
 
         # Setup UI
@@ -232,7 +230,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
             self.tray.activated.connect(self.tray_activated)
-            self.tray.show()
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
@@ -423,6 +420,14 @@ class MainWindow(QtWidgets.QMainWindow):
             event.ignore()
             return True
         return super().eventFilter(obj, event)
+
+    def on_app_ready(self) -> None:
+        """Run code when the application is ready to start."""
+        self._window_ready = True
+        if not should_minimise_on_start():
+            self.show()
+        if self.tray is not None:
+            self.tray.show()
 
     def set_tip_timer_state(self, enabled: bool) -> None:
         """Set the state of the tip update timer.
@@ -1849,9 +1854,6 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.ToggleConsole() if self.ui.prefs_console.isEnabled():
                 self.ui.prefs_console.setChecked(message.show)
 
-            case ipc.CloseSplashScreen():
-                self.close_splash_screen.emit()
-
             # Load a legacy profile and switch to it
             case ipc.ImportProfile() | ipc.ImportLegacyProfile():
                 sanitised_profile_name = sanitise_profile_name(message.name)
@@ -1898,6 +1900,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.ui.status_gui_pid.setText(str(message.pid))
                     case ipc.Target.AppDetection:
                         self.ui.status_app_pid.setText(str(message.pid))
+
+            case ipc.AllComponentsLoaded():
+                self.on_app_ready()
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
@@ -2114,6 +2119,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Close now if no tracking is running
         if self.state == ipc.TrackingState.Stopped:
+            return True
+
+        # If the window is not yet ready then just close
+        if not self._window_ready:
             return True
 
         # Allow the user to cancel

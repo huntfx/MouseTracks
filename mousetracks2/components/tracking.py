@@ -15,8 +15,7 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
+from ..config import CLI, GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import get_cursor_pos, keycodes
@@ -362,6 +361,7 @@ class Tracking(Component):
     def run(self) -> None:
         """Run the tracking."""
         print('[Tracking] Loaded.')
+        self.send_data(ipc.ComponentLoaded(ipc.Target.Tracking))
 
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))

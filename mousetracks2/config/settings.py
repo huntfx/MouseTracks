@@ -5,7 +5,7 @@ from typing import Any, IO
 
 import yaml
 
-from ..config.cli import CLI
+from ..config import CLI
 from ..utils import keycodes
 
 

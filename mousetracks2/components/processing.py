@@ -11,8 +11,7 @@ import numpy.typing as npt
 
 from . import ipc
 from .abstract import Component
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
+from ..config import CLI, GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename

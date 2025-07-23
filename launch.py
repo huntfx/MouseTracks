@@ -2,7 +2,7 @@
 
 import os
 import sys
-from multiprocessing import freeze_support, set_start_method
+from multiprocessing import freeze_support
 
 # Source DLL files when running as an executable
 from mousetracks2.constants import REPO_DIR
@@ -23,10 +23,6 @@ if __name__ == '__main__':
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do
     parse_args(strict=True)
-
-    # On Windows, this is default behaviour
-    # On Linux, starting via fork causes issues with the QApplication
-    set_start_method('spawn')
 
     # Relaunch as elevated
     if CLI.elevate and not is_elevated():

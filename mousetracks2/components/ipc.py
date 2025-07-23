@@ -7,7 +7,7 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from ..config.settings import ProfileConfig
+from ..config import ProfileConfig
 from ..enums import BlendMode, Channel
 
 
@@ -520,7 +520,7 @@ class CloseSplashScreen(Message):
     loading before closing.
     """
 
-    target: int = field(default=Target.Hub, init=False)
+    target: int = field(default=Target.Hub | Target.GUI, init=False)
 
 
 @dataclass
@@ -649,3 +649,18 @@ class RenderLayerRequest(Message):
 
     target: int = field(default=Target.Processing, init=False)
     layers: list[RenderLayer]
+
+
+@dataclass
+class ComponentLoaded(Message):
+    """Notify when a single component has loaded."""
+
+    target: int = field(default=Target.Hub, init=False)
+    component: int
+
+
+@dataclass
+class AllComponentsLoaded(Message):
+    """Notify once every component has been loaded."""
+
+    target: int = field(default=Target.Hub | Target.GUI, init=False)

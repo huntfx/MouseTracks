@@ -125,6 +125,7 @@ class Component:
         # Run the component with extra error handling
         else:
             print(f'[{self.name}] Loaded.')
+            self.send_data(ipc.ComponentLoaded(self.target))
 
             try:
                 self.run()
