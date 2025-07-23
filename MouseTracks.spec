@@ -32,21 +32,30 @@ pyz = PYZ(a.pure)
 # Remove unused binaries
 binaries = [
     (name, path, type) for name, path, type in a.binaries
-    if name in (r'PySide6\Qt6Core.dll', r'PySide6\Qt6Gui.dll', r'PySide6\Qt6Widgets.dll',
-                r'PySide6\QtCore.pyd', r'PySide6\QtGui.pyd', r'PySide6\QtWidgets.pyd')
-    or name.startswith((r'PySide6\plugins\platforms', r'PySide6\plugins\styles'))
+    if name.startswith((
+        os.path.join('PySide6', 'Qt6Core'),
+        os.path.join('PySide6', 'Qt6Gui'),
+        os.path.join('PySide6', 'Qt6Widgets'),
+        os.path.join('PySide6', 'QtCore'),
+        os.path.join('PySide6', 'QtGui'),
+        os.path.join('PySide6', 'QtWidgets'),
+        os.path.join('PySide6', 'plugins', 'platforms'),
+        os.path.join('PySide6', 'plugins', 'styles'),
+    ))
+
     or not (
-        name.startswith(r'PySide6\Qt6') and name.endswith('.dll')
-        or name.startswith(r'PySide6\Qt') and name.endswith('.pyd')
+        name.startswith(os.path.join('PySide6', 'Qt6')) and name.endswith('.dll')
+        or name.startswith(os.path.join('PySide6', 'Qt')) and name.endswith('.pyd')
         or name.startswith((
-            r'PIL\_webp',  # 398 kb
-            r'PIL\_imagingcms',  # 257 kb
-            r'PySide6\plugins',  # 2864 kb
-            r'numpy\random',  # 2288 kb
-            r'numpy\fft',  # 273 kb
+            os.path.join('PIL', '_webp'),  # 398 kb
+            os.path.join('PIL', '_imagingcms'),  # 257 kb
+            os.path.join('PySide6', 'plugins'),  # 2864 kb
+            os.path.join('PySide6', 'QtNetwork.abi3.so'),
+            os.path.join('numpy', 'random'),  # 2288 kb
+            os.path.join('numpy', 'fft'),  # 273 kb
         ))
         or name in (
-            r'PySide6\opengl32sw.dll',  # 20157 kb
+            os.path.join('PySide6', 'opengl32sw.dll'),  # 20157 kb
             'python27.dll',  # 3352 kb
             '_decimal.pyd',  # 248 kb
             '_lzma.pyd',  # 156 kb
@@ -54,6 +63,16 @@ binaries = [
 
         # Extra files added by Github Actions
         or name == 'ucrtbase.dll' or name.startswith('api-ms-win-')
+
+        # Linux
+        or name.startswith(os.path.join('PySide6', 'Qt', 'plugins', 'imageformats')) and name.endswith('.so') and 'png' not in name  # 1.8 mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'plugins', 'tls')) and name.endswith('.so')  # 0.5 mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6Network'))  # 2.1mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6Quick'))  # 7.6mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6Qml'))  # 6.3mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6OpenGL'))  # 5.2mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6Pdf'))  # 5.2mb
+        or name.startswith(os.path.join('PySide6', 'Qt', 'lib', 'libQt6Svg'))  # 0.5mb
     )
 ]
 
@@ -64,7 +83,7 @@ binaries.extend((f'resources/build/scipy/ndimage/{os.path.basename(filepath)}', 
 # Remove unused data files
 datas = [
     (name, path, type) for name, path, type in a.datas
-    if not name.startswith(r'PySide6\translations')  # 6037 kb
+    if not name.startswith(os.path.join('PySide6', 'translations'))  # 6037 kb
     and not name.startswith('MarkupSafe')
 ]
 
