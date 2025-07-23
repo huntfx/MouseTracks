@@ -10,7 +10,7 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os_runner }}
+    runs-on: ${{ matrix.os }}
     permissions: write-all
 
     strategy:
@@ -18,9 +18,16 @@ jobs:
       matrix:
         # 32 bit python not included as PySide6 not compatible
         include:
-          - os_runner: windows-latest
-            bits: 64
+          - platform: windows
+            os: windows-latest
             architecture: x64
+            upx_suffix: win64
+            exe_suffix: .exe
+          - platform: linux
+            os: ubuntu-latest
+            architecture: x64
+            upx_suffix: amd64_linux
+            exe_suffix: ''
 
     steps:
       - name: Checkout partial repository
@@ -40,62 +47,63 @@ jobs:
           architecture: ${{ matrix.architecture }}
 
       - name: Create virtual environment
-        shell: cmd
-        run: |
-          python -m venv .venv
-          if errorlevel 1 exit /b 1
+        shell: bash
+        run: python -m venv .venv
 
       - name: Create build folder
-        shell: cmd
+        shell: bash
         run: |
-          if exist build rmdir build /s /q
+          rm -rf build
           mkdir build
 
       - name: Update components
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           python -m pip install --upgrade pip wheel
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Build PyInstaller Bootloader
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
 
-          echo --- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---
+          echo "--- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---"
           git clone --branch ${{ env.PYINSTALLER_VERSION }} --depth 1 https://github.com/pyinstaller/pyinstaller.git build/pyinstaller
-          if errorlevel 1 exit /b 1
 
-          echo --- Building Bootloader ---
-          cd build\pyinstaller\bootloader
-          python ./waf distclean all --target-arch=${{ matrix.bits }}bit
-          if errorlevel 1 exit /b 1
-          cd ..
+          echo "--- Building Bootloader ---"
+          cd build/pyinstaller/bootloader
+          python ./waf distclean all
+          cd ../.. # Back to build directory
+          cd .. # Back to root
 
-          echo --- Installing Custom PyInstaller from build directory ---
-          pip install .
-          if errorlevel 1 exit /b 1
-
-          call deactivate
+          echo "--- Installing Custom PyInstaller from build directory ---"
+          pip install ./build/pyinstaller
+          deactivate
 
       - name: Install dependencies
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
 
-          echo --- Installing main requirements ---
+          echo "--- Installing main requirements ---"
           python -m pip install --upgrade -r requirements.txt
-          if errorlevel 1 exit /b 1
 
-          echo --- Installing build requirements ---
+          echo "--- Installing build requirements ---"
           python -m pip install --upgrade -r requirements-build-pyinstaller.txt
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Get version details from tag
         if: github.ref_type == 'tag'
@@ -114,15 +122,15 @@ jobs:
 
       - name: Get version details from file
         if: github.ref_type != 'tag'
-        id: extract_version
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           python .github/scripts/get-version.py
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Set dynamic executable name
         id: set_names
@@ -134,8 +142,8 @@ jobs:
             exit 1
           fi
 
-          EXE_BASENAME="MouseTracks-${VERSION}-windows-${{ matrix.architecture }}"
-          FULL_EXE_NAME="${EXE_BASENAME}.exe"
+          EXE_BASENAME="MouseTracks-${VERSION}-${{ matrix.platform }}-${{ matrix.architecture }}"
+          FULL_EXE_NAME="${EXE_BASENAME}${{ matrix.exe_suffix }}"
 
           # Set environment variables for use in later steps of this job
           echo "EXE_BASENAME=${EXE_BASENAME}" >> $GITHUB_ENV
@@ -147,32 +155,28 @@ jobs:
           echo "Executable basename: ${EXE_BASENAME}"
           echo "Full executable name: ${FULL_EXE_NAME}"
 
-      - name: Create version.rc
-        shell: cmd
+      - name: Create version.rc (Windows only)
+        if: runner.os == 'Windows'
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
-          pyivf-make_version --outfile "build\version.rc" --version "${{ env.VERSION }}" --file-description "${{ env.EXE_BASENAME }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "${{ env.EXE_BASENAME }}"
-          call .venv\Scripts\deactivate
-          if not exist build\version.rc (
-            echo ERROR: version.rc not created!
-            exit /b 1
-          )
-
-          call .venv\Scripts\deactivate
+          source .venv/Scripts/activate
+          pyivf-make_version --outfile "build/version.rc" --version "${{ env.VERSION }}" --file-description "${{ env.EXE_BASENAME }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "${{ env.EXE_BASENAME }}"
+          deactivate
 
       - name: Install UPX
-        shell: powershell
+        shell: bash
         run: |
-          Invoke-WebRequest `
-            -Uri https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-win${{ matrix.bits }}.zip `
-            -OutFile upx.zip
-
-          Expand-Archive -Path upx.zip -DestinationPath upx -Force
-
-          $upxDir = "$(Resolve-Path upx\upx-5.0.1-win${{ matrix.bits }})"
-          Write-Host "UPX location: $upxDir"
-          echo "PATH=$upxDir;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            UPX_URL="https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-${{ matrix.upx_suffix }}.zip"
+            curl -L -o upx.zip "$UPX_URL"
+            unzip -o upx.zip -d upx_extracted
+            echo "PATH=$(pwd)/upx_extracted/upx-5.0.1-${{ matrix.upx_suffix }};$PATH" >> $GITHUB_ENV
+          else # Linux
+            UPX_URL="https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-${{ matrix.upx_suffix }}.tar.xz"
+            curl -L -o upx.tar.xz "$UPX_URL"
+            tar -xf upx.tar.xz
+            echo "PATH=$(pwd)/upx-5.0.1-${{ matrix.upx_suffix }}:$PATH" >> $GITHUB_ENV
+          fi
 
       - name: Modify PyInstaller Spec File
         shell: python
@@ -184,14 +188,15 @@ jobs:
             f.write(content.replace('MouseTracks', os.environ['EXE_BASENAME']))
 
       - name: Build executable
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pyinstaller MouseTracks.spec
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Attach executable to release
         if: github.event_name == 'release'
@@ -204,5 +209,5 @@ jobs:
       - name: Upload executable as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MouseTracks-${{ env.VERSION }}-windows-${{ matrix.architecture }}
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}
           path: dist/${{ env.FULL_EXE_NAME }}
