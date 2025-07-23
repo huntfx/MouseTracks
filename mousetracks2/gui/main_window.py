@@ -186,7 +186,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        self.ui.prefs_autostart.setChecked(check_autostart())
+        try:
+            self.ui.prefs_autostart.setChecked(check_autostart())
+        except NotImplementedError:
+            self.ui.prefs_autostart.setEnabled(False)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)

@@ -2,6 +2,7 @@
 
 import os
 import sys
+from contextlib import suppress
 from multiprocessing import freeze_support
 
 # Source DLL files when running as an executable
@@ -18,7 +19,8 @@ if __name__ == '__main__':
     freeze_support()
 
     # Update startup path if if running a built executable
-    check_autostart()
+    with suppress(NotImplementedError):
+        check_autostart()
 
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do

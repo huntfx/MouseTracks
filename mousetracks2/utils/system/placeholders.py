@@ -6,7 +6,7 @@ from typing import Any, Self
 
 def check_autostart() -> bool:
     """Determine if running on startup."""
-    return False
+    raise NotImplementedError
 
 
 def set_autostart(*args: str) -> None:
