@@ -92,6 +92,10 @@ class DataState:
     def __post_init__(self) -> None:
         self.tick_previous = self.tick_current - 1
 
+    def reset_byte_counter(self) -> None:
+        """Reset the byte counter to its current values."""
+        self.bytes_sent_previous.clear()
+        self.bytes_recv_previous.clear()
         for connection_name, counters in psutil.net_io_counters(pernic=True).items():
             self.bytes_sent_previous[connection_name] = counters.bytes_sent
             self.bytes_recv_previous[connection_name] = counters.bytes_recv
@@ -169,6 +173,8 @@ class Tracking(Component):
                 case ipc.SetGlobalNetworkTracking():
                     print(f'[Tracking] Tracking network data: {message.enable}')
                     self.track_network = message.enable
+                    if message.enable:
+                        self.data.reset_byte_counter()
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
@@ -184,6 +190,9 @@ class Tracking(Component):
                     if state_changed:
                         print('[Tracking] Started.')
                         self.data = DataState(tick)
+                        if self.track_network:
+                            self.data.reset_byte_counter()
+
                     self.data.tick_current = tick
 
                     # If pynput gets an event, the it may not be in sync
@@ -454,7 +463,7 @@ class Tracking(Component):
                         data.gamepad_stick_r_position[gamepad] = stick_r
                         self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
-            if not tick % UPDATES_PER_SECOND:
+            if self.track_network and not tick % UPDATES_PER_SECOND:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
                     prev_sent = data.bytes_sent_previous.get(interface_name, 0)
                     prev_recv = data.bytes_recv_previous.get(interface_name, 0)
