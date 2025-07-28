@@ -175,6 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self._is_updating_layer_options = False
         self._window_ready = False
+        self._network_transfer_messages: list[ipc.DataTransfer] = []
+        self._network_transfer_count = self._network_transfer_counter = 0
         self.state = ipc.TrackingState.Paused
 
         # Setup UI
@@ -387,6 +389,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_activity.timeout.connect(self.update_time_since_applist_reload)
         self.timer_activity.timeout.connect(self.update_queue_size)
+        self.timer_activity.timeout.connect(self.update_current_network_stats)
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
@@ -862,9 +865,36 @@ class MainWindow(QtWidgets.QMainWindow):
         text = format_ticks(time.time() * 10 - self._last_app_reload_time, 10, 1)
         self.ui.time_since_applist_reload.setText(text)
 
+    @QtCore.Slot()
     def update_queue_size(self) -> None:
         """Request an update of the queue size."""
         self.component.send_data(ipc.RequestQueueSize())
+
+    @QtCore.Slot()
+    def update_current_network_stats(self) -> None:
+        """Update the data transfer statistics once per second.
+        This relies on the data
+        """
+        # Determine if new data exists
+        previous_count, self._network_transfer_count = self._network_transfer_count, len(self._network_transfer_messages)
+        if previous_count == self._network_transfer_count:
+            # If this happens 10 times, there's no data being sent
+            self._network_transfer_counter += 1
+            if self._network_transfer_counter == 10:
+                self.ui.stat_download_current.setText(format_network_speed(0))
+                self.ui.stat_upload_current.setText(format_network_speed(0))
+            return
+        self._network_transfer_counter = 0
+
+        # Update the data text
+        message = self._network_transfer_messages[-1]
+        self.ui.stat_download_current.setText(format_network_speed(message.bytes_recv))
+        self.ui.stat_upload_current.setText(format_network_speed(message.bytes_sent))
+
+        # Flush the queue
+        while self._network_transfer_count:
+            del self._network_transfer_messages[0]
+            self._network_transfer_count -= 1
 
     @property
     def bytes_sent(self) -> int:
@@ -1766,13 +1796,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.is_live and self.ui.track_network.isChecked():
                     self.bytes_sent += message.bytes_sent
                     self.bytes_recv += message.bytes_recv
-
-                    self.ui.stat_download_current.setText(format_network_speed(message.bytes_recv))
-                    self.ui.stat_upload_current.setText(format_network_speed(message.bytes_sent))
-
+                    self._network_transfer_messages.append(message)
                 else:
-                    self.ui.stat_download_current.setText(format_network_speed(0))
-                    self.ui.stat_upload_current.setText(format_network_speed(0))
+                    self._network_transfer_messages.clear()
 
             case ipc.SaveComplete():
                 self._last_save_message = message
