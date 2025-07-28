@@ -46,7 +46,7 @@ from typing import Any, Self
 import Xlib.display
 import Xlib.xobject
 
-from .placeholders import Window as _Window
+from .base import Window as _Window
 
 
 def _get_top_level_window(root: Xlib.xobject.drawable.Window, window: Xlib.xobject.drawable.Window) -> Xlib.xobject.drawable.Window:

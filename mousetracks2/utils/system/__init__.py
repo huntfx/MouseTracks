@@ -1,10 +1,10 @@
 import sys
 from typing import TYPE_CHECKING, Type
 
-from . import placeholders
+from . import base
 
 if TYPE_CHECKING:
-    Window: Type[placeholders.Window]
+    Window: Type[base.Window]
 
 match sys.platform:
     case 'win32':
@@ -14,15 +14,15 @@ match sys.platform:
         from .win32 import Window
 
     case 'darwin':
-        from .placeholders import monitor_locations
-        from .placeholders import check_autostart, set_autostart, remove_autostart
-        from .placeholders import is_elevated, relaunch_as_elevated
-        from .placeholders import Window
+        from .base import monitor_locations
+        from .base import check_autostart, set_autostart, remove_autostart
+        from .base import is_elevated, relaunch_as_elevated
+        from .base import Window
 
     case _:
-        from .placeholders import monitor_locations
-        from .placeholders import check_autostart, set_autostart, remove_autostart
-        from .placeholders import is_elevated, relaunch_as_elevated
+        from .base import monitor_locations
+        from .base import check_autostart, set_autostart, remove_autostart
+        from .base import is_elevated, relaunch_as_elevated
         from .linux import Window
 
 __all__ = [

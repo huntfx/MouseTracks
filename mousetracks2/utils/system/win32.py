@@ -12,7 +12,7 @@ from typing import Any, Self
 
 import winreg
 
-from .placeholders import Window as _Window
+from .base import Window as _Window
 from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 
 
