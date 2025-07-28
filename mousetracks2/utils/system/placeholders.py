@@ -4,6 +4,9 @@ These are used when code hasn't yet been written for an OS.
 
 from typing import Any, Self
 
+from screeninfo import get_monitors as _get_monitors
+
+
 def check_autostart() -> bool:
     """Determine if running on startup."""
     raise NotImplementedError
@@ -24,6 +27,19 @@ def is_elevated() -> bool:
 
 def relaunch_as_elevated() -> None:
     """Relaunch the script with admin privileges."""
+
+
+def monitor_locations() -> list[tuple[int, int, int, int]]:
+    """Get the bounds of each monitor.
+    This uses the cross platform library `screeninfo`.
+
+    Note: This should not be used on Windows as of `screeninfo-1.8.1`.
+    It involves calls to `user32.GetDC`, which eventually results in a
+    state where the whole PC starts to lag, presumably due to resources
+    not being completely released. It seems to be an issue with the API
+    call itself as `screeninfo` releases the handle correctly.
+    """
+    return [(mon.x, mon.y, mon.x + mon.width, mon.y + mon.height) for mon in _get_monitors()]
 
 
 class Window:
