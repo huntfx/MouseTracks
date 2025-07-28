@@ -350,6 +350,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_keyboard.triggered.connect(self.set_keyboard_tracking_enabled)
         self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
         self.ui.prefs_track_network.triggered.connect(self.set_network_tracking_enabled)
+        self.ui.debug_pause_app.triggered.connect(self.set_app_detection_disabled)
+        self.ui.debug_pause_monitor.triggered.connect(self.set_monitor_check_disabled)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
         self.ui.file_import.triggered.connect(self.import_profile)
         self.ui.export_mouse_stats.triggered.connect(self.export_mouse_stats)
@@ -2473,6 +2475,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config.track_network = value
         self.config.save()
         self.component.send_data(ipc.SetGlobalNetworkTracking(value))
+
+    @QtCore.Slot(bool)
+    def set_app_detection_disabled(self, value: bool) -> None:
+        self.component.send_data(ipc.DebugDisableAppDetection(value))
+
+    @QtCore.Slot(bool)
+    def set_monitor_check_disabled(self, value: bool) -> None:
+        self.component.send_data(ipc.DebugDisableMonitorCheck(value))
 
     def mark_profiles_saved(self, *profile_names: str) -> None:
         """Mark profiles as saved."""

@@ -106,6 +106,8 @@ class Tracking(Component):
         self.state = ipc.TrackingState.Paused
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True
+        self.update_apps = True
+        self.update_monitors = True
 
         config = GlobalConfig()
         self.track_mouse = not CLI.disable_mouse and config.track_mouse
@@ -175,6 +177,14 @@ class Tracking(Component):
                     self.track_network = message.enable
                     if message.enable:
                         self.data.reset_byte_counter()
+
+                case ipc.DebugDisableAppDetection():
+                    print(f'[Tracking] Disabled check for running applications: {message.disable}')
+                    self.update_apps = not message.disable
+
+                case ipc.DebugDisableMonitorCheck():
+                    print(f'[Tracking] Disabled check for monitor changes: {message.disable}')
+                    self.update_monitors = not message.disable
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
@@ -397,10 +407,10 @@ class Tracking(Component):
                         self.send_data(ipc.MouseMove(mouse_position))
 
             # Check resolution and update if required
-            if tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.monitor_check_frequency):
+            if self.update_monitors and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.monitor_check_frequency):
                 self._refresh_monitor_data()
 
-            if tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
+            if self.update_apps and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Record key presses / mouse clicks

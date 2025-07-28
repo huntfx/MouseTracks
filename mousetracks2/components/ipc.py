@@ -448,6 +448,18 @@ class SetGlobalNetworkTracking(Message):
 
 
 @dataclass
+class DebugDisableAppDetection(Message):
+    target: int = field(default=Target.Tracking, init=False)
+    disable: bool
+
+
+@dataclass
+class DebugDisableMonitorCheck(Message):
+    target: int = field(default=Target.Tracking, init=False)
+    disable: bool
+
+
+@dataclass
 class DeleteMouseData(Message):
     target: int = field(default=Target.Processing, init=False)
     profile_name: str

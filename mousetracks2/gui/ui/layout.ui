@@ -87,7 +87,7 @@ combat aliasing.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>272</width>
+               <width>311</width>
                <height>1327</height>
               </rect>
              </property>
@@ -1372,7 +1372,7 @@ This may take a few seconds to complete.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>311</width>
                <height>654</height>
               </rect>
              </property>
@@ -1734,7 +1734,7 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
+               <width>311</width>
                <height>486</height>
               </rect>
              </property>
@@ -2344,6 +2344,8 @@ This should be used after manually editing it.</string>
      </widget>
      <addaction name="menu_debug_state"/>
      <addaction name="menu_debug_raise"/>
+     <addaction name="debug_pause_app"/>
+     <addaction name="debug_pause_monitor"/>
     </widget>
     <addaction name="tray_show"/>
     <addaction name="tray_hide"/>
@@ -2650,6 +2652,22 @@ This should be used after manually editing it.</string>
     <url>
      <string>https://github.com/huntfx/MouseTracks/wiki/Donate</string>
     </url>
+   </property>
+  </action>
+  <action name="debug_pause_app">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pause Application Detection</string>
+   </property>
+  </action>
+  <action name="debug_pause_monitor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pause Monitor Check</string>
    </property>
   </action>
  </widget>
