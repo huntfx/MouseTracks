@@ -585,6 +585,7 @@ class DrawKeyboard(object):
         image = Image.new('RGB', (data['Width'], data['Height']))
         image.paste(data['Coordinates']['Background'], (0, 0, data['Width'], data['Height']))
         pixels = image.load()
+        assert pixels is not None
 
         # Add drop shadow
         shadow = (64, 64, 64)
