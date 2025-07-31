@@ -21,7 +21,7 @@ match sys.platform:
 
     case _:
         from .base import monitor_locations
-        from .base import get_autostart, set_autostart, remove_autostart
+        from .linux import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
         from .linux import Window
 
