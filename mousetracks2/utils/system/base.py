@@ -1,13 +1,17 @@
-"""Placeholder functions that do nothing.
-These are used when code hasn't yet been written for an OS.
+"""Base functions for possible use in any OS.
+Some of these are placeholders for use if a feature is missing support.
 """
 
+import shlex
+from pathlib import Path
 from typing import Any, Self
 
 from screeninfo import get_monitors as _get_monitors
 
+from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 
-def check_autostart() -> bool:
+
+def get_autostart() -> str | None:
     """Determine if running on startup."""
     raise NotImplementedError
 
@@ -18,6 +22,21 @@ def set_autostart(*args: str) -> None:
 
 def remove_autostart() -> None:
     """Stop running on startup."""
+
+
+def remap_autostart(cmd: str) -> bool:
+    """Check if remaping the executable is required.
+    This is in case a user downloads a new version.
+    It is only meant to run for built executables.
+    """
+    if not IS_BUILT_EXE:
+        return False
+    exe, *args = shlex.split(cmd)
+    if IS_BUILT_EXE and Path(exe).resolve() != Path(SYS_EXECUTABLE).resolve():
+        print(f'Autostart path is outdated. Correcting "{exe}" to "{SYS_EXECUTABLE}".')
+        set_autostart(*args)
+        return True
+    return False
 
 
 def is_elevated() -> bool:

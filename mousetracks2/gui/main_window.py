@@ -33,7 +33,7 @@ from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ..utils.system import monitor_locations, check_autostart, set_autostart, remove_autostart
+from ..utils.system import monitor_locations, get_autostart, set_autostart, remove_autostart
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
@@ -224,7 +224,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
         try:
-            self.ui.prefs_autostart.setChecked(check_autostart())
+            self.ui.prefs_autostart.setChecked(get_autostart() is not None)
         except NotImplementedError:
             self.ui.prefs_autostart.setEnabled(False)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)

@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes
-import os
-import re
+import shlex
 import sys
 from contextlib import suppress
 from typing import Any, Self
 
 import winreg
 
-from .base import Window as _Window
-from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
+from .base import remap_autostart, Window as _Window
+from ...constants import SYS_EXECUTABLE
 
 
 user32 = ctypes.windll.user32
@@ -313,45 +312,30 @@ class WindowHandle:
         user32.ShowWindow(self.hwnd, SW_HIDE)
 
 
-def _parse_args(cmd: str) -> list[str]:
-    """Parse the command line args to get each item"""
-    return [m.group(1) or m.group(2)
-            for m in re.finditer(r'"([^"]+)"|(\S+)', cmd)]
-
-
-def check_autostart() -> bool:
-    """Determine if running on startup and correct the path to current."""
+def get_autostart() -> str | None:
+    """Determine if running on startup."""
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_READ) as key:
             cmd = winreg.QueryValueEx(key, AUTOSTART_NAME)[0]
-
-            # Check if remapping the executable is required
-            # This is in case the user downloads a new version and runs it
-            # It only runs for built executables
-            if IS_BUILT_EXE:
-                with suppress(OSError):
-                    set_autostart(*(arg for arg in _parse_args(cmd) if arg.startswith('-')))
-
-    except OSError:
-        return False
-    return True
+    except FileNotFoundError:
+        return None
+    except IndexError:
+        pass
+    return cmd
 
 
 def set_autostart(*args: str) -> None:
     """Set an executable to run on startup."""
-    def escape(text: str) -> str:
-        if ' ' in text:
-            return f'"{text}"'
-        return text
-
+    cmd = shlex.join([SYS_EXECUTABLE] + list(args))
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, ' '.join(map(escape, [SYS_EXECUTABLE] + list(args))))
+        winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, cmd)
 
 
 def remove_autostart() -> None:
     """Stop an executable running on startup."""
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
-        winreg.DeleteValue(key, AUTOSTART_NAME)
+        with suppress(FileNotFoundError):
+            winreg.DeleteValue(key, AUTOSTART_NAME)
 
 
 def is_elevated() -> bool:
@@ -361,8 +345,7 @@ def is_elevated() -> bool:
 
 def relaunch_as_elevated() -> None:
     """Relaunch the script with admin privileges."""
-    params = ' '.join(f'"{arg}"' for arg in sys.argv)
-    shell32.ShellExecuteW(None, 'runas', sys.executable, params, None, 1)
+    shell32.ShellExecuteW(None, 'runas', sys.executable, shlex.join(sys.argv), None, 1)
     sys.exit()
 
 
