@@ -113,10 +113,21 @@ Python 3.11 or higher is required.
 
 ### Building from Source
 
-This is only supported on Windows.
+PyInstaller is used for the build process.
 
-Use [`build-pyinstaller.bat`](build-pyinstaller.bat) or [`build-nuitka.bat`](build-nuitka.bat) to create an executable.
+_Using a custom bootloader is entirely optional, but it may help reduce AV false positives._
 
+- Windows:
+    ```cmd
+    build-pyinstaller-bootloader.bat
+    build-pyinstaller.bat
+    ```
+
+- Linux:
+  ```bash
+  ./build-pyinstaller-bootloader.sh
+  ./build-pyinstaller.sh
+  ```
 ---
 
 ## Installation (v1.0 - Deprecated)
