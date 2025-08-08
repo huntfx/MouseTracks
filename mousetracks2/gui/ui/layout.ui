@@ -2352,10 +2352,9 @@ This should be used after manually editing it.</string>
     <addaction name="separator"/>
     <addaction name="tray_app_add"/>
     <addaction name="separator"/>
-    <addaction name="menu_debug"/>
-    <addaction name="separator"/>
     <addaction name="tray_donate"/>
     <addaction name="separator"/>
+    <addaction name="menu_debug"/>
     <addaction name="tray_about"/>
     <addaction name="separator"/>
     <addaction name="tray_exit"/>
