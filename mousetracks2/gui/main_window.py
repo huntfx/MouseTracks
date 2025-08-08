@@ -270,6 +270,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
+            self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
         else:
             self.tray = None
@@ -419,6 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_up.clicked.connect(self.move_layer_up)
         self.ui.layer_down.clicked.connect(self.move_layer_down)
         self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
+        self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
@@ -2020,22 +2022,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
-        """What to do when the tray icon is activated."""
+        """What to do when the tray icon is activated.
+
+        Note that each OS handles this differently. On Windows, a double
+        click is a `DoubleClick` where as on Linux it's `Trigger`. A
+        right click on windows is `Context`, and it's not supported for
+        Linux. The context menu handling has been moved to the menus
+        `aboutToShow` method instead which is cross platform.
+        """
         match reason:
-            case QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+            case (QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick  # Windows
+                  | QtWidgets.QSystemTrayIcon.ActivationReason.Trigger):  # Linux
                 self.load_from_tray()
-
-            case QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-                self.ui.tray_show.setVisible(not self.isVisible())
-                self.ui.tray_hide.setVisible(self.isVisible())
-
-                # Determine if the debug menu should be visible
-                modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
-                shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
-                self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
-
-                # Show the menu
-                self.ui.tray_context_menu.exec(QtGui.QCursor.pos())
 
     def hide_to_tray(self) -> None:
         """Minimise the window to the tray."""
@@ -2062,6 +2060,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if self.ui.full_screen.isChecked():
                 self.showFullScreen()
+
+    @QtCore.Slot()
+    def update_tray_menu(self) -> None:
+        """Update the visible items in the tray context menu."""
+        self.ui.tray_show.setVisible(not self.isVisible())
+        self.ui.tray_hide.setVisible(self.isVisible())
+
+        # Determine if the debug menu should be visible
+        modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
+        shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
+        self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         """What to do when showing the window.
