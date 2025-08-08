@@ -2579,7 +2579,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if value:
             args = sys.argv
-            if args and os.path.normpath(args[0]) == os.path.normpath(SYS_EXECUTABLE):
+            if args and Path(args[0]).resolve() == Path(SYS_EXECUTABLE).resolve():
                 args = args[1:]
             set_autostart(*args, '--autostart')
 
