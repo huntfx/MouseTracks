@@ -1,10 +1,11 @@
 import sys
 from typing import TYPE_CHECKING, Type
 
-from .base import remap_autostart, Window as _Window
+from .base import remap_autostart, Window as _Window, MonitorEventsListener as _MonitorEventsListener
 
 if TYPE_CHECKING:
     Window: Type[_Window]
+    MonitorEventsListener: Type[_MonitorEventsListener]
 
 match sys.platform:
     case 'win32':

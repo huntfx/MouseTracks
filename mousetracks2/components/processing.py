@@ -596,7 +596,7 @@ class Processing(Component):
 
                     # Setup the base layer
                     if layer_blend is None:
-                        layer_blend = LayerBlend(np.zeros(image.shape, dtype=np.float64) )
+                        layer_blend = LayerBlend(np.zeros(image.shape, dtype=np.float64))
 
                     # Add the new layer
                     if request.layer_visible:
