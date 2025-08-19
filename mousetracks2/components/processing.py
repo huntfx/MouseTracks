@@ -600,6 +600,9 @@ class Processing(Component):
 
                     # Add the new layer
                     if request.layer_visible:
+                        # Ensure initial layer has alpha
+                        if not i:
+                            layer.channels |= ipc.Channel.A
                         layer_blend.blend(layer.blend_mode, image, opacity=layer.opacity / 100.0, channels=layer.channels)
 
                 if layer_blend is None:
