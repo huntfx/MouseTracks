@@ -3119,23 +3119,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.blend_mode = BlendMode.Screen
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'BlackToRed'
+                self.selected_layer.render_colour.heatmap = 'Chalk'
                 self.selected_layer.show_middle_clicks = False
                 self.selected_layer.show_right_clicks = False
+                self.selected_layer.channels = Channel.R | Channel.A
 
                 self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.blend_mode = BlendMode.Screen
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'BlackToGreen'
+                self.selected_layer.render_colour.heatmap = 'Chalk'
                 self.selected_layer.show_left_clicks = False
                 self.selected_layer.show_right_clicks = False
+                self.selected_layer.channels = Channel.G | Channel.A
 
                 self._selected_layer = layer_2.data(QtCore.Qt.ItemDataRole.UserRole)
                 self.selected_layer.blend_mode = BlendMode.Screen
                 self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'BlackToBlue'
+                self.selected_layer.render_colour.heatmap = 'Chalk'
                 self.selected_layer.show_left_clicks = False
                 self.selected_layer.show_middle_clicks = False
+                self.selected_layer.channels = Channel.B | Channel.A
 
         self._selected_layer = 0
         self.ui.layer_presets.setCurrentIndex(0)
