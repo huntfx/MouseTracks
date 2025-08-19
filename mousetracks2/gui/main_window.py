@@ -2841,7 +2841,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Get the selected layer data."""
         return self._layers[self._selected_layer]
 
-    def add_render_layer(self) -> QtWidgets.QListWidgetItem:
+    def add_render_layer(self, reselect: bool = True) -> QtWidgets.QListWidgetItem:
         """Add a new disabled render layer."""
         item = QtWidgets.QListWidgetItem()
         item.setCheckState(QtCore.Qt.CheckState.Unchecked)
@@ -2849,8 +2849,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         selected_items = self.ui.layer_list.selectedItems()
         self.ui.layer_list.insertItem(0, item)
-        for previous in selected_items:
-            previous.setSelected(True)
+        if reselect and selected_items:
+            if selected_items:
+                for previous in selected_items:
+                    previous.setSelected(True)
+        else:
+            item.setSelected(True)
 
         self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
         self._layer_counter += 1
