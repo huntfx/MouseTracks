@@ -49,7 +49,7 @@ from typing import Any, Self
 import Xlib.display
 import Xlib.xobject
 
-from .base import remap_autostart, Window as _Window
+from .base import Window as _Window
 from ...constants import SYS_EXECUTABLE
 
 

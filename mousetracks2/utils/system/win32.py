@@ -11,7 +11,7 @@ from typing import Any, Self
 
 import winreg
 
-from .base import remap_autostart, Window as _Window, MonitorEventsListener as _MonitorEventsListener
+from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
 from ...constants import SYS_EXECUTABLE
 
 

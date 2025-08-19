@@ -1,7 +1,10 @@
+import shlex
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
-from .base import remap_autostart, Window as _Window, MonitorEventsListener as _MonitorEventsListener
+from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
+from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 
 if TYPE_CHECKING:
     Window: Type[_Window]
@@ -36,3 +39,18 @@ __all__ = [
     'Window',
     'MonitorEventsListener',
 ]
+
+
+def remap_autostart(cmd: str) -> bool:
+    """Check if remaping the executable is required.
+    This is in case a user downloads a new version.
+    It is only designed to run for built executables.
+    """
+    if not IS_BUILT_EXE:
+        return False
+    exe, *args = shlex.split(cmd)
+    if IS_BUILT_EXE and Path(exe).resolve() != Path(SYS_EXECUTABLE).resolve():
+        print(f'Autostart path is outdated. Correcting "{exe}" to "{SYS_EXECUTABLE}".')
+        set_autostart(*args)
+        return True
+    return False
