@@ -325,7 +325,7 @@ def alpha_blend(background: npt.NDArray[np.float64], foreground: npt.NDArray[np.
     if isinstance(alpha, float):
         if alpha >= 1:
             return foreground[index]
-        if alpha < 1e6:
+        if alpha < 1e-6:
             return background[index]
     return np.add(foreground[index] * alpha, background[index] * (1 - alpha))
 
