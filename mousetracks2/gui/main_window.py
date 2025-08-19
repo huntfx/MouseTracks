@@ -444,6 +444,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Trigger initial setup
         self.profile_changed(0)
         self.ui.show_advanced.setChecked(False)
+        self.selected_layer_changed(background_layer, None)
+        if not self.ui.layer_blending.currentIndex():
+            self.layer_blend_mode_changed(0)
 
         self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
         self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
