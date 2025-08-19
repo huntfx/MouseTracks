@@ -20,7 +20,7 @@ from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import get_cursor_pos, keycodes
 from ..utils.network import Interfaces
-from ..utils.system import monitor_locations
+from ..utils.system import monitor_locations, MonitorEventsListener
 
 
 if XInput is None:
@@ -125,6 +125,9 @@ class Tracking(Component):
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
 
+        self._monitor_listener = MonitorEventsListener()
+        self._monitor_listener.start()
+
     def _receive_data(self) -> None:
         for message in self.receive_data():
             match message:
@@ -185,6 +188,12 @@ class Tracking(Component):
                 case ipc.DebugDisableMonitorCheck():
                     print(f'[Tracking] Disabled check for monitor changes: {message.disable}')
                     self.update_monitors = not message.disable
+
+                    if message.disable:
+                        self._monitor_listener.stop()
+                    else:
+                        self._monitor_listener = MonitorEventsListener()
+                        self._monitor_listener.start()
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
@@ -406,8 +415,8 @@ class Tracking(Component):
                         self._check_monitor_data(mouse_position)
                         self.send_data(ipc.MouseMove(mouse_position))
 
-            # Check resolution and update if required
-            if self.update_monitors and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.monitor_check_frequency):
+            # Update monitor data
+            if self.update_monitors and self._monitor_listener.triggered:
                 self._refresh_monitor_data()
 
             if self.update_apps and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
@@ -503,3 +512,4 @@ class Tracking(Component):
         """Close threads on exit."""
         self._pynput_mouse_listener.stop()
         self._pynput_keyboard_listener.stop()
+        self._monitor_listener.stop()

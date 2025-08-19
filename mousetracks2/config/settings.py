@@ -27,7 +27,6 @@ class GlobalConfig:
         max_loaded_profiles: Maximum amount of loaded profiles.
             This will only affect profiles without unsaved changes.
         gamepad_check_frequency: How often to check the connected gamepads.
-        monitor_check_frequency: How often to check the current resolutions.
         application_check_frequency: How often to check the current focused application.
         component_check_frequency: How often to check all components are running.
             This is used once per message received.
@@ -48,7 +47,6 @@ class GlobalConfig:
     save_frequency: float = 600.0
     max_loaded_profiles: int = 8
     gamepad_check_frequency: float = 1.0
-    monitor_check_frequency: float = 1.0
     application_check_frequency: float = 1.0
     component_check_frequency: float = 1.0
     shutdown_timeout: float = 15.0

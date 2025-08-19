@@ -2,7 +2,10 @@
 Some of these are placeholders for use if a feature is missing support.
 """
 
+import queue
 import shlex
+import threading
+import time
 from pathlib import Path
 from typing import Any, Self
 
@@ -94,3 +97,44 @@ class Window:
     @property
     def size(self) -> tuple[int, int]:
         return (0, 0)
+
+
+class MonitorEventsListener(threading.Thread):
+    """Listen for monitor change events.
+
+    The most basic implementation is to check every second for changes.
+    If an operating system has hooks then this class can be subclassed.
+
+    The initial event is triggered on startup.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(name='MonitorEventsListener', daemon=True)
+        self._queue = queue.Queue()  # type: queue.Queue[None]
+        self._running = True
+
+    def run(self) -> None:
+        while self._running:
+            self.trigger()
+            time.sleep(1)
+
+    def stop(self) -> None:
+        """Stops the thread."""
+        self._running = False
+
+    def trigger(self) -> None:
+        """Trigger the event."""
+        self._queue.put(None)
+
+    @property
+    def triggered(self) -> bool:
+        """Determine if any event was set."""
+        count = 0
+        while True:
+            try:
+                self._queue.get_nowait()
+            except queue.Empty:
+                return count > 0
+            count += 1
+
+

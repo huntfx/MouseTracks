@@ -11,7 +11,7 @@ from typing import Any, Self
 
 import winreg
 
-from .base import remap_autostart, Window as _Window
+from .base import remap_autostart, Window as _Window, MonitorEventsListener as _MonitorEventsListener
 from ...constants import SYS_EXECUTABLE
 
 
@@ -31,6 +31,12 @@ SW_HIDE = 0
 
 SW_RESTORE = 9
 
+WM_QUIT = 0x0012
+
+WM_DISPLAYCHANGE = 0x007E
+
+WM_DEVICECHANGE  = 0x0219
+
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 BOOL = ctypes.wintypes.BOOL
@@ -43,17 +49,33 @@ HMONITOR = ctypes.wintypes.HMONITOR
 
 HWND = ctypes.wintypes.HWND
 
+UINT = ctypes.wintypes.UINT
+
 LPARAM = ctypes.wintypes.LPARAM
+
+WPARAM = ctypes.wintypes.WPARAM
 
 LPWSTR = ctypes.wintypes.LPWSTR
 
 RECT = ctypes.wintypes.RECT
+
+MSG = ctypes.wintypes.MSG
+
+LRESULT = ctypes.c_longlong if ctypes.sizeof(ctypes.c_void_p) == ctypes.sizeof(ctypes.c_longlong) else ctypes.c_long
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, ctypes.POINTER(RECT), LPARAM)
 
 EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
 
 WndEnumPrpc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
+
+WNDPROCTYPE = ctypes.WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
+
+HCURSOR = ctypes.wintypes.HANDLE
+
+HICON = ctypes.wintypes.HANDLE
+
+HBRUSH = ctypes.wintypes.HANDLE
 
 user32.GetWindowThreadProcessId.argtypes = [HWND, ctypes.POINTER(DWORD)]
 user32.GetWindowThreadProcessId.restype = DWORD
@@ -94,6 +116,28 @@ kernel32.GetConsoleWindow.restype = HWND
 
 user32.EnumDisplayMonitors.argtypes = [HDC, ctypes.POINTER(RECT), MonitorEnumProc, LPARAM]
 user32.EnumDisplayMonitors.restype = BOOL
+
+user32.DefWindowProcW.restype = LRESULT
+user32.DefWindowProcW.argtypes = [
+    HWND,
+    UINT,
+    WPARAM,
+    LPARAM,
+]
+
+class WNDCLASS(ctypes.Structure):
+    _fields_ = [
+        ('style', ctypes.wintypes.UINT),
+        ('lpfnWndProc', WNDPROCTYPE),
+        ('cbClsExtra', ctypes.c_int),
+        ('cbWndExtra', ctypes.c_int),
+        ('hInstance', ctypes.wintypes.HINSTANCE),
+        ('hIcon', HICON),
+        ('hCursor', HCURSOR),
+        ('hbrBackground', HBRUSH),
+        ('lpszMenuName', ctypes.wintypes.LPCWSTR),
+        ('lpszClassName', ctypes.wintypes.LPCWSTR),
+    ]
 
 REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 
@@ -386,3 +430,50 @@ class Window(_Window):
     @property
     def size(self) -> tuple[int, int]:
         return self._pid.size
+
+
+class MonitorEventsListener(_MonitorEventsListener):
+    """Listen for monitor change events."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._hwnd = None  # type: int | None
+
+    def run(self) -> None:
+        """Create and start the message listener."""
+        def wndproc(hwnd: int, msg: int, wparam: int, lparam: int) -> int:
+            if msg in (WM_DISPLAYCHANGE, WM_DEVICECHANGE):
+                self.trigger()
+            return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+
+        hinst = kernel32.GetModuleHandleW(None)
+        wndproc_c = WNDPROCTYPE(wndproc)
+
+        class_name = 'MouseTracksHiddenWindowClass'
+        wc = WNDCLASS()
+        wc.lpfnWndProc = wndproc_c
+        wc.lpszClassName = class_name
+        wc.hInstance = hinst
+
+        if not user32.RegisterClassW(ctypes.byref(wc)):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+        self._hwnd = user32.CreateWindowExW(
+            0, class_name, 'hidden', 0,
+            0, 0, 0, 0,
+            None, None, hinst, None
+        )
+        if not self._hwnd:
+            raise ctypes.WinError(ctypes.get_last_error())
+
+        self.trigger()
+
+        msg = MSG()
+        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0):
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+
+    def stop(self) -> None:
+        """Stops the message loop and cleans up the window."""
+        if self._hwnd:
+            user32.PostMessageW(self._hwnd, WM_QUIT, 0, 0)
