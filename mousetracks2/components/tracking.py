@@ -394,6 +394,15 @@ class Tracking(Component):
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
+            # Check for loaded applications
+            if self.update_apps and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
+                self.send_data(ipc.RequestRunningAppCheck())
+
+            # Update monitor data
+            if self.update_monitors and self._monitor_listener.triggered:
+                self._refresh_monitor_data()
+
+            # Update mouse data
             if self.track_mouse:
                 mouse_position = get_cursor_pos()
 
@@ -414,13 +423,6 @@ class Tracking(Component):
                         self.data.mouse_position = mouse_position
                         self._check_monitor_data(mouse_position)
                         self.send_data(ipc.MouseMove(mouse_position))
-
-            # Update monitor data
-            if self.update_monitors and self._monitor_listener.triggered:
-                self._refresh_monitor_data()
-
-            if self.update_apps and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
-                self.send_data(ipc.RequestRunningAppCheck())
 
             # Record key presses / mouse clicks
             for opcode in tuple(self.data.pynput_opcodes):
