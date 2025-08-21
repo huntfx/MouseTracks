@@ -14,8 +14,10 @@ import sys
 import time
 import traceback
 import multiprocessing
+import multiprocessing.queues
 import queue
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from . import app_detection, gui, ipc, processing, tracking
 from ..config import GlobalConfig, should_minimise_on_start
@@ -23,7 +25,64 @@ from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 
 if TYPE_CHECKING:
+    from multiprocessing.sharedctypes import Synchronized
     from ..utils.system.win32 import WindowHandle
+
+
+T = TypeVar('T')
+
+
+class Queue(multiprocessing.queues.Queue, Generic[T]):
+    """Custom implementation of a queue to ensure `qsize()` works.
+
+    If it is not available, then `multiprocessing.Value` will be used
+    instead as the counter.
+    """
+
+    @dataclass
+    class State:
+        """Store the class state for serialisation."""
+
+        original: Any
+        counter: Synchronized[int]
+        use_counter: bool
+
+    def __init__(self) -> None:
+        self._use_custom_counter = False
+        super().__init__(ctx=multiprocessing.get_context())
+        try:
+            super().qsize()
+        except NotImplementedError:
+            self._use_custom_counter = True
+        self._counter: Synchronized[int] = multiprocessing.Value('i', 0)
+
+    def __getstate__(self) -> State:
+        return self.State(super().__getstate__(), self._counter, self._use_custom_counter)
+
+    def __setstate__(self, state: State) -> None:
+        self._counter = state.counter
+        self._use_custom_counter = state.use_counter
+        super().__setstate__(state.original)  # type: ignore
+
+    def qsize(self) -> int:
+        """Get the queue size."""
+        if self._use_custom_counter:
+            return self._counter.value
+        return super().qsize()
+
+    def put(self, obj: T, block: bool = True, timeout: float | None = None) -> Any:
+        """Add an item to the queue."""
+        super().put(obj, block, timeout)
+        if self._use_custom_counter:
+            with self._counter.get_lock():
+                self._counter.value += 1
+
+    def get(self, block: bool = True, timeout: float | None = None) -> T:
+        """Get an item from the queue."""
+        if self._use_custom_counter:
+            with self._counter.get_lock():
+                self._counter.value -= 1
+        return super().get(block, timeout)
 
 
 class Hub:
@@ -39,9 +98,9 @@ class Hub:
         if self.use_gui:
             self._wait_to_load.add(ipc.Target.GUI)
 
-        self._q_main: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._q_main: Queue[ipc.Message] = Queue()
 
-        self._q_gui: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._q_gui: Queue[ipc.Message] = Queue()
         self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
         self._p_gui.daemon = True
         if self.use_gui:
@@ -128,17 +187,17 @@ class Hub:
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
-        self._q_tracking: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._q_tracking: Queue[ipc.Message] = Queue()
         self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
 
-        self._q_processing: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._q_processing: Queue[ipc.Message] = Queue()
         self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
 
-        self._q_app_detection: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._q_app_detection: Queue[ipc.Message] = Queue()
         self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()

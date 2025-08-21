@@ -2,16 +2,19 @@ import multiprocessing
 import os
 import time
 import traceback
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 import psutil
 
 from . import ipc
 from ..exceptions import ExitRequest
 
+if TYPE_CHECKING:
+    import multiprocessing.queues
+
 
 class Component:
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+    def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         self._q_send = q_send
         self._q_recv = q_receive
         self.name = type(self).__name__
@@ -109,7 +112,7 @@ class Component:
         """
 
     @classmethod
-    def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+    def launch(cls, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         # Attempt to initialise the class
         try:
             self = cls(q_send, q_receive)
