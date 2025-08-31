@@ -9,6 +9,7 @@ import sys
 from contextlib import suppress
 from typing import Any, Self
 
+import subprocess
 import winreg
 
 from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
@@ -370,7 +371,7 @@ def get_autostart() -> str | None:
 
 def set_autostart(*args: str) -> None:
     """Set an executable to run on startup."""
-    cmd = shlex.join([SYS_EXECUTABLE] + list(args))
+    cmd = subprocess.list2cmdline([SYS_EXECUTABLE] + list(args))
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, cmd)
 

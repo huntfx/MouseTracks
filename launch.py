@@ -23,11 +23,9 @@ if __name__ == '__main__':
         cert_path = REPO_DIR / 'certifi' / 'cacert.pem'
         os.environ['SSL_CERT_FILE'] = str(cert_path)
 
-    # Update startup path if running a built executable
+    # Update autostart path if running a built executable
     with suppress(NotImplementedError):
-        cmd = get_autostart()
-        if cmd is not None:
-            remap_autostart(cmd)
+        remap_autostart(get_autostart())
 
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do

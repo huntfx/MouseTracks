@@ -41,12 +41,12 @@ __all__ = [
 ]
 
 
-def remap_autostart(cmd: str) -> bool:
+def remap_autostart(cmd: str | None) -> bool:
     """Check if remaping the executable is required.
     This is in case a user downloads a new version.
     It is only designed to run for built executables.
     """
-    if not IS_BUILT_EXE:
+    if cmd is None or not IS_BUILT_EXE:
         return False
     exe, *args = shlex.split(cmd)
     if IS_BUILT_EXE and Path(exe).resolve() != Path(SYS_EXECUTABLE).resolve():
