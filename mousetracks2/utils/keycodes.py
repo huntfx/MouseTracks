@@ -92,7 +92,7 @@ class KeyCode(int):
         if vk is not None and len(vk) == 1:
             cls._CHAR_MAP[vk] = code
 
-        return KeyCode(code)
+        return cls(code)
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}({self:#04X}, {self.name!r})'
