@@ -10,6 +10,18 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 
 ---
 
+## Featured On
+
+> _"Peter Hunt has taken r/dataisbeautiful by storm by dropping some incredible heatmaps tracking his mouse movements."._
+>
+> — **[Motherboard - VICE](https://www.vice.com/en/article/these-trippy-heatmaps-show-the-differences-between-fps-and-rts-games/)**, May 2017
+
+> _"MouseTracks turns your everyday clicks, moves, and key presses into a kind of digital diary. You can watch heatmaps of where your mouse spends the most time, see just how much you actually type, or even compare your gaming sessions over weeks or years. It’s like getting a quirky little behind-the-scenes replay of how you really use your PC.<br>Oddly addictive."_
+>
+> — **[MajorGeeks Newsletter](https://mailchi.mp/majorgeeks/majorgeeks-newsletter-september-2025)**, September 2025
+
+---
+
 ## Features
 
 - ### Live Tracking
@@ -85,7 +97,7 @@ MouseTracks requires the XCB cursor library to be installed.
     ```
 
 #### Mirrors
-
+_These are not guaranteed to be the latest version._
 - MouseTracks has been tested, reviewed and hosted by the amazing team over at [MajorGeeks](https://www.majorgeeks.com/files/details/mousetracks.html).
 
 ---
