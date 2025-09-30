@@ -84,6 +84,10 @@ MouseTracks requires the XCB cursor library to be installed.
     sudo pacman -Syu xcb-util-cursor
     ```
 
+#### Mirrors
+
+- MouseTracks has been tested, reviewed and hosted by the amazing team over at [MajorGeeks](https://www.majorgeeks.com/files/details/mousetracks.html).
+
 ---
 
 ### Running from Source
