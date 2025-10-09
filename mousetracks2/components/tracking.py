@@ -197,6 +197,7 @@ class Tracking(Component):
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
+        started = False
         for tick in ticks(UPDATES_PER_SECOND):
             self._receive_data()
 
@@ -209,6 +210,7 @@ class Tracking(Component):
                     if state_changed:
                         print('[Tracking] Started.')
                         self.data = DataState(tick)
+                        started = True
                         if self.track_network:
                             self.data.reset_byte_counter()
 
@@ -228,15 +230,16 @@ class Tracking(Component):
 
                 # When tracking is paused then stop here
                 case ipc.TrackingState.Paused:
-                    if state_changed:
+                    if state_changed and started:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()
                         print('[Tracking] Paused.')
 
                 # Exit the loop when tracking is stopped
                 case ipc.TrackingState.Stopped:
-                    self.data.tick_modified = self.data.tick_current
-                    self._calculate_inactivity()
+                    if started:
+                        self.data.tick_modified = self.data.tick_current
+                        self._calculate_inactivity()
                     print('[Tracking] Shut down.')
                     return
 
