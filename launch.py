@@ -5,6 +5,8 @@ import sys
 from contextlib import suppress
 from multiprocessing import freeze_support
 
+import filelock
+
 # Source DLL files when running as an executable
 from mousetracks2.constants import REPO_DIR
 sys.path.append(str(REPO_DIR / 'resources' / 'build'))
@@ -35,4 +37,12 @@ if __name__ == '__main__':
     if CLI.elevate and not is_elevated():
         relaunch_as_elevated()
 
-    Hub(use_gui=True).run()
+    # Attempt to run
+    try:
+        with filelock.FileLock(CLI.data_dir / '.lock', timeout=0):
+            Hub(use_gui=True).run()
+
+    # Notify the user if another instance is running
+    except filelock.Timeout:
+        print(f'Error: Another instance of MouseTracks is already writing to "{CLI.data_dir}".')
+        input('Press enter to exit...')
