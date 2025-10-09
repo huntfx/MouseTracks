@@ -186,7 +186,7 @@ class Processing(Component):
         return None
 
     def _record_move(self, data: MovementMaps, position: tuple[int, int],
-                     force_monitor: tuple[int, int] | None = None, thumbstick: bool = False) -> float:
+                     force_monitor: tuple[int, int] | None = None) -> float:
         """Record a movement for time and speed.
 
         There are some caveats that are hard to handle. If a mouse is
@@ -235,7 +235,7 @@ class Processing(Component):
         data.ticks += 1
         data.tick = self.tick
 
-        if data.requires_compression(350000 if thumbstick else 425000):
+        if data.requires_compression():
             print(f'[Processing] Tracking threshold reached, reducing values...')
             data.run_compression()
             print(f'[Processing] Reduced all arrays')
@@ -713,9 +713,9 @@ class Processing(Component):
                 remapped = (x, height - y - 1)
                 match message.thumbstick:
                     case ipc.ThumbstickMove.Thumbstick.Left:
-                        self._record_move(self.profile.thumbstick_l_map[message.gamepad], remapped, (width, height), thumbstick=True)
+                        self._record_move(self.profile.thumbstick_l_map[message.gamepad], remapped, (width, height))
                     case ipc.ThumbstickMove.Thumbstick.Right:
-                        self._record_move(self.profile.thumbstick_r_map[message.gamepad], remapped, (width, height), thumbstick=True)
+                        self._record_move(self.profile.thumbstick_r_map[message.gamepad], remapped, (width, height))
                     case _:
                         raise NotImplementedError(message.thumbstick)
 
