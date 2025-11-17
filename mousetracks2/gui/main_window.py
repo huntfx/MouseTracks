@@ -2453,10 +2453,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
             self.component.send_data(ipc.DeleteProfile(sanitised_profile_name))
-            self.mark_profiles_saved(profile_name)
 
-            del self._profile_names[sanitised_profile_name]
-            self._unsaved_profiles.discard(sanitised_profile_name)
+            # Only remove from list if it's not the currently selected profile
+            if sanitised_profile_name != sanitise_profile_name(self._current_profile.name):
+                self.mark_profiles_saved(profile_name)
+                del self._profile_names[sanitised_profile_name]
+                self._unsaved_profiles.discard(sanitised_profile_name)
 
             self._redraw_profile_combobox()
             self.profile_changed(0)
