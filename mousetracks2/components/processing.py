@@ -8,6 +8,7 @@ from typing import Iterator, Literal
 
 import numpy as np
 import numpy.typing as npt
+from send2trash import send2trash
 
 from . import ipc
 from .abstract import Component
@@ -848,7 +849,7 @@ class Processing(Component):
                 print(f'[Processing] Deleting profile {message.profile_name}...')
                 del self.all_profiles[message.profile_name]
                 with suppress(FileNotFoundError):
-                    os.remove(get_filename(message.profile_name))
+                    send2trash(get_filename(message.profile_name))
 
             case ipc.ImportProfile():
                 profile = self.all_profiles[message.name] = TrackingProfile.load(message.path)
