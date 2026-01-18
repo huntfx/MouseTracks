@@ -78,6 +78,10 @@ HICON = ctypes.wintypes.HANDLE
 
 HBRUSH = ctypes.wintypes.HANDLE
 
+DPI_AWARENESS_CONTEXT_UNAWARE = ctypes.wintypes.HANDLE(-1)
+DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = ctypes.wintypes.HANDLE(-2)
+DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.wintypes.HANDLE(-4)
+
 user32.GetWindowThreadProcessId.argtypes = [HWND, ctypes.POINTER(DWORD)]
 user32.GetWindowThreadProcessId.restype = DWORD
 
@@ -126,6 +130,9 @@ user32.DefWindowProcW.argtypes = [
     LPARAM,
 ]
 
+user32.SetThreadDpiAwarenessContext.argtypes = [ctypes.wintypes.HANDLE]
+user32.SetThreadDpiAwarenessContext.restype = ctypes.wintypes.HANDLE
+
 class WNDCLASS(ctypes.Structure):
     _fields_ = [
         ('style', ctypes.wintypes.UINT),
@@ -159,7 +166,11 @@ def monitor_locations() -> list[tuple[int, int, int, int]]:
         monitors.append((rect.left, rect.top, rect.right, rect.bottom))
         return True
 
-    user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
+    original_ctx = user32.SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE)
+    try:
+        user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
+    finally:
+        user32.SetThreadDpiAwarenessContext(original_ctx)
     return monitors
 
 
