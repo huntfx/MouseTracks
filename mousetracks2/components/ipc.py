@@ -197,7 +197,8 @@ class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
-    data: list[tuple[int, int, int, int]]
+    physical_data: list[tuple[int, int, int, int]]
+    logical_data: list[tuple[int, int, int, int]]
 
 
 @dataclass

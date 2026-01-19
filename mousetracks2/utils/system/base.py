@@ -34,7 +34,7 @@ def relaunch_as_elevated() -> None:
     """Relaunch the script with admin privileges."""
 
 
-def monitor_locations() -> list[tuple[int, int, int, int]]:
+def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]]:
     """Get the bounds of each monitor.
     This uses the cross platform library `screeninfo`.
 

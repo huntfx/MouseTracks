@@ -18,7 +18,7 @@ from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..utils import keycodes, get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
+from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset, logical_to_physical
 from ..utils.network import Interfaces
 from ..utils.system import monitor_locations
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
@@ -55,7 +55,7 @@ class Processing(Component):
         self._timestamp = -1
 
         self.previous_mouse_click: PreviousMouseClick | None = None
-        self.monitor_data = monitor_locations()
+        self.monitor_data = (monitor_locations(True), monitor_locations(False))
         self.previous_monitor = None
 
         # Load in the default profile
@@ -162,7 +162,9 @@ class Processing(Component):
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        monitor_data = self.monitor_data
+        physical_monitor_data, logical_monitor_data = self.monitor_data
+
+        monitor_data = physical_monitor_data
         if self.current_application.rects:
             monitor_data = self.current_application.rects
 
@@ -206,6 +208,13 @@ class Processing(Component):
         moving, the downside being it will still record any jumps while
         moving, and will always skip the first frame of movement.
         """
+        # Convert logical to physical
+        old_position = logical_to_physical(position, self.monitor_data[1], self.monitor_data[0])
+        if data.position is None:
+            new_position = old_position
+        else:
+            new_position = logical_to_physical(data.position, self.monitor_data[1], self.monitor_data[0])
+
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
             data.position = position
@@ -215,7 +224,7 @@ class Processing(Component):
         moving = self.tick == data.tick + 1
 
         # Add the pixels to an array
-        for pixel in calculate_line(position, data.position):
+        for pixel in calculate_line(old_position, new_position):
             if force_monitor is None:
                 result = self._monitor_offset(pixel)
                 if result is None:
@@ -702,7 +711,7 @@ class Processing(Component):
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
-                self.monitor_data = message.data
+                self.monitor_data = message.physical_data, message.logical_data
 
             case ipc.ThumbstickMove():
                 if not self.profile.config.track_gamepad:

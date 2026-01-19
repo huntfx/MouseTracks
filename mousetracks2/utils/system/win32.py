@@ -152,8 +152,12 @@ REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 AUTOSTART_NAME = 'MouseTracks'
 
 
-def monitor_locations() -> list[tuple[int, int, int, int]]:
+def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]]:
     """Get the location of each monitor.
+
+    Parameters:
+        dpi_aware: Get the logical coordinates instead of physical.
+            Only necessary when using the Windows scaling feature.
 
     Returns:
         List of (x1, y1, x2, y2) tuples representing monitor bounds.
@@ -166,7 +170,8 @@ def monitor_locations() -> list[tuple[int, int, int, int]]:
         monitors.append((rect.left, rect.top, rect.right, rect.bottom))
         return True
 
-    original_ctx = user32.SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE)
+    awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 if dpi_aware else DPI_AWARENESS_CONTEXT_UNAWARE
+    original_ctx = user32.SetThreadDpiAwarenessContext(awareness)
     try:
         user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
     finally:

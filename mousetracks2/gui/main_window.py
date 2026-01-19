@@ -32,7 +32,7 @@ from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profil
 from ..legacy import colours
 from ..update import is_latest_version
 from ..utils import keycodes, get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
+from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset, logical_to_physical
 from ..utils.system import monitor_locations, get_autostart, set_autostart, remove_autostart
 
 if TYPE_CHECKING:
@@ -311,7 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
-        self.monitor_data = monitor_locations()
+        self.monitor_data = monitor_locations(True), monitor_locations(False)
         self.render_type = ipc.RenderType.MouseMovement
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
@@ -1227,7 +1227,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        monitor_data = self.monitor_data
+        physical_monitor_data, logical_monitor_data = self.monitor_data
+
+        monitor_data = physical_monitor_data
         if self.current_profile.rects:
             monitor_data = self.current_profile.rects
 
@@ -1601,7 +1603,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
-                self.monitor_data = message.data
+                self.monitor_data = message.physical_data, message.logical_data
 
             case ipc.Render():
                 if message.array.any():
@@ -2279,6 +2281,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if not self.isVisible() or not self.is_live or self._is_closing or self.ui.thumbnail.pixmap().isNull():
             return
+
+        # Convert logical to physical
+        if old_position is not None:
+            old_position = logical_to_physical(old_position, self.monitor_data[1], self.monitor_data[0])
+        if new_position is not None:
+            new_position = logical_to_physical(new_position, self.monitor_data[1], self.monitor_data[0])
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
