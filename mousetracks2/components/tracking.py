@@ -19,8 +19,9 @@ from ..config import CLI, GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import get_cursor_pos, keycodes
+from ..utils.monitor import MonitorData
 from ..utils.network import Interfaces
-from ..utils.system import monitor_locations, MonitorEventsListener
+from ..utils.system import MonitorEventsListener
 
 
 if XInput is None:
@@ -74,8 +75,7 @@ class DataState:
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
-    monitors: tuple[list[tuple[int, int, int, int]], list[tuple[int, int, int, int]]] = field(
-        default_factory=lambda: (monitor_locations(True), monitor_locations(False)))
+    monitors: MonitorData = field(default_factory=MonitorData)
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
     gamepad_force_recheck: bool = field(default=False)
@@ -267,7 +267,8 @@ class Tracking(Component):
         """Check if the monitor data is valid for the pixel.
         If not, recalculate it and update the other components.
         """
-        for x1, y1, x2, y2 in self.data.monitors[0]:
+        for monitor in self.data.monitors.logical:  # TODO: Test
+            x1, y1, x2, y2 = monitor.rect
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 break
         else:
@@ -278,10 +279,10 @@ class Tracking(Component):
         """Check the monitor data is up to date.
         If not, then send a signal with the updated data.
         """
-        self.data.monitors, old_data = (monitor_locations(True), monitor_locations(False)), self.data.monitors
+        self.data.monitors, old_data = MonitorData(), self.data.monitors
         if old_data != self.data.monitors:
             print('[Tracking] Monitor change detected')
-            self.send_data(ipc.MonitorsChanged(*self.data.monitors))
+            self.send_data(ipc.MonitorsChanged(self.data.monitors))
 
     @contextmanager
     def _exception_handler(self) -> Iterator[None]:

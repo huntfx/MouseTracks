@@ -14,6 +14,7 @@ import winreg
 
 from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
 from ...constants import SYS_EXECUTABLE
+from ...utils import Rect, RectList
 
 
 user32 = ctypes.windll.user32
@@ -152,7 +153,7 @@ REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 AUTOSTART_NAME = 'MouseTracks'
 
 
-def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]]:
+def monitor_locations(dpi_aware: bool = False) -> RectList:
     """Get the location of each monitor.
 
     Parameters:
@@ -162,12 +163,12 @@ def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]
     Returns:
         List of (x1, y1, x2, y2) tuples representing monitor bounds.
     """
-    monitors: list[tuple[int, int, int, int]] = []
+    monitors = RectList()
 
     def callback(hMonitor: HMONITOR, hdc: HDC, lprcMonitor: ctypes._Pointer[RECT], lParam: LPARAM) -> bool:
         """Callback function for EnumDisplayMonitors."""
         rect = lprcMonitor.contents
-        monitors.append((rect.left, rect.top, rect.right, rect.bottom))
+        monitors.append(Rect.from_rect(rect.left, rect.top, rect.right, rect.bottom))
         return True
 
     awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 if dpi_aware else DPI_AWARENESS_CONTEXT_UNAWARE
@@ -256,7 +257,7 @@ class PID:
         return buffer.value.strip()
 
     @property
-    def rect(self) -> tuple[int, int, int, int]:
+    def rect(self) -> Rect:
         """Get the bounding rectangle of all windows belonging to this process."""
         left = top = 2 << 31
         right = bottom = -2 << 31
@@ -272,25 +273,23 @@ class PID:
                 bottom = max(bottom, rect.bottom)
 
         if valid:
-            return left, top, right, bottom
-        return 0, 0, 0, 0
+            return Rect.from_rect(left, top, right, bottom)
+        return Rect()
 
     @property
-    def rects(self) -> list[tuple[int, int, int, int]]:
+    def rects(self) -> RectList:
         """Get the rects of each window handle."""
-        return [handle.rect for handle in map(WindowHandle, self.visible_hwnds)]
+        return RectList(handle.rect for handle in map(WindowHandle, self.visible_hwnds))
 
     @property
     def position(self) -> tuple[int, int]:
         """Get the position of the window."""
-        x1, y1, x2, y2 = self.rect
-        return x1, y1
+        return self.rect.position
 
     @property
     def size(self) -> tuple[int, int]:
         """Get the size of the window."""
-        x1, y1, x2, y2 = self.rect
-        return x2 - x1, y2 - y1
+        return self.rect.size
 
 
 class WindowHandle:
@@ -318,24 +317,22 @@ class WindowHandle:
         self.pid = PID(pid)
 
     @property
-    def rect(self) -> tuple[int, int, int, int]:
+    def rect(self) -> Rect:
         """Get the window's rect coordinates."""
         rect = RECT()
         if user32.GetWindowRect(self.hwnd, ctypes.byref(rect)):
-            return rect.left, rect.top, rect.right, rect.bottom
-        return 0, 0, 0, 0
+            return Rect.from_rect(rect.left, rect.top, rect.right, rect.bottom)
+        return Rect()
 
     @property
     def position(self) -> tuple[int, int]:
         """Get the position of the window."""
-        x1, y1, x2, y2 = self.rect
-        return x1, y1
+        return self.rect.position
 
     @property
     def size(self) -> tuple[int, int]:
         """Get the size of the window."""
-        x1, y1, x2, y2 = self.rect
-        return x2 - x1, y2 - y1
+        return self.rect.size
 
     @property
     def title(self) -> str:
@@ -437,7 +434,7 @@ class Window(_Window):
         return self._pid.executable
 
     @property
-    def rects(self) -> list[tuple[int, int, int, int]]:
+    def rects(self) -> RectList:
         return self._pid.rects
 
     @property

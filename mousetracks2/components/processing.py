@@ -17,10 +17,10 @@ from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
-from ..utils import keycodes, get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset, logical_to_physical
+from ..utils import keycodes, RectList, get_cursor_pos
+from ..utils.math import calculate_line, calculate_distance
+from ..utils.monitor import MonitorData
 from ..utils.network import Interfaces
-from ..utils.system import monitor_locations
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError, LayerBlend
 
@@ -46,7 +46,7 @@ class PreviousMouseClick:
 @dataclass
 class Application:
     name: str
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+    rects: RectList = field(default_factory=RectList)
 
 
 class Processing(Component):
@@ -55,13 +55,13 @@ class Processing(Component):
         self._timestamp = -1
 
         self.previous_mouse_click: PreviousMouseClick | None = None
-        self.monitor_data = (monitor_locations(True), monitor_locations(False))
+        self.monitor_data = MonitorData()
         self.previous_monitor = None
 
         # Load in the default profile
         self.all_profiles = TrackingProfileLoader()
-        self._current_application = Application('', [])
-        self.current_application = Application(DEFAULT_PROFILE_NAME, [])
+        self._current_application = Application('', RectList())
+        self.current_application = Application(DEFAULT_PROFILE_NAME, RectList())
 
     @property
     def timestamp(self) -> int:
@@ -162,31 +162,12 @@ class Processing(Component):
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        physical_monitor_data, logical_monitor_data = self.monitor_data
-
-        monitor_data = physical_monitor_data
+        monitors = self.monitor_data.physical
         if self.current_application.rects:
-            monitor_data = self.current_application.rects
+            monitors = self.current_application.rects
 
-        single_monitor = CLI.single_monitor if self.profile.config.multi_monitor is None else not self.profile.config.multi_monitor
-        if single_monitor:
-            x_min, y_min, x_max, y_max = monitor_data[0]
-            for x1, y1, x2, y2 in monitor_data[1:]:
-                x_min = min(x_min, x1)
-                y_min = min(y_min, y1)
-                x_max = max(x_max, x2)
-                y_max = max(y_max, y2)
-            result = calculate_pixel_offset(pixel[0], pixel[1], x_min, y_min, x_max, y_max)
-            if result is not None:
-                return result
-
-        else:
-            for x1, y1, x2, y2 in monitor_data:
-                result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
-                if result is not None:
-                    return result
-
-        return None
+        single_monitor = bool(CLI.single_monitor) if self.profile.config.multi_monitor is None else not self.profile.config.multi_monitor
+        return monitors.calculate_offset(pixel, combined=single_monitor)
 
     def _record_move(self, data: MovementMaps, position: tuple[int, int],
                      force_monitor: tuple[int, int] | None = None) -> float:
@@ -209,11 +190,11 @@ class Processing(Component):
         moving, and will always skip the first frame of movement.
         """
         # Convert logical to physical
-        old_position = logical_to_physical(position, self.monitor_data[1], self.monitor_data[0])
+        old_position = self.monitor_data.coordinate(position)
         if data.position is None:
             new_position = old_position
         else:
-            new_position = logical_to_physical(data.position, self.monitor_data[1], self.monitor_data[0])
+            new_position = self.monitor_data.coordinate(data.position)
 
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
@@ -711,7 +692,7 @@ class Processing(Component):
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
-                self.monitor_data = message.physical_data, message.logical_data
+                self.monitor_data = message.data
 
             case ipc.ThumbstickMove():
                 if not self.profile.config.track_gamepad:

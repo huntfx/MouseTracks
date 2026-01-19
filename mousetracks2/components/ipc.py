@@ -9,6 +9,8 @@ import numpy.typing as npt
 
 from ..config import ProfileConfig
 from ..enums import BlendMode, Channel
+from ..utils import RectList
+from ..utils.monitor import MonitorData
 
 
 class Target:
@@ -197,8 +199,7 @@ class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
-    physical_data: list[tuple[int, int, int, int]]
-    logical_data: list[tuple[int, int, int, int]]
+    data: MonitorData
 
 
 @dataclass
@@ -267,7 +268,7 @@ class TrackedApplicationDetected(Message):
     target: int = field(default=Target.Tracking, init=False)
     name: str
     process_id: int | None
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+    rects: RectList = field(default_factory=RectList)
 
 
 @dataclass
@@ -281,7 +282,7 @@ class CurrentProfileChanged(Message):
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     process_id: int | None
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+    rects: RectList = field(default_factory=RectList)
 
 
 @dataclass

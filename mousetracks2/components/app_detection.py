@@ -11,6 +11,7 @@ from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
+from ..utils import RectList
 from ..utils.system import Window
 
 
@@ -25,7 +26,7 @@ class AppDetection(Component):
         self._previous_app: tuple[str, str] | None = None
         self._previous_pos: tuple[int, int] | None = None
         self._previous_res: tuple[int, int] | None = None
-        self._previous_rects: list[tuple[int, int, int, int]] = []
+        self._previous_rects = RectList()
         self._fallback_title = ''
         self._fallback_pid = 0
 
@@ -114,7 +115,7 @@ class AppDetection(Component):
         current_app_name = self.applist.match(exe, title)
         if current_app_name is None or current_app_name == TRACKING_IGNORE:
             current_app = None
-            rects = []
+            rects = RectList()
         else:
             current_app = current_app_name, exe
             rects = window.rects

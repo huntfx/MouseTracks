@@ -31,9 +31,10 @@ from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..legacy import colours
 from ..update import is_latest_version
-from ..utils import keycodes, get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset, logical_to_physical
-from ..utils.system import monitor_locations, get_autostart, set_autostart, remove_autostart
+from ..utils import keycodes, RectList, get_cursor_pos
+from ..utils.math import calculate_line, calculate_distance
+from ..utils.monitor import MonitorData
+from ..utils.system import get_autostart, set_autostart, remove_autostart
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
@@ -59,7 +60,7 @@ class Profile:
     """Hold data related to the currently running profile."""
 
     name: str
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+    rects: RectList = field(default_factory=RectList)
     track_mouse: bool = True
     track_keyboard: bool = True
     track_gamepad: bool = True
@@ -311,7 +312,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
-        self.monitor_data = monitor_locations(True), monitor_locations(False)
+        self.monitor_data = MonitorData()
         self.render_type = ipc.RenderType.MouseMovement
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
@@ -1227,31 +1228,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
-        physical_monitor_data, logical_monitor_data = self.monitor_data
-
-        monitor_data = physical_monitor_data
+        monitors = self.monitor_data.physical
         if self.current_profile.rects:
-            monitor_data = self.current_profile.rects
+            monitors = self.current_profile.rects
 
-        single_monitor = self.ui.single_monitor.isChecked() if self.ui.opts_monitor.isChecked() else CLI.single_monitor
-        if single_monitor:
-            x_min, y_min, x_max, y_max = monitor_data[0]
-            for x1, y1, x2, y2 in monitor_data[1:]:
-                x_min = min(x_min, x1)
-                y_min = min(y_min, y1)
-                x_max = max(x_max, x2)
-                y_max = max(y_max, y2)
-            result = calculate_pixel_offset(pixel[0], pixel[1], x_min, y_min, x_max, y_max)
-            if result is not None:
-                return result
-
-        else:
-            for x1, y1, x2, y2 in monitor_data:
-                result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
-                if result is not None:
-                    return result
-
-        return None
+        single_monitor = self.ui.single_monitor.isChecked() if self.ui.opts_monitor.isChecked() else bool(CLI.single_monitor)
+        return monitors.calculate_offset(pixel, combined=single_monitor)
 
     def start_rendering_timer(self) -> None:
         """Start the timer to display rendering text.
@@ -1603,7 +1585,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
-                self.monitor_data = message.physical_data, message.logical_data
+                self.monitor_data = message.data
 
             case ipc.Render():
                 if message.array.any():
@@ -2284,9 +2266,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Convert logical to physical
         if old_position is not None:
-            old_position = logical_to_physical(old_position, self.monitor_data[1], self.monitor_data[0])
+            old_position = self.monitor_data.coordinate(old_position)
         if new_position is not None:
-            new_position = logical_to_physical(new_position, self.monitor_data[1], self.monitor_data[0])
+            new_position = self.monitor_data.coordinate(new_position)
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()

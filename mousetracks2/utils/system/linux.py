@@ -51,6 +51,7 @@ import Xlib.xobject
 
 from .base import Window as _Window
 from ...constants import SYS_EXECUTABLE
+from ...utils import Rect, RectList
 
 
 AUTOSTART_NAME = 'MouseTracks'
@@ -148,19 +149,19 @@ class Window(_Window):
         return self._window.get_geometry()
 
     @property
-    def rects(self) -> list[tuple[int, int, int, int]]:
-        geometry = self._geometry
-        return [(geometry.x, geometry.y, geometry.x + geometry.width, geometry.y + geometry.height)]
+    def rects(self) -> RectList:
+        geo = self._geometry
+        return RectList([Rect.from_size(width=geo.width, height=geo.height, x=geo.x, y=geo.y)])
 
     @property
     def position(self) -> tuple[int, int]:
-        geometry = self._geometry
-        return (geometry.x, geometry.y)
+        geo = self._geometry
+        return (geo.x, geo.y)
 
     @property
     def size(self) -> tuple[int, int]:
-        geometry = self._geometry
-        return (geometry.width, geometry.height)
+        geo = self._geometry
+        return (geo.width, geo.height)
 
 
 def get_autostart() -> str | None:

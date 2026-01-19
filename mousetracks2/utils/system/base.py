@@ -10,6 +10,7 @@ from typing import Any, Self
 from screeninfo import get_monitors as _get_monitors
 
 from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
+from ...utils import Rect, RectList
 
 
 def get_autostart() -> str | None:
@@ -34,7 +35,7 @@ def relaunch_as_elevated() -> None:
     """Relaunch the script with admin privileges."""
 
 
-def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]]:
+def monitor_locations(dpi_aware: bool = False) -> RectList:
     """Get the bounds of each monitor.
     This uses the cross platform library `screeninfo`.
 
@@ -44,7 +45,8 @@ def monitor_locations(dpi_aware: bool = False) -> list[tuple[int, int, int, int]
     not being completely released. It seems to be an issue with the API
     call itself as `screeninfo` releases the handle correctly.
     """
-    return [(mon.x, mon.y, mon.x + mon.width, mon.y + mon.height) for mon in _get_monitors()]
+    return RectList(Rect.from_size(width=mon.width, height=mon.height, x=mon.x, y=mon.y)
+                    for mon in _get_monitors())
 
 
 class Window:
@@ -70,8 +72,8 @@ class Window:
         return ''
 
     @property
-    def rects(self) -> list[tuple[int, int, int, int]]:
-        return []
+    def rects(self) -> RectList:
+        return RectList()
 
     @property
     def position(self) -> tuple[int, int]:
