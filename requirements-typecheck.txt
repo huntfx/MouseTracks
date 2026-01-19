@@ -5,3 +5,4 @@ types-pynput==1.7.*
 types-PyYAML==6.0.*
 scipy-stubs==1.14.*
 types-python-xlib==0.33.*
+types-Send2Trash==1.8.*
