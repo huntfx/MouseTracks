@@ -212,6 +212,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self._is_updating_layer_options = False
         self._window_ready = False
+        self._startup_notify_queue: list[str] = []
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
 
@@ -478,6 +479,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show()
         if self.tray is not None:
             self.tray.show()
+
+        while self._startup_notify_queue:
+            self.notify(self._startup_notify_queue.pop(0))
 
     def set_tip_timer_state(self, enabled: bool) -> None:
         """Set the state of the tip update timer.
@@ -1938,6 +1942,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.AllComponentsLoaded():
                 self.on_app_ready()
 
+            case ipc.ShowPopup():
+                self.notify(message.content)
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the tracking."""
@@ -2669,9 +2676,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def notify(self, message: str) -> None:
         """Show a notification.
-        If the tray messages are not available, a popup will be shown.
+        If the tray messages are not available, a popup will be shown
+        instead. If called on startup, then the message will be queue
+        until the window is ready.
         """
-        if self.tray is None or not self.tray.supportsMessages():
+        if not self._window_ready:
+            self._startup_notify_queue.append(message)
+        elif self.tray is None or not self.tray.supportsMessages():
             if self.isVisible():
                 msg = QtWidgets.QMessageBox(self)
                 msg.setWindowTitle(self.windowTitle())

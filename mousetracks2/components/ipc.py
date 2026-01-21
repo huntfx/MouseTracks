@@ -678,3 +678,11 @@ class AllComponentsLoaded(Message):
     """Notify once every component has been loaded."""
 
     target: int = field(default=Target.Hub | Target.GUI, init=False)
+
+
+@dataclass
+class ShowPopup(Message):
+    """Trigger a popup message in the GUI."""
+
+    target: int = field(default=Target.GUI, init=False)
+    content: str
