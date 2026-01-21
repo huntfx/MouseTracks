@@ -49,7 +49,8 @@ def remap_autostart(cmd: str | None) -> bool:
     if cmd is None or not IS_BUILT_EXE:
         return False
     exe, *args = shlex.split(cmd, posix=sys.platform != 'win32')
-    if IS_BUILT_EXE and Path(exe).resolve() != Path(SYS_EXECUTABLE).resolve():
+    exe_path = Path(exe.strip('"')).resolve()
+    if IS_BUILT_EXE and exe_path != Path(SYS_EXECUTABLE).resolve():
         print(f'Autostart path is outdated. Correcting "{exe}" to "{SYS_EXECUTABLE}".')
         set_autostart(*args)
         return True
