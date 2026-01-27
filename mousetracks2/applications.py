@@ -132,7 +132,7 @@ class AppList:
             try:
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')
-                    self.import_(_parse_data(data))
+                    self.import_(_parse_data(data.split('\n')))
             except URLError as e:
                 print(f'Error downloading applist: {e}')
 
