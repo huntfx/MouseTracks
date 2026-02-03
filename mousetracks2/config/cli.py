@@ -29,6 +29,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('-v', '--version', action='version', version=f'MouseTracks {VERSION}')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--installed', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--post-install', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
 
@@ -112,6 +113,7 @@ class _CLI:
             self.elevate = False
             self.single_monitor = False
             self.multi_monitor = True
+            self.post_install = False
 
         finally:
             self._soft_load = False
@@ -142,6 +144,8 @@ class _CLI:
         if not args.multi_monitor:
             self.single_monitor = True
             self.multi_monitor = False
+        if args.post_install:
+            self.post_install = True
 
     @property
     def _set(self) -> Callable:
@@ -284,6 +288,17 @@ class _CLI:
     def installed(self, value: bool) -> None:
         """Set if running installed or portable."""
         self._set('MT_INSTALLED', bool2str(value))
+
+    @property
+    def post_install(self) -> bool:
+        """Determine if running straight after being installed."""
+        value = os.environ['MT_POST_INSTALL']
+        return str2bool(value)
+
+    @post_install.setter
+    def post_install(self, value: bool) -> None:
+        """Set if running straight after being installed."""
+        self._set('MT_POST_INSTALL', bool2str(value))
 
 
 CLI = _CLI()
