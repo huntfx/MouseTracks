@@ -382,9 +382,9 @@ def get_autostart() -> str | None:
     return cmd
 
 
-def set_autostart(*args: str) -> None:
+def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set an executable to run on startup."""
-    cmd = subprocess.list2cmdline([str(APP_EXECUTABLE)] + list(args))
+    cmd = subprocess.list2cmdline([str(APP_EXECUTABLE)] + [arg for arg in args if arg not in ignore_args])
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, cmd)
 

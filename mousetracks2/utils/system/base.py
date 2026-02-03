@@ -17,7 +17,7 @@ def get_autostart() -> str | None:
     raise NotImplementedError
 
 
-def set_autostart(*args: str) -> None:
+def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set to run on startup."""
 
 

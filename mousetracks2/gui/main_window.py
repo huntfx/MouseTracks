@@ -35,7 +35,7 @@ from ..utils import keycodes
 from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
-from ..utils.system import get_autostart, set_autostart, remove_autostart, split_autostart
+from ..utils.system import set_autostart, remove_autostart, split_autostart
 from ..utils.update import is_latest_version
 
 if TYPE_CHECKING:
@@ -248,6 +248,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_autostart.setEnabled(_exe is None
                                            or '--installed' not in _args
                                            or CLI.installed)
+        self.ui.prefs_automin.setEnabled(self.ui.prefs_autostart.isEnabled())
 
         self.ui.layer_presets.installEventFilter(self)
 
@@ -393,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
-        self.ui.prefs_autostart.triggered.connect(self.set_autostart)
+        self.ui.prefs_autostart.triggered.connect(self.toggle_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.ui.always_on_top.triggered.connect(self.set_always_on_top)
@@ -2593,27 +2594,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_network.setEnabled(delete_network)
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
 
+    def set_autostart(self) -> None:
+        args = list(sys.argv)
+        exists = set(args)
+        if '--autostart' not in exists:
+            args.append('--autostart')
+        if CLI.installed and '--installed' not in exists:
+            args.append('--installed')
+        while args and Path(args[0]).resolve() in (Path(SYS_EXECUTABLE).resolve(), APP_EXECUTABLE.resolve()):
+            args = args[1:]
+        set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
+
     @QtCore.Slot(bool)
-    def set_autostart(self, value: bool) -> None:
+    def toggle_autostart(self, value: bool) -> None:
         """Set if the application runs on startup.
         This only works on the built executable as it adds it to the
         registry. If the executable is moved then it will need to be
         re-added.
         """
-        if not self.ui.prefs_autostart.isEnabled():
-            return
-
         if value:
-            args = list(sys.argv)
-            exists = set(args)
-            if '--autostart' not in exists:
-                args.append('--autostart')
-            if CLI.installed and '--installed' not in exists:
-                args.append('--installed')
-            while args and Path(args[0]).resolve() in (Path(SYS_EXECUTABLE).resolve(), APP_EXECUTABLE.resolve()):
-                args = args[1:]
-            set_autostart(*args)
-
+            self.set_autostart()
         else:
             remove_autostart()
 
@@ -2626,6 +2626,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
+
+        # Rewrite autostart to remove the minimise on start flag
+        if CLI.start_hidden is not None and self.ui.prefs_autostart.isChecked():
+            self.set_autostart()
 
     @QtCore.Slot(bool)
     def set_always_on_top(self, value: bool) -> None:

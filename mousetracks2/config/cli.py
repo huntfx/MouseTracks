@@ -33,15 +33,18 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
 
     startup_group = parser.add_argument_group('Startup Options')
-    startup_group.add_argument('--start-hidden', action='store_true', help='minimise to the system tray')
+    startup_group.set_defaults(start_hidden=None)
+    startup_group.add_argument('--start-hidden', dest='start_hidden', action='store_const', const=True, help='minimise to the system tray on startup')
+    startup_group.add_argument('--start-visible', dest='start_hidden', action='store_const', const=False, help='make the application visible on startup')
     startup_group.add_argument('--no-splash', action='store_true', help='disable splash screen')
 
     monitor_group = parser.add_argument_group('Monitor Options')
     monitor_options = monitor_group.add_mutually_exclusive_group()
+    monitor_options.set_defaults(multi_monitor=None)
     monitor_options.add_argument('--multi-monitor', action='store_const', const=True, dest='multi_monitor',
-                                 help='record monitors as independant displays', default=True)
+                                 help='record monitors as independent displays')
     monitor_options.add_argument('--single-monitor', action='store_const', const=False, dest='multi_monitor',
-                                 help='record monitors as one large combined display', default=False)
+                                 help='record monitors as one large combined display')
 
     privacy_group = parser.add_argument_group('Privacy Options')
     privacy_group.add_argument('--offline', action='store_true', help='force offline mode')
@@ -91,24 +94,54 @@ class _CLI:
         parent process and read by the child processes instead of being
         overwritten.
         """
+        args = parse_args()
+
+        # Load in default values
         self._soft_load = True
         try:
-            args = parse_args()
-            self.offline = args.offline
-            self.start_hidden = args.start_hidden
-            self.autostart = args.autostart
-            self.installed = args.installed
             self.data_dir = Path(args.data_dir)
-            self.disable_splash = args.no_splash
-            self.disable_mouse = args.no_mouse
-            self.disable_keyboard = args.no_keyboard
-            self.disable_gamepad = args.no_gamepad
-            self.disable_network = args.no_network
-            self.elevate = args.admin
-            self.single_monitor = not args.multi_monitor
-            self.multi_monitor = args.multi_monitor
+            self.start_hidden = None
+            self.offline = False
+            self.autostart = False
+            self.installed = False
+            self.disable_splash = False
+            self.disable_mouse = False
+            self.disable_keyboard = False
+            self.disable_gamepad = False
+            self.disable_network = False
+            self.elevate = False
+            self.single_monitor = False
+            self.multi_monitor = True
+
         finally:
             self._soft_load = False
+
+        # Only update if the value is different to the default
+        if args.data_dir != str(APPDATA / 'MouseTracks'):
+            self.data_dir = Path(args.data_dir)
+        if args.start_hidden is not None:
+            self.start_hidden = args.start_hidden
+        if args.offline:
+            self.offline = True
+        if args.autostart:
+            self.autostart = True
+        if args.installed:
+            self.installed = True
+        if args.admin:
+            self.elevate = True
+        if args.no_splash:
+            self.disable_splash = True
+        if args.no_mouse:
+            self.disable_mouse = True
+        if args.no_keyboard:
+            self.disable_keyboard = True
+        if args.no_gamepad:
+            self.disable_gamepad = True
+        if args.no_network:
+            self.disable_network = True
+        if not args.multi_monitor:
+            self.single_monitor = True
+            self.multi_monitor = False
 
     @property
     def _set(self) -> Callable:
@@ -128,14 +161,16 @@ class _CLI:
         self._set('MT_OFFLINE', bool2str(value))
 
     @property
-    def start_hidden(self) -> bool:
+    def start_hidden(self) -> bool | None:
         """Start the application as hidden."""
-        return str2bool(os.environ['MT_START_HIDDEN'])
+        value = os.environ.get('MT_START_HIDDEN')
+        return str2bool(value) if value else None
 
     @start_hidden.setter
-    def start_hidden(self, value: bool) -> None:
+    def start_hidden(self, value: bool | None) -> None:
         """Set if the application should be started as hidden."""
-        self._set('MT_START_HIDDEN', bool2str(value))
+        if value is not None:
+            self._set('MT_START_HIDDEN', bool2str(value))
 
     @property
     def autostart(self) -> bool:
@@ -218,10 +253,10 @@ class _CLI:
         self._set('MT_ELEVATE', bool2str(value))
 
     @property
-    def single_monitor(self) -> bool | None:
+    def single_monitor(self) -> bool:
         """Treat all monitors as a single monitor."""
         value = os.environ['MT_SINGLE_MONITOR']
-        return str2bool(value) if value else None
+        return str2bool(value)
 
     @single_monitor.setter
     def single_monitor(self, value: bool) -> None:
@@ -229,10 +264,10 @@ class _CLI:
         self._set('MT_SINGLE_MONITOR', bool2str(value))
 
     @property
-    def multi_monitor(self) -> bool | None:
+    def multi_monitor(self) -> bool:
         """Handle each monitor separately."""
         value = os.environ['MT_MULTI_MONITOR']
-        return str2bool(value) if value else None
+        return str2bool(value)
 
     @multi_monitor.setter
     def multi_monitor(self, value: bool) -> None:

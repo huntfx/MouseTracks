@@ -177,9 +177,9 @@ def get_autostart() -> str | None:
     return cmd
 
 
-def set_autostart(*args: str) -> None:
+def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set an executable to run on startup."""
-    cmd = shlex.join([str(APP_EXECUTABLE)] + list(args))
+    cmd = shlex.join([str(APP_EXECUTABLE)] + [arg for arg in args if arg not in ignore_args])
     content = DESKTOP_FILE_CONTENT.format(cmd=cmd)
     try:
         AUTOSTART_DIR.mkdir(parents=True, exist_ok=True)

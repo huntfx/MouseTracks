@@ -14,6 +14,7 @@ sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
 from mousetracks2.components import Hub
 from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
+from mousetracks2.config.settings import GlobalConfig
 from mousetracks2.config.cli import CLI, parse_args
 from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
 from mousetracks2.utils.update import cleanup_old_executables, download_version
@@ -25,6 +26,26 @@ def _installer_update() -> None:
     cleanup_old_executables(app_dir)
     if not CLI.offline:
         download_version(app_dir)
+
+
+def main() -> None:
+    """Handle the main startup checks and logic."""
+    # Update config if start hidden/visible command line argument is set
+    if CLI.start_hidden is not None:
+        config = GlobalConfig()
+        config.minimise_on_start = CLI.start_hidden
+        config.save()
+
+    # Update autostart path if necessary
+    with suppress(NotImplementedError):
+        remap_autostart()
+
+    # Trigger the updater
+    if CLI.installed:
+        Thread(target=_installer_update).start()
+
+    # Run the main application
+    Hub(use_gui=True).run()
 
 
 if __name__ == '__main__':
@@ -43,16 +64,10 @@ if __name__ == '__main__':
     if CLI.elevate and not is_elevated():
         relaunch_as_elevated()
 
-    # Update autostart path if necessary
-    with suppress(NotImplementedError):
-        remap_autostart()
-
     # Launch the application
     try:
         with filelock.FileLock(CLI.data_dir / '.lock', timeout=0):
-            if CLI.installed:
-                Thread(target=_installer_update).start()
-            Hub(use_gui=True).run()
+            main()
 
     # Notify the user if another instance is running
     except filelock.Timeout:

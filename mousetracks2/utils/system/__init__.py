@@ -61,7 +61,7 @@ def remap_autostart(cmd: str | None = None) -> bool:
     exe_path = Path(exe.strip('"')).resolve()
     if IS_BUILT_EXE and exe_path != APP_EXECUTABLE.resolve():
         print(f'Autostart path is outdated. Correcting "{exe}" to "{APP_EXECUTABLE}".')
-        set_autostart(*args)
+        set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
         return True
 
     return False
