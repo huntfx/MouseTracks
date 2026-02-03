@@ -107,12 +107,14 @@ Filename: "{app}\{#MyAppName}.exe"; Description: "{cm:LaunchProgram,{#StringChan
 // Function to dynamically determine startup arguments based on selected tasks
 function GetStartupArgs(Param: String): String;
 begin
-  Result := '';
   // Check if the "Start minimized" task is checked
   if WizardIsTaskSelected('startminimized') then
   begin
-    // Append the flag with a leading space
     Result := ' --start-hidden';
+  end
+  else
+  begin
+    Result := ' --start-visible';
   end;
 end;
 
