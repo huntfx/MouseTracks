@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from typing import Callable
 
+from ..version import VERSION
+
 # Get the appdata folder
 # Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
 match sys.platform:
@@ -24,6 +26,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
             `PyInstaller` insert their own custom arguments.
     """
     parser = argparse.ArgumentParser(description='MouseTracks', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-v', '--version', action='version', version=f'MouseTracks {VERSION}')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--installed', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
