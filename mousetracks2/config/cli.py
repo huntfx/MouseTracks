@@ -40,7 +40,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
 
     monitor_group = parser.add_argument_group('Monitor Options')
     monitor_options = monitor_group.add_mutually_exclusive_group()
-    monitor_options.set_defaults(multi_monitor=None)
+    monitor_options.set_defaults(multi_monitor=True)
     monitor_options.add_argument('--multi-monitor', action='store_const', const=True, dest='multi_monitor',
                                  help='record monitors as independent displays')
     monitor_options.add_argument('--single-monitor', action='store_const', const=False, dest='multi_monitor',
