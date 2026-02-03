@@ -2,9 +2,14 @@
 
 import glob
 import os
+import sys
 
 import certifi
 from scipy import __file__ as scipy_path
+
+sys.path.insert(0, os.path.abspath('.'))
+from mousetracks2 import __version__ as version
+from mousetracks2.utils.update import generate_exe_name
 
 a = Analysis(
     ['launch.py'],
@@ -93,7 +98,7 @@ exe = EXE(
     binaries,
     datas,
     [],
-    name='MouseTracks',
+    name=generate_exe_name(),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -109,3 +114,45 @@ exe = EXE(
     version='build\\version.rc',
     icon=['resources\\images\\icon.ico'],
 )
+
+
+# Launcher executable
+if sys.platform == 'win32':
+    a_launcher = Analysis(
+        ['launcher.py'],
+        pathex=[],
+        binaries=[],
+        datas=[],
+        excludes=[],
+        hiddenimports=[],
+        hookspath=[],
+        hooksconfig={},
+        runtime_hooks=[],
+        noarchive=False,
+        optimize=0,
+    )
+
+    pyz_launcher = PYZ(a_launcher.pure)
+
+    exe_launcher = EXE(
+        pyz_launcher,
+        a_launcher.scripts,
+        a_launcher.binaries,
+        a_launcher.datas,
+        [],
+        name='MouseTracks',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=True,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        version='build\\version-installer.rc',
+        icon='resources/images/icon.ico'
+    )

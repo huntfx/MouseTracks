@@ -134,10 +134,11 @@ PyInstaller is used for the build process.
 _Using a custom bootloader is entirely optional, but it may help reduce AV false positives._
 
 - Windows:
-    ```cmd
-    build-pyinstaller-bootloader.bat
-    build-pyinstaller.bat
-    ```
+  ```cmd
+  build-pyinstaller-bootloader.bat
+  build-pyinstaller.bat
+  ```
+  To package the built executables into an installer, use `build-installer.bat`.
 
 - Linux:
   ```bash

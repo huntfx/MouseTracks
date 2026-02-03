@@ -144,24 +144,22 @@ jobs:
 
           EXE_BASENAME="MouseTracks-${VERSION}-${{ matrix.platform }}-${{ matrix.architecture }}"
           FULL_EXE_NAME="${EXE_BASENAME}${{ matrix.exe_suffix }}"
+          INSTALLER_BASENAME="${EXE_BASENAME}-setup"
+          FULL_INSTALLER_NAME="${INSTALLER_BASENAME}${{ matrix.exe_suffix }}"
 
           # Set environment variables for use in later steps of this job
           echo "EXE_BASENAME=${EXE_BASENAME}" >> $GITHUB_ENV
           echo "FULL_EXE_NAME=${FULL_EXE_NAME}" >> $GITHUB_ENV
+          echo "INSTALLER_BASENAME=${INSTALLER_BASENAME}" >> $GITHUB_ENV
+          echo "FULL_INSTALLER_NAME=${FULL_INSTALLER_NAME}" >> $GITHUB_ENV
 
           echo "exe_basename=${EXE_BASENAME}" >> $GITHUB_OUTPUT
           echo "full_exe_name=${FULL_EXE_NAME}" >> $GITHUB_OUTPUT
 
           echo "Executable basename: ${EXE_BASENAME}"
           echo "Full executable name: ${FULL_EXE_NAME}"
-
-      - name: Create version.rc (Windows only)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          source .venv/Scripts/activate
-          pyivf-make_version --outfile "build/version.rc" --version "${{ env.VERSION }}" --file-description "${{ env.EXE_BASENAME }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "${{ env.EXE_BASENAME }}"
-          deactivate
+          echo "Installer basename: ${INSTALLER_BASENAME}"
+          echo "Full installer name: ${FULL_INSTALLER_NAME}"
 
       - name: Install UPX
         shell: bash
@@ -178,14 +176,14 @@ jobs:
             echo "PATH=$(pwd)/upx-5.0.1-${{ matrix.upx_suffix }}:$PATH" >> $GITHUB_ENV
           fi
 
-      - name: Modify PyInstaller Spec File
-        shell: python
+      - name: Create version.rc
+        if: runner.os == 'Windows'
+        shell: bash
         run: |
-          import os
-          with open('MouseTracks.spec', 'r') as f:
-            content = f.read()
-          with open('MouseTracks.spec', 'w') as f:
-            f.write(content.replace('MouseTracks', os.environ['EXE_BASENAME']))
+          source .venv/Scripts/activate
+          pyivf-make_version --outfile "build/version.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          pyivf-make_version --outfile "build/version-installer.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_INSTALLER_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          deactivate
 
       - name: Build executable
         shell: bash
@@ -198,7 +196,33 @@ jobs:
           pyinstaller MouseTracks.spec
           deactivate
 
-      - name: Attach executable to release
+      - name: Build Installer for Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          :: Add Inno Setup to PATH (GitHub runners have it installed by default)
+          set "PATH=%PATH%;C:\Program Files (x86)\Inno Setup 6"
+
+          set "SOURCE_BASE_NAME=dist\%EXE_BASENAME%"
+          set "DEST_BASE_NAME=dist\%INSTALLER_BASENAME%"
+
+          echo --- Building Installer ---
+          echo Source Base: %SOURCE_BASE_NAME%
+          echo Dest Base: %DEST_BASE_NAME%
+
+          :: Run ISCC
+          ISCC.exe /DMyAppVersion="${{ env.VERSION }}" /DMySourceBaseName="%SOURCE_BASE_NAME%" /DMyDestinationBaseName="%DEST_BASE_NAME%" "MouseTracks.iss"
+
+          :: Verify it was created
+          if exist "%DEST_BASE_NAME%.exe" (
+              echo Installer created successfully.
+              echo INSTALLER_FILENAME=%DEST_BASE_NAME%.exe >> %GITHUB_ENV%
+          ) else (
+              echo ::error::Installer creation failed!
+              exit /b 1
+          )
+
+      - name: Attach Main Executable to Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
@@ -206,8 +230,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Upload executable as artifact
+      - name: Attach Installer to Release
+        if: github.event_name == 'release' && runner.os == 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/${{ env.FULL_INSTALLER_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+
+      - name: Upload Executable as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}
           path: dist/${{ env.FULL_EXE_NAME }}
+
+      - name: Upload Installer as Artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}-setup
+          path: dist/${{ env.FULL_INSTALLER_NAME }}

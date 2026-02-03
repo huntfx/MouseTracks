@@ -30,13 +30,13 @@ from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
 from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..legacy import colours
-from ..update import is_latest_version
 from ..types import RectList
 from ..utils import keycodes
 from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.system import get_autostart, set_autostart, remove_autostart
+from ..utils.update import is_latest_version
 
 if TYPE_CHECKING:
     from ..components.gui import GUI

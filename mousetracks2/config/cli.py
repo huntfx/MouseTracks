@@ -25,6 +25,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description='MouseTracks', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--installed', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
 
@@ -93,6 +94,7 @@ class _CLI:
             self.offline = args.offline
             self.start_hidden = args.start_hidden
             self.autostart = args.autostart
+            self.installed = args.installed
             self.data_dir = Path(args.data_dir)
             self.disable_splash = args.no_splash
             self.disable_mouse = args.no_mouse
@@ -233,6 +235,17 @@ class _CLI:
     def multi_monitor(self, value: bool) -> None:
         """Set multi monitor mode."""
         self._set('MT_MULTI_MONITOR', bool2str(value))
+
+    @property
+    def installed(self) -> bool:
+        """Determine if running installed or portable."""
+        value = os.environ['MT_INSTALLED']
+        return str2bool(value)
+
+    @installed.setter
+    def installed(self, value: bool) -> None:
+        """Set if running installed or portable."""
+        self._set('MT_INSTALLED', bool2str(value))
 
 
 CLI = _CLI()

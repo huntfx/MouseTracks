@@ -29,26 +29,49 @@ if not defined VERSION (
 )
 
 :: Build the executable
+::echo --- Building Application (MouseTracks-%VERSION%-windows-x64.exe) ---
+::python -m nuitka ^
+::  --standalone ^
+::  --onefile ^
+::  --prefer-source-code ^
+::  --output-dir=dist ^
+::  --output-filename=MouseTracks-%VERSION%-windows-x64.exe ^
+::  --plugin-enable=pyside6 ^
+::  --include-data-file=config/colours.txt=config/colours.txt ^
+::  --include-data-file=config/AppList.txt=config/AppList.txt ^
+::  --include-data-file=config/language/strings/en_GB.ini=config/language/strings/en_GB.ini ^
+::  --include-data-file=config/language/keyboard/keys/en_GB.ini=config/language/keyboard/keys/en_GB.ini ^
+::  --include-data-file=config/language/keyboard/layout/en_US.txt=config/language/keyboard/layout/en_US.txt ^
+::  --include-data-file=resources/images/icon.png=resources/images/icon.png ^
+::  --windows-icon-from-ico=resources/images/icon.ico ^
+::  --product-name="Mouse Tracks %VERSION%" ^
+::  --file-description="Mouse Tracks %VERSION%" ^
+::  --product-version=%VERSION% ^
+::  --file-version=%VERSION% ^
+::  --copyright="Peter Hunt" ^
+::  launch.py
+
+if errorlevel 1 (
+    echo Main application build failed.
+    call deactivate
+    exit /b 1
+)
+
+echo --- Building Launcher (MouseTracks.exe) ---
 python -m nuitka ^
   --standalone ^
   --onefile ^
   --prefer-source-code ^
   --output-dir=dist ^
   --output-filename=MouseTracks.exe ^
-  --plugin-enable=pyside6 ^
-  --include-data-file=config/colours.txt=config/colours.txt ^
-  --include-data-file=config/AppList.txt=config/AppList.txt ^
-  --include-data-file=config/language/strings/en_GB.ini=config/language/strings/en_GB.ini ^
-  --include-data-file=config/language/keyboard/keys/en_GB.ini=config/language/keyboard/keys/en_GB.ini ^
-  --include-data-file=config/language/keyboard/layout/en_US.txt=config/language/keyboard/layout/en_US.txt ^
-  --include-data-file=resources/images/icon.png=resources/images/icon.png ^
   --windows-icon-from-ico=resources/images/icon.ico ^
-  --product-name="Mouse Tracks %VERSION%" ^
-  --file-description="Mouse Tracks %VERSION%" ^
-  --product-version=%VERSION% ^
-  --file-version=%VERSION% ^
-  --copyright="Peter Hunt" ^
-  launch.py
+  launcher.py
+
+if errorlevel 1 (
+    echo Launcher build failed.
+    call deactivate
+    exit /b 1
+)
 
 :: Exit the virtual environment
 call deactivate
