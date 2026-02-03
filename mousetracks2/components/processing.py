@@ -17,10 +17,12 @@ from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
-from ..utils import keycodes, RectList, get_cursor_pos
+from ..types import RectList
+from ..utils import keycodes
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
-from ..utils.network import Interfaces
+from ..utils.input import get_cursor_pos
+from ..utils.interface import Interfaces
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError, LayerBlend
 

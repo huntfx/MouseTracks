@@ -51,7 +51,7 @@ import Xlib.xobject
 
 from .base import Window as _Window
 from ...constants import SYS_EXECUTABLE
-from ...utils import Rect, RectList
+from ...types import Rect, RectList
 
 
 AUTOSTART_NAME = 'MouseTracks'

@@ -18,9 +18,10 @@ from .abstract import Component
 from ..config import CLI, GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
-from ..utils import get_cursor_pos, keycodes
+from ..utils import keycodes
 from ..utils.monitor import MonitorData
-from ..utils.network import Interfaces
+from ..utils.input import get_cursor_pos
+from ..utils.interface import Interfaces
 from ..utils.system import MonitorEventsListener
 
 

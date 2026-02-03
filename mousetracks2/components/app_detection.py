@@ -11,7 +11,7 @@ from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
-from ..utils import RectList
+from ..types import RectList
 from ..utils.system import Window
 
 

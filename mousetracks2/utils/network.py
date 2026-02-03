@@ -1,57 +1,61 @@
-import psutil
-from dataclasses import dataclass
+import shutil
+from itertools import count
+from urllib.request import urlopen
+from urllib.error import URLError
+from pathlib import Path
 
 
-@dataclass
-class Interface:
-    """Store the interface name and MAC address."""
+def download_file(url: str, path: str | Path, timeout: int = 10) -> bool:
+    """Download a file from a URL."""
+    print(f'Downloading {url} to {path}...')
+    try:
+        with urlopen(url, timeout=timeout) as response, open(path, 'wb') as f:
+            shutil.copyfileobj(response, f)
+    except URLError as e:
+        print(f'Error downloading {url}: {e}')
+        return False
+    return True
 
-    name: str
-    mac: str | None
 
+def safe_download_file(url: str, path: str | Path, timeout: int = 10) -> bool:
+    """Safely download a file, ensuring it is only renamed."""
+    path = Path(path)
+    if path.exists():
+        return False
 
-class Interfaces:
-    """Store a mapping of interface names to their MAC addresses."""
+    # Find the next available free filename
+    for i in count():
+        if i:
+            temp = path.with_suffix(f'.tmp{i}')
+        else:
+            temp = path.with_suffix('.tmp')
 
-    _FROM_MAC: dict[str, Interface] = {}
-    _FROM_NAME: dict[str, Interface] = {}
+        if temp.exists():
+            try:
+                temp.unlink()
+            except OSError as e:
+                print(f'Failed to clean up {temp.name}: {e}')
+                continue
+        break
 
-    @classmethod
-    def _reload(cls) -> None:
-        """Update the data with any new network interfaces."""
-        for interface_name, addrs in psutil.net_if_addrs().items():
-            for addr in addrs:
-                if addr.family == psutil.AF_LINK:  # Identifies MAC address family
-                    cls._register(interface_name, addr.address)
-                    break
-            else:
-                cls._register(interface_name, None)
+    # Do the download to a temp location
+    result = download_file(url, temp, timeout)
 
-    @classmethod
-    def _register(cls, name: str, mac: str | None) -> Interface:
-        """Register a MAC address."""
-        interface = Interface(name, mac)
-        cls._FROM_NAME[name] = interface
-        if mac is not None:
-            cls._FROM_MAC[mac] = interface
-        return interface
-
-    @classmethod
-    def get_from_name(cls, name: str) -> Interface:
-        """Get an interface from its name."""
-        if name not in cls._FROM_NAME:
-            cls._reload()
+    # Rename the file to the correct name
+    if result:
         try:
-            return cls._FROM_NAME[name]
-        except KeyError:
-            return Interface(name, None)
+            if path.exists():
+                path.unlink()
+            temp.rename(path)
+        except OSError as e:
+            print(f'Error renaming {temp.name} to {path.name}: {e}')
+            result = False
 
-    @classmethod
-    def get_from_mac(cls, mac: str) -> Interface:
-        """Get an interface from its MAC address."""
-        if mac not in cls._FROM_MAC:
-            cls._reload()
+    # Clean up leftover temp file if it exists
+    if temp.exists():
         try:
-            return cls._FROM_MAC[mac]
-        except KeyError:
-            return Interface('', mac)
+            temp.unlink()
+        except OSError as e:
+            print(f'Error cleaning up {temp.name}: {e}')
+
+    return result

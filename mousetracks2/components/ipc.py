@@ -9,7 +9,7 @@ import numpy.typing as npt
 
 from ..config import ProfileConfig
 from ..enums import BlendMode, Channel
-from ..utils import RectList
+from ..types import RectList
 from ..utils.monitor import MonitorData
 
 

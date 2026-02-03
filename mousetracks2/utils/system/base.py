@@ -10,7 +10,8 @@ from typing import Any, Self
 from screeninfo import get_monitors as _get_monitors
 
 from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
-from ...utils import Rect, RectList
+from ...types import Rect, RectList
+from ...version import VERSION
 
 
 def get_autostart() -> str | None:
@@ -121,5 +122,3 @@ class MonitorEventsListener(threading.Thread):
             except queue.Empty:
                 return count > 0
             count += 1
-
-

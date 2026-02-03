@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from .system import monitor_locations
-from ..utils import RectList
+from ..types import RectList
 
 
 def calculate_monitor_index(pos: tuple[int, int],

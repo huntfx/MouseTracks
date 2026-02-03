@@ -14,7 +14,7 @@ import winreg
 
 from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
 from ...constants import SYS_EXECUTABLE
-from ...utils import Rect, RectList
+from ...types import Rect, RectList
 
 
 user32 = ctypes.windll.user32
