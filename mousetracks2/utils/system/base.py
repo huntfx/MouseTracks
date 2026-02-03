@@ -9,9 +9,7 @@ from typing import Any, Self
 
 from screeninfo import get_monitors as _get_monitors
 
-from ...constants import SYS_EXECUTABLE, IS_BUILT_EXE
 from ...types import Rect, RectList
-from ...version import VERSION
 
 
 def get_autostart() -> str | None:

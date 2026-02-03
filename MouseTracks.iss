@@ -80,7 +80,7 @@ Name: "startminimized"; Description: "Start minimised to the system tray"; Group
 
 [Registry]
 ; Write to the standard Windows "Run" key for the current user
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppName}.exe"" --autostart{code:GetStartupArgs}"; Flags: uninsdeletevalue; Tasks: autostart
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppName}.exe"" --installed --autostart{code:GetStartupArgs}"; Flags: uninsdeletevalue; Tasks: autostart
 
 [Files]
 Source: "dist\{#MyAppName}.exe"; DestDir: "{app}"; DestName: "{#MyAppName}.exe"; Flags: ignoreversion

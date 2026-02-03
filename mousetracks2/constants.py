@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from typing import cast
 
+from .config.cli import CLI
+
 
 SYS_EXECUTABLE = sys.executable
 
@@ -20,6 +22,11 @@ elif '__compiled__' in globals():
     REPO_DIR = Path(sys.executable).parent
     SYS_EXECUTABLE = cast(str, __compiled__.original_argv0)  # type: ignore
     IS_BUILT_EXE = True
+
+if CLI.installed:
+    APP_EXECUTABLE = Path(SYS_EXECUTABLE).parent / 'MouseTracks.exe'
+else:
+    APP_EXECUTABLE = Path(SYS_EXECUTABLE)
 
 DEFAULT_PROFILE_NAME = 'Desktop'
 

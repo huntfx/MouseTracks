@@ -4,13 +4,12 @@ import os
 import sys
 from contextlib import suppress
 from multiprocessing import freeze_support
-from pathlib import Path
 from threading import Thread
 
 import filelock
 
 # Source DLL files when running as an executable
-from mousetracks2.constants import REPO_DIR, SYS_EXECUTABLE
+from mousetracks2.constants import REPO_DIR, APP_EXECUTABLE
 sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
 from mousetracks2.components import Hub
@@ -22,7 +21,7 @@ from mousetracks2.utils.update import cleanup_old_executables, download_version
 
 def _installer_update() -> None:
     """Handle downloads/cleanup if running as an installed application."""
-    app_dir = Path(SYS_EXECUTABLE).parent
+    app_dir = APP_EXECUTABLE.parent
     cleanup_old_executables(app_dir)
     if not CLI.offline:
         download_version(app_dir)
@@ -36,11 +35,6 @@ if __name__ == '__main__':
         cert_path = REPO_DIR / 'certifi' / 'cacert.pem'
         os.environ['SSL_CERT_FILE'] = str(cert_path)
 
-    # Update autostart path if running a built executable
-    if not CLI.installed:
-        with suppress(NotImplementedError):
-            remap_autostart(get_autostart())
-
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do
     parse_args(strict=True)
@@ -48,6 +42,10 @@ if __name__ == '__main__':
     # Relaunch as elevated
     if CLI.elevate and not is_elevated():
         relaunch_as_elevated()
+
+    # Update autostart path if necessary
+    with suppress(NotImplementedError):
+        remap_autostart()
 
     # Launch the application
     try:

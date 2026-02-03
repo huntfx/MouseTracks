@@ -5,10 +5,9 @@ Portable executables bypass this file.
 import ctypes
 import sys
 import subprocess
-from pathlib import Path
 
 from mousetracks2.utils.update import get_local_executables
-from mousetracks2.constants import SYS_EXECUTABLE
+from mousetracks2.constants import APP_EXECUTABLE
 
 
 MB_ICONERROR = 0x10
@@ -22,7 +21,7 @@ def show_error(title: str, message: str):
 
 
 def main():
-    base_dir = Path(SYS_EXECUTABLE).parent
+    base_dir = APP_EXECUTABLE.parent
 
     # Find the latest executable in the folder
     lower, current, higher = get_local_executables(base_dir)
@@ -40,7 +39,10 @@ def main():
     print(f'Launching {executable}...')
 
     # Start the child process
-    cmd = [str(executable), '--installed'] + sys.argv[1:]
+    cmd = [str(executable)]
+    if '--installed' not in sys.argv:
+        cmd.append('--installed')
+    cmd.extend(sys.argv[1:])
     try:
         exit_code = subprocess.call(cmd, cwd=base_dir)
         sys.exit(exit_code)

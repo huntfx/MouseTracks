@@ -23,7 +23,7 @@ from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
-from ..constants import SYS_EXECUTABLE
+from ..constants import SYS_EXECUTABLE, APP_EXECUTABLE
 from ..config import should_minimise_on_start, CLI, GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
@@ -35,7 +35,7 @@ from ..utils import keycodes
 from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
-from ..utils.system import get_autostart, set_autostart, remove_autostart
+from ..utils.system import get_autostart, set_autostart, remove_autostart, split_autostart
 from ..utils.update import is_latest_version
 
 if TYPE_CHECKING:
@@ -227,10 +227,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        try:
-            self.ui.prefs_autostart.setChecked(get_autostart() is not None)
-        except NotImplementedError:
-            self.ui.prefs_autostart.setEnabled(False)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
@@ -238,6 +234,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
         self.update_focused_application('', '', False)
+
+        # Special logic for the autostart option, depending on if
+        # installed or portable. If installed, then give full control,
+        # but show it as not using autostart if it was set on the
+        # portable version. If portable, then show the correct state,
+        # but block the user from changing it if it was set on the
+        # installed version.
+        _exe, _args = split_autostart()
+        self.ui.prefs_autostart.setChecked(_exe is not None
+                                           and not CLI.installed
+                                           or (CLI.installed and '--installed' in _args))
+        self.ui.prefs_autostart.setEnabled(_exe is None
+                                           or '--installed' not in _args
+                                           or CLI.installed)
 
         self.ui.layer_presets.installEventFilter(self)
 
@@ -2594,10 +2604,15 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if value:
-            args = sys.argv
-            if args and Path(args[0]).resolve() == Path(SYS_EXECUTABLE).resolve():
+            args = list(sys.argv)
+            exists = set(args)
+            if '--autostart' not in exists:
+                args.append('--autostart')
+            if CLI.installed and '--installed' not in exists:
+                args.append('--installed')
+            while args and Path(args[0]).resolve() in (Path(SYS_EXECUTABLE).resolve(), APP_EXECUTABLE.resolve()):
                 args = args[1:]
-            set_autostart(*args, '--autostart')
+            set_autostart(*args)
 
         else:
             remove_autostart()

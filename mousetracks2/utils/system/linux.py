@@ -50,7 +50,7 @@ import Xlib.display
 import Xlib.xobject
 
 from .base import Window as _Window
-from ...constants import SYS_EXECUTABLE
+from ...constants import APP_EXECUTABLE
 from ...types import Rect, RectList
 
 
@@ -179,7 +179,7 @@ def get_autostart() -> str | None:
 
 def set_autostart(*args: str) -> None:
     """Set an executable to run on startup."""
-    cmd = shlex.join([SYS_EXECUTABLE] + list(args))
+    cmd = shlex.join([str(APP_EXECUTABLE)] + list(args))
     content = DESKTOP_FILE_CONTENT.format(cmd=cmd)
     try:
         AUTOSTART_DIR.mkdir(parents=True, exist_ok=True)
