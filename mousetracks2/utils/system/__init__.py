@@ -20,7 +20,7 @@ match sys.platform:
 
     case 'darwin':
         from .base import monitor_locations
-        from .base import get_autostart, set_autostart, remove_autostart
+        from .darwin import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
         from .darwin import Window
         from .base import MonitorEventsListener

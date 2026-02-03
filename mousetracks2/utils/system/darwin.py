@@ -1,6 +1,12 @@
+import plistlib
+import shlex
+from contextlib import suppress
+from pathlib import Path
 from typing import Self
 
-from ...utils import Rect, RectList
+from .base import Window as _Window
+from ...constants import SYS_EXECUTABLE
+from ...types import Rect, RectList
 
 from AppKit import NSRunningApplication
 from Quartz import (
@@ -14,7 +20,12 @@ from Quartz import (
 )
 
 
-class Window:
+AUTOSTART_LABEL = 'uk.huntfx.mousetracks'
+AUTOSTART_DIR = Path.home() / 'Library' / 'LaunchAgents'
+AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{AUTOSTART_LABEL}.plist'
+
+
+class Window(_Window):
     """macOS implementation of the Window class."""
 
     def __init__(self, app_instance: NSRunningApplication, window_info: dict | None) -> None:
@@ -63,7 +74,7 @@ class Window:
         """Get the executable path."""
         if self._app and self._app.executableURL():
             return self._app.executableURL().path()
-        return ""
+        return ''
 
     @property
     def rects(self) -> RectList:
@@ -86,3 +97,45 @@ class Window:
     @property
     def size(self) -> tuple[int, int]:
         return self.rects[0].size
+
+
+def get_autostart() -> str | None:
+    """Determine if running on startup by checking the LaunchAgent plist."""
+    if not AUTOSTART_FILE_PATH.exists():
+        return None
+
+    try:
+        with open(AUTOSTART_FILE_PATH, 'rb') as f:
+            plist = plistlib.load(f)
+
+        args = plist.get('ProgramArguments', [])
+        return shlex.join(args)
+
+    except (OSError, plistlib.InvalidFileException):
+        return None
+
+
+def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
+    """Set an executable to run on startup using a LaunchAgent."""
+    program_args = [SYS_EXECUTABLE] + [arg for arg in args if arg not in ignore_args]
+
+    plist_content = {
+        'Label': AUTOSTART_LABEL,
+        'ProgramArguments': program_args,
+        'RunAtLoad': True,
+        # Optional: 'ProcessType': 'Interactive'
+    }
+
+    try:
+        AUTOSTART_DIR.mkdir(parents=True, exist_ok=True)
+        with open(AUTOSTART_FILE_PATH, 'wb') as f:
+            plistlib.dump(plist_content, f)
+
+    except OSError as e:
+        print(f'Error: Could not set autostart: {e}')
+
+
+def remove_autostart() -> None:
+    """Stop an executable running on startup."""
+    with suppress(FileNotFoundError):
+        AUTOSTART_FILE_PATH.unlink()
