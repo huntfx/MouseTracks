@@ -22,7 +22,7 @@ match sys.platform:
         from .base import monitor_locations
         from .base import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
-        from .base import Window
+        from .darwin import Window
         from .base import MonitorEventsListener
 
     case _:

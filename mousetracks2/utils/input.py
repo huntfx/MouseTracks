@@ -7,4 +7,7 @@ def get_cursor_pos() -> tuple[int, int] | None:
     This is only used for switching profiles, as the mouse move listener
     can handle all other events.
     """
-    return pynput.mouse.Controller().position
+    pos = pynput.mouse.Controller().position
+    if pos is None:
+        return None
+    return int(pos[0]), int(pos[1])
