@@ -1772,6 +1772,7 @@ class Ui_MainWindow(object):
         self.tip.setProperty(u"tip_tracking", QCoreApplication.translate("MainWindow", u"Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
         self.tip.setProperty(u"tip_update", QCoreApplication.translate("MainWindow", u"A new update is available. <a href=\"https://github.com/huntfx/MouseTracks/releases/latest\">Click here</a> to visit the download page.", None))
         self.tip.setProperty(u"tip_tooltip", QCoreApplication.translate("MainWindow", u"Don't understand an option? Hover over to show its tooltip, or <a href=\"https://github.com/huntfx/MouseTracks/issues\">raise an issue</a> if it needs improvement.", None))
+        self.tip.setProperty(u"tip_install", QCoreApplication.translate("MainWindow", u"A new version is ready to install. Restart MouseTracks to complete the installation.", None))
 #if QT_CONFIG(tooltip)
         self.save_render.setToolTip(QCoreApplication.translate("MainWindow", u"Save a full quality render to disk.\n"
 "This may take a few seconds to complete.", None))

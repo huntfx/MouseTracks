@@ -98,6 +98,9 @@
      <property name="text_latest" stdset="0">
       <string>You have the latest version.</string>
      </property>
+     <property name="text_install" stdset="0">
+      <string>A new version is ready to install.&lt;br/&gt;Restart to complete the installation.</string>
+     </property>
     </widget>
    </item>
    <item>

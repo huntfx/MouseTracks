@@ -1319,6 +1319,9 @@ For example, it can be limited to Alpha to copy the transparency.</string>
             <property name="tip_tooltip" stdset="0">
              <string>Don't understand an option? Hover over to show its tooltip, or &lt;a href=&quot;https://github.com/huntfx/MouseTracks/issues&quot;&gt;raise an issue&lt;/a&gt; if it needs improvement.</string>
             </property>
+            <property name="tip_install" stdset="0">
+             <string>A new version is ready to install. Restart MouseTracks to complete the installation.</string>
+            </property>
            </widget>
           </item>
           <item>

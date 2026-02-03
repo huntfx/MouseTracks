@@ -87,6 +87,7 @@ class Ui_Dialog(object):
         self.latest.setText(QCoreApplication.translate("Dialog", u"You have the latest version.", None))
         self.latest.setProperty(u"text_update", QCoreApplication.translate("Dialog", u"An update is available.<br/><a href=\"https://github.com/huntfx/MouseTracks/releases/latest\">Click here</a> to visit the download page.", None))
         self.latest.setProperty(u"text_latest", QCoreApplication.translate("Dialog", u"You have the latest version.", None))
+        self.latest.setProperty(u"text_install", QCoreApplication.translate("Dialog", u"A new version is ready to install.<br/>Restart to complete the installation.", None))
         self.close.setText(QCoreApplication.translate("Dialog", u"Close", None))
     # retranslateUi
 
