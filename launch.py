@@ -12,12 +12,20 @@ import filelock
 from mousetracks2.constants import REPO_DIR, APP_EXECUTABLE
 sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
-from mousetracks2.components import Hub
-from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
-from mousetracks2.config import GlobalConfig
-from mousetracks2.cli import CLI, parse_args
-from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
-from mousetracks2.utils.update import cleanup_old_executables, download_version
+try:
+    from mousetracks2.components import Hub
+    from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
+    from mousetracks2.config import GlobalConfig
+    from mousetracks2.cli import CLI, parse_args
+    from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
+    from mousetracks2.utils.update import cleanup_old_executables, download_version
+
+# Show any import errors as the app otherwise will just silently fail
+except ImportError as e:
+    import traceback
+    traceback.print_exc()
+    input('Press enter to exit...')
+    sys.exit(0)
 
 
 def _installer_update() -> None:
