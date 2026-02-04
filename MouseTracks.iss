@@ -145,3 +145,8 @@ begin
     // If WMI fails, proceed anyway
   end;
 end;
+
+[UninstallDelete]
+; Delete all versioned executable and temp files on uninstall
+Type: files; Name: "{app}\MouseTracks-*.exe"
+Type: files; Name: "{app}\*.tmp"
