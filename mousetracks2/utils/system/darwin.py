@@ -10,8 +10,9 @@ from ...types import Rect, RectList
 
 from AppKit import (  # type: ignore
     NSApplication,
-    NSRunningApplication,
     NSApplicationActivationPolicyAccessory,
+    NSImage,
+    NSRunningApplication,
 )
 from Quartz import (  # type: ignore
     CGWindowListCopyWindowInfo,
@@ -148,3 +149,10 @@ def prepare_child_process() -> None:
     """This runs in every child process."""
     # Hide the child process from the dock
     NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+
+
+def prepare_application_icon(icon_path: Path | str) -> None:
+    """Prepare the icon to be shown."""
+    icon_image = NSImage.alloc().initWithContentsOfFile_(str(Path(icon_path).resolve()))
+    if icon_image:
+        NSApplication.sharedApplication().setApplicationIconImage_(icon_image)

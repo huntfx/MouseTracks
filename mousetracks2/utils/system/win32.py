@@ -7,13 +7,14 @@ import ctypes.wintypes
 import shlex
 import sys
 from contextlib import suppress
+from pathlib import Path
 from typing import Any, Self
 
 import subprocess
 import winreg
 
 from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
-from ...constants import APP_EXECUTABLE
+from ...constants import APP_EXECUTABLE, PACKAGE_IDENTIFIER
 from ...types import Rect, RectList
 
 
@@ -491,3 +492,8 @@ class MonitorEventsListener(_MonitorEventsListener):
         """Stops the message loop and cleans up the window."""
         if self._hwnd:
             user32.PostMessageW(self._hwnd, WM_QUIT, 0, 0)
+
+
+def prepare_application_icon(icon_path: Path | str) -> None:
+    """Register app so that setting an icon is possible."""
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(PACKAGE_IDENTIFIER)

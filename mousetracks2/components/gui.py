@@ -1,5 +1,3 @@
-import ctypes
-import os
 import sys
 import time
 from typing import cast
@@ -12,7 +10,7 @@ from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
 from ..config import CLI
-from ..constants import PACKAGE_IDENTIFIER
+from ..utils.system import prepare_application_icon
 
 
 class QueueWorker(QtCore.QObject):
@@ -56,9 +54,7 @@ class GUI(Component):
         app = QtWidgets.QApplication(sys.argv)
         app.setStyle('Fusion')
 
-        # Register app so that setting an icon is possible
-        if os.name == 'nt':
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(PACKAGE_IDENTIFIER)
+        prepare_application_icon(ICON_PATH)
         app.setWindowIcon(QtGui.QIcon(ICON_PATH))
 
         self.receiver_thread = QtCore.QThread()

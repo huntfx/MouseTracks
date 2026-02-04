@@ -5,6 +5,7 @@ Some of these are placeholders for use if a feature is missing support.
 import queue
 import threading
 import time
+from pathlib import Path
 from typing import Any, Self
 
 from screeninfo import get_monitors as _get_monitors
@@ -124,3 +125,7 @@ class MonitorEventsListener(threading.Thread):
 
 def prepare_child_process() -> None:
     """This runs in every child process."""
+
+
+def prepare_application_icon(icon_path: Path | str) -> None:
+    """This runs in the GUI process."""
