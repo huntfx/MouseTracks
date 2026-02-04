@@ -12,13 +12,15 @@ from ..applications import AppList, LOCAL_PATH
 from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
 from ..types import RectList
-from ..utils.system import Window
+from ..utils.system import Window, hide_child_process
 
 
 class AppDetection(Component):
     """Application detection component."""
 
     def __post_init__(self) -> None:
+        hide_child_process()
+
         self.applist = AppList()
         self.applist.save()
         self._regex_cache: dict[str, re.Pattern] = {}

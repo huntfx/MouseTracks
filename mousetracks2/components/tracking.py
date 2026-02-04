@@ -22,7 +22,7 @@ from ..utils import keycodes
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import MonitorEventsListener
+from ..utils.system import MonitorEventsListener, hide_child_process
 
 
 if XInput is None:
@@ -105,6 +105,8 @@ class DataState:
 
 class Tracking(Component):
     def __post_init__(self) -> None:
+        hide_child_process()
+
         self.state = ipc.TrackingState.Paused
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True

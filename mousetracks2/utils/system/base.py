@@ -126,8 +126,8 @@ class MonitorEventsListener(threading.Thread):
             count += 1
 
 
-def prepare_child_process() -> None:
-    """This runs in every child process."""
+def hide_child_process() -> None:
+    """This is here to allow macOS to hide the child processes."""
 
 
 def prepare_application_icon(icon_path: Path | str) -> None:

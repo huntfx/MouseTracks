@@ -147,9 +147,8 @@ def remove_autostart() -> None:
         AUTOSTART_FILE_PATH.unlink()
 
 
-def prepare_child_process() -> None:
-    """This runs in every child process."""
-    # Hide the child process from the dock
+def hide_child_process() -> None:
+    """Hide the child process from the dock."""
     NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
 

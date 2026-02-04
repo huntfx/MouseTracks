@@ -8,7 +8,6 @@ import psutil
 
 from . import ipc
 from ..exceptions import ExitRequest
-from ..utils.system import prepare_child_process
 
 if TYPE_CHECKING:
     import multiprocessing.queues
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 
 class Component:
     def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
-        prepare_child_process()
         self._q_send = q_send
         self._q_recv = q_receive
         self.name = type(self).__name__

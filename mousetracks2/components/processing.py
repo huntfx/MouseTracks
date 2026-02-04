@@ -23,6 +23,7 @@ from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
+from ..utils.system import hide_child_process
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError, LayerBlend
 
@@ -53,6 +54,8 @@ class Application:
 
 class Processing(Component):
     def __post_init__(self) -> None:
+        hide_child_process()
+
         self.tick = 0
         self._timestamp = -1
 

@@ -18,7 +18,7 @@ match sys.platform:
         from .win32 import is_elevated, relaunch_as_elevated
         from .win32 import Window
         from .win32 import MonitorEventsListener
-        from .base import prepare_child_process
+        from .base import hide_child_process
         from .win32 import prepare_application_icon
 
     case 'darwin':
@@ -28,7 +28,7 @@ match sys.platform:
         from .base import is_elevated, relaunch_as_elevated
         from .darwin import Window
         from .base import MonitorEventsListener
-        from .darwin import prepare_child_process, prepare_application_icon
+        from .darwin import hide_child_process, prepare_application_icon
 
     case _:
         from .base import SUPPORTS_TRAY
@@ -37,7 +37,7 @@ match sys.platform:
         from .base import is_elevated, relaunch_as_elevated
         from .linux import Window
         from .base import MonitorEventsListener
-        from .base import prepare_child_process, prepare_application_icon
+        from .base import hide_child_process, prepare_application_icon
 
 __all__ = [
     'SUPPORTS_TRAY',
@@ -46,7 +46,7 @@ __all__ = [
     'is_elevated', 'relaunch_as_elevated',
     'Window',
     'MonitorEventsListener',
-    'prepare_child_process', 'prepare_application_icon',
+    'hide_child_process', 'prepare_application_icon',
 ]
 
 
