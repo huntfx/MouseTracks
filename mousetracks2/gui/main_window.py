@@ -35,7 +35,7 @@ from ..utils import keycodes
 from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
-from ..utils.system import set_autostart, remove_autostart, split_autostart
+from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
 from ..utils.update import is_latest_version
 
 if TYPE_CHECKING:
@@ -282,7 +282,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
-        if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+        if SUPPORTS_TRAY and QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
             self.tray.setContextMenu(self.ui.tray_context_menu)

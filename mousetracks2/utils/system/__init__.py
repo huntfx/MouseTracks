@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 match sys.platform:
     case 'win32':
+        from .win32 import SUPPORTS_TRAY
         from .win32 import monitor_locations
         from .win32 import get_autostart, set_autostart, remove_autostart
         from .win32 import is_elevated, relaunch_as_elevated
@@ -21,6 +22,7 @@ match sys.platform:
         from .win32 import prepare_application_icon
 
     case 'darwin':
+        from .darwin import SUPPORTS_TRAY
         from .base import monitor_locations
         from .darwin import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
@@ -29,6 +31,7 @@ match sys.platform:
         from .darwin import prepare_child_process, prepare_application_icon
 
     case _:
+        from .base import SUPPORTS_TRAY
         from .base import monitor_locations
         from .linux import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
@@ -37,6 +40,7 @@ match sys.platform:
         from .base import prepare_child_process, prepare_application_icon
 
 __all__ = [
+    'SUPPORTS_TRAY',
     'monitor_locations',
     'get_autostart', 'set_autostart', 'remove_autostart', 'remap_autostart',
     'is_elevated', 'relaunch_as_elevated',

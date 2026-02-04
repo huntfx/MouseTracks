@@ -13,6 +13,9 @@ from screeninfo import get_monitors as _get_monitors
 from ...types import Rect, RectList
 
 
+SUPPORTS_TRAY = True
+
+
 def get_autostart() -> str | None:
     """Determine if running on startup."""
     raise NotImplementedError

@@ -25,6 +25,8 @@ from Quartz import (  # type: ignore
 )
 
 
+SUPPORTS_TRAY = False  # Causes bugs when restoring
+
 AUTOSTART_DIR = Path.home() / 'Library' / 'LaunchAgents'
 AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{PACKAGE_IDENTIFIER}.plist'
 

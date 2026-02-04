@@ -18,6 +18,8 @@ from ...constants import APP_EXECUTABLE, PACKAGE_IDENTIFIER
 from ...types import Rect, RectList
 
 
+SUPPORTS_TRAY = True
+
 user32 = ctypes.windll.user32
 
 kernel32 = ctypes.windll.kernel32
