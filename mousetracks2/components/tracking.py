@@ -15,7 +15,8 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..config import CLI, GlobalConfig
+from ..cli import CLI
+from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..utils import keycodes

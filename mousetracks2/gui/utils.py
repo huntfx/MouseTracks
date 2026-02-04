@@ -2,6 +2,8 @@
 
 import math
 
+from ..cli import CLI
+from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, REPO_DIR
 
 
@@ -70,3 +72,10 @@ def format_bytes(b: int) -> str:
 def format_network_speed(b: int) -> str:
     """Convert bytes to network speed."""
     return f'{format_bytes(b * 8)[:-1]}bps'
+
+
+def should_minimise_on_start() -> bool:
+    """Determine if the app should minimise on startup."""
+    if CLI.post_install:
+        return False
+    return CLI.start_hidden or CLI.autostart and GlobalConfig().minimise_on_start

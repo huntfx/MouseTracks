@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-from ..version import VERSION
+from .version import VERSION
 
 # Get the appdata folder
 # Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import cast
 
-from .config.cli import CLI
+from .cli import CLI
 
 
 SYS_EXECUTABLE = sys.executable

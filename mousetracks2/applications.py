@@ -6,7 +6,7 @@ from typing import Iterable, Iterator
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .config import CLI
+from .cli import CLI
 from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
 
 

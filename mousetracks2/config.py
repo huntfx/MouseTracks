@@ -5,8 +5,8 @@ from typing import Any, IO
 
 import yaml
 
-from ..config import CLI
-from ..utils import keycodes
+from .cli import CLI
+from .utils import keycodes
 
 
 GLOBAL_CONFIG_PATH = CLI.data_dir / 'config.yaml'

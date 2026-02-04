@@ -20,9 +20,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from . import app_detection, gui, ipc, processing, tracking
-from ..config import GlobalConfig, should_minimise_on_start
+from ..config import GlobalConfig
 from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
+from ..gui.utils import should_minimise_on_start
 
 if TYPE_CHECKING:
     from multiprocessing.sharedctypes import Synchronized

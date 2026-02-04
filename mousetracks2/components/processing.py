@@ -12,7 +12,8 @@ from send2trash import send2trash
 
 from . import ipc
 from .abstract import Component
-from ..config import CLI, GlobalConfig
+from ..cli import CLI
+from ..config import GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename

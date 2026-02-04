@@ -112,7 +112,7 @@ def _get_platform_suffix() -> str:
         ext = ''
     elif sys.platform == 'darwin':
         os_name = 'macos'
-        ext = ''
+        ext = '.zip'
     else:
         raise NotImplementedError(sys.platform)
 

@@ -23,12 +23,14 @@ from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
+from ..cli import CLI
 from ..constants import SYS_EXECUTABLE, APP_EXECUTABLE
-from ..config import should_minimise_on_start, CLI, GlobalConfig
+from ..config import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
 from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
+from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
 from ..types import RectList
 from ..utils import keycodes

@@ -3,7 +3,7 @@ import webbrowser
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from .ui import about
-from ..config.cli import CLI
+from ..cli import CLI
 from ..constants import REPO_DIR
 from ..utils.update import is_latest_version
 from ..version import VERSION

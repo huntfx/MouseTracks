@@ -12,7 +12,8 @@ from uuid import uuid4
 import numpy as np
 import numpy.typing as npt
 
-from .config import CLI, ProfileConfig
+from .cli import CLI
+from .config import ProfileConfig
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
 from .utils.keycodes import CLICK_CODES
 

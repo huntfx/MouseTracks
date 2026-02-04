@@ -9,7 +9,7 @@ from .abstract import Component
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
-from ..config import CLI
+from ..cli import CLI
 from ..utils.system import prepare_application_icon
 
 
