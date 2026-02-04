@@ -162,6 +162,7 @@ jobs:
           echo "Full installer name: ${FULL_INSTALLER_NAME}"
 
       - name: Install UPX
+        if: matrix.upx_suffix != ''
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Windows" ]]; then
