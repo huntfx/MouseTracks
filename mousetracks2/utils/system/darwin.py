@@ -1,3 +1,8 @@
+"""macOS specific functions.
+
+For usage instructions, see the linux.py file as it's very similar.
+"""
+
 import plistlib
 import shlex
 from contextlib import suppress

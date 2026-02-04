@@ -12,11 +12,13 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     permissions: write-all
+    env:
+      MACOSX_DEPLOYMENT_TARGET: 11.0  # Lowest version compatible with PySide 6.7
 
     strategy:
       fail-fast: false
       matrix:
-        # 32 bit python not included as PySide6 not compatible
+        # 32 bit python is not included as PySide6 is not compatible
         include:
           - platform: windows
             os: windows-latest
@@ -28,6 +30,11 @@ jobs:
             architecture: x64
             upx_suffix: amd64_linux
             exe_suffix: ''
+          - platform: macos
+            os: macos-15-intel
+            architecture: x64
+            upx_suffix: ''  # UPX is problematic with macOS
+            exe_suffix: '.app'
 
     steps:
       - name: Checkout partial repository
@@ -103,6 +110,41 @@ jobs:
 
           echo "--- Installing build requirements ---"
           python -m pip install --upgrade -r requirements-build-pyinstaller.txt
+
+          deactivate
+
+      - name: Install Legacy macOS Dependencies
+        if: matrix.platform == 'macos' && matrix.architecture == 'x64'
+        shell: bash
+        run: |
+          source .venv/bin/activate
+
+          echo "Attempting to manually fetch macOS 10.9+ compatible wheels for dependencies..."
+          mkdir -p manual_wheels
+
+          # Iterate over each requirement
+          grep -vE '^\s*#|^\s*$' requirements.txt | while read -r line; do
+            req_line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            if [[ -z "$req_line" ]]; then continue; fi
+
+            echo "Checking compatibility for: $req_line"
+            python -m pip download \
+              --dest manual_wheels \
+              --platform macosx_10_9_x86_64 \
+              --only-binary=:all: \
+              --no-deps \
+              "$req_line" || echo "  > Could not force 10.9 binary for '$req_line'."
+          done
+
+          # Install all found wheels
+          if ls manual_wheels/*.whl 1> /dev/null 2>&1; then
+            echo "Installing downloaded wheels:"
+            ls -l manual_wheels
+            python -m pip install manual_wheels/*.whl --force-reinstall
+          else
+            echo "No force-compatible wheels found."
+          fi
+
           deactivate
 
       - name: Get version details from tag
@@ -222,6 +264,16 @@ jobs:
               echo ::error::Installer creation failed!
               exit /b 1
           )
+
+      - name: Package macOS App
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          cd dist
+          ZIP_NAME="${FULL_EXE_NAME%.*}.zip"
+          echo "Zipping $FULL_EXE_NAME into $ZIP_NAME..."
+          ditto -c -k --keepParent "$FULL_EXE_NAME" "$ZIP_NAME"
+          echo "FULL_EXE_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Attach Main Executable to Release
         if: github.event_name == 'release'

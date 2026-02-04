@@ -68,7 +68,7 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 ## Installation (v2.0)
 
 - Fully compatible with Windows.
-- Compatible with Linux.
+- Mostly compatible with Linux _(tested with Ubuntu + Arch Linux)_ and macOS _(tested with 11.6.1)_.
 
 _On Linux, MouseTracks requires an __X11 (Xorg)__ session to work. On modern distributions like Ubuntu, you may need to select "Ubuntu on Xorg" from the gear icon on the login screen._
 
@@ -83,7 +83,9 @@ This is the simplest way to get started. No installation is required.
 3. If on Linux, make the file executable: `chmod +x MouseTracks-2.0.0-linux-x64`
 4. Run the executable to launch the application.
 
-#### Linux Prerequisites
+Note that the releases may not be compatible with _every_ Linux / macOS system. If this is the case, you'll have to check the instructions below to either build or run from source.
+
+#### Linux Users
 
 MouseTracks requires the XCB cursor library to be installed.
 
@@ -95,6 +97,15 @@ MouseTracks requires the XCB cursor library to be installed.
     ```bash
     sudo pacman -Syu xcb-util-cursor
     ```
+
+#### macOS Users
+
+Because this app is not signed with an Apple Developer ID, you may see a warning that it "cannot be checked for malicious software".
+
+1. Right-click the app and select Open.
+2. Click Open in the dialog box.
+
+This only needs to be done once.
 
 #### Mirrors
 _These are not guaranteed to be the latest version._
@@ -119,17 +130,15 @@ Python 3.11 or higher is required.
       ```cmd
       launch.bat
       ```
-    - Linux:
+    - Linux / macOS:
       ```bash
-      chmod +x launch.sh
       ./launch.sh
       ```
-
 ---
 
 ### Building from Source
 
-PyInstaller is used for the build process.
+`PyInstaller` is used for the build process. There is also support for `Nuitka` if preferred.
 
 _Using a custom bootloader is entirely optional, but it may help reduce AV false positives._
 
@@ -137,10 +146,12 @@ _Using a custom bootloader is entirely optional, but it may help reduce AV false
   ```cmd
   build-pyinstaller-bootloader.bat
   build-pyinstaller.bat
-  ```
-  To package the built executables into an installer, use `build-installer.bat`.
 
-- Linux:
+  :: Optionally create a setup.py file
+  build-installer.bat
+  ```
+
+- Linux / macOS:
   ```bash
   ./build-pyinstaller-bootloader.sh
   ./build-pyinstaller.sh
