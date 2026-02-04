@@ -120,3 +120,7 @@ class MonitorEventsListener(threading.Thread):
             except queue.Empty:
                 return count > 0
             count += 1
+
+
+def prepare_child_process() -> None:
+    """This runs in every child process."""

@@ -17,6 +17,7 @@ match sys.platform:
         from .win32 import is_elevated, relaunch_as_elevated
         from .win32 import Window
         from .win32 import MonitorEventsListener
+        from .base import prepare_child_process
 
     case 'darwin':
         from .base import monitor_locations
@@ -24,6 +25,7 @@ match sys.platform:
         from .base import is_elevated, relaunch_as_elevated
         from .darwin import Window
         from .base import MonitorEventsListener
+        from .darwin import prepare_child_process
 
     case _:
         from .base import monitor_locations
@@ -31,6 +33,7 @@ match sys.platform:
         from .base import is_elevated, relaunch_as_elevated
         from .linux import Window
         from .base import MonitorEventsListener
+        from .base import prepare_child_process
 
 __all__ = [
     'monitor_locations',
@@ -38,6 +41,7 @@ __all__ = [
     'is_elevated', 'relaunch_as_elevated',
     'Window',
     'MonitorEventsListener',
+    'prepare_child_process',
 ]
 
 

@@ -8,7 +8,11 @@ from .base import Window as _Window
 from ...constants import SYS_EXECUTABLE
 from ...types import Rect, RectList
 
-from AppKit import NSRunningApplication
+from AppKit import (
+    NSApplication,
+    NSRunningApplication,
+    NSApplicationActivationPolicyAccessory,
+)
 from Quartz import (
     CGWindowListCopyWindowInfo,
     kCGWindowListOptionOnScreenOnly,
@@ -16,7 +20,7 @@ from Quartz import (
     kCGNullWindowID,
     kCGWindowOwnerPID,
     kCGWindowBounds,
-    kCGWindowName
+    kCGWindowName,
 )
 
 
@@ -139,3 +143,9 @@ def remove_autostart() -> None:
     """Stop an executable running on startup."""
     with suppress(FileNotFoundError):
         AUTOSTART_FILE_PATH.unlink()
+
+
+def prepare_child_process() -> None:
+    """This runs in every child process."""
+    # Hide the child process from the dock
+    NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
