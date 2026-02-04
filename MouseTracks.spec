@@ -9,6 +9,7 @@ from scipy import __file__ as scipy_path
 
 sys.path.insert(0, os.path.abspath('.'))
 from mousetracks2 import __version__ as version
+from mousetracks2.constants import PACKAGE_IDENTIFIER
 from mousetracks2.utils.update import generate_exe_name
 
 a = Analysis(
@@ -155,4 +156,17 @@ if sys.platform == 'win32':
         entitlements_file=None,
         version='build\\version-installer.rc',
         icon='resources/images/icon.ico'
+    )
+
+# macOS bundle
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        exe,
+        name=f'{generate_exe_name()}.app',
+        icon='resources/images/icon.icns',
+        bundle_identifier=PACKAGE_IDENTIFIER,
+        info_plist={
+            'NSHighResolutionCapable': 'True',
+            'LSBackgroundOnly': 'False',
+        },
     )
