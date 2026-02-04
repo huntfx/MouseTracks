@@ -60,8 +60,16 @@ def get_latest_version() -> str:
 
 
 def is_latest_version() -> bool:
-    """Determine if the current version is the latest."""
-    return get_latest_version() == VERSION
+    """Determine if the current version is the latest.
+    If the current version is even newer, then it will be treated as latest.
+    """
+    latest = get_latest_version()
+    if latest == VERSION:
+        return True
+    try:
+        return tuple(map(int, latest.split('.'))) <= tuple(map(int, VERSION.split('.')))
+    except ValueError:
+        return True
 
 
 def get_download_link(version: str = 'latest') -> str | None:
