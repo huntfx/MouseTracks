@@ -35,6 +35,11 @@ jobs:
             architecture: x64
             upx_suffix: ''  # UPX is problematic with macOS
             exe_suffix: '.app'
+          - platform: macos
+            os: macos-latest
+            architecture: arm64
+            upx_suffix: ''
+            exe_suffix: .app
 
     steps:
       - name: Checkout partial repository

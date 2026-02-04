@@ -12,6 +12,8 @@ from mousetracks2 import __version__ as version
 from mousetracks2.constants import PACKAGE_IDENTIFIER
 from mousetracks2.utils.update import generate_exe_name
 
+target_name = os.environ.get('EXE_BASENAME', generate_exe_name(with_extension=False))
+
 a = Analysis(
     ['launch.py'],
     pathex=[],
@@ -99,7 +101,7 @@ exe = EXE(
     binaries,
     datas,
     [],
-    name=generate_exe_name(),
+    name=target_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -162,7 +164,7 @@ if sys.platform == 'win32':
 if sys.platform == 'darwin':
     app = BUNDLE(
         exe,
-        name=f'{generate_exe_name()}.app',
+        name=f'{target_name}.app',
         icon='resources/images/icon.icns',
         bundle_identifier=PACKAGE_IDENTIFIER,
         info_plist={
