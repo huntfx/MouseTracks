@@ -12,6 +12,7 @@ from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
 from ..config import CLI
+from ..constants import PACKAGE_IDENTIFIER
 
 
 class QueueWorker(QtCore.QObject):
@@ -57,7 +58,7 @@ class GUI(Component):
 
         # Register app so that setting an icon is possible
         if os.name == 'nt':
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('uk.huntfx.mousetracks')
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(PACKAGE_IDENTIFIER)
         app.setWindowIcon(QtGui.QIcon(ICON_PATH))
 
         self.receiver_thread = QtCore.QThread()

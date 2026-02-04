@@ -5,15 +5,15 @@ from pathlib import Path
 from typing import Self
 
 from .base import Window as _Window
-from ...constants import SYS_EXECUTABLE
+from ...constants import SYS_EXECUTABLE, PACKAGE_IDENTIFIER
 from ...types import Rect, RectList
 
-from AppKit import (
+from AppKit import (  # type: ignore
     NSApplication,
     NSRunningApplication,
     NSApplicationActivationPolicyAccessory,
 )
-from Quartz import (
+from Quartz import (  # type: ignore
     CGWindowListCopyWindowInfo,
     kCGWindowListOptionOnScreenOnly,
     kCGWindowListExcludeDesktopElements,
@@ -24,9 +24,8 @@ from Quartz import (
 )
 
 
-AUTOSTART_LABEL = 'uk.huntfx.mousetracks'
 AUTOSTART_DIR = Path.home() / 'Library' / 'LaunchAgents'
-AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{AUTOSTART_LABEL}.plist'
+AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{PACKAGE_IDENTIFIER}.plist'
 
 
 class Window(_Window):
@@ -124,7 +123,7 @@ def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     program_args = [SYS_EXECUTABLE] + [arg for arg in args if arg not in ignore_args]
 
     plist_content = {
-        'Label': AUTOSTART_LABEL,
+        'Label': PACKAGE_IDENTIFIER,
         'ProgramArguments': program_args,
         'RunAtLoad': True,
         # Optional: 'ProcessType': 'Interactive'
