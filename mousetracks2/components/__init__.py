@@ -27,7 +27,7 @@ from ..gui.utils import should_minimise_on_start
 
 if TYPE_CHECKING:
     from multiprocessing.sharedctypes import Synchronized
-    from ..utils.system.win32 import WindowHandle
+    from ..utils.system.windows import WindowHandle
 
 
 T = TypeVar('T')
@@ -291,7 +291,7 @@ class Hub:
     def _get_console_handle(self) -> WindowHandle | None:
         """Get the handle to the console."""
         if sys.platform == 'win32':
-            from ..utils.system.win32 import WindowHandle, get_window_handle
+            from ..utils.system.windows import WindowHandle, get_window_handle
             return WindowHandle(get_window_handle(console=True))
         return None
 

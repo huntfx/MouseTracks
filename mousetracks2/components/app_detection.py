@@ -47,7 +47,7 @@ class AppDetection(Component):
         multiple times to try and make it work 100% of the time for the
         one use case I've come across.
         """
-        from ..utils.system.win32 import PID
+        from ..utils.system.windows import PID
 
         matched_procs = []  # type: list[psutil.Process]
         invalid_exes = set()  # type: set[str]

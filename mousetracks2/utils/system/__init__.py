@@ -12,23 +12,23 @@ if TYPE_CHECKING:
 
 match sys.platform:
     case 'win32':
-        from .win32 import SUPPORTS_TRAY
-        from .win32 import monitor_locations
-        from .win32 import get_autostart, set_autostart, remove_autostart
-        from .win32 import is_elevated, relaunch_as_elevated
-        from .win32 import Window
-        from .win32 import MonitorEventsListener
+        from .windows import SUPPORTS_TRAY
+        from .windows import monitor_locations
+        from .windows import get_autostart, set_autostart, remove_autostart
+        from .windows import is_elevated, relaunch_as_elevated
+        from .windows import Window
+        from .windows import MonitorEventsListener
         from .base import hide_child_process
-        from .win32 import prepare_application_icon
+        from .windows import prepare_application_icon
 
     case 'darwin':
-        from .darwin import SUPPORTS_TRAY
+        from .macos import SUPPORTS_TRAY
         from .base import monitor_locations
-        from .darwin import get_autostart, set_autostart, remove_autostart
+        from .macos import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
-        from .darwin import Window
+        from .macos import Window
         from .base import MonitorEventsListener
-        from .darwin import hide_child_process, prepare_application_icon
+        from .macos import hide_child_process, prepare_application_icon
 
     case _:
         from .base import SUPPORTS_TRAY
