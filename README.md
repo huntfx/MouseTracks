@@ -140,23 +140,36 @@ Python 3.11 or higher is required.
 
 `PyInstaller` is used for the build process. There is also support for `Nuitka` if preferred.
 
-_Using a custom bootloader is entirely optional, but it may help reduce AV false positives._
+#### Windows:
+  1. **Build bootloader (optional):** Helps reduce Antivirus false positives by compiling a clean version of the PyInstaller bootloader locally.
+     ```cmd
+     build-pyinstaller-bootloader.bat
+     ```
 
-- Windows:
-  ```cmd
-  build-pyinstaller-bootloader.bat
-  build-pyinstaller.bat
+  2. **Generate cryptographic keys (optional):** Only required if you want to sign your own builds.
+     - **If keys are generated:** The launcher will only run executables signed with your unique private key. Note that official updates from GitHub will be rejected as they are signed with a different key.
+     - **If keys are not generated:**: The launcher skips signature checks, allowing you to run any build.
 
-  :: Optionally create a setup.py file
-  build-installer.bat
-  ```
+     ```cmd
+     launch.bat --generate-keys
+     ```
 
-- Linux / macOS:
-  ```bash
-  ./build-pyinstaller-bootloader.sh
-  ./build-pyinstaller.sh
-  ```
----
+  3. **Build application:** Creates the launcher (`MouseTracks.exe`) and application (`MouseTracks-VERSION-windows-x64.exe`) in the `dist` folder.
+     ```cmd
+     build-pyinstaller.bat
+     ```
+
+  4. **Build installer (optional)**: Packages the built files into a setup file for easy installation.
+     ```cmd
+     build-installer.bat
+     ```
+
+#### Linux / macOS:
+```bash
+./build-pyinstaller-bootloader.sh
+./build-pyinstaller.sh
+```
+
 
 ## Installation (v1.0 - Deprecated)
 

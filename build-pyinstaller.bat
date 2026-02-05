@@ -38,5 +38,9 @@ pyivf-make_version --outfile "build/version-installer.rc" --version %VERSION% --
 :: Build the executable
 pyinstaller MouseTracks.spec
 
+:: Sign the executables
+python launch.py --sign-executable "dist/MouseTracks.exe"
+python launch.py --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
+
 :: Exit the virtual environment
 call deactivate

@@ -54,6 +54,9 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     privacy_group.add_argument('--no-gamepad', action='store_true', help='disable gamepad tracking')
     privacy_group.add_argument('--no-network', action='store_true', help='disable network tracking')
 
+    parser.add_argument('--generate-keys', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
+
     if strict:
         args = parser.parse_args()
     else:
@@ -84,9 +87,9 @@ class _CLI:
 
     def __init__(self) -> None:
         self._soft_load = False
-        self._load_args()
+        self.args = self._load_args()
 
-    def _load_args(self) -> None:
+    def _load_args(self) -> argparse.Namespace:
         """Load in the command line arguments.
 
         When a new process is spawned, it may not retain `sys.argv`,
@@ -146,6 +149,8 @@ class _CLI:
             self.multi_monitor = False
         if args.post_install:
             self.post_install = True
+
+        return args
 
     @property
     def _set(self) -> Callable:

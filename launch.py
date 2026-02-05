@@ -64,6 +64,18 @@ if __name__ == '__main__':
         cert_path = REPO_DIR / 'certifi' / 'cacert.pem'
         os.environ['SSL_CERT_FILE'] = str(cert_path)
 
+    # Sign and test the executable (used during build)
+    elif CLI.args.sign_executable:
+        from mousetracks2.sign import sign_executable, verify_signature
+        sign_executable(CLI.args.sign_executable)
+        assert verify_signature(CLI.args.sign_executable)
+        sys.exit(0)
+
+    elif CLI.args.generate_keys:
+        from mousetracks2.sign import generate_keys
+        generate_keys()
+        sys.exit(0)
+
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do
     parse_args(strict=True)
