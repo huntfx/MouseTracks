@@ -14,14 +14,14 @@ from mousetracks2.sign import verify_signature
 MB_ICONERROR = 0x10
 
 
-def show_error(title: str, message: str):
+def show_error(title: str, message: str) -> None:
     """Displays an error message box.
     Currently only supports Windows.
     """
     ctypes.windll.user32.MessageBoxW(0, message, title, MB_ICONERROR)
 
 
-def main():
+def main() -> None:
     base_dir = APP_EXECUTABLE.parent
 
     # Build an ordered list of available executables
