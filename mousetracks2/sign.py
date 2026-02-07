@@ -11,7 +11,7 @@ from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import HexEncoder
 from nacl.exceptions import BadSignatureError
 
-from .constants import REPO_DIR, IS_BUILT_EXE
+from .constants import REPO_DIR, IS_BUILT_EXE, UNTRUSTED_EXT
 
 
 MARKER = b'MT-SIG-V1'
@@ -23,6 +23,10 @@ PUBLIC_KEY_PATH = Path(os.environ.get('MT_PUBLIC_KEY', KEY_PATH / 'public.key'))
 PRIVATE_KEY_PATH = KEY_PATH / 'private.key'
 
 PYTHON_KEY_PATH = Path('.').parent / '_sign.py'
+
+PUBLIC_KEY_SIZE = 32
+
+SIGNATURE_SIZE = 64
 
 
 def generate_keys() -> None:
@@ -115,7 +119,7 @@ def sign_executable(exe_path: Path | str) -> bool:
     return True
 
 
-def verify_signature(file_path: Path | str) -> bool | None:
+def verify_signature(file_path: Path | str) -> bool:
     """Verify the signature on an executable."""
     public_key = get_runtime_public_key()
 
@@ -135,22 +139,58 @@ def verify_signature(file_path: Path | str) -> bool | None:
         marker_pos = chunk.rfind(MARKER)
         if marker_pos == -1:
             print(f'Verification failed on {file_path}: no signature found')
+            _write_untrusted(file_path)
             return False
 
         # Extract signature and the data that was signed
-        # The signature is immediately after the marker
         sig_start = marker_pos + len(MARKER)
-        signature = chunk[sig_start : sig_start + 64]  # Ed25519 size is 64 bytes
+        signature = chunk[sig_start : sig_start + SIGNATURE_SIZE]
 
         # Grab all the data before the signature
         marker_pos = file_size - read_size + marker_pos
         f.seek(0)
         signed_data = f.read(marker_pos)
 
+    # Run the verification
     verify_key = VerifyKey(public_key, encoder=HexEncoder)
     try:
         verify_key.verify(signed_data, signature)
-        return True
     except BadSignatureError as e:
         print(f'Verification failed: {e}')
+        _write_untrusted(file_path)
         return False
+    return True
+
+
+def _write_untrusted(file_path: Path | str) -> None:
+    """Append the public key to an "unstrusted" file.
+    This is likely caused by a custom build attempting to run official
+    releases, since they will be signed with a different key.
+    """
+    public_key = get_runtime_public_key()
+    if public_key is None:
+        return None
+
+    # Only update if the public key is not already in the file
+    if not failed_signature_verification(file_path):
+        try:
+            with Path(file_path).with_suffix(UNTRUSTED_EXT).open('ab') as f:
+                f.write(public_key)
+        except OSError as e:
+            print(f'Failed to append data for failed signature check: {e}')
+
+
+def failed_signature_verification(file_path: Path | str) -> bool:
+    """Determine if an executable has already failed signature verification."""
+    public_key = get_runtime_public_key()
+    if public_key is None:
+        return False
+
+    untrusted_path = Path(file_path).with_suffix(UNTRUSTED_EXT)
+    try:
+        contents = untrusted_path.read_bytes()
+    except FileNotFoundError:
+        return False
+    public_keys = (contents[i * PUBLIC_KEY_SIZE:(i + 1) * PUBLIC_KEY_SIZE]
+                   for i in range(len(contents) // PUBLIC_KEY_SIZE))
+    return public_key in public_keys

@@ -8,6 +8,7 @@ import subprocess
 
 from mousetracks2.utils.update import get_local_executables
 from mousetracks2.constants import APP_EXECUTABLE
+from mousetracks2.sign import verify_signature
 
 
 MB_ICONERROR = 0x10
@@ -23,19 +24,22 @@ def show_error(title: str, message: str):
 def main():
     base_dir = APP_EXECUTABLE.parent
 
-    # Find the latest executable in the folder
+    # Build an ordered list of available executables
     lower, current, higher = get_local_executables(base_dir)
-    if higher:
-        executable = higher[-1]
-    elif current is not None:
-        executable = current
-    elif lower:
-        executable = lower[-1]
-    else:
+    executables = list(lower)
+    if current is not None:
+        executables.append(current)
+    executables.extend(higher)
+
+    # Get the latest version that passes the signature verification
+    try:
+        executable = next(filter(verify_signature, reversed(executables)))
+    except StopIteration:
         show_error('Launch Error',
-                   'No valid version of MouseTracks found in the installation folder.\n\n'
-                   'Please reinstall the application.')
+                    'No valid version of MouseTracks found in the installation folder.\n\n'
+                    'Please reinstall the application.')
         sys.exit(1)
+
     print(f'Launching {executable}...')
 
     # Start the child process

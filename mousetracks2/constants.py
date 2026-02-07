@@ -64,3 +64,5 @@ This may be used when specifically excluding a splash screen.
 TRACKING_WILDCARD = '<*>'
 
 PACKAGE_IDENTIFIER = 'uk.peterhunt.mousetracks'
+
+UNTRUSTED_EXT = '.skipped'
