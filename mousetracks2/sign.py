@@ -121,15 +121,16 @@ def sign_executable(exe_path: Path | str) -> bool:
 
 def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> bool:
     """Verify the signature on an executable."""
-    public_key = get_runtime_public_key()
+    file_path = Path(file_path)
+    print(f'Checking signature of {file_path}...')
 
     # No signature supplied during build process
+    public_key = get_runtime_public_key()
     if public_key is None:
+        print(f'No public key set, signature verification disabled')
         return True
 
     # Read the last 10KB of the file
-    file_path = Path(file_path)
-    print(f'Checking signature of {file_path}...')
     with file_path.open('rb') as f:
         f.seek(0, os.SEEK_END)
         file_size = f.tell()

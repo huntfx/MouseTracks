@@ -11,8 +11,13 @@ from urllib.error import URLError
 
 from .network import safe_download_file
 from ..constants import UNTRUSTED_EXT
-from ..sign import verify_signature, failed_signature_verification
 from ..version import VERSION
+
+if sys.platform == 'win32':
+    from ..sign import verify_signature, failed_signature_verification
+else:
+    def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> bool: return True
+    def failed_signature_verification(file_path: Path | str) -> bool: return False
 
 
 RELEASES_URL = 'https://api.github.com/repos/huntfx/MouseTracks/releases'

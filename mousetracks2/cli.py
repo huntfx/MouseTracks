@@ -311,13 +311,13 @@ class _CLI:
 def run_cli_function() -> bool:
     """Run a single function and quit."""
     match CLI.args:
-        case argparse.Namespace(show_public_key=True):
+        case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':
             from .sign import get_runtime_public_key
 
             public_key = get_runtime_public_key()
             print(public_key.decode('utf-8') if public_key else '')
 
-        case argparse.Namespace(sign_executable=path) if path:
+        case argparse.Namespace(sign_executable=path) if path and sys.platform == 'win32':
             from .sign import sign_executable, verify_signature
 
             # Only sign if verification fails, to not double up
@@ -329,7 +329,7 @@ def run_cli_function() -> bool:
             # Ensure the new signature is valid
             assert verify_signature(path, write_untrusted=False)
 
-        case argparse.Namespace(verify_executable=path) if path:
+        case argparse.Namespace(verify_executable=path) if path and sys.platform == 'win32':
             from .sign import verify_signature
 
             if verify_signature(path, write_untrusted=False):
@@ -337,7 +337,7 @@ def run_cli_function() -> bool:
             else:
                 print(f'{path} signature failed verification')
 
-        case argparse.Namespace(generate_keys=True):
+        case argparse.Namespace(generate_keys=True) if sys.platform == 'win32':
             from .sign import generate_keys
             generate_keys()
 
