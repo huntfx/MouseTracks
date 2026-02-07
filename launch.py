@@ -16,7 +16,7 @@ try:
     from mousetracks2.components import Hub
     from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
     from mousetracks2.config import GlobalConfig
-    from mousetracks2.cli import CLI, parse_args
+    from mousetracks2.cli import CLI, parse_args, run_cli_function
     from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
     from mousetracks2.utils.update import cleanup_old_executables, download_version
 
@@ -64,18 +64,6 @@ if __name__ == '__main__':
         cert_path = REPO_DIR / 'certifi' / 'cacert.pem'
         os.environ['SSL_CERT_FILE'] = str(cert_path)
 
-    # Sign and test the executable (used during build)
-    elif CLI.args.sign_executable:
-        from mousetracks2.sign import sign_executable, verify_signature
-        sign_executable(CLI.args.sign_executable)
-        assert verify_signature(CLI.args.sign_executable)
-        sys.exit(0)
-
-    elif CLI.args.generate_keys:
-        from mousetracks2.sign import generate_keys
-        generate_keys()
-        sys.exit(0)
-
     # Check there aren't any invalid arguments
     # This is the only place where this check is safe to do
     parse_args(strict=True)
@@ -84,12 +72,15 @@ if __name__ == '__main__':
     if CLI.elevate and not is_elevated():
         relaunch_as_elevated()
 
-    # Launch the application
-    try:
-        with filelock.FileLock(CLI.data_dir / '.lock', timeout=0):
-            main()
+    # Check for specific CLI args
+    if not run_cli_function():
 
-    # Notify the user if another instance is running
-    except filelock.Timeout:
-        print(f'Error: Another instance of MouseTracks is already writing to "{CLI.data_dir}".')
-        input('Press enter to exit...')
+        # Launch the application
+        try:
+            with filelock.FileLock(CLI.data_dir / '.lock', timeout=0):
+                main()
+
+        # Notify the user if another instance is running
+        except filelock.Timeout:
+            print(f'Error: Another instance of MouseTracks is already writing to "{CLI.data_dir}".')
+            input('Press enter to exit...')

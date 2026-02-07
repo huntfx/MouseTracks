@@ -55,7 +55,9 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     privacy_group.add_argument('--no-network', action='store_true', help='disable network tracking')
 
     parser.add_argument('--generate-keys', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--show-public-key', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
+    parser.add_argument('--verify-executable', metavar='PATH', help=argparse.SUPPRESS)
 
     if strict:
         args = parser.parse_args()
@@ -304,6 +306,44 @@ class _CLI:
     def post_install(self, value: bool) -> None:
         """Set if running straight after being installed."""
         self._set('MT_POST_INSTALL', bool2str(value))
+
+
+def run_cli_function() -> bool:
+    """Run a single function and quit."""
+    match CLI.args:
+        case argparse.Namespace(show_public_key=True):
+            from .sign import get_runtime_public_key
+
+            public_key = get_runtime_public_key()
+            print(public_key.decode('utf-8') if public_key else '')
+
+        case argparse.Namespace(sign_executable=path) if path:
+            from .sign import sign_executable, verify_signature
+
+            # Only sign if verification fails, to not double up
+            if verify_signature(path, write_untrusted=False):
+                print(f'Executable is already signed: {path}')
+            else:
+                sign_executable(path)
+
+            # Ensure the new signature is valid
+            assert verify_signature(path, write_untrusted=False)
+
+        case argparse.Namespace(verify_executable=path) if path:
+            from .sign import verify_signature
+
+            if verify_signature(path, write_untrusted=False):
+                print(f'{path} signature passed verification')
+            else:
+                print(f'{path} signature failed verification')
+
+        case argparse.Namespace(generate_keys=True):
+            from .sign import generate_keys
+            generate_keys()
+
+        case _:
+            return False
+    return True
 
 
 CLI = _CLI()

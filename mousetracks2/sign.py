@@ -119,7 +119,7 @@ def sign_executable(exe_path: Path | str) -> bool:
     return True
 
 
-def verify_signature(file_path: Path | str) -> bool:
+def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> bool:
     """Verify the signature on an executable."""
     public_key = get_runtime_public_key()
 
@@ -139,7 +139,8 @@ def verify_signature(file_path: Path | str) -> bool:
         marker_pos = chunk.rfind(MARKER)
         if marker_pos == -1:
             print(f'Verification failed on {file_path}: no signature found')
-            _write_untrusted(file_path)
+            if write_untrusted:
+                _write_untrusted(file_path)
             return False
 
         # Extract signature and the data that was signed
@@ -157,7 +158,8 @@ def verify_signature(file_path: Path | str) -> bool:
         verify_key.verify(signed_data, signature)
     except BadSignatureError as e:
         print(f'Verification failed: {e}')
-        _write_untrusted(file_path)
+        if write_untrusted:
+            _write_untrusted(file_path)
         return False
     return True
 
