@@ -244,6 +244,19 @@ jobs:
           pyinstaller MouseTracks.spec
           deactivate
 
+      - name: Sign executable
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        if: runner.os == 'Windows' && env.PRIVATE_KEY != ''
+        shell: bash
+        run: |
+          source .venv/Scripts/activate
+          echo "$PRIVATE_KEY" > keys/private.key
+          python launch.py --sign-executable "dist/MouseTracks.exe"
+          python launch.py --sign-executable "dist/${FULL_EXE_NAME}"
+          rm keys/private.key
+          deactivate
+
       - name: Build Installer for Windows
         if: runner.os == 'Windows'
         shell: cmd
