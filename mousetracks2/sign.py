@@ -38,8 +38,8 @@ def generate_keys() -> None:
     assert not IS_BUILT_EXE
 
     print(f'Generating build keys...')
-    if PRIVATE_KEY_PATH.exists() or PUBLIC_KEY_PATH.exists():
-        print('Existing build keys found in folder, skipping')
+    if PRIVATE_KEY_PATH.exists():
+        print('Existing private key found in folder, skipping')
         return
 
     private_key = SigningKey.generate()
