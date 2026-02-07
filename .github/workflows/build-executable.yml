@@ -246,12 +246,12 @@ jobs:
 
       - name: Sign executable
         env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-        if: runner.os == 'Windows' && env.PRIVATE_KEY != ''
+          PRIVATE_SIGNING_KEY: ${{ secrets.PRIVATE_SIGNING_KEY }}
+        if: runner.os == 'Windows' && env.PRIVATE_SIGNING_KEY != ''
         shell: bash
         run: |
           source .venv/Scripts/activate
-          echo "$PRIVATE_KEY" > keys/private.key
+          echo "$PRIVATE_SIGNING_KEY" > keys/private.key
           python launch.py --sign-executable "dist/MouseTracks.exe"
           python launch.py --sign-executable "dist/${FULL_EXE_NAME}"
           rm keys/private.key

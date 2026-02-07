@@ -18,7 +18,7 @@ MARKER = b'MT-SIG-V1'
 
 KEY_PATH = REPO_DIR / 'keys'
 
-PUBLIC_KEY_PATH = Path(os.environ.get('MT_PUBLIC_KEY', KEY_PATH / 'public.key'))
+PUBLIC_KEY_PATH = KEY_PATH / 'public.key'
 
 PRIVATE_KEY_PATH = KEY_PATH / 'private.key'
 
@@ -128,7 +128,9 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
         return True
 
     # Read the last 10KB of the file
-    with open(file_path, 'rb') as f:
+    file_path = Path(file_path)
+    print(f'Checking signature of {file_path}...')
+    with file_path.open('rb') as f:
         f.seek(0, os.SEEK_END)
         file_size = f.tell()
         read_size = min(file_size, 10240)
@@ -138,7 +140,7 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
         # Find the marker in the chunk
         marker_pos = chunk.rfind(MARKER)
         if marker_pos == -1:
-            print(f'Verification failed on {file_path}: no signature found')
+            print(f'No signature found')
             if write_untrusted:
                 _write_untrusted(file_path)
             return False
@@ -157,10 +159,12 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
     try:
         verify_key.verify(signed_data, signature)
     except BadSignatureError as e:
-        print(f'Verification failed: {e}')
+        print(f'Failed verification: {e}')
         if write_untrusted:
             _write_untrusted(file_path)
         return False
+
+    print(f'Signature verified')
     return True
 
 
