@@ -125,7 +125,10 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
     print(f'Checking signature of {file_path}...')
 
     # No signature supplied during build process
-    public_key = get_runtime_public_key()
+    if IS_BUILT_EXE:
+        public_key = get_runtime_public_key()
+    else:
+        public_key = get_build_public_key()
     if public_key is None:
         print(f'No public key set, signature verification disabled')
         return True
