@@ -252,6 +252,7 @@ jobs:
         run: |
           source .venv/Scripts/activate
           echo -n "$PRIVATE_SIGNING_KEY" > keys/private.key
+          python launch.py --dump-public-key
           python launch.py --sign-executable "dist/MouseTracks.exe"
           python launch.py --sign-executable "dist/${FULL_EXE_NAME}"
           rm keys/private.key
