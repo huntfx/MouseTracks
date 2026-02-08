@@ -75,7 +75,7 @@ if errorlevel 1 (
 )
 
 :: Sign the executables
-python launch.py --dump-public-key
+python launch.py --write-public-key
 python launch.py --sign-executable "dist/MouseTracks.exe"
 python launch.py --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
 

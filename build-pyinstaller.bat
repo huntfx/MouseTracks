@@ -35,11 +35,13 @@ mkdir build
 pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks-%VERSION%-windows-x64.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 pyivf-make_version --outfile "build/version-installer.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
-:: Build the executable
+:: Write out the public key
+python launch.py --write-public-key
+
+:: Build the executable and launcher
 pyinstaller MouseTracks.spec
 
 :: Sign the executables
-python launch.py --dump-public-key
 python launch.py --sign-executable "dist/MouseTracks.exe"
 python launch.py --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
 

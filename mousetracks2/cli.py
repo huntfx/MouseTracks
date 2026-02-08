@@ -55,7 +55,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     privacy_group.add_argument('--no-network', action='store_true', help='disable network tracking')
 
     parser.add_argument('--generate-keys', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--dump-public-key', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--write-public-key', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--show-public-key', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
     parser.add_argument('--verify-executable', metavar='PATH', help=argparse.SUPPRESS)
@@ -342,7 +342,7 @@ def run_cli_function() -> bool:
             from .sign import generate_keys
             generate_keys()
 
-        case argparse.Namespace(dump_public_key=True) if sys.platform == 'win32':
+        case argparse.Namespace(write_public_key=True) if sys.platform == 'win32':
             from .sign import write_public_key_to_py
             write_public_key_to_py()
 

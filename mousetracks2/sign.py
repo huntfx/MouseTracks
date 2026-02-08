@@ -22,7 +22,7 @@ PUBLIC_KEY_PATH = KEY_PATH / 'public.key'
 
 PRIVATE_KEY_PATH = KEY_PATH / 'private.key'
 
-PYTHON_KEY_PATH = Path('.').parent / '_sign.py'
+PYTHON_KEY_PATH = Path(__file__).parent / '_sign.py'
 
 PUBLIC_KEY_SIZE = 32
 
