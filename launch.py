@@ -18,7 +18,7 @@ try:
     from mousetracks2.config import GlobalConfig
     from mousetracks2.cli import CLI, parse_args, run_cli_function
     from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
-    from mousetracks2.utils.update import cleanup_old_executables, download_version
+    from mousetracks2.utils.update import background_update
     from mousetracks2.utils.system import update_installer_version_number
 
 # Show any import errors as the app otherwise will just silently fail
@@ -27,14 +27,6 @@ except ImportError as e:
     traceback.print_exc()
     input('Press enter to exit...')
     sys.exit(0)
-
-
-def _installer_update() -> None:
-    """Handle downloads/cleanup if running as an installed application."""
-    app_dir = APP_EXECUTABLE.parent
-    cleanup_old_executables(app_dir)
-    if not CLI.offline:
-        download_version(app_dir)
 
 
 def main() -> None:
@@ -55,7 +47,7 @@ def main() -> None:
 
     # Trigger the updater
     if CLI.installed:
-        Thread(target=_installer_update).start()
+        background_update(download=not CLI.offline)
 
     # Run the main application
     Hub(use_gui=True).run()

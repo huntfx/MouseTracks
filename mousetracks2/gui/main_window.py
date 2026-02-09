@@ -38,7 +38,7 @@ from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
-from ..utils.update import is_latest_version
+from ..utils.update import is_latest_version, background_update
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
@@ -514,6 +514,7 @@ class MainWindow(QtWidgets.QMainWindow):
         tips = ['tip_tracking', 'tip_tooltip']
         if not is_latest_version():
             if CLI.installed:
+                background_update(download=not CLI.offline)
                 tips = ['tip_install']
             else:
                 tips.append('tip_update')

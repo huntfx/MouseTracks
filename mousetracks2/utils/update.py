@@ -6,11 +6,12 @@ import struct
 import sys
 import time
 from pathlib import Path
+from threading import Thread
 from urllib.request import urlopen
 from urllib.error import URLError
 
 from .network import safe_download_file
-from ..constants import UNTRUSTED_EXT
+from ..constants import APP_EXECUTABLE, UNTRUSTED_EXT
 from ..version import VERSION
 
 if sys.platform == 'win32':
@@ -233,3 +234,19 @@ def get_local_executables(folder: Path | str, version: str = VERSION, include_un
     return ([path for _, path in sorted(executables_lower)],
             executable,
             [path for _, path in sorted(executables_higher)])
+
+
+def update(download: bool) -> Path | None:
+    """Run downloads/cleanup when running as an installed application."""
+    app_dir = APP_EXECUTABLE.parent
+    cleanup_old_executables(app_dir)
+    if download:
+        return download_version(app_dir)
+    return None
+
+
+def background_update(download: bool) -> Thread:
+    """Run downloads/cleanup in the background when running as an installed application."""
+    t = Thread(target=update, args=(download,))
+    t.start()
+    return t
