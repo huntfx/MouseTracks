@@ -72,14 +72,23 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 
 _On Linux, MouseTracks requires an __X11 (Xorg)__ session to work. On modern distributions like Ubuntu, you may need to select "Ubuntu on Xorg" from the gear icon on the login screen._
 
----
 
-### Download the Prebuilt Executable (Recommended)
+### Download the Installer (Windows Only)
+
+Install MouseTracks for the current user, with automatic updates whenever a new version is released.
+Each release is digitally signed and verified to prevent tampering.
+
+1. Go to the [latest release](https://github.com/huntfx/MouseTracks/releases/latest) page.
+2. Download the installer (e.g. `MouseTracks-2.0.0-windows-x64-setup.exe`).
+3. Install and launch the application.
+
+
+### Download the Portable Executable
 
 This is the simplest way to get started. No installation is required.
 
 1. Go to the [latest release](https://github.com/huntfx/MouseTracks/releases/latest) page.
-2. Download the appropriate file for your system (eg. `MouseTracks-2.0.0-windows-x64.exe`).
+2. Download the appropriate file for your system (e.g. `MouseTracks-2.0.0-windows-x64.exe`).
 3. If on Linux, make the file executable: `chmod +x MouseTracks-2.0.0-linux-x64`
 4. Run the executable to launch the application.
 
@@ -111,8 +120,6 @@ This only needs to be done once.
 _These are not guaranteed to be the latest version._
 - MouseTracks has been tested, reviewed and hosted by the amazing team over at [MajorGeeks](https://www.majorgeeks.com/files/details/mousetracks.html).
 
----
-
 ### Running from Source
 
 This is recommended if you want to view or contribute to the code.
@@ -134,7 +141,6 @@ Python 3.11 or higher is required.
       ```bash
       ./launch.sh
       ```
----
 
 ### Building from Source
 
