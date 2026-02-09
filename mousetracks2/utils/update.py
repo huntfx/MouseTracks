@@ -129,8 +129,6 @@ def _split_exe_name(path: str | Path, include_untrusted: bool = False,
     Returns the version, os name and architecture.
     """
     path = Path(path)
-    if not path.is_file():
-        return None
 
     # Get any "unstrusted" files
     if path.suffix == UNTRUSTED_EXT:
