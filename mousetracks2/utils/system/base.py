@@ -11,6 +11,7 @@ from typing import Any, Self
 from screeninfo import get_monitors as _get_monitors
 
 from ...types import Rect, RectList
+from ...version import VERSION
 
 
 SUPPORTS_TRAY = True
@@ -132,3 +133,7 @@ def hide_child_process() -> None:
 
 def prepare_application_icon(icon_path: Path | str) -> None:
     """This runs in the GUI process."""
+
+
+def update_installer_version_number(version: str = VERSION) -> None:
+    """Update the version number of the installer."""

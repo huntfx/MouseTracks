@@ -19,6 +19,7 @@ try:
     from mousetracks2.cli import CLI, parse_args, run_cli_function
     from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
     from mousetracks2.utils.update import cleanup_old_executables, download_version
+    from mousetracks2.utils.system import update_installer_version_number
 
 # Show any import errors as the app otherwise will just silently fail
 except ImportError as e:
@@ -38,6 +39,10 @@ def _installer_update() -> None:
 
 def main() -> None:
     """Handle the main startup checks and logic."""
+    # Set the installer version number to the currently running version
+    if CLI.installed:
+        update_installer_version_number()
+
     # Update config if start hidden/visible command line argument is set
     if CLI.start_hidden is not None:
         config = GlobalConfig()

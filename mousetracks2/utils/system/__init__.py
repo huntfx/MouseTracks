@@ -20,6 +20,7 @@ match sys.platform:
         from .windows import MonitorEventsListener
         from .base import hide_child_process
         from .windows import prepare_application_icon
+        from .windows import update_installer_version_number
 
     case 'darwin':
         from .macos import SUPPORTS_TRAY
@@ -29,6 +30,7 @@ match sys.platform:
         from .macos import Window
         from .base import MonitorEventsListener
         from .macos import hide_child_process, prepare_application_icon
+        from .base import update_installer_version_number
 
     case _:
         from .base import SUPPORTS_TRAY
@@ -38,6 +40,7 @@ match sys.platform:
         from .linux import Window
         from .base import MonitorEventsListener
         from .base import hide_child_process, prepare_application_icon
+        from .base import update_installer_version_number
 
 __all__ = [
     'SUPPORTS_TRAY',
@@ -47,6 +50,7 @@ __all__ = [
     'Window',
     'MonitorEventsListener',
     'hide_child_process', 'prepare_application_icon',
+    'update_installer_version_number',
 ]
 
 

@@ -16,9 +16,14 @@ import winreg
 from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
 from ...constants import APP_EXECUTABLE, PACKAGE_IDENTIFIER
 from ...types import Rect, RectList
+from ...version import VERSION
 
 
 SUPPORTS_TRAY = True
+
+APP_ID = '{4FABD8FD-8B74-42D0-A4B6-A8F96BDCBBAD}}_is1'  # Generated UUID with Inno Setup suffix
+
+REG_PATH = rf'Software\Microsoft\Windows\CurrentVersion\Uninstall\{APP_ID}'
 
 user32 = ctypes.windll.user32
 
@@ -499,3 +504,16 @@ class MonitorEventsListener(_MonitorEventsListener):
 def prepare_application_icon(icon_path: Path | str) -> None:
     """Register app so that setting an icon is possible."""
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(PACKAGE_IDENTIFIER)
+
+
+def update_installer_version_number(version: str = VERSION) -> None:
+    """Update the 'DisplayVersion' in the Windows Registry so that
+    'Apps & Features' shows the correct version after a self-update.
+    """
+    print(f'Setting MouseTracks version in registry to {version}...')
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE) as key:
+            winreg.SetValueEx(key, 'DisplayVersion', 0, winreg.REG_SZ, version)
+    except FileNotFoundError:
+        print('Uninstall key not found.')
