@@ -43,6 +43,7 @@ python -m nuitka ^
   --include-data-file=config/language/keyboard/keys/en_GB.ini=config/language/keyboard/keys/en_GB.ini ^
   --include-data-file=config/language/keyboard/layout/en_US.txt=config/language/keyboard/layout/en_US.txt ^
   --include-data-file=resources/images/icon.png=resources/images/icon.png ^
+  --include-data-file=resources/fonts/liberation-sans.regular.ttf=resources/fonts/liberation-sans.regular.ttf ^
   --windows-icon-from-ico=resources/images/icon.ico ^
   --product-name="Mouse Tracks %VERSION%" ^
   --file-description="Mouse Tracks %VERSION%" ^

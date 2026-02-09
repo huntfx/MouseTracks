@@ -25,6 +25,7 @@ a = Analysis(
         ('config/language/keyboard/keys/en_GB.ini', 'config/language/keyboard/keys'),
         ('config/language/keyboard/layout/en_US.txt', 'config/language/keyboard/layout'),
         ('resources/images/icon.png', 'resources/images'),
+        ('resources/fonts/liberation-sans.regular.ttf', 'resources/fonts'),
         (certifi.where(), 'certifi'),
     ],
     hiddenimports=['resources.build.scipy', 'pynput.keyboard._xorg', 'pynput.mouse._xorg', '_cffi_backend'],

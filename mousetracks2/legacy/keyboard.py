@@ -3,6 +3,7 @@ It has been trimmed down and type checked, but a full rewrite is needed.
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal, Iterator
 
 from PIL import Image, ImageFont, ImageDraw
@@ -18,6 +19,9 @@ LANGUAGE_BASE_PATH = REPO_DIR / 'config' / 'language'
 KEYBOARD_KEYS_FOLDER = LANGUAGE_BASE_PATH / 'keyboard' / 'keys'
 
 KEYBOARD_LAYOUT_FOLDER = LANGUAGE_BASE_PATH / 'keyboard' / 'layout'
+
+FONT_LIB = REPO_DIR / 'resources' / 'fonts'
+
 
 @dataclass
 class TimeUnit:
@@ -578,7 +582,7 @@ class DrawKeyboard(object):
                 'Height': height,
                 'Coordinates': coordinate_dict}
 
-    def draw_image(self, font: str = 'arial.ttf') -> Image.Image:
+    def draw_image(self, font: Path | str = FONT_LIB / 'liberation-sans.regular.ttf') -> Image.Image:
         data = self.calculate()
 
         # Create image object
