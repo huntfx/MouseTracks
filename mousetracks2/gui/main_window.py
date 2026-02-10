@@ -2295,7 +2295,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
 
         # Convert pixels from logical coordinates to physical
-        if force_monitor is None:
+        if force_monitor is None and not self.current_profile.rects:
             if old_position is not None:
                 old_position = self.monitor_data.coordinate(old_position)
             if new_position is not None:

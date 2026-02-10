@@ -198,7 +198,7 @@ class Processing(Component):
         # Convert pixels from logical coordinates to physical
         old_position = position
         new_position = data.position
-        if force_monitor is None:
+        if force_monitor is None and not self.current_application.rects:
             old_position = self.monitor_data.coordinate(position)
             if data.position is None:
                 new_position = old_position
