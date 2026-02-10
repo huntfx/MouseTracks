@@ -196,6 +196,8 @@ class Processing(Component):
         moving, and will always skip the first frame of movement.
         """
         # Convert pixels from logical coordinates to physical
+        old_position = position
+        new_position = data.position
         if force_monitor is None:
             old_position = self.monitor_data.coordinate(position)
             if data.position is None:
