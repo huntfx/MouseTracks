@@ -2290,11 +2290,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible() or not self.is_live or self._is_closing or self.ui.thumbnail.pixmap().isNull():
             return
 
-        # Convert logical to physical
-        if old_position is not None:
-            old_position = self.monitor_data.coordinate(old_position)
-        if new_position is not None:
-            new_position = self.monitor_data.coordinate(new_position)
+        # Convert pixels from logical coordinates to physical
+        if force_monitor is None:
+            if old_position is not None:
+                old_position = self.monitor_data.coordinate(old_position)
+            if new_position is not None:
+                new_position = self.monitor_data.coordinate(new_position)
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()

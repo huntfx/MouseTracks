@@ -195,12 +195,13 @@ class Processing(Component):
         moving, the downside being it will still record any jumps while
         moving, and will always skip the first frame of movement.
         """
-        # Convert logical to physical
-        old_position = self.monitor_data.coordinate(position)
-        if data.position is None:
-            new_position = old_position
-        else:
-            new_position = self.monitor_data.coordinate(data.position)
+        # Convert pixels from logical coordinates to physical
+        if force_monitor is None:
+            old_position = self.monitor_data.coordinate(position)
+            if data.position is None:
+                new_position = old_position
+            else:
+                new_position = self.monitor_data.coordinate(data.position)
 
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
