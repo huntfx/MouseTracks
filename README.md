@@ -63,6 +63,10 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 - ### Stability
   A lot of effort has been put into making this as error free as possible, so it will happily keep running for years without any issues.
 
+- ### Advanced Rendering
+  All internal rendering settings can be edited and previewed live in the GUI.
+  Go one step further and use the layer blending modes to combine multiple renders together.
+
 ---
 
 ## Installation (v2.0)
@@ -268,6 +272,30 @@ It's also possible to [define your own](https://github.com/huntfx/MouseTracks/wi
 
 ### Chalk
 <img src="media/render-colours/keyboard/chalk.jpg">
+
+## Layer Blending
+This option is hidden under the "Advanced" settings, and was more of a fun side project rather than serious feature. Multiple layers can be rendered live together, with a few presets to get started.
+
+#### Plasma
+Uses the "Hard Light" blend mode to create high contrast and deep colours.
+<img src="media/layer-presets/plasma.jpg">
+
+#### Heatmap Overlay
+Basic example of drawing the click heatmap over the tracks, using "Luminance Mask" to make the black parts transparent.
+<img src="media/layer-presets/heatmap-overlay.jpg">
+
+#### RGB Clicks
+Three identical black and white click renders, each with only with a single colour channel enabled.
+The left mouse button is red, middle is green and right is blue.
+<img src="media/layer-presets/rgb-clicks.jpg">
+
+#### Urban Moss
+Combines both movement and speed data for an effect that's like moss growing on concrete.
+<img src="media/layer-presets/urban-moss.jpg">
+
+#### Eraser
+Subtracts the clicks from the movement, resulting in what looks like a pencil drawing that's been rubbed out.
+<img src="media/layer-presets/eraser.jpg">
 
 ## Example Renders
 #### Desktop

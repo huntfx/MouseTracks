@@ -475,7 +475,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.addItem('Heatmap Overlay')
         self.ui.layer_presets.addItem('Heatmap Tracks')
         self.ui.layer_presets.addItem('Alpha Multiply')
-        self.ui.layer_presets.addItem('Urban Grass')
+        self.ui.layer_presets.addItem('Urban Moss')
         self.ui.layer_presets.addItem('Eraser')
         self.ui.layer_presets.addItem('Plasma')
         self.ui.layer_presets.addItem('RGB Clicks')
@@ -3083,7 +3083,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.selected_layer.clipping.heatmap = 0.85
                 self.selected_layer.contrast.heatmap = 0.5
 
-            case 'Urban Grass':
+            case 'Urban Moss':
                 self.ui.layer_list.clear()
                 layer_0 = self.add_render_layer()
                 layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
