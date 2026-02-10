@@ -195,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pause_redraw = 0
         self.pause_colour_change = False
-        self.redraw_queue: list[Pixel] = []
+        self._pixel_redraw_queue: list[tuple[tuple[int, int] | None, tuple[int, int] | None, tuple[int, int] | None]] = []
         self._last_save_time = self._last_thumbnail_time = self._last_app_reload_time = int(time.time() * 10)
         self._delete_mouse_pressed = False
         self._delete_keyboard_pressed = False
@@ -2290,6 +2290,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible() or not self.is_live or self._is_closing or self.ui.thumbnail.pixmap().isNull():
             return
 
+        # If in the middle of switching profiles, queue the coordinates to redraw after
+        if self.pause_redraw:
+            self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
+
         # Convert pixels from logical coordinates to physical
         if force_monitor is None:
             if old_position is not None:
@@ -2322,19 +2326,12 @@ class MainWindow(QtWidgets.QMainWindow):
             unique_pixels.add((x, y))
 
         # Send unique pixels to be drawn
-        self.update_pixmap_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
+        self.ui.thumbnail.update_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
 
-    def update_pixmap_pixels(self, *pixels: Pixel) -> None:
-        """Update a specific pixel in the QImage and refresh the display."""
-        self.ui.thumbnail.update_pixels(*pixels)
-
-        # Queue commands if redrawing is paused
-        # This allows them to be resubmitted after an update
-        if self.pause_redraw:
-            self.redraw_queue.extend(pixels)
-        elif self.redraw_queue:
-            redraw_queue, self.redraw_queue = self.redraw_queue, []
-            self.ui.thumbnail.update_pixels(*redraw_queue)
+        # Redraw any queued coordinates after profile switch
+        while not self.pause_redraw and self._pixel_redraw_queue:
+            _old_position, _new_position, _force_monitor = self._pixel_redraw_queue.pop()
+            self.draw_pixmap_line(_old_position, _new_position, _force_monitor)
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
