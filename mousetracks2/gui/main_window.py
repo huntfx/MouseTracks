@@ -2331,9 +2331,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.update_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
 
         # Redraw any queued coordinates after profile switch
-        while not self.pause_redraw and self._pixel_redraw_queue:
-            _old_position, _new_position, _force_monitor = self._pixel_redraw_queue.pop()
-            self.draw_pixmap_line(_old_position, _new_position, _force_monitor)
+        if not self.pause_redraw and self._pixel_redraw_queue:
+            redraw, self._pixel_redraw_queue = self._pixel_redraw_queue, []
+            for _old_position, _new_position, _force_monitor in redraw:
+                self.draw_pixmap_line(_old_position, _new_position, _force_monitor)
 
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
