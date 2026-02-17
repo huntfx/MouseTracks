@@ -1357,6 +1357,7 @@ class MainWindow(QtWidgets.QMainWindow):
         lock_aspect = self.ui.lock_aspect.isChecked()
 
         if file_path is None:
+            sampling = self.ui.thumbnail_sampling.value()
             width = self.ui.thumbnail.width()
             height = self.ui.thumbnail.height()
 
@@ -1381,6 +1382,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 height = min(height, custom_height)
 
         else:
+            sampling = self.ui.sampling.value()
             width = custom_width
             height = custom_height
 
@@ -1399,7 +1401,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file_path=file_path,
                 colour_map=self.render_colour,
                 padding=self.padding,
-                sampling=self.ui.thumbnail_sampling.value(),
+                sampling=sampling,
                 contrast=self.contrast,
                 clipping=self.clipping,
                 blur=self.blur,
