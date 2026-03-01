@@ -3,12 +3,13 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
-from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
+from . import base
 from ...constants import APP_EXECUTABLE, IS_BUILT_EXE
 
 if TYPE_CHECKING:
-    Window: Type[_Window]
-    MonitorEventsListener: Type[_MonitorEventsListener]
+    Window: Type[base.Window]
+    MonitorEventListener: Type[base.EventListener]
+    ControllerEventListener: Type[base.EventListener]
 
 match sys.platform:
     case 'win32':
@@ -17,7 +18,7 @@ match sys.platform:
         from .windows import get_autostart, set_autostart, remove_autostart
         from .windows import is_elevated, relaunch_as_elevated
         from .windows import Window
-        from .windows import MonitorEventsListener
+        from .windows import MonitorEventListener, ControllerEventListener
         from .base import hide_child_process
         from .windows import prepare_application_icon
         from .windows import update_installer_version_number
@@ -28,7 +29,7 @@ match sys.platform:
         from .macos import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
         from .macos import Window
-        from .base import MonitorEventsListener
+        from .base import MonitorEventListener, ControllerEventListener
         from .macos import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
 
@@ -38,7 +39,7 @@ match sys.platform:
         from .linux import get_autostart, set_autostart, remove_autostart
         from .base import is_elevated, relaunch_as_elevated
         from .linux import Window
-        from .base import MonitorEventsListener
+        from .base import MonitorEventListener, ControllerEventListener
         from .base import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
 
@@ -48,7 +49,7 @@ __all__ = [
     'get_autostart', 'set_autostart', 'remove_autostart', 'remap_autostart',
     'is_elevated', 'relaunch_as_elevated',
     'Window',
-    'MonitorEventsListener',
+    'MonitorEventListener', 'ControllerEventListener',
     'hide_child_process', 'prepare_application_icon',
     'update_installer_version_number',
 ]

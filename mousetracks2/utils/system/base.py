@@ -88,17 +88,17 @@ class Window:
         return (0, 0)
 
 
-class MonitorEventsListener(threading.Thread):
-    """Listen for monitor change events.
+class EventListener(threading.Thread):
+    """Base class to listen for events.
 
     The most basic implementation is to check every second for changes.
-    If an operating system has hooks then this class can be subclassed.
+    If an operating system has hooks then this should be overridden.
 
     The initial event is triggered on startup.
     """
 
     def __init__(self) -> None:
-        super().__init__(name='MonitorEventsListener', daemon=True)
+        super().__init__(name='EventListener', daemon=True)
         self._queue = queue.Queue()  # type: queue.Queue[None]
         self._running = True
 
@@ -125,6 +125,14 @@ class MonitorEventsListener(threading.Thread):
             except queue.Empty:
                 return count > 0
             count += 1
+
+
+class MonitorEventListener(EventListener):
+    """Listen for monitor change events."""
+
+
+class ControllerEventListener(EventListener):
+    """Listen for controller change events."""
 
 
 def hide_child_process() -> None:

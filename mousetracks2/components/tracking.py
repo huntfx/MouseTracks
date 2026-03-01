@@ -23,7 +23,7 @@ from ..utils import keycodes
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import MonitorEventsListener, hide_child_process
+from ..utils.system import MonitorEventListener, ControllerEventListener, hide_child_process
 
 
 if XInput is None:
@@ -130,8 +130,11 @@ class Tracking(Component):
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
 
-        self._monitor_listener = MonitorEventsListener()
+        self._monitor_listener = MonitorEventListener()
         self._monitor_listener.start()
+
+        self._controller_listener = ControllerEventListener()
+        self._controller_listener.start()
 
     def _receive_data(self) -> None:
         for message in self.receive_data():
@@ -179,6 +182,11 @@ class Tracking(Component):
                 case ipc.SetGlobalGamepadTracking():
                     print(f'[Tracking] Tracking gamepad data: {message.enable}')
                     self.track_gamepad = message.enable
+                    if message.enable:
+                        self._controller_listener = ControllerEventListener()
+                        self._controller_listener.start()
+                    else:
+                        self._controller_listener.stop()
 
                 case ipc.SetGlobalNetworkTracking():
                     print(f'[Tracking] Tracking network data: {message.enable}')
@@ -197,7 +205,7 @@ class Tracking(Component):
                     if message.disable:
                         self._monitor_listener.stop()
                     else:
-                        self._monitor_listener = MonitorEventsListener()
+                        self._monitor_listener = MonitorEventListener()
                         self._monitor_listener.start()
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
@@ -441,9 +449,8 @@ class Tracking(Component):
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
-                if not tick % int(UPDATES_PER_SECOND * GlobalConfig.gamepad_check_frequency) or data.gamepad_force_recheck:
+                if self._controller_listener.triggered:
                     data.gamepads_current = XInput.get_connected()
-                    data.gamepad_force_recheck = False
 
                     if data.gamepads_current != data.gamepads_previous:
                         print('[Tracking] Gamepad change detected')

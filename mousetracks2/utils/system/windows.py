@@ -13,7 +13,7 @@ from typing import Any, Self
 import subprocess
 import winreg
 
-from .base import Window as _Window, MonitorEventsListener as _MonitorEventsListener
+from . import base
 from ...constants import APP_EXECUTABLE, PACKAGE_IDENTIFIER
 from ...types import Rect, RectList
 from ...version import VERSION
@@ -48,6 +48,8 @@ WM_DISPLAYCHANGE = 0x007E
 WM_DEVICECHANGE  = 0x0219
 
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+DBT_DEVNODES_CHANGED = 0x0007
 
 BOOL = ctypes.wintypes.BOOL
 
@@ -415,7 +417,7 @@ def relaunch_as_elevated() -> None:
     sys.exit()
 
 
-class Window(_Window):
+class Window(base.Window):
     def __init__(self, hwnd: int) -> None:
         self._hwnd = hwnd
         self._handle = WindowHandle(self._hwnd)
@@ -454,24 +456,31 @@ class Window(_Window):
         return self._pid.size
 
 
-class MonitorEventsListener(_MonitorEventsListener):
-    """Listen for monitor change events."""
+class EventListener(base.EventListener):
+    """Base Windows event listener.
+
+    Override the `check` method to implement this.
+    """
 
     def __init__(self) -> None:
         super().__init__()
         self._hwnd = None  # type: int | None
 
+    def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
+        """Determine if a specific event has been fired."""
+        return False
+
     def run(self) -> None:
         """Create and start the message listener."""
         def wndproc(hwnd: int, msg: int, wparam: int, lparam: int) -> int:
-            if msg in (WM_DISPLAYCHANGE, WM_DEVICECHANGE):
+            if self.check(hwnd, msg, wparam, lparam):
                 self.trigger()
             return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
         hinst = kernel32.GetModuleHandleW(None)
         wndproc_c = WNDPROCTYPE(wndproc)
 
-        class_name = 'MouseTracksHiddenWindowClass'
+        class_name = type(self).__name__
         wc = WNDCLASS()
         wc.lpfnWndProc = wndproc_c
         wc.lpszClassName = class_name
@@ -499,6 +508,20 @@ class MonitorEventsListener(_MonitorEventsListener):
         """Stops the message loop and cleans up the window."""
         if self._hwnd:
             user32.PostMessageW(self._hwnd, WM_QUIT, 0, 0)
+
+
+class MonitorEventListener(EventListener):
+    """Listen for monitor change events."""
+
+    def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
+        return msg == WM_DISPLAYCHANGE
+
+
+class ControllerEventListener(EventListener):
+    """Listen for controller change events."""
+
+    def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
+        return msg == WM_DEVICECHANGE and wparam == DBT_DEVNODES_CHANGED
 
 
 def prepare_application_icon(icon_path: Path | str) -> None:
