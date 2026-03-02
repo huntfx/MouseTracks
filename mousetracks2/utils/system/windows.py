@@ -53,6 +53,10 @@ DBT_DEVNODES_CHANGED = 0x0007
 
 EVENT_SYSTEM_FOREGROUND = 0x0003
 
+EVENT_SYSTEM_MOVESIZESTART = 0x000A
+
+EVENT_SYSTEM_MOVESIZEEND = 0x000B
+
 EVENT_OBJECT_LOCATIONCHANGE = 0x800B
 
 WINEVENT_OUTOFCONTEXT = 0x0000
@@ -604,6 +608,33 @@ class ForegroundAppListener(_WinEventHookListener):
         if event == EVENT_OBJECT_LOCATIONCHANGE:
             return idObject == OBJID_WINDOW
         return True
+
+
+class UserResizeAppListener(_WinEventHookListener):
+    """Listen for when the user is actively resizing a window."""
+
+    EVENTS = (
+        EVENT_SYSTEM_FOREGROUND,
+        EVENT_SYSTEM_MOVESIZESTART,
+        EVENT_SYSTEM_MOVESIZEEND,
+    )
+
+    def __init__(self) -> None:
+        self._is_moving = False
+        super().__init__()
+
+    def check(self, hWinEventHook: int, event: int, hwnd: int, idObject: int,
+              idChild: int, dwEventThread: int, dwmsEventTime: int) -> bool:
+        if hwnd:
+            if event == EVENT_SYSTEM_MOVESIZESTART:
+                self._is_moving = True
+            elif event in (EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_FOREGROUND):
+                self._is_moving = False
+        return False
+
+    @property
+    def triggered(self) -> bool:
+        return self._is_moving
 
 
 def prepare_application_icon(icon_path: Path | str) -> None:

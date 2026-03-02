@@ -139,6 +139,14 @@ class ForegroundAppListener(EventListener):
     """Listen for application change events."""
 
 
+class UserResizeAppListener(EventListener):
+    """Determine when the user is actively resizing an application."""
+
+    @property
+    def triggered(self) -> bool:
+        return False
+
+
 def hide_child_process() -> None:
     """This is here to allow macOS to hide the child processes."""
 

@@ -38,6 +38,7 @@ from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
+from ..utils.system import UserResizeAppListener
 from ..utils.update import is_latest_version, background_update
 
 if TYPE_CHECKING:
@@ -193,6 +194,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component = component
         self.config = GlobalConfig()
 
+        # Set initial states
         self.pause_redraw = 0
         self.pause_colour_change = False
         self._pixel_redraw_queue: list[tuple[tuple[int, int] | None, tuple[int, int] | None, tuple[int, int] | None]] = []
@@ -219,6 +221,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._startup_notify_queue: list[str] = []
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
+
+        # Setup threads
+        self._resize_listener = UserResizeAppListener()
+        self._resize_listener.start()
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -853,7 +859,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def resolution_toggled(self, value: bool) -> None:
         """Toggle rendering of a particular resolution in a profile."""
         checkbox = cast(QtWidgets.QCheckBox, self.sender())
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         width, height = map(int, checkbox.text().split('x'))
@@ -875,7 +881,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Change the multiple monitor option."""
         if not self.ui.opts_monitor.isChecked():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
         self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked()))
@@ -885,7 +891,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Enable or disable the multi monitor override."""
         if not self.ui.opts_monitor.isEnabled():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
         self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked() if checked else None))
@@ -1030,7 +1036,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.save_profile_request_sent = True
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is not None:
             self.component.send_data(ipc.Save(sanitised_profile_name))
 
@@ -1042,7 +1048,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        sanitised_profile_name, profile_name = self._get_profile_data(idx)
+        sanitised_profile_name, profile_name = self._selected_profile_data(idx)
 
         if sanitised_profile_name is not None and not self._redrawing_profiles:
             self.request_profile_data(sanitised_profile_name)
@@ -1051,7 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_profile_modified_text()
 
     def request_profile_data(self, sanitised_profile_name: str) -> None:
-        """Request loading profile data."""
+        """Request loading profile data from the background process."""
         self.component.send_data(ipc.ProfileDataRequest(sanitised_profile_name,
                                                         self._profile_names[sanitised_profile_name]))
 
@@ -1069,8 +1075,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_loading_profile += 1
         self.start_rendering_timer()
 
-    def _get_profile_data(self, idx: int | None = None) -> tuple[str, str] | tuple[None, None]:
-        """Get the selected profile name from the combobox."""
+    def _selected_profile_data(self, idx: int | None = None) -> tuple[str, str] | tuple[None, None]:
+        """Get the selected profile name from the combobox.
+
+        Returns the sanitised profile name and actual name.
+        """
         if idx is None:
             sanitised_profile_name = self.ui.current_profile.currentData()
         else:
@@ -1309,7 +1318,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         width = self.ui.thumbnail.width()
         height = self.ui.thumbnail.height()
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return False
 
@@ -1346,7 +1355,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return True
 
     def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
 
@@ -1473,7 +1482,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case _:
                 name = 'Data'
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
@@ -1686,11 +1695,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     im.save(message.request.file_path)
                     os.startfile(message.request.file_path)
 
-            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled:
+            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled and not self.app_resizing:
                 self.mouse_held_count += 1
 
             case ipc.MouseMove() if self.is_live and self.mouse_tracking_enabled:
-                if self.render_type == ipc.RenderType.MouseMovement:
+                if self.render_type == ipc.RenderType.MouseMovement and not self.app_resizing:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -2273,10 +2282,17 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def is_live(self) -> bool:
         """Determine if the visible data is live."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return False
         return sanitised_profile_name == sanitise_profile_name(self.current_profile.name)
+
+    @property
+    def app_resizing(self) -> bool:
+        """Determine if the focused application is being resized."""
+        if self.current_profile.name == DEFAULT_PROFILE_NAME:
+            return False
+        return self._resize_listener.triggered
 
     @property
     def mouse_tracking_enabled(self) -> bool:
@@ -2361,7 +2377,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_mouse(self) -> None:
         """Request deletion of mouse data for the current profile."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return None
 
@@ -2385,7 +2401,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_keyboard(self) -> None:
         """Request deletion of keyboard data for the current profile."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return None
 
@@ -2408,7 +2424,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_gamepad(self) -> None:
         """Request deletion of gamepad data for the current profile."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return None
 
@@ -2432,7 +2448,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_network(self) -> None:
         """Request deletion of network data for the current profile."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return None
 
@@ -2455,7 +2471,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delete_profile(self) -> None:
         """Delete the selected profile."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return None
 
@@ -2484,7 +2500,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_mouse.isEnabled():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
 
@@ -2495,7 +2511,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_keyboard.isEnabled():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
 
@@ -2506,7 +2522,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_gamepad.isEnabled():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
 
@@ -2517,7 +2533,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
         if not self.ui.track_network.isEnabled():
             return
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
 
@@ -2572,7 +2588,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def set_profile_modified_text(self) -> None:
         """Set the text if the profile has been modified."""
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is not None and sanitised_profile_name in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
             self.ui.profile_save.setEnabled(self.state != ipc.TrackingState.Stopped)
@@ -2788,7 +2804,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
@@ -2806,7 +2822,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
@@ -2824,7 +2840,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
@@ -2842,7 +2858,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
@@ -2860,7 +2876,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setNameFilters(['CSV Files (*.csv)"'])
         dialog.setDefaultSuffix('csv')
 
-        sanitised_profile_name, profile_name = self._get_profile_data()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
             return
         profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)

@@ -24,7 +24,7 @@ from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import hide_child_process
+from ..utils.system import hide_child_process, UserResizeAppListener
 from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError, LayerBlend
 
@@ -68,6 +68,9 @@ class Processing(Component):
         self.all_profiles = TrackingProfileLoader()
         self._current_application = Application('', RectList())
         self.current_application = Application(DEFAULT_PROFILE_NAME, RectList())
+
+        self._resize_listener = UserResizeAppListener()
+        self._resize_listener.start()
 
     @property
     def timestamp(self) -> int:
@@ -165,6 +168,13 @@ class Processing(Component):
         creation_day = self.profile.created // 86400
         current_day = self.timestamp // 86400
         return max(0, current_day - creation_day)
+
+    @property
+    def app_resizing(self) -> bool:
+        """Determine if the focused application is being resized."""
+        if self.current_application.name == DEFAULT_PROFILE_NAME:
+            return False
+        return self._resize_listener.triggered
 
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
@@ -617,14 +627,14 @@ class Processing(Component):
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
-                if not self.profile.config.track_mouse:
+                if not self.profile.config.track_mouse or self.app_resizing:
                     return
 
                 distance = self._record_move(self.profile.cursor_map, message.position)
                 self.profile.daily_distance[self.profile_age_days] += distance
 
             case ipc.MouseHeld():
-                if not self.profile.config.track_mouse:
+                if not self.profile.config.track_mouse or self.app_resizing:
                     return
 
                 result = self._monitor_offset(message.position)
