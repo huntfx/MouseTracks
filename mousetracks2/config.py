@@ -26,7 +26,6 @@ class GlobalConfig:
         save_frequency: How often to autosave.
         max_loaded_profiles: Maximum amount of loaded profiles.
             This will only affect profiles without unsaved changes.
-        application_check_frequency: How often to check the current focused application.
         component_check_frequency: How often to check all components are running.
             This is used once per message received.
         shutdown_timeout: How long to wait before shutting down automatically.
@@ -45,7 +44,6 @@ class GlobalConfig:
     inactivity_time: float = 300.0
     save_frequency: float = 600.0
     max_loaded_profiles: int = 8
-    application_check_frequency: float = 1.0
     component_check_frequency: float = 1.0
     shutdown_timeout: float = 15.0
     export_notification_timeout: float = 7.0

@@ -23,7 +23,7 @@ from ..utils import keycodes
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import MonitorEventListener, ControllerEventListener, hide_child_process
+from ..utils.system import MonitorEventListener, ControllerEventListener, ForegroundAppListener, hide_child_process
 
 
 if XInput is None:
@@ -136,6 +136,9 @@ class Tracking(Component):
         self._controller_listener = ControllerEventListener()
         self._controller_listener.start()
 
+        self._application_listener = ForegroundAppListener()
+        self._application_listener.start()
+
     def _receive_data(self) -> None:
         for message in self.receive_data():
             match message:
@@ -197,6 +200,12 @@ class Tracking(Component):
                 case ipc.DebugDisableAppDetection():
                     print(f'[Tracking] Disabled check for running applications: {message.disable}')
                     self.update_apps = not message.disable
+
+                    if message.disable:
+                        self._application_listener.stop()
+                    else:
+                        self._application_listener = ForegroundAppListener()
+                        self._application_listener.start()
 
                 case ipc.DebugDisableMonitorCheck():
                     print(f'[Tracking] Disabled check for monitor changes: {message.disable}')
@@ -412,7 +421,7 @@ class Tracking(Component):
             self.send_data(ipc.Tick(tick, int(time.time())))
 
             # Check for loaded applications
-            if self.update_apps and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.application_check_frequency):
+            if self.update_apps and self._application_listener.triggered:
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Update monitor data

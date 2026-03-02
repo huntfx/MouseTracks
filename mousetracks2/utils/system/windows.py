@@ -51,15 +51,27 @@ PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 DBT_DEVNODES_CHANGED = 0x0007
 
+EVENT_SYSTEM_FOREGROUND = 0x0003
+
+EVENT_OBJECT_LOCATIONCHANGE = 0x800B
+
+WINEVENT_OUTOFCONTEXT = 0x0000
+
+OBJID_WINDOW = 0x00000000
+
 BOOL = ctypes.wintypes.BOOL
 
 DWORD = ctypes.wintypes.DWORD
+
+LONG = ctypes.wintypes.LONG
 
 HDC = ctypes.wintypes.HDC
 
 HMONITOR = ctypes.wintypes.HMONITOR
 
 HWND = ctypes.wintypes.HWND
+
+HANDLE = ctypes.wintypes.HANDLE
 
 UINT = ctypes.wintypes.UINT
 
@@ -83,11 +95,13 @@ WndEnumPrpc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
 
 WNDPROCTYPE = ctypes.WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
 
+WINEVENTPROC = ctypes.WINFUNCTYPE(None, HANDLE, DWORD, HWND, LONG, LONG, DWORD, DWORD)
+
 HCURSOR = ctypes.wintypes.HANDLE
 
-HICON = ctypes.wintypes.HANDLE
+HICON = ctypes.wintypes.HICON
 
-HBRUSH = ctypes.wintypes.HANDLE
+HBRUSH = ctypes.wintypes.HBRUSH
 
 DPI_AWARENESS_CONTEXT_UNAWARE = ctypes.wintypes.HANDLE(-1)
 DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = ctypes.wintypes.HANDLE(-2)
@@ -134,12 +148,7 @@ user32.EnumDisplayMonitors.argtypes = [HDC, ctypes.POINTER(RECT), MonitorEnumPro
 user32.EnumDisplayMonitors.restype = BOOL
 
 user32.DefWindowProcW.restype = LRESULT
-user32.DefWindowProcW.argtypes = [
-    HWND,
-    UINT,
-    WPARAM,
-    LPARAM,
-]
+user32.DefWindowProcW.argtypes = [HWND, UINT, WPARAM, LPARAM]
 
 user32.SetThreadDpiAwarenessContext.argtypes = [ctypes.wintypes.HANDLE]
 user32.SetThreadDpiAwarenessContext.restype = ctypes.wintypes.HANDLE
@@ -456,29 +465,29 @@ class Window(base.Window):
         return self._pid.size
 
 
-class EventListener(base.EventListener):
-    """Base Windows event listener.
+class _WindowMessageListener(base.EventListener):
+    """Listen for Windows messages.
 
-    Override the `check` method to implement this.
+    Override the `check` method to implement triggers.
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self._hwnd = None  # type: int | None
+        self._hwnd: int | None = None
 
     def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
         """Determine if a specific event has been fired."""
         return False
 
+    def _win_proc(self, hwnd: int, msg: int, wparam: int, lparam: int) -> int:
+        if self.check(hwnd, msg, wparam, lparam):
+            self.trigger()
+        return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+
     def run(self) -> None:
         """Create and start the message listener."""
-        def wndproc(hwnd: int, msg: int, wparam: int, lparam: int) -> int:
-            if self.check(hwnd, msg, wparam, lparam):
-                self.trigger()
-            return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
-
         hinst = kernel32.GetModuleHandleW(None)
-        wndproc_c = WNDPROCTYPE(wndproc)
+        wndproc_c = WNDPROCTYPE(self._win_proc)
 
         class_name = type(self).__name__
         wc = WNDCLASS()
@@ -510,18 +519,91 @@ class EventListener(base.EventListener):
             user32.PostMessageW(self._hwnd, WM_QUIT, 0, 0)
 
 
-class MonitorEventListener(EventListener):
+class _WinEventHookListener(base.EventListener):
+    """Listen for Windows event hooks.
+
+    Override the `check` method to implement triggers.
+    """
+
+    EVENTS: tuple[int, ...] = ()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._hooks: list[int] = []
+
+    def check(self, hWinEventHook: int, event: int, hwnd: int, idObject: int,
+              idChild: int, dwEventThread: int, dwmsEventTime: int) -> bool:
+        """Determine if a specific event has been fired."""
+        return False
+
+    def _win_event_callback(self, hWinEventHook: int, event: int, hwnd: int, idObject: int,
+                            idChild: int, dwEventThread: int, dwmsEventTime: int) -> None:
+        if self.check(hWinEventHook, event, hwnd, idObject,
+                      idChild, dwEventThread, dwmsEventTime):
+            self.trigger()
+
+    def run(self) -> None:
+        hook_proc = WINEVENTPROC(self._win_event_callback)
+
+        for event_id in self.EVENTS:
+            hook = user32.SetWinEventHook(
+                event_id, event_id,
+                None, hook_proc, 0, 0, WINEVENT_OUTOFCONTEXT
+            )
+            if not hook:
+                raise ctypes.WinError(ctypes.get_last_error())
+            self._hooks.append(hook)
+
+        self.trigger()
+
+        msg = MSG()
+        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0):
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+
+    def stop(self) -> None:
+        """Stops the message loop and cleans up the thread."""
+        for hook in self._hooks:
+            user32.UnhookWinEvent(hook)
+        self._hooks.clear()
+        user32.PostThreadMessageW(kernel32.GetCurrentThreadId(), WM_QUIT, 0, 0)
+
+
+class MonitorEventListener(_WindowMessageListener):
     """Listen for monitor change events."""
 
     def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
         return msg == WM_DISPLAYCHANGE
 
 
-class ControllerEventListener(EventListener):
+class ControllerEventListener(_WindowMessageListener):
     """Listen for controller change events."""
 
     def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
         return msg == WM_DEVICECHANGE and wparam == DBT_DEVNODES_CHANGED
+
+
+class ForegroundAppListener(_WinEventHookListener):
+    """Listen for when the foreground window changes.
+    This can happen if the user changes, moves or resizes an app.
+    """
+
+    EVENTS = (
+        EVENT_SYSTEM_FOREGROUND,
+        EVENT_OBJECT_LOCATIONCHANGE,
+    )
+
+    def __init__(self) -> None:
+        self._is_moving = False
+        super().__init__()
+
+    def check(self, hWinEventHook: int, event: int, hwnd: int, idObject: int,
+              idChild: int, dwEventThread: int, dwmsEventTime: int) -> bool:
+        if not hwnd or event not in self.EVENTS:
+            return False
+        if event == EVENT_OBJECT_LOCATIONCHANGE:
+            return idObject == OBJID_WINDOW
+        return True
 
 
 def prepare_application_icon(icon_path: Path | str) -> None:

@@ -98,7 +98,7 @@ class EventListener(threading.Thread):
     """
 
     def __init__(self) -> None:
-        super().__init__(name='EventListener', daemon=True)
+        super().__init__(name=type(self).__name__, daemon=True)
         self._queue = queue.Queue()  # type: queue.Queue[None]
         self._running = True
 
@@ -133,6 +133,10 @@ class MonitorEventListener(EventListener):
 
 class ControllerEventListener(EventListener):
     """Listen for controller change events."""
+
+
+class ForegroundAppListener(EventListener):
+    """Listen for application change events."""
 
 
 def hide_child_process() -> None:
