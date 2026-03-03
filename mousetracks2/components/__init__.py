@@ -19,7 +19,7 @@ import queue
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from . import app_detection, gui, ipc, processing, tracking
+from . import ipc
 from ..config import GlobalConfig
 from ..constants import IS_EXE, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
@@ -101,12 +101,7 @@ class Hub:
 
         self._q_main: Queue[ipc.Message] = Queue()
 
-        self._q_gui: Queue[ipc.Message] = Queue()
-        self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
-        self._p_gui.daemon = True
-        if self.use_gui:
-            self._p_gui.start()
-        self._create_tracking_processes()
+        self._create_tracking_processes(first_run=True)
 
         # Disable show/hide if console is already hidden
         handle = self._get_console_handle()
@@ -183,23 +178,35 @@ class Hub:
 
         print('[Hub] Processes shut down')
 
-    def _create_tracking_processes(self) -> None:
+    def _create_tracking_processes(self, first_run: bool = False) -> None:
         """Setup the processes required for tracking.
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
+        from .app_detection import AppDetection
+        from .gui import GUI
+        from .processing import Processing
+        from .tracking import Tracking
+
+        if first_run:
+            self._q_gui: Queue[ipc.Message] = Queue()
+            self._p_gui = multiprocessing.Process(target=GUI.launch, args=(self._q_main, self._q_gui))
+            self._p_gui.daemon = True
+            if self.use_gui:
+                self._p_gui.start()
+
         self._q_tracking: Queue[ipc.Message] = Queue()
-        self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
+        self._p_tracking = multiprocessing.Process(target=Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
 
         self._q_processing: Queue[ipc.Message] = Queue()
-        self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
+        self._p_processing = multiprocessing.Process(target=Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
 
         self._q_app_detection: Queue[ipc.Message] = Queue()
-        self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
+        self._p_app_detection = multiprocessing.Process(target=AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
 
