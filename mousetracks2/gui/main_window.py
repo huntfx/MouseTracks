@@ -1313,14 +1313,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._thumbnail_redraw_required = True
             return True
 
-        # Flag if drawing to prevent building up duplicate commands
-        self.pause_redraw += 1
-
         width = self.ui.thumbnail.width()
         height = self.ui.thumbnail.height()
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return False
+
+        # Flag if drawing to prevent building up duplicate commands
+        self.pause_redraw += 1
 
         # Account for collapsed splitters
         if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
