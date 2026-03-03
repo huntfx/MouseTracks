@@ -11,21 +11,21 @@ import numpy.typing as npt
 from send2trash import send2trash
 
 from . import ipc
-from .abstract import Component
+from .abstract import AppComponent
 from ..cli import CLI
 from ..config import GlobalConfig
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
-from ..types import RectList
+from ..types import Application
 from ..utils import keycodes
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import hide_child_process, UserResizeAppListener
-from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
+from ..utils.system import hide_child_process
+from ..constants import UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
 from ..render import render, EmptyRenderError, LayerBlend
 
 
@@ -47,13 +47,7 @@ class PreviousMouseClick:
         return self.message.position
 
 
-@dataclass
-class Application:
-    name: str
-    rects: RectList = field(default_factory=RectList)
-
-
-class Processing(Component):
+class Processing(AppComponent):
     def __post_init__(self) -> None:
         hide_child_process()
 
@@ -66,11 +60,11 @@ class Processing(Component):
 
         # Load in the default profile
         self.all_profiles = TrackingProfileLoader()
-        self._current_application = Application('', RectList())
-        self.current_application = Application(DEFAULT_PROFILE_NAME, RectList())
 
-        self._resize_listener = UserResizeAppListener()
-        self._resize_listener.start()
+        # Reset the cursor position on focused application change
+        def on_application_change(app: Application) -> None:
+            self.profile.cursor_map.position = None
+        self.register_app_change_hook(on_application_change)
 
     @property
     def timestamp(self) -> int:
@@ -87,22 +81,7 @@ class Processing(Component):
     @property
     def profile(self) -> TrackingProfile:
         """Get the data for the current application."""
-        return self.all_profiles[self.current_application.name]
-
-    @property
-    def current_application(self) -> Application:
-        """Get the currently loaded application."""
-        return self._current_application
-
-    @current_application.setter
-    def current_application(self, application: Application) -> None:
-        """Update the currently loaded application."""
-        if application == self._current_application:
-            return
-        self._current_application = application
-
-        # Reset the data
-        self.profile.cursor_map.position = None
+        return self.all_profiles[self.focused_app.name]
 
     def _send_profile_data(self, profile: TrackingProfile) -> None:
         """Send all the stats for the profile."""
@@ -169,18 +148,11 @@ class Processing(Component):
         current_day = self.timestamp // 86400
         return max(0, current_day - creation_day)
 
-    @property
-    def app_resizing(self) -> bool:
-        """Determine if the focused application is being resized."""
-        if self.current_application.name == DEFAULT_PROFILE_NAME:
-            return False
-        return self._resize_listener.triggered
-
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         monitors = self.monitor_data.physical
-        if self.current_application.rects:
-            monitors = self.current_application.rects
+        if self.focused_app.rects:
+            monitors = self.focused_app.rects
 
         single_monitor = bool(CLI.single_monitor) if self.profile.config.multi_monitor is None else not self.profile.config.multi_monitor
         return monitors.calculate_offset(pixel, combined=single_monitor)
@@ -208,7 +180,7 @@ class Processing(Component):
         # Convert pixels from logical coordinates to physical
         old_position = position
         new_position = data.position
-        if force_monitor is None and not self.current_application.rects:
+        if force_monitor is None and not self.focused_app.rects:
             old_position = self.monitor_data.coordinate(position)
             if data.position is None:
                 new_position = old_position
@@ -715,7 +687,7 @@ class Processing(Component):
                 raise ExitRequest
 
             case ipc.CurrentProfileChanged():
-                self.current_application = Application(message.name, message.rects)
+                self.focused_app = Application(message.name, message.rects)
 
             case ipc.Save():
                 # Keep track of what saved and what didn't

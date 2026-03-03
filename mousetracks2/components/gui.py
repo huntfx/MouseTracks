@@ -5,7 +5,7 @@ from typing import cast
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from . import ipc
-from .abstract import Component
+from .abstract import Component, AppComponent
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
@@ -45,7 +45,7 @@ class QueueWorker(QtCore.QObject):
         self.running = False
 
 
-class GUI(Component):
+class GUI(AppComponent):
     def __post_init__(self) -> None:
         """Setup the threads."""
         self.error: Exception | None = None

@@ -2,12 +2,15 @@ import multiprocessing
 import os
 import time
 import traceback
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Callable, Iterator
 
 import psutil
 
 from . import ipc
+from ..constants import DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
+from ..types import RectList, Application
+from ..utils.system import UserResizeAppListener
 
 if TYPE_CHECKING:
     import multiprocessing.queues
@@ -18,8 +21,12 @@ class Component:
         self._q_send = q_send
         self._q_recv = q_receive
         self.name = type(self).__name__
+        self._register_mixin()
         self.__post_init__()
         self._parent_pid = os.getppid()
+
+    def _register_mixin(self) -> None:
+        """Subclass to implement custom mixin code."""
 
     def __post_init__(self) -> None:
         """Call this after running `__init__`."""
@@ -153,3 +160,50 @@ class Component:
             print(f'[{self.name}] Sent process closed notification.')
         else:
             print(f'[{self.name}] Process closed due to Hub not running.')
+
+
+class AppComponent(Component):
+    """Mixin component to implement methods for tracking the focused application."""
+
+    def _register_mixin(self) -> None:
+        # Setup the hook list
+        self._app_change_hooks: list[Callable[[Application], None]] = []
+
+        # Setup the focused app tracking
+        self._focused_app = Application('', RectList())
+        self.focused_app = Application(DEFAULT_PROFILE_NAME, RectList())
+
+        # Setup the resize listener
+        self._resize_listener = UserResizeAppListener()
+        self._resize_listener.start()
+
+        super()._register_mixin()
+
+    def register_app_change_hook(self, fn: Callable[[Application], None]) -> None:
+        """Register a function to run when the focused application changes.
+        It takes one input parameter of the `Application` instance.
+        """
+        self._app_change_hooks.append(fn)
+        fn(self.focused_app)
+
+    @property
+    def focused_app(self) -> Application:
+        """Get the currently focused application."""
+        return self._focused_app
+
+    @focused_app.setter
+    def focused_app(self, application: Application) -> None:
+        """Update the currently focused application."""
+        if application == self._focused_app:
+            return
+        self._focused_app = application
+
+        for func in self._app_change_hooks:
+            func(application)
+
+    @property
+    def app_resizing(self) -> bool:
+        """Determine if the focused application is being resized."""
+        if self.focused_app.name == DEFAULT_PROFILE_NAME:
+            return False
+        return self._resize_listener.triggered

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Generic, Iterable, Self, SupportsIndex, TypeVar, cast, overload
 
 
@@ -188,3 +188,9 @@ class RectList(list[Rect]):
     @property
     def positions(self) -> list[tuple[int, int]]:
         return [item.position for item in self]
+
+
+@dataclass
+class Application:
+    name: str
+    rects: RectList = field(default_factory=RectList)

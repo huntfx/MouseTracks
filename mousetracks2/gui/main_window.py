@@ -7,8 +7,6 @@ import re
 import sys
 import time
 import webbrowser
-import zipfile
-from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Generic, Iterable, Iterator, TypeVar, TYPE_CHECKING
@@ -26,19 +24,18 @@ from ..components import ipc
 from ..cli import CLI
 from ..constants import SYS_EXECUTABLE, APP_EXECUTABLE
 from ..config import GlobalConfig
-from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
+from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, RADIAL_ARRAY_SIZE
+from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
 from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
-from ..types import RectList
+from ..types import Application
 from ..utils import keycodes
 from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_line, calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
-from ..utils.system import UserResizeAppListener
 from ..utils.update import is_latest_version, background_update
 
 if TYPE_CHECKING:
@@ -58,18 +55,6 @@ class MapData:
     position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
-
-
-@dataclass
-class Profile:
-    """Hold data related to the currently running profile."""
-
-    name: str
-    rects: RectList = field(default_factory=RectList)
-    track_mouse: bool = True
-    track_keyboard: bool = True
-    track_gamepad: bool = True
-    track_network: bool = True
 
 
 @dataclass
@@ -222,10 +207,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
 
-        # Setup threads
-        self._resize_listener = UserResizeAppListener()
-        self._resize_listener.start()
-
         # Setup UI
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -300,10 +281,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.menu_allow_minimise.setChecked(False)
             self.ui.menu_allow_minimise.setEnabled(False)
 
-        self.current_profile = Profile(DEFAULT_PROFILE_NAME)
-        #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
-
-        # self.ui.map_type = QtWidgets.QComboBox()
         self.ui.map_type.addItem('[Mouse] Movement', ipc.RenderType.MouseMovement)
         self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.MouseSpeed)
         self.ui.map_type.addItem('[Mouse] Position', ipc.RenderType.MousePosition)
@@ -463,6 +440,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.debug_raise_processing.triggered.connect(self.raise_processing)
         self.ui.debug_raise_gui.triggered.connect(self.raise_gui)
         self.ui.debug_raise_hub.triggered.connect(self.raise_hub)
+
+        # Update the profile order on focused application change
+        def update_profile_order(app: Application) -> None:
+            sanitised = sanitise_profile_name(app.name)
+            if sanitised in self._profile_names:
+                del self._profile_names[sanitised]
+            self._profile_names = {sanitised: app.name} | self._profile_names
+            self.mark_profiles_unsaved(app.name)
+            self._redraw_profile_combobox()
+        self.component.register_app_change_hook(update_profile_order)
 
         # Trigger initial setup
         self.profile_changed(0)
@@ -970,28 +957,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._bytes_recv = amount
         self.ui.stat_download_total.setText(format_bytes(amount))
 
-    @property
-    def current_profile(self) -> Profile:
-        """Get the currently running profile."""
-        return self._current_profile
-
-    @current_profile.setter
-    def current_profile(self, profile: Profile) -> None:
-        """Set the currently running profile.
-
-        This will automatically update the combobox, but will not
-        trigger a thumbnail update.
-        """
-        self._current_profile = profile
-
-        # Update the profile order
-        sanitised = sanitise_profile_name(profile.name)
-        if sanitised in self._profile_names:
-            del self._profile_names[sanitised]
-        self._profile_names = {sanitised: profile.name} | self._profile_names
-        self.mark_profiles_unsaved(profile.name)
-        self._redraw_profile_combobox()
-
     def _redraw_profile_combobox(self) -> None:
         """Redraw the profile combobox.
         Any "modified" profiles will have an asterix in front.
@@ -1261,8 +1226,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""
         monitors = self.monitor_data.physical
-        if self.current_profile.rects:
-            monitors = self.current_profile.rects
+        if self.component.focused_app.rects:
+            monitors = self.component.focused_app.rects
 
         single_monitor = self.ui.single_monitor.isChecked() if self.ui.opts_monitor.isChecked() else bool(CLI.single_monitor)
         return monitors.calculate_offset(pixel, combined=single_monitor)
@@ -1695,11 +1660,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     im.save(message.request.file_path)
                     os.startfile(message.request.file_path)
 
-            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled and not self.app_resizing:
+            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled and not self.component.app_resizing:
                 self.mouse_held_count += 1
 
             case ipc.MouseMove() if self.is_live and self.mouse_tracking_enabled:
-                if self.render_type == ipc.RenderType.MouseMovement and not self.app_resizing:
+                if self.render_type == ipc.RenderType.MouseMovement and not self.component.app_resizing:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1751,7 +1716,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Update the selected profile
             case ipc.CurrentProfileChanged():
-                self.current_profile = Profile(message.name, message.rects)
+                self.component.focused_app = Application(message.name, message.rects)
 
                 if self.is_live:
                     for sanitised_profile_name, profile_name in self._profile_names.items():
@@ -1842,7 +1807,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._last_save_message = message
                 self._last_save_time = int(time.time() * 10)
                 self.mark_profiles_saved(*message.succeeded)
-                self.mark_profiles_unsaved(self.current_profile.name)
+                self.mark_profiles_unsaved(self.component.focused_app.name)
                 self._redraw_profile_combobox()
 
                 # Notify when complete
@@ -2285,14 +2250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return False
-        return sanitised_profile_name == sanitise_profile_name(self.current_profile.name)
-
-    @property
-    def app_resizing(self) -> bool:
-        """Determine if the focused application is being resized."""
-        if self.current_profile.name == DEFAULT_PROFILE_NAME:
-            return False
-        return self._resize_listener.triggered
+        return sanitised_profile_name == sanitise_profile_name(self.component.focused_app.name)
 
     @property
     def mouse_tracking_enabled(self) -> bool:
@@ -2313,7 +2271,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
 
         # Convert pixels from logical coordinates to physical
-        if force_monitor is None and not self.current_profile.rects:
+        if force_monitor is None and not self.component.focused_app.rects:
             if old_position is not None:
                 old_position = self.monitor_data.coordinate(old_position)
             if new_position is not None:
@@ -2488,7 +2446,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.DeleteProfile(sanitised_profile_name))
 
             # Only remove from list if it's not the currently selected profile
-            if sanitised_profile_name != sanitise_profile_name(self._current_profile.name):
+            if sanitised_profile_name != sanitise_profile_name(self.component.focused_app.name):
                 self.mark_profiles_saved(profile_name)
                 del self._profile_names[sanitised_profile_name]
                 self._unsaved_profiles.discard(sanitised_profile_name)
