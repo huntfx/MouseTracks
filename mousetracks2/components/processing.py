@@ -598,18 +598,27 @@ class Processing(AppComponent):
                 self.send_data(ipc.Render(layer_blend.to_uint8(), request))
                 print('[Processing] Render request completed')
 
-            case ipc.MouseMove() if self.profile.config.track_mouse and not self.app_resizing:
+            case ipc.MouseMove():
+                if not self.profile.config.track_mouse or self.app_resizing:
+                    return
+
                 distance = self._record_move(self.profile.cursor_map, message.position)
                 self.profile.daily_distance[self.profile_age_days] += distance
 
-            case ipc.MouseHeld() if self.profile.config.track_mouse and not self.app_resizing:
+            case ipc.MouseHeld():
+                if not self.profile.config.track_mouse or self.app_resizing:
+                    return
+
                 result = self._monitor_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
                     self.profile.mouse_held_clicks[message.button][current_monitor][index] += 1
 
-            case ipc.MouseClick() if self.profile.config.track_mouse:
+            case ipc.MouseClick():
+                if not self.profile.config.track_mouse:
+                    return
+
                 previous = self.previous_mouse_click
                 double_click = (
                     previous is not None
@@ -634,7 +643,10 @@ class Processing(AppComponent):
 
                 self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
 
-            case ipc.KeyPress() if self.profile.config.should_track_keycode(message.keycode):
+            case ipc.KeyPress():
+                if not self.profile.config.should_track_keycode(message.keycode):
+                    return
+
                 if message.keycode not in keycodes.CLICK_CODES:
                     print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
                 self.profile.key_presses[message.keycode] += 1
@@ -645,26 +657,38 @@ class Processing(AppComponent):
                 else:
                     self.profile.daily_keys[self.profile_age_days] += 1
 
-            case ipc.KeyHeld() if self.profile.config.should_track_keycode(message.keycode):
+            case ipc.KeyHeld():
+                if not self.profile.config.should_track_keycode(message.keycode):
+                    return
+
                 if message.keycode in keycodes.SCROLL_CODES:
                     print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
                     self.profile.daily_scrolls[self.profile_age_days] += 1
                 self.profile.key_held[message.keycode] += 1
 
-            case ipc.ButtonPress() if self.profile.config.track_gamepad:
+            case ipc.ButtonPress():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 print(f'[Processing] {keycodes.GamepadCode(message.keycode)} pressed.')
                 self.profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
                 self.profile.daily_buttons[self.profile_age_days] += 1
 
-            case ipc.ButtonHeld() if self.profile.config.track_gamepad:
+            case ipc.ButtonHeld():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
                 self.monitor_data = message.data
 
-            case ipc.ThumbstickMove() if self.profile.config.track_gamepad:
+            case ipc.ThumbstickMove():
+                if not self.profile.config.track_gamepad:
+                    return
+
                 width = height = RADIAL_ARRAY_SIZE
                 x = round((message.position[0] + 1) * (width - 1) / 2)
                 y = round((message.position[1] + 1) * (height - 1) / 2)
@@ -717,7 +741,10 @@ class Processing(AppComponent):
                         failed.append(profile_name)
                 self.send_data(ipc.SaveComplete(succeeded, failed))
 
-            case ipc.DataTransfer() if self.profile.config.track_network:
+            case ipc.DataTransfer():
+                if not self.profile.config.track_network:
+                    return
+
                 self.profile.data_upload[message.mac_address] += message.bytes_sent
                 self.profile.data_download[message.mac_address] += message.bytes_recv
                 self.profile.daily_upload[self.profile_age_days] += message.bytes_sent
