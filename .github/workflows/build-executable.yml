@@ -4,6 +4,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      attach_to_release:
+        description: 'Attach built files to the latest release'
+        required: true
+        type: boolean
+        default: false
 
 env:
   PYINSTALLER_VERSION: v6.11.1  # Match 'requirements-build-pyinstaller.txt'
@@ -301,7 +307,7 @@ jobs:
           ditto -c -k --keepParent "$FULL_EXE_NAME" "$ZIP_NAME"
           echo "FULL_EXE_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: Attach Main Executable to Release
+      - name: Attach Main Executable to Release || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
@@ -309,7 +315,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Attach Installer to Release
+      - name: Attach Installer to Release || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
         if: github.event_name == 'release' && runner.os == 'Windows'
         uses: softprops/action-gh-release@v1
         with:
