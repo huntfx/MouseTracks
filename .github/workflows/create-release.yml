@@ -146,9 +146,8 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.CREATE_RELEASE_TOKEN }}  # Permissions: Contents RW
         with:
+          token: ${{ secrets.CREATE_RELEASE_TOKEN }}  # Permissions: Contents RW
           tag_name: ${{ steps.extract_version.outputs.tag_name }}
           name: ${{ steps.extract_version.outputs.release_name }}
           body: ${{ steps.prep_release_notes.outputs.release_body }}
