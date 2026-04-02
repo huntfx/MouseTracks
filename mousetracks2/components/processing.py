@@ -609,7 +609,7 @@ class Processing(AppComponent):
                 if not self.profile.config.track_mouse or self.app_resizing:
                     return
 
-                result = self._monitor_offset(message.position)
+                result = self._monitor_offset(self.monitor_data.coordinate(message.position))
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
@@ -635,7 +635,7 @@ class Processing(AppComponent):
                     arrays = self.profile.mouse_single_clicks[message.button]
                     print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
 
-                result = self._monitor_offset(message.position)
+                result = self._monitor_offset(self.monitor_data.coordinate(message.position))
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
