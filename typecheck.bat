@@ -25,7 +25,7 @@ if errorlevel 1 (
 
 :: Run mypy on the entry point
 python launch.py --write-public-key
-python -m mypy launch.py launcher.py --disallow-untyped-defs --disallow-incomplete-defs
+python -m mypy
 
 :: Exit the virtual environment
 call deactivate
