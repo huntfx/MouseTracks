@@ -11,7 +11,7 @@ import numpy.typing as npt
 from send2trash import send2trash
 
 from . import ipc
-from .abstract import AppComponent
+from .abstract import AppComponent, MonitorComponent
 from ..cli import CLI
 from ..config import GlobalConfig
 from ..exceptions import ExitRequest
@@ -47,7 +47,7 @@ class PreviousMouseClick:
         return self.message.position
 
 
-class Processing(AppComponent):
+class Processing(AppComponent, MonitorComponent):
     def __post_init__(self) -> None:
         hide_child_process()
 
@@ -55,7 +55,6 @@ class Processing(AppComponent):
         self._timestamp = -1
 
         self.previous_mouse_click: PreviousMouseClick | None = None
-        self.monitor_data = MonitorData()
         self.previous_monitor = None
 
         # Load in the default profile
@@ -148,14 +147,11 @@ class Processing(AppComponent):
         current_day = self.timestamp // 86400
         return max(0, current_day - creation_day)
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
-        """Detect which monitor the pixel is on."""
-        monitors = self.monitor_data.physical
-        if self.focused_app.rects:
-            monitors = self.focused_app.rects
-
-        single_monitor = bool(CLI.single_monitor) if self.profile.config.multi_monitor is None else not self.profile.config.multi_monitor
-        return monitors.calculate_offset(pixel, combined=single_monitor)
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single or multi monitor mode."""
+        if self.profile.config.multi_monitor is None:
+            return bool(CLI.single_monitor)
+        return not self.profile.config.multi_monitor
 
     def _record_move(self, data: MovementMaps, position: tuple[int, int],
                      force_monitor: tuple[int, int] | None = None) -> float:
@@ -180,12 +176,12 @@ class Processing(AppComponent):
         # Convert pixels from logical coordinates to physical
         old_position = position
         new_position = data.position
-        if force_monitor is None and not self.focused_app.rects:
-            old_position = self.monitor_data.coordinate(position)
+        if force_monitor is None:
+            old_position = self.coordinate_to_render_space(position)
             if data.position is None:
                 new_position = old_position
             else:
-                new_position = self.monitor_data.coordinate(data.position)
+                new_position = self.coordinate_to_render_space(data.position)
 
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
@@ -198,7 +194,7 @@ class Processing(AppComponent):
         # Add the pixels to an array
         for pixel in calculate_line(old_position, new_position):
             if force_monitor is None:
-                result = self._monitor_offset(pixel)
+                result = self.get_render_space_offset(pixel)
                 if result is None:
                     continue
                 current_monitor, pixel = result
@@ -609,7 +605,7 @@ class Processing(AppComponent):
                 if not self.profile.config.track_mouse or self.app_resizing:
                     return
 
-                result = self._monitor_offset(self.monitor_data.coordinate(message.position))
+                result = self.get_render_space_offset(self.coordinate_to_render_space(message.position))
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
@@ -635,7 +631,7 @@ class Processing(AppComponent):
                     arrays = self.profile.mouse_single_clicks[message.button]
                     print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
 
-                result = self._monitor_offset(self.monitor_data.coordinate(message.position))
+                result = self.get_render_space_offset(self.coordinate_to_render_space(message.position))
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
@@ -683,7 +679,7 @@ class Processing(AppComponent):
 
             case ipc.MonitorsChanged():
                 print(f'[Processing] Monitors changed.')
-                self.monitor_data = message.data
+                self.set_monitor_data(message.data)
 
             case ipc.ThumbstickMove():
                 if not self.profile.config.track_gamepad:

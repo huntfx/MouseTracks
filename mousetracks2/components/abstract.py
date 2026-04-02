@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING, Callable, Iterator
 import psutil
 
 from . import ipc
+from ..config import CLI
 from ..constants import DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..types import RectList, Application
+from ..utils.monitor import MonitorData
 from ..utils.system import UserResizeAppListener
 
 if TYPE_CHECKING:
@@ -163,7 +165,7 @@ class Component:
 
 
 class AppComponent(Component):
-    """Mixin component to implement methods for tracking the focused application."""
+    """Implement methods for tracking focused application."""
 
     def _register_mixin(self) -> None:
         # Setup the hook list
@@ -207,3 +209,53 @@ class AppComponent(Component):
         if self.focused_app.name == DEFAULT_PROFILE_NAME:
             return False
         return self._resize_listener.triggered
+
+
+class MonitorComponent(Component):
+    """Add additional methods for handling drawing with single/multi monitor modes."""
+
+    def _register_mixin(self) -> None:
+        self._monitor_data = MonitorData()
+        super()._register_mixin()
+
+    def __focused_app_rects(self) -> RectList:
+        """Get the focused application bounds if available.
+        This will be ignored if AppComponent isn't being used.
+        """
+        if isinstance(self, AppComponent):
+            return self.focused_app.rects
+        return RectList()
+
+    def set_monitor_data(self, data: MonitorData) -> None:
+        """Update the monitor data."""
+        self._monitor_data = data
+
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single monitor mode.
+        Override recommended.
+        """
+        return bool(CLI.single_monitor)
+
+    def coordinate_to_render_space(self, coordinate: tuple[int, int]) -> tuple[int, int]:
+        """Convert a coordinate into the correct render space."""
+        if self.__focused_app_rects():
+            return coordinate
+        if self.is_single_monitor_mode():
+            return self._monitor_data.coordinate(coordinate)
+        # return coordinate  # TODO: not ready
+        return self._monitor_data.coordinate(coordinate)
+
+    def get_render_space_offset(self, pixel: tuple[int, int],
+                                 ) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        """Detect which monitor the pixel is on."""
+        single_monitor = self.is_single_monitor_mode()
+
+        monitors = self.__focused_app_rects()
+        if not monitors:
+            if True or single_monitor:
+                monitors = self._monitor_data.physical
+            else:
+                # monitors = self._monitor_data.logical  # TODO: not ready
+                monitors = self._monitor_data.physical
+
+        return monitors.calculate_offset(pixel, combined=single_monitor)

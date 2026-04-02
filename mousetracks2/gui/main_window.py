@@ -311,7 +311,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
-        self.monitor_data = MonitorData()
         self.render_type = ipc.RenderType.MouseMovement
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
@@ -1223,14 +1222,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if state == QtCore.Qt.CheckState.Checked.value:
             self.ui.current_profile.setCurrentIndex(0)
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
-        """Detect which monitor the pixel is on."""
-        monitors = self.monitor_data.physical
-        if self.component.focused_app.rects:
-            monitors = self.component.focused_app.rects
-
-        single_monitor = self.ui.single_monitor.isChecked() if self.ui.opts_monitor.isChecked() else bool(CLI.single_monitor)
-        return monitors.calculate_offset(pixel, combined=single_monitor)
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single or multi monitor mode."""
+        if self.ui.opts_monitor.isChecked():
+            return self.ui.single_monitor.isChecked()
+        return bool(CLI.single_monitor)
 
     def start_rendering_timer(self) -> None:
         """Start the timer to display rendering text.
@@ -1584,7 +1580,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
-                self.monitor_data = message.data
+                self.component.set_monitor_data(message.data)
 
             case ipc.Render():
                 if message.array.any():
@@ -2271,11 +2267,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
 
         # Convert pixels from logical coordinates to physical
-        if force_monitor is None and not self.component.focused_app.rects:
+        if force_monitor is None:
             if old_position is not None:
-                old_position = self.monitor_data.coordinate(old_position)
+                old_position = self.component.coordinate_to_render_space(old_position)
             if new_position is not None:
-                new_position = self.monitor_data.coordinate(new_position)
+                new_position = self.component.coordinate_to_render_space(new_position)
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
@@ -2284,7 +2280,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if force_monitor:
                 current_monitor = force_monitor
             else:
-                result = self._monitor_offset(pixel)
+                result = self.component.get_render_space_offset(pixel)
                 if result is None:
                     continue
                 current_monitor, pixel = result

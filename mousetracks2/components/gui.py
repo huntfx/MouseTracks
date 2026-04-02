@@ -1,11 +1,11 @@
 import sys
 import time
-from typing import cast
+from typing import Callable, cast
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from . import ipc
-from .abstract import Component, AppComponent
+from .abstract import Component, AppComponent, MonitorComponent
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
@@ -45,7 +45,7 @@ class QueueWorker(QtCore.QObject):
         self.running = False
 
 
-class GUI(AppComponent):
+class GUI(AppComponent, MonitorComponent):
     def __post_init__(self) -> None:
         """Setup the threads."""
         self.error: Exception | None = None
@@ -70,6 +70,14 @@ class GUI(AppComponent):
             self.receiver_worker.ready.connect(self._splash.close)
             self.receiver_worker.ready.connect(QtWidgets.QApplication.restoreOverrideCursor)
 
+        self._window: MainWindow | None = None
+
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single monitor mode."""
+        if self._window is not None:
+            return self._window.is_single_monitor_mode()
+        return super().is_single_monitor_mode()
+
     def on_exit(self) -> None:
         """Safely exit the threads."""
         self.receiver_thread.quit()
@@ -91,11 +99,11 @@ class GUI(AppComponent):
         app = cast(QtWidgets.QApplication, app)
 
         # Setup the window
-        win = MainWindow(self)
-        app.setActiveWindow(win)
-        app.commitDataRequest.connect(win.handle_session_shutdown)
-        self.receiver_worker.message_received.connect(win.process_message)
-        win.exception_raised.connect(self.exception_raised)
+        self._window = MainWindow(self)
+        app.setActiveWindow(self._window)
+        app.commitDataRequest.connect(self._window.handle_session_shutdown)
+        self.receiver_worker.message_received.connect(self._window.process_message)
+        self._window.exception_raised.connect(self.exception_raised)
         self.receiver_thread.start()
 
         # Run the application
