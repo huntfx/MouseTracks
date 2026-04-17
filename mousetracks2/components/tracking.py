@@ -285,14 +285,12 @@ class Tracking(Component):
         return diff
 
     def _check_monitor_data(self, pixel: tuple[int, int]) -> None:
-        """Check if the monitor data is valid for the pixel.
-        If not, recalculate it and update the other components.
+        """Refresh the monitor data if the pixel is not valid.
+
+        This should ideally never trigger, it's just a safety layer in
+        case the cursor moves to a monitor before the data reloads.
         """
-        for monitor in self.data.monitors.physical:
-            x1, y1, x2, y2 = monitor.rect
-            if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
-                break
-        else:
+        if not any(monitor.calculate_offset(pixel) is not None for monitor in self.data.monitors.physical):
             print('[Tracking] Error with mouse position, refreshing monitor data...')
             self._refresh_monitor_data()
 
