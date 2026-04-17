@@ -11,6 +11,7 @@ from ..config import CLI
 from ..constants import DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..types import RectList, Application
+from ..utils.math import calculate_line
 from ..utils.monitor import MonitorData
 from ..utils.system import UserResizeAppListener
 
@@ -243,10 +244,22 @@ class MonitorComponent(Component):
 
         monitors = self.__focused_app_rects()
         if not monitors:
-            if True or single_monitor:
+            if single_monitor:
                 monitors = self._monitor_data.physical
             else:
-                # monitors = self._monitor_data.logical  # TODO: not ready
-                monitors = self._monitor_data.physical
+                monitors = self._monitor_data.logical
+                pixel = self._monitor_data.physical_to_logical(pixel)
 
         return monitors.calculate_offset(pixel, combined=single_monitor)
+
+    def iter_pixel_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
+                        force_monitor: tuple[int, int] | None) -> Iterator[tuple[tuple[int, int], tuple[int, int]]]:
+        """Calculate the pixels in a line."""
+        for pixel in calculate_line(old_position, new_position):
+            if force_monitor is None:
+                result = self.get_render_space_offset(pixel)
+                if result is None:
+                    continue
+                yield result
+            else:
+                yield force_monitor, pixel

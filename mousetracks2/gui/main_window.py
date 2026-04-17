@@ -2268,16 +2268,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
-        for pixel in calculate_line(old_position, new_position):
-            # Refresh data per pixel
-            if force_monitor:
-                current_monitor = force_monitor
-            else:
-                result = self.component.get_render_space_offset(pixel)
-                if result is None:
-                    continue
-                current_monitor, pixel = result
-
+        for current_monitor, pixel in self.component.iter_pixel_line(old_position, new_position, force_monitor):
             # Avoid drawing if resolution option isn't ticked
             if not self._resolution_options.get(current_monitor, True):
                 continue

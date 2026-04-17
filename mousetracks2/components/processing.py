@@ -186,15 +186,7 @@ class Processing(AppComponent, MonitorComponent):
         moving = self.tick == data.tick + 1
 
         # Add the pixels to an array
-        for pixel in calculate_line(old_position, new_position):
-            if force_monitor is None:
-                result = self.get_render_space_offset(pixel)
-                if result is None:
-                    continue
-                current_monitor, pixel = result
-            else:
-                current_monitor = force_monitor
-
+        for current_monitor, pixel in self.iter_pixel_line(old_position, new_position, force_monitor):
             index = (pixel[1], pixel[0])
             data.sequential_arrays[current_monitor][index] = data.counter
             data.density_arrays[current_monitor][index] += 1
