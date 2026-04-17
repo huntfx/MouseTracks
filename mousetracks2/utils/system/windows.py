@@ -107,9 +107,15 @@ HICON = ctypes.wintypes.HICON
 
 HBRUSH = ctypes.wintypes.HBRUSH
 
+# Windows 10 DPI Awareness
 DPI_AWARENESS_CONTEXT_UNAWARE = ctypes.wintypes.HANDLE(-1)
 DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = ctypes.wintypes.HANDLE(-2)
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.wintypes.HANDLE(-4)
+
+# Windows 8.1 DPI Awareness
+PROCESS_DPI_UNAWARE = 0
+PROCESS_SYSTEM_DPI_AWARE = 1
+PROCESS_PER_MONITOR_DPI_AWARE = 2
 
 user32.GetWindowThreadProcessId.argtypes = [HWND, ctypes.POINTER(DWORD)]
 user32.GetWindowThreadProcessId.restype = DWORD
@@ -653,3 +659,20 @@ def update_installer_version_number(version: str = VERSION) -> None:
             winreg.SetValueEx(key, 'DisplayVersion', 0, winreg.REG_SZ, version)
     except FileNotFoundError:
         print('Uninstall key not found.')
+
+
+def force_physical_dpi_awareness() -> None:
+    """Force Windows to always report raw physical pixels."""
+    try:
+        # Windows 10 (1607+) - Per Monitor DPI Aware V2
+        ctypes.windll.user32.SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+
+    except AttributeError:
+        try:
+            # Windows 8.1 - Per Monitor DPI Aware
+            ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
+
+        except AttributeError:
+            with suppress(AttributeError):
+                # Windows Vista / 7 - System DPI Aware
+                ctypes.windll.user32.SetProcessDPIAware()

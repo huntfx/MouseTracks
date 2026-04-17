@@ -2266,13 +2266,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.pause_redraw:
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
 
-        # Convert pixels from logical coordinates to physical
-        if force_monitor is None:
-            if old_position is not None:
-                old_position = self.component.coordinate_to_render_space(old_position)
-            if new_position is not None:
-                new_position = self.component.coordinate_to_render_space(new_position)
-
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
         for pixel in calculate_line(old_position, new_position):

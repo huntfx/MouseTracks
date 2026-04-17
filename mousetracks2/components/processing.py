@@ -176,12 +176,6 @@ class Processing(AppComponent, MonitorComponent):
         # Convert pixels from logical coordinates to physical
         old_position = position
         new_position = data.position
-        if force_monitor is None:
-            old_position = self.coordinate_to_render_space(position)
-            if data.position is None:
-                new_position = old_position
-            else:
-                new_position = self.coordinate_to_render_space(data.position)
 
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
@@ -605,7 +599,7 @@ class Processing(AppComponent, MonitorComponent):
                 if not self.profile.config.track_mouse or self.app_resizing:
                     return
 
-                result = self.get_render_space_offset(self.coordinate_to_render_space(message.position))
+                result = self.get_render_space_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])
@@ -631,7 +625,7 @@ class Processing(AppComponent, MonitorComponent):
                     arrays = self.profile.mouse_single_clicks[message.button]
                     print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
 
-                result = self.get_render_space_offset(self.coordinate_to_render_space(message.position))
+                result = self.get_render_space_offset(message.position)
                 if result is not None:
                     current_monitor, pixel = result
                     index = (pixel[1], pixel[0])

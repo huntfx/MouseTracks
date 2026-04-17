@@ -62,7 +62,7 @@ class MonitorData:
         self.logical = monitor_locations(False)
         self.physical = monitor_locations(True)
 
-    def coordinate(self, coordinate: tuple[int, int]) -> tuple[int, int]:
+    def logical_to_physical(self, coordinate: tuple[int, int]) -> tuple[int, int]:
         """Map a coordinate from logical to physical space.
         This is required when Windows scaling is used.
 
@@ -89,3 +89,33 @@ class MonitorData:
         phys_y = py1 + ((clamped_y - ly1) * scale_y)
 
         return round(phys_x), round(phys_y)
+
+    def physical_to_logical(self, phys_coord: tuple[int, int]) -> tuple[int, int]:
+        """Map a true physical coordinate to logical space.
+        This provides the lower-resolution coordinates while avoiding Windows DPI virtualization bugs.
+        """
+        # Find which physical monitor the true coordinate is on
+        idx = calculate_monitor_index(phys_coord, self.physical)
+
+        lx1, ly1, lx2, ly2 = self.logical[idx].rect
+        px1, py1, px2, py2 = self.physical[idx].rect
+        px, py = phys_coord
+
+        # Clamp the coordinate to the physical monitor bounds
+        clamped_x = max(px1, min(px, px2 - 1))
+        clamped_y = max(py1, min(py, py2 - 1))
+
+        # Calculate the inverse scale factor
+        p_w = max(1, px2 - px1)
+        p_h = max(1, py2 - py1)
+        l_w = max(1, lx2 - lx1)
+        l_h = max(1, ly2 - ly1)
+
+        scale_x = l_w / p_w
+        scale_y = l_h / p_h
+
+        # Map the true physical position down to logical space
+        log_x = lx1 + ((clamped_x - px1) * scale_x)
+        log_y = ly1 + ((clamped_y - py1) * scale_y)
+
+        return round(log_x), round(log_y)

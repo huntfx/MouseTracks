@@ -288,7 +288,7 @@ class Tracking(Component):
         """Check if the monitor data is valid for the pixel.
         If not, recalculate it and update the other components.
         """
-        for monitor in self.data.monitors.logical:  # TODO: Test
+        for monitor in self.data.monitors.physical:
             x1, y1, x2, y2 = monitor.rect
             if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
                 break

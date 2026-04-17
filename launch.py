@@ -4,25 +4,28 @@ import os
 import sys
 from contextlib import suppress
 from multiprocessing import freeze_support
-from threading import Thread
-
-import filelock
-
-# Source DLL files when running as an executable
-from mousetracks2.constants import REPO_DIR, APP_EXECUTABLE
-sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
 try:
+    import filelock
+
+    # Source DLL files when running as an executable
+    from mousetracks2.constants import REPO_DIR, APP_EXECUTABLE
+    sys.path.append(str(REPO_DIR / 'resources' / 'build'))
+
+    # Set per-monitor DPI aware
+    from mousetracks2.utils.system import force_physical_dpi_awareness
+    force_physical_dpi_awareness()
+
     from mousetracks2.components import Hub
     from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
     from mousetracks2.config import GlobalConfig
     from mousetracks2.cli import CLI, parse_args, run_cli_function
-    from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, get_autostart, remap_autostart
+    from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, remap_autostart
     from mousetracks2.utils.update import background_update
     from mousetracks2.utils.system import update_installer_version_number
 
-# Show any import errors as the app otherwise will just silently fail
-except ImportError as e:
+# Show any errors as the app otherwise will just silently fail
+except Exception:
     import traceback
     traceback.print_exc()
     input('Press enter to exit...')

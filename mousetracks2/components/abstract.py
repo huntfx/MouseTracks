@@ -236,15 +236,6 @@ class MonitorComponent(Component):
         """
         return bool(CLI.single_monitor)
 
-    def coordinate_to_render_space(self, coordinate: tuple[int, int]) -> tuple[int, int]:
-        """Convert a coordinate into the correct render space."""
-        if self.__focused_app_rects():
-            return coordinate
-        if self.is_single_monitor_mode():
-            return self._monitor_data.coordinate(coordinate)
-        # return coordinate  # TODO: not ready
-        return self._monitor_data.coordinate(coordinate)
-
     def get_render_space_offset(self, pixel: tuple[int, int],
                                  ) -> tuple[tuple[int, int], tuple[int, int]] | None:
         """Detect which monitor the pixel is on."""

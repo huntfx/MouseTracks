@@ -157,3 +157,7 @@ def prepare_application_icon(icon_path: Path | str) -> None:
 
 def update_installer_version_number(version: str = VERSION) -> None:
     """Update the version number of the installer."""
+
+
+def force_physical_dpi_awareness() -> None:
+    """Forces physical DPI instead of logical."""

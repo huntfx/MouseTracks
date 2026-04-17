@@ -25,6 +25,7 @@ match sys.platform:
         from .base import hide_child_process
         from .windows import prepare_application_icon
         from .windows import update_installer_version_number
+        from .windows import force_physical_dpi_awareness
 
     case 'darwin':
         from .macos import SUPPORTS_TRAY
@@ -36,6 +37,7 @@ match sys.platform:
         from .base import ForegroundAppListener, UserResizeAppListener
         from .macos import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
+        from .base import force_physical_dpi_awareness
 
     case _:
         from .base import SUPPORTS_TRAY
@@ -47,6 +49,7 @@ match sys.platform:
         from .base import ForegroundAppListener, UserResizeAppListener
         from .base import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
+        from .base import force_physical_dpi_awareness
 
 __all__ = [
     'SUPPORTS_TRAY',
@@ -58,6 +61,7 @@ __all__ = [
     'ForegroundAppListener', 'UserResizeAppListener',
     'hide_child_process', 'prepare_application_icon',
     'update_installer_version_number',
+    'force_physical_dpi_awareness',
 ]
 
 
