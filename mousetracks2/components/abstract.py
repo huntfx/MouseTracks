@@ -255,11 +255,12 @@ class MonitorComponent(Component):
     def iter_pixel_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
                         force_monitor: tuple[int, int] | None) -> Iterator[tuple[tuple[int, int], tuple[int, int]]]:
         """Calculate the pixels in a line."""
+        last_yield: tuple[tuple[int, int], tuple[int, int]] | None = None
         for pixel in calculate_line(old_position, new_position):
             if force_monitor is None:
                 result = self.get_render_space_offset(pixel)
-                if result is None:
-                    continue
-                yield result
+                if result is not None and result != last_yield:
+                    yield result
+                    last_yield = result
             else:
                 yield force_monitor, pixel
