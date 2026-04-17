@@ -239,8 +239,15 @@ class MonitorComponent(Component):
 
     def get_render_space_offset(self, pixel: tuple[int, int],
                                  ) -> tuple[tuple[int, int], tuple[int, int]] | None:
-        """Detect which monitor the pixel is on."""
-        single_monitor = self.is_single_monitor_mode()
+        """Detect which monitor the pixel is on.
+
+        If a focused application is detected, then that takes priority.
+        If in single monitor mode with multiple monitors, then ensure
+        DPI scaling is ignored to ensure they perfectly match up with
+        each other. Otherwise, use logical scaling, and remap the pixel
+        from physical into logical space.
+        """
+        single_monitor = self.is_single_monitor_mode() and len(self._monitor_data.physical) > 1
 
         monitors = self.__focused_app_rects()
         if not monitors:
