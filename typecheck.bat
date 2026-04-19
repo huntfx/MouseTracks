@@ -24,7 +24,7 @@ if errorlevel 1 (
 )
 
 :: Run mypy on the entry point
-python launch.py --write-public-key
+python -m mousetracks2 --write-public-key
 python -m mypy
 
 :: Exit the virtual environment

@@ -28,8 +28,8 @@ jobs:
           pip install -r requirements-typecheck.txt
 
       - name: Write Public Key
-        run: python launch.py --write-public-key
+        run: python -m mousetracks2 --write-public-key
 
       - name: Run Mypy
         run: |
-          python -m mypy launch.py launcher.py --disallow-untyped-defs --disallow-incomplete-defs
+          python -m mypy

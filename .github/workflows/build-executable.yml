@@ -244,7 +244,7 @@ jobs:
         shell: bash
         run: |
           source .venv/Scripts/activate
-          python launch.py --write-public-key
+          python -m mousetracks2 --write-public-key
           deactivate
 
       - name: Build executable
@@ -266,8 +266,8 @@ jobs:
         run: |
           source .venv/Scripts/activate
           echo -n "$PRIVATE_SIGNING_KEY" > keys/private.key
-          python launch.py --sign-executable "dist/MouseTracks.exe"
-          python launch.py --sign-executable "dist/${FULL_EXE_NAME}"
+          python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
+          python -m mousetracks2 --sign-executable "dist/${FULL_EXE_NAME}"
           rm keys/private.key
           deactivate
 

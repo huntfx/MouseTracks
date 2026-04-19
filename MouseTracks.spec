@@ -15,7 +15,7 @@ from mousetracks2.utils.update import generate_exe_name
 target_name = os.environ.get('EXE_BASENAME', generate_exe_name(with_extension=False))
 
 a = Analysis(
-    ['launch.py'],
+    ['mousetracks2/__main__.py'],
     pathex=[],
     binaries=[],
     datas=[

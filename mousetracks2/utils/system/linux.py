@@ -19,7 +19,7 @@ Arch Linux:
     > source ./.venv/bin/activate
     > pip install --upgrade pip
     > pip install -r requirements.txt
-    > python launch.py
+    > python -m mousetracks2
     > deactivate
 
 Ubuntu:
@@ -34,7 +34,7 @@ Ubuntu:
     > source ./.venv/bin/activate
     > pip install --upgrade pip
     > pip install -r requirements.txt
-    > python3 launch.py
+    > python3 -m mousetracks2
     > deactivate
 """
 

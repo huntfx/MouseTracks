@@ -50,7 +50,7 @@ python -m nuitka ^
   --product-version=%VERSION% ^
   --file-version=%VERSION% ^
   --copyright="Peter Hunt" ^
-  launch.py
+  mousetracks2/__main__.py
 
 if errorlevel 1 (
     echo Main application build failed.
@@ -76,9 +76,9 @@ if errorlevel 1 (
 )
 
 :: Sign the executables
-python launch.py --write-public-key
-python launch.py --sign-executable "dist/MouseTracks.exe"
-python launch.py --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
+python -m mousetracks2 --write-public-key
+python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
+python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
 
 :: Exit the virtual environment
 call deactivate
