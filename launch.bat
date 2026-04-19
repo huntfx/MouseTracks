@@ -19,7 +19,7 @@ if errorlevel 1 (
 )
 
 :: Run the application entry point
-python launch.py %*
+python -m mousetracks2 %*
 
 :: Exit the virtual environment
 call deactivate

@@ -1,5 +1,5 @@
 [tool.mypy]
-files = ["launch.py", "launcher.py", "mousetracks2"]
+files = ["launcher.py", "mousetracks2"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 

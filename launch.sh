@@ -18,7 +18,7 @@ pip install --upgrade pip
 pip install --upgrade -r requirements.txt
 
 # Run the application entry point
-python3 launch.py "$@"
+python3 -m mousetracks2 "$@"
 
 # Exit the virtual environment
 deactivate
