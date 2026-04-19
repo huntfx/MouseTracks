@@ -22,7 +22,7 @@ from .utils import format_distance, format_ticks, format_bytes, format_network_s
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..cli import CLI
-from ..constants import SYS_EXECUTABLE, APP_EXECUTABLE
+from ..constants import SYS_EXECUTABLE, LAUNCH_EXECUTABLE
 from ..config import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
@@ -2559,7 +2559,7 @@ class MainWindow(QtWidgets.QMainWindow):
             args.append('--autostart')
         if CLI.installed and '--installed' not in exists:
             args.append('--installed')
-        while args and Path(args[0]).resolve() in (Path(SYS_EXECUTABLE).resolve(), APP_EXECUTABLE.resolve()):
+        while args and Path(args[0]).resolve() in (SYS_EXECUTABLE.resolve(), LAUNCH_EXECUTABLE.resolve()):
             args = args[1:]
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
 

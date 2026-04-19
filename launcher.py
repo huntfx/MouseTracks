@@ -7,7 +7,7 @@ import sys
 import subprocess
 
 from mousetracks2.utils.update import get_local_executables
-from mousetracks2.constants import APP_EXECUTABLE
+from mousetracks2.constants import EXECUTABLE_DIR, SYS_EXECUTABLE
 from mousetracks2.sign import verify_signature
 
 
@@ -22,10 +22,8 @@ def show_error(title: str, message: str) -> None:
 
 
 def main() -> None:
-    base_dir = APP_EXECUTABLE.parent
-
     # Build an ordered list of available executables
-    lower, current, higher = get_local_executables(base_dir)
+    lower, current, higher = get_local_executables(EXECUTABLE_DIR)
     executables = list(lower)
     if current is not None:
         executables.append(current)
@@ -46,9 +44,12 @@ def main() -> None:
     cmd = [str(executable)]
     if '--installed' not in sys.argv:
         cmd.append('--installed')
+    if '--launcher' not in sys.argv:
+        cmd.append('--launcher')
+        cmd.append(str(SYS_EXECUTABLE))
     cmd.extend(sys.argv[1:])
     try:
-        exit_code = subprocess.call(cmd, cwd=base_dir)
+        exit_code = subprocess.call(cmd, cwd=str(EXECUTABLE_DIR))
         sys.exit(exit_code)
     except KeyboardInterrupt:
         sys.exit(1)

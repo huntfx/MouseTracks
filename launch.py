@@ -9,7 +9,7 @@ try:
     import filelock
 
     # Source DLL files when running as an executable
-    from mousetracks2.constants import REPO_DIR, APP_EXECUTABLE
+    from mousetracks2.constants import REPO_DIR
     sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
     # Set per-monitor DPI aware

@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
 from . import base
-from ...constants import APP_EXECUTABLE, IS_BUILT_EXE
+from ... import constants
+from ...constants import LAUNCH_EXECUTABLE, IS_BUILT_EXE
 
 if TYPE_CHECKING:
     Window: Type[base.Window]
@@ -83,8 +84,8 @@ def remap_autostart(cmd: str | None = None) -> bool:
 
     # Update the path to the current portable executable
     exe_path = Path(exe.strip('"')).resolve()
-    if IS_BUILT_EXE and exe_path != APP_EXECUTABLE.resolve():
-        print(f'Autostart path is outdated. Correcting "{exe}" to "{APP_EXECUTABLE}".')
+    if IS_BUILT_EXE and exe_path != LAUNCH_EXECUTABLE.resolve():
+        print(f'Autostart path is outdated. Correcting "{exe}" to "{LAUNCH_EXECUTABLE}".')
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
         return True
 

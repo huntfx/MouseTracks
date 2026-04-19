@@ -11,7 +11,7 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 from .network import safe_download_file
-from ..constants import APP_EXECUTABLE, UNTRUSTED_EXT
+from ..constants import EXECUTABLE_DIR, UNTRUSTED_EXT
 from ..version import VERSION
 
 if sys.platform == 'win32':
@@ -238,10 +238,9 @@ def get_local_executables(folder: Path | str, version: str = VERSION, include_un
 
 def update(download: bool) -> Path | None:
     """Run downloads/cleanup when running as an installed application."""
-    app_dir = APP_EXECUTABLE.parent
-    cleanup_old_executables(app_dir)
+    cleanup_old_executables(EXECUTABLE_DIR)
     if download:
-        return download_version(app_dir)
+        return download_version(EXECUTABLE_DIR)
     return None
 
 

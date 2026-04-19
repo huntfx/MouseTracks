@@ -6,7 +6,7 @@ from typing import cast
 from .cli import CLI
 
 
-SYS_EXECUTABLE = sys.executable
+SYS_EXECUTABLE = Path(sys.executable)
 
 REPO_DIR = Path(__file__).parent.parent
 
@@ -20,13 +20,23 @@ if hasattr(sys, '_MEIPASS'):
 # Nuitka
 elif '__compiled__' in globals():
     REPO_DIR = Path(sys.executable).parent
-    SYS_EXECUTABLE = cast(str, __compiled__.original_argv0)  # type: ignore
+    SYS_EXECUTABLE = Path(cast(str, __compiled__.original_argv0))  # type: ignore
     IS_BUILT_EXE = True
 
 if CLI.installed:
-    APP_EXECUTABLE = Path(SYS_EXECUTABLE).parent / 'MouseTracks.exe'
+    if CLI.launcher is None:  # If launched by legacy launcher
+        LAUNCH_EXECUTABLE = SYS_EXECUTABLE.parent / 'MouseTracks.exe'
+    else:
+        LAUNCH_EXECUTABLE = CLI.launcher
 else:
-    APP_EXECUTABLE = Path(SYS_EXECUTABLE)
+    LAUNCH_EXECUTABLE = SYS_EXECUTABLE
+"""The executable that was used to launch MouseTracks."""
+
+if IS_BUILT_EXE:
+    EXECUTABLE_DIR = LAUNCH_EXECUTABLE.parent
+else:
+    EXECUTABLE_DIR = REPO_DIR
+"""The location of all other executables."""
 
 DEFAULT_PROFILE_NAME = 'Desktop'
 
