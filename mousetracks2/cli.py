@@ -29,7 +29,6 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('-v', '--version', action='version', version=f'MouseTracks {VERSION}')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--installed', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--launcher', type=str, default=None, help=argparse.SUPPRESS)
     parser.add_argument('--post-install', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
@@ -121,7 +120,6 @@ class _CLI:
             self.single_monitor = False
             self.multi_monitor = True
             self.post_install = False
-            self.launcher = None
 
         finally:
             self._soft_load = False
@@ -154,8 +152,6 @@ class _CLI:
             self.multi_monitor = False
         if args.post_install:
             self.post_install = True
-        if args.launcher is not None:
-            self.launcher = args.launcher
 
         return args
 
@@ -311,19 +307,6 @@ class _CLI:
     def post_install(self, value: bool) -> None:
         """Set if running straight after being installed."""
         self._set('MT_POST_INSTALL', bool2str(value))
-
-    @property
-    def launcher(self) -> Path | None:
-        """Get the another executable that launched the application."""
-        value = os.environ['MT_LAUNCHER']
-        if value:
-            return Path(value)
-        return None
-
-    @launcher.setter
-    def launcher(self, value: Path | None) -> None:
-        """Set which executable launched the aplication."""
-        self._set('MT_LAUNCHER', str(value) if value else '')
 
 
 def run_cli_function() -> bool:

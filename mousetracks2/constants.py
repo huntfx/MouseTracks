@@ -1,7 +1,10 @@
-import os
 import sys
 from pathlib import Path
 from typing import cast
+
+from contextlib import suppress
+
+import psutil
 
 from .cli import CLI
 
@@ -24,10 +27,19 @@ elif '__compiled__' in globals():
     IS_BUILT_EXE = True
 
 if CLI.installed:
-    if CLI.launcher is None:  # If launched by legacy launcher
-        LAUNCH_EXECUTABLE = SYS_EXECUTABLE.parent / 'MouseTracks.exe'
-    else:
-        LAUNCH_EXECUTABLE = CLI.launcher
+    # Expected path
+    LAUNCH_EXECUTABLE = SYS_EXECUTABLE.parent / 'MouseTracks.exe'
+
+    # Try to get actual path
+    with suppress(psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        current_proc = psutil.Process()
+        current_exe = current_proc.exe()
+        for parent in current_proc.parents():
+            parent_exe = parent.exe()
+            if parent_exe != current_exe:
+                LAUNCH_EXECUTABLE = Path(parent_exe)
+                break
+
 else:
     LAUNCH_EXECUTABLE = SYS_EXECUTABLE
 """The executable that was used to launch MouseTracks."""

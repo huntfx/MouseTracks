@@ -44,9 +44,6 @@ def main() -> None:
     cmd = [str(executable)]
     if '--installed' not in sys.argv:
         cmd.append('--installed')
-    if '--launcher' not in sys.argv:
-        cmd.append('--launcher')
-        cmd.append(str(SYS_EXECUTABLE))
     cmd.extend(sys.argv[1:])
     try:
         exit_code = subprocess.call(cmd, cwd=str(EXECUTABLE_DIR))
