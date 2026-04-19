@@ -2559,6 +2559,8 @@ class MainWindow(QtWidgets.QMainWindow):
             args.append('--autostart')
         if CLI.installed and '--installed' not in exists:
             args.append('--installed')
+        if CLI.portable and '--portable' not in exists:
+            args.append('--portable')
         while args and Path(args[0]).resolve() in (SYS_EXECUTABLE.resolve(), LAUNCH_EXECUTABLE.resolve()):
             args = args[1:]
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))

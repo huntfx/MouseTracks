@@ -1,10 +1,12 @@
 import shlex
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
 from . import base
-from ...runtime import LAUNCH_EXECUTABLE, IS_BUILT_EXE
+from ...cli import CLI
+from ...runtime import LAUNCH_EXECUTABLE, IS_BUILT_EXE, DATA_DIR
 
 if TYPE_CHECKING:
     Window: Type[base.Window]
@@ -77,8 +79,23 @@ def remap_autostart(cmd: str | None = None) -> bool:
     # Get the parts from the existing command
     exe, args = split_autostart(cmd)
 
-    # Skip if autostart is disabled, or MouseTracks was installed
-    if exe is None or '--installed' in args:
+    # Skip if autostart is currently disabled
+    if exe is None:
+        return False
+
+    # Skip if MouseTracks was installed as it has a single launcher
+    if '--installed' in args:
+        return False
+
+    # Skip if data dir is different
+    if '--data-dir' in args:
+        with suppress(KeyError, IndexError):
+            data_dir = Path(args[args.index('--data-dir') + 1])
+            if data_dir.resolve() != DATA_DIR.resolve():
+                return False
+
+    # Skip if portable state is different
+    if ('--portable' in args) != CLI.portable:
         return False
 
     # Update the path to the current portable executable
