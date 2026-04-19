@@ -7,7 +7,7 @@ import sys
 import subprocess
 
 from mousetracks2.utils.update import get_local_executables
-from mousetracks2.constants import EXECUTABLE_DIR, SYS_EXECUTABLE
+from mousetracks2.runtime import EXECUTABLE_DIR
 from mousetracks2.sign import verify_signature
 
 

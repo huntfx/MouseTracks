@@ -11,7 +11,8 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 from .network import safe_download_file
-from ..constants import EXECUTABLE_DIR, UNTRUSTED_EXT
+from ..constants import UNTRUSTED_EXT
+from ..runtime import EXECUTABLE_DIR
 from ..version import VERSION
 
 if sys.platform == 'win32':

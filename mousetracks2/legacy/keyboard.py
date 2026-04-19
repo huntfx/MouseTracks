@@ -9,8 +9,9 @@ from typing import Any, Literal, Iterator
 from PIL import Image, ImageFont, ImageDraw
 
 from .colours import COLOUR_FILE, ColourRange, calculate_colour_map, get_luminance, parse_colour_file, parse_colour_text
-from ..constants import REPO_DIR, UPDATES_PER_SECOND
+from ..constants import UPDATES_PER_SECOND
 from ..gui.utils import format_ticks
+from ..runtime import REPO_DIR
 from ..utils.math import calculate_circle
 
 

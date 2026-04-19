@@ -14,7 +14,8 @@ import subprocess
 import winreg
 
 from . import base
-from ...constants import LAUNCH_EXECUTABLE, PACKAGE_IDENTIFIER
+from ...constants import PACKAGE_IDENTIFIER
+from ...runtime import LAUNCH_EXECUTABLE
 from ...types import Rect, RectList
 from ...version import VERSION
 

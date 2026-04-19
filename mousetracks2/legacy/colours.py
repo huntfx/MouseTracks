@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..constants import REPO_DIR
+from ..runtime import REPO_DIR
 
 
 COLOUR_FILE = REPO_DIR / 'config' / 'colours.txt'

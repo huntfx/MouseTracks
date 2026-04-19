@@ -50,7 +50,7 @@ import Xlib.display
 import Xlib.xobject
 
 from .base import Window as _Window
-from ...constants import LAUNCH_EXECUTABLE
+from ...runtime import LAUNCH_EXECUTABLE
 from ...types import Rect, RectList
 
 

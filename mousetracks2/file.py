@@ -12,10 +12,10 @@ from uuid import uuid4
 import numpy as np
 import numpy.typing as npt
 
-from .cli import CLI
 from .config import ProfileConfig
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
 from .utils.keycodes import CLICK_CODES
+from .runtime import DATA_DIR
 
 
 CURRENT_FILE_VERSION = 1
@@ -23,7 +23,7 @@ CURRENT_FILE_VERSION = 1
 EXTENSION = 'mtk'
 """Extension to use for the profile data."""
 
-PROFILE_DIR = CLI.data_dir / 'Profiles'
+PROFILE_DIR = DATA_DIR / 'Profiles'
 
 _DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
 

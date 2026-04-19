@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from .ui import about
 from ..cli import CLI
-from ..constants import REPO_DIR
+from ..runtime import REPO_DIR
 from ..utils.update import is_latest_version, background_update
 from ..version import VERSION
 

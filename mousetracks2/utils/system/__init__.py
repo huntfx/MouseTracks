@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
 from . import base
-from ... import constants
-from ...constants import LAUNCH_EXECUTABLE, IS_BUILT_EXE
+from ...runtime import LAUNCH_EXECUTABLE, IS_BUILT_EXE
 
 if TYPE_CHECKING:
     Window: Type[base.Window]

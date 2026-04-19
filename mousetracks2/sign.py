@@ -11,7 +11,8 @@ from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import HexEncoder
 from nacl.exceptions import BadSignatureError
 
-from .constants import REPO_DIR, IS_BUILT_EXE, UNTRUSTED_EXT
+from .constants import UNTRUSTED_EXT
+from .runtime import REPO_DIR, IS_BUILT_EXE
 
 
 MARKER = b'MT-SIG-V1'

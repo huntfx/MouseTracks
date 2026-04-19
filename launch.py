@@ -9,7 +9,7 @@ try:
     import filelock
 
     # Source DLL files when running as an executable
-    from mousetracks2.constants import REPO_DIR
+    from mousetracks2.runtime import DATA_DIR, REPO_DIR, IS_BUILT_EXE
     sys.path.append(str(REPO_DIR / 'resources' / 'build'))
 
     # Set per-monitor DPI aware
@@ -17,7 +17,6 @@ try:
     force_physical_dpi_awareness()
 
     from mousetracks2.components import Hub
-    from mousetracks2.constants import REPO_DIR, IS_BUILT_EXE
     from mousetracks2.config import GlobalConfig
     from mousetracks2.cli import CLI, parse_args, run_cli_function
     from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, remap_autostart
@@ -77,10 +76,10 @@ if __name__ == '__main__':
 
         # Launch the application
         try:
-            with filelock.FileLock(CLI.data_dir / '.lock', timeout=0):
+            with filelock.FileLock(DATA_DIR / '.lock', timeout=0):
                 main()
 
         # Notify the user if another instance is running
         except filelock.Timeout:
-            print(f'Error: Another instance of MouseTracks is already writing to "{CLI.data_dir}".')
+            print(f'Error: Another instance of MouseTracks is already writing to "{DATA_DIR}".')
             input('Press enter to exit...')

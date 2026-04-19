@@ -7,7 +7,8 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 from .cli import CLI
-from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .constants import TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .runtime import DATA_DIR, REPO_DIR
 
 
 DEFAULT_TEXT = (
@@ -28,7 +29,7 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = CLI.data_dir / 'AppList.txt'
+LOCAL_PATH = DATA_DIR / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 

@@ -6,15 +6,6 @@ from typing import Callable
 
 from .version import VERSION
 
-# Get the appdata folder
-# Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
-match sys.platform:
-    case 'win32':
-        APPDATA = Path(os.path.expandvars('%APPDATA%'))
-    case 'darwin':
-        APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
-    case _:
-        APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser('~/.local/share')))
 
 
 def parse_args(strict: bool = False) -> argparse.Namespace:
@@ -29,8 +20,9 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('-v', '--version', action='version', version=f'MouseTracks {VERSION}')
     parser.add_argument('--autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--installed', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--launcher', type=str, default=None, help=argparse.SUPPRESS)
     parser.add_argument('--post-install', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--data-dir', type=str, default=str(APPDATA / 'MouseTracks'), help='specify the data directory')
+    parser.add_argument('--data-dir', type=str, default=None, help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
 
     startup_group = parser.add_argument_group('Startup Options')
@@ -106,7 +98,7 @@ class _CLI:
         # Load in default values
         self._soft_load = True
         try:
-            self.data_dir = Path(args.data_dir)
+            self.data_dir = None
             self.start_hidden = None
             self.offline = False
             self.autostart = False
@@ -125,7 +117,7 @@ class _CLI:
             self._soft_load = False
 
         # Only update if the value is different to the default
-        if args.data_dir != str(APPDATA / 'MouseTracks'):
+        if args.data_dir is not None:
             self.data_dir = Path(args.data_dir)
         if args.start_hidden is not None:
             self.start_hidden = args.start_hidden
@@ -195,14 +187,17 @@ class _CLI:
         self._set('MT_AUTOSTART', bool2str(value))
 
     @property
-    def data_dir(self) -> Path:
+    def data_dir(self) -> Path | None:
         """Get the data directory path."""
-        return Path(os.environ['MT_DATA_DIR'])
+        data_dir = os.environ['MT_DATA_DIR']
+        if data_dir:
+            return Path(data_dir)
+        return None
 
     @data_dir.setter
     def data_dir(self, value: Path) -> None:
         """Set the data directory path."""
-        self._set('MT_DATA_DIR', str(value))
+        self._set('MT_DATA_DIR', str(value) if value else '')
 
     @property
     def disable_splash(self) -> bool:

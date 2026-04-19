@@ -4,7 +4,8 @@ import math
 
 from ..cli import CLI
 from ..config import GlobalConfig
-from ..constants import UPDATES_PER_SECOND, REPO_DIR
+from ..constants import UPDATES_PER_SECOND
+from ..runtime import REPO_DIR
 
 
 ICON_PATH = str(REPO_DIR / 'resources' / 'images' / 'icon.png')

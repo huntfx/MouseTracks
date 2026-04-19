@@ -21,9 +21,10 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from . import ipc
 from ..config import GlobalConfig
-from ..constants import IS_EXE, UPDATES_PER_SECOND
+from ..constants import UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 from ..gui.utils import should_minimise_on_start
+from ..runtime import IS_EXE
 
 if TYPE_CHECKING:
     from multiprocessing.sharedctypes import Synchronized

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Iterator
 import psutil
 
 from . import ipc
-from ..config import CLI
+from ..cli import CLI
 from ..constants import DEFAULT_PROFILE_NAME
 from ..exceptions import ExitRequest
 from ..types import RectList, Application
