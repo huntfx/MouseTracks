@@ -28,7 +28,7 @@ except Exception:
     import traceback
     traceback.print_exc()
     input('Press enter to exit...')
-    sys.exit(0)
+    sys.exit(1)
 
 
 def main() -> None:
