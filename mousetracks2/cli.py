@@ -24,6 +24,7 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('--post-install', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--data-dir', type=str, default=None, help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
+    parser.add_argument('--portable', action='store_true', help='run as portable (save data next to executable)')
 
     startup_group = parser.add_argument_group('Startup Options')
     startup_group.set_defaults(start_hidden=None)
@@ -112,6 +113,7 @@ class _CLI:
             self.single_monitor = False
             self.multi_monitor = True
             self.post_install = False
+            self.portable = False
 
         finally:
             self._soft_load = False
@@ -144,6 +146,8 @@ class _CLI:
             self.multi_monitor = False
         if args.post_install:
             self.post_install = True
+        if args.portable:
+            self.portable = True
 
         return args
 
@@ -258,6 +262,16 @@ class _CLI:
     def elevate(self, value: bool) -> None:
         """Set elevated mode."""
         self._set('MT_ELEVATE', bool2str(value))
+
+    @property
+    def portable(self) -> bool:
+        """Run as a portable application."""
+        return str2bool(os.environ['MT_PORTABLE'])
+
+    @portable.setter
+    def portable(self, value: bool) -> None:
+        """Set as a portable application."""
+        self._set('MT_PORTABLE', bool2str(value))
 
     @property
     def single_monitor(self) -> bool:

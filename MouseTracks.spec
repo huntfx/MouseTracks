@@ -13,34 +13,38 @@ from mousetracks2.constants import PACKAGE_IDENTIFIER
 from mousetracks2.utils.update import generate_exe_name
 
 target_name = os.environ.get('EXE_BASENAME', generate_exe_name(with_extension=False))
+datas = [
+    ('config/colours.txt', 'config'),
+    ('config/AppList.txt', 'config'),
+    ('config/language/strings/en_GB.ini', 'config/language/strings'),
+    ('config/language/keyboard/keys/en_GB.ini', 'config/language/keyboard/keys'),
+    ('config/language/keyboard/layout/en_US.txt', 'config/language/keyboard/layout'),
+    ('resources/images/icon.png', 'resources/images'),
+    ('resources/fonts/liberation-sans.regular.ttf', 'resources/fonts'),
+    (certifi.where(), 'certifi'),
+]
+excludes = ['scipy', 'markupsafe']
+hiddenimports = ['resources.build.scipy', 'pynput.keyboard._xorg', 'pynput.mouse._xorg', '_cffi_backend']
+upx_exclude = ['resources/build/scipy/ndimage/_nd_image.cp311-win_amd64.dll.a']
 
-a = Analysis(
+a_main = Analysis(
     ['mousetracks2/__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('config/colours.txt', 'config'),
-        ('config/AppList.txt', 'config'),
-        ('config/language/strings/en_GB.ini', 'config/language/strings'),
-        ('config/language/keyboard/keys/en_GB.ini', 'config/language/keyboard/keys'),
-        ('config/language/keyboard/layout/en_US.txt', 'config/language/keyboard/layout'),
-        ('resources/images/icon.png', 'resources/images'),
-        ('resources/fonts/liberation-sans.regular.ttf', 'resources/fonts'),
-        (certifi.where(), 'certifi'),
-    ],
-    hiddenimports=['resources.build.scipy', 'pynput.keyboard._xorg', 'pynput.mouse._xorg', '_cffi_backend'],
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['scipy', 'markupsafe'],
+    excludes=excludes,
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+pyz_main = PYZ(a_main.pure)
 
 # Remove unused binaries
 binaries = [
-    (name, path, type) for name, path, type in a.binaries
+    (name, path, type) for name, path, type in a_main.binaries
     if name.startswith((
         os.path.join('PySide6', 'Qt6Core'),
         os.path.join('PySide6', 'Qt6Gui'),
@@ -90,24 +94,24 @@ binaries.extend((f'resources/build/scipy/ndimage/{os.path.basename(filepath)}', 
                 for filepath in glob.glob(os.path.join(os.path.dirname(scipy_path), 'ndimage', '_nd_image.*')))
 
 # Remove unused data files
-datas = [
-    (name, path, type) for name, path, type in a.datas
+exe_datas = [
+    (name, path, type) for name, path, type in a_main.datas
     if not name.startswith(os.path.join('PySide6', 'translations'))  # 6037 kb
     and not name.startswith('MarkupSafe')
 ]
 
-exe = EXE(
-    pyz,
-    a.scripts,
+exe_main = EXE(
+    pyz_main,
+    a_main.scripts,
     binaries,
-    datas,
+    exe_datas,
     [],
     name=target_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=['resources/build/scipy/ndimage/_nd_image.cp311-win_amd64.dll.a'],
+    upx_exclude=upx_exclude,
     runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,
@@ -116,6 +120,45 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version='build\\version.rc',
+    icon=['resources\\images\\icon.ico'],
+)
+
+# Portable executable
+a_portable = Analysis(
+    ['mousetracks2/__main__.py'],
+    pathex=[],
+    binaries=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=['resources/build/hooks/portable.py'],
+    excludes=excludes,
+    noarchive=False,
+    optimize=0,
+)
+pyz_portable = PYZ(a_portable.pure)
+
+exe_portable = EXE(
+    pyz_portable,
+    a_portable.scripts,
+    binaries,
+    exe_datas,
+    [],
+    name=target_name + '-portable',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=upx_exclude,
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    version='build\\version-portable.rc',
     icon=['resources\\images\\icon.ico'],
 )
 

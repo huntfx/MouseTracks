@@ -69,7 +69,10 @@ Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
 """
 
 if CLI.data_dir is None:
-    DATA_DIR = APPDATA / 'MouseTracks'
+    if CLI.portable:
+        DATA_DIR = CURRENT_DIR / '.mousetracks'
+    else:
+        DATA_DIR = APPDATA / 'MouseTracks'
 else:
     DATA_DIR = CLI.data_dir
 """Where to save the data."""

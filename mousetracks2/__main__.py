@@ -33,6 +33,8 @@ except Exception:
 
 def main() -> None:
     """Handle the main startup checks and logic."""
+    print(f'Application data location: {DATA_DIR}')
+
     # Set the installer version number to the currently running version
     if CLI.installed:
         update_installer_version_number()

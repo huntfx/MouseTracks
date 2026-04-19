@@ -34,6 +34,7 @@ if not defined VERSION (
 mkdir build
 pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks-%VERSION%-windows-x64.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 pyivf-make_version --outfile "build/version-installer.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
+pyivf-make_version --outfile "build/version-portable.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks-%VERSION%-windows-x64-portable.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
 :: Write out the public key
 python -m mousetracks2 --write-public-key
@@ -44,6 +45,7 @@ pyinstaller MouseTracks.spec
 :: Sign the executables
 python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
 python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
+python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64-portable.exe"
 
 :: Exit the virtual environment
 call deactivate

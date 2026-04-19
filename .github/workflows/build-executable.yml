@@ -197,12 +197,14 @@ jobs:
 
           EXE_BASENAME="MouseTracks-${VERSION}-${{ matrix.platform }}-${{ matrix.architecture }}"
           FULL_EXE_NAME="${EXE_BASENAME}${{ matrix.exe_suffix }}"
+          PORTABLE_EXE_NAME="${EXE_BASENAME}-portable${{ matrix.exe_suffix }}"
           INSTALLER_BASENAME="${EXE_BASENAME}-setup"
           FULL_INSTALLER_NAME="${INSTALLER_BASENAME}${{ matrix.exe_suffix }}"
 
           # Set environment variables for use in later steps of this job
           echo "EXE_BASENAME=${EXE_BASENAME}" >> $GITHUB_ENV
           echo "FULL_EXE_NAME=${FULL_EXE_NAME}" >> $GITHUB_ENV
+          echo "PORTABLE_EXE_NAME=${PORTABLE_EXE_NAME}" >> $GITHUB_ENV
           echo "INSTALLER_BASENAME=${INSTALLER_BASENAME}" >> $GITHUB_ENV
           echo "FULL_INSTALLER_NAME=${FULL_INSTALLER_NAME}" >> $GITHUB_ENV
 
@@ -211,6 +213,7 @@ jobs:
 
           echo "Executable basename: ${EXE_BASENAME}"
           echo "Full executable name: ${FULL_EXE_NAME}"
+          echo "Portable executable name: ${PORTABLE_EXE_NAME}"
           echo "Installer basename: ${INSTALLER_BASENAME}"
           echo "Full installer name: ${FULL_INSTALLER_NAME}"
 
@@ -237,6 +240,7 @@ jobs:
           source .venv/Scripts/activate
           pyivf-make_version --outfile "build/version.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
           pyivf-make_version --outfile "build/version-installer.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_INSTALLER_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          pyivf-make_version --outfile "build/version-portable.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.PORTABLE_EXE_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
           deactivate
 
       - name: Write public key
@@ -268,6 +272,7 @@ jobs:
           echo -n "$PRIVATE_SIGNING_KEY" > keys/private.key
           python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
           python -m mousetracks2 --sign-executable "dist/${FULL_EXE_NAME}"
+          python -m mousetracks2 --sign-executable "dist/${PORTABLE_EXE_NAME}"
           rm keys/private.key
           deactivate
 
@@ -307,11 +312,13 @@ jobs:
           ditto -c -k --keepParent "$FULL_EXE_NAME" "$ZIP_NAME"
           echo "FULL_EXE_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: Attach Main Executable to Release
+      - name: Attach Main Executables to Release
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/${{ env.FULL_EXE_NAME }}
+          files: |
+            dist/${{ env.FULL_EXE_NAME }}
+            dist/${{ env.PORTABLE_EXE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
