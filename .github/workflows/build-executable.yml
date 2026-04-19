@@ -307,16 +307,16 @@ jobs:
           ditto -c -k --keepParent "$FULL_EXE_NAME" "$ZIP_NAME"
           echo "FULL_EXE_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: Attach Main Executable to Release || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
-        if: github.event_name == 'release'
+      - name: Attach Main Executable to Release
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
         uses: softprops/action-gh-release@v1
         with:
           files: dist/${{ env.FULL_EXE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Attach Installer to Release || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
-        if: github.event_name == 'release' && runner.os == 'Windows'
+      - name: Attach Installer to Release
+        if: runner.os == 'Windows' && (github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true))
         uses: softprops/action-gh-release@v1
         with:
           files: dist/${{ env.FULL_INSTALLER_NAME }}
