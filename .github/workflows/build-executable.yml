@@ -330,11 +330,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Upload Executable as Artifact
+      - name: Upload Main Executable as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}
           path: dist/${{ env.FULL_EXE_NAME }}
+
+      - name: Upload Portable Executable as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}-portable
+          path: dist/${{ env.PORTABLE_EXE_NAME }}
 
       - name: Upload Installer as Artifact
         if: runner.os == 'Windows'
