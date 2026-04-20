@@ -206,9 +206,19 @@ if sys.platform == 'win32':
 
 # macOS bundle
 if sys.platform == 'darwin':
-    app = BUNDLE(
+    app_main = BUNDLE(
         exe_main,
         name=f'{target_name}.app',
+        icon='resources/images/icon.icns',
+        bundle_identifier=PACKAGE_IDENTIFIER,
+        info_plist={
+            'NSHighResolutionCapable': 'True',
+            'LSBackgroundOnly': 'False',
+        },
+    )
+    app_portable = BUNDLE(
+        exe_portable,
+        name=f'{target_name}-portable.app',
         icon='resources/images/icon.icns',
         bundle_identifier=PACKAGE_IDENTIFIER,
         info_plist={

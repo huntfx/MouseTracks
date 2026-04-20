@@ -307,10 +307,14 @@ jobs:
         shell: bash
         run: |
           cd dist
-          ZIP_NAME="${FULL_EXE_NAME%.*}.zip"
-          echo "Zipping $FULL_EXE_NAME into $ZIP_NAME..."
-          ditto -c -k --keepParent "$FULL_EXE_NAME" "$ZIP_NAME"
-          echo "FULL_EXE_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          MAIN_ZIP_NAME="${FULL_EXE_NAME%.*}.zip"
+          echo "Zipping $FULL_EXE_NAME into $MAIN_ZIP_NAME..."
+          ditto -c -k --keepParent "$FULL_EXE_NAME" "$MAIN_ZIP_NAME"
+          echo "FULL_EXE_NAME=$MAIN_ZIP_NAME" >> $GITHUB_ENV
+          PORTABLE_ZIP_NAME="${PORTABLE_EXE_NAME%.*}.zip"
+          echo "Zipping $PORTABLE_EXE_NAME into $PORTABLE_ZIP_NAME..."
+          ditto -c -k --keepParent "$PORTABLE_EXE_NAME" "$PORTABLE_ZIP_NAME"
+          echo "PORTABLE_EXE_NAME=$PORTABLE_ZIP_NAME" >> $GITHUB_ENV
 
       - name: Attach Main Executables to Release
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
