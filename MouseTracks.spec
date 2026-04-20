@@ -207,7 +207,7 @@ if sys.platform == 'win32':
 # macOS bundle
 if sys.platform == 'darwin':
     app = BUNDLE(
-        exe,
+        exe_main,
         name=f'{target_name}.app',
         icon='resources/images/icon.icns',
         bundle_identifier=PACKAGE_IDENTIFIER,
