@@ -53,6 +53,9 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
     parser.add_argument('--verify-executable', metavar='PATH', help=argparse.SUPPRESS)
 
+    parser.add_argument('--debug-print-autostart', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
+
     if strict:
         args = parser.parse_args()
     else:
@@ -354,6 +357,15 @@ def run_cli_function() -> bool:
         case argparse.Namespace(write_public_key=True) if sys.platform == 'win32':
             from .sign import write_public_key_to_py
             write_public_key_to_py()
+
+        case argparse.Namespace(debug_print_autostart=True):
+            from .utils.system import get_autostart
+            print(f'Autostart command: {get_autostart()}')
+
+        case argparse.Namespace(debug_remap_autostart=True):
+            from .utils.system import remap_autostart
+            result = remap_autostart()
+            print(f'Remapped autostart: {result}')
 
         case _:
             return False
