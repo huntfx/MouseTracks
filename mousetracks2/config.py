@@ -5,11 +5,11 @@ from typing import Any, IO
 
 import yaml
 
+from .context import CTX
 from .utils import keycodes
-from .runtime import DATA_DIR
 
 
-GLOBAL_CONFIG_PATH = DATA_DIR / 'config.yaml'
+GLOBAL_CONFIG_PATH = CTX.data_dir / 'config.yaml'
 
 
 @dataclass

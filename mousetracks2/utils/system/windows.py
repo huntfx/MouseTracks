@@ -15,7 +15,7 @@ import winreg
 
 from . import base
 from ...constants import PACKAGE_IDENTIFIER
-from ...runtime import LAUNCH_EXECUTABLE
+from ...context import CTX
 from ...types import Rect, RectList
 from ...version import VERSION
 
@@ -414,7 +414,7 @@ def get_autostart() -> str | None:
 
 def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set an executable to run on startup."""
-    cmd = subprocess.list2cmdline([str(LAUNCH_EXECUTABLE)] + [arg for arg in args if arg not in ignore_args])
+    cmd = subprocess.list2cmdline([str(CTX.launch_executable)] + [arg for arg in args if arg not in ignore_args])
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_STARTUP, 0, winreg.KEY_WRITE) as key:
         winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, cmd)
 

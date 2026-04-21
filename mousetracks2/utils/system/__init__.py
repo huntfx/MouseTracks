@@ -1,12 +1,11 @@
 import shlex
 import sys
-from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
 from . import base
-from ...cli import CLI
-from ...runtime import LAUNCH_EXECUTABLE, IS_BUILT_EXE, DATA_DIR
+from ...context import CTX
+from ...runtime import IS_BUILT_EXE
 
 if TYPE_CHECKING:
     Window: Type[base.Window]
@@ -68,7 +67,7 @@ __all__ = [
 
 
 def remap_autostart(cmd: str | None = None) -> bool:
-    """Check if remaping the executable is required.
+    """Check if remapping the executable is required.
     This is in case a user downloads a new version.
     It is only designed to run for built executables.
     """
@@ -88,20 +87,28 @@ def remap_autostart(cmd: str | None = None) -> bool:
         return False
 
     # Skip if data dir is different
-    if '--data-dir' in args:
-        with suppress(KeyError, IndexError):
-            data_dir = Path(args[args.index('--data-dir') + 1])
-            if data_dir.resolve() != DATA_DIR.resolve():
+    for i, arg in enumerate(args):
+        if arg == '--data-dir':
+            try:
+                old_data_dir = Path(args[i + 1]).resolve()
+            except IndexError:
                 return False
+            break
+        elif arg.startswith('--data-dir='):
+            old_data_dir = Path(arg.split('=', 1)[1]).resolve()
+            break
+    if old_data_dir is not None:
+        if old_data_dir != CTX.data_dir.resolve():
+            return False
 
     # Skip if portable state is different
-    if ('--portable' in args) != CLI.portable:
+    if ('--portable' in args) != CTX.portable:
         return False
 
     # Update the path to the current portable executable
     exe_path = Path(exe.strip('"')).resolve()
-    if IS_BUILT_EXE and exe_path != LAUNCH_EXECUTABLE.resolve():
-        print(f'Autostart path is outdated. Correcting "{exe}" to "{LAUNCH_EXECUTABLE}".')
+    if exe_path != CTX.launch_executable.resolve():
+        print(f'Autostart path is outdated. Correcting "{exe}" to "{CTX.launch_executable}".')
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
         return True
 

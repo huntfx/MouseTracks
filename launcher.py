@@ -6,8 +6,8 @@ import ctypes
 import sys
 import subprocess
 
+from mousetracks2.context import CTX
 from mousetracks2.utils.update import get_local_executables
-from mousetracks2.runtime import EXECUTABLE_DIR
 from mousetracks2.sign import verify_signature
 
 
@@ -23,7 +23,7 @@ def show_error(title: str, message: str) -> None:
 
 def main() -> None:
     # Build an ordered list of available executables
-    lower, current, higher = get_local_executables(EXECUTABLE_DIR)
+    lower, current, higher = get_local_executables(CTX.executable_dir)
     executables = list(lower)
     if current is not None:
         executables.append(current)
@@ -46,7 +46,7 @@ def main() -> None:
         cmd.append('--installed')
     cmd.extend(sys.argv[1:])
     try:
-        exit_code = subprocess.call(cmd, cwd=str(EXECUTABLE_DIR))
+        exit_code = subprocess.call(cmd, cwd=str(CTX.executable_dir))
         sys.exit(exit_code)
     except KeyboardInterrupt:
         sys.exit(1)

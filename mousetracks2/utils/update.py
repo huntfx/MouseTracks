@@ -12,7 +12,7 @@ from urllib.error import URLError
 
 from .network import safe_download_file
 from ..constants import UNTRUSTED_EXT
-from ..runtime import EXECUTABLE_DIR
+from ..context import CTX
 from ..version import VERSION
 
 if sys.platform == 'win32':
@@ -239,9 +239,9 @@ def get_local_executables(folder: Path | str, version: str = VERSION, include_un
 
 def update(download: bool) -> Path | None:
     """Run downloads/cleanup when running as an installed application."""
-    cleanup_old_executables(EXECUTABLE_DIR)
+    cleanup_old_executables(CTX.executable_dir)
     if download:
-        return download_version(EXECUTABLE_DIR)
+        return download_version(CTX.executable_dir)
     return None
 
 

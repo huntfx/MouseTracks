@@ -15,9 +15,9 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..cli import CLI
 from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
+from ..context import CTX
 from ..exceptions import ExitRequest
 from ..utils import keycodes
 from ..utils.monitor import MonitorData
@@ -115,10 +115,10 @@ class Tracking(Component):
         self.update_monitors = True
 
         config = GlobalConfig()
-        self.track_mouse = not CLI.disable_mouse and config.track_mouse
-        self.track_keyboard = not CLI.disable_keyboard and config.track_keyboard
-        self.track_gamepad = not CLI.disable_gamepad and config.track_gamepad
-        self.track_network = not CLI.disable_network and config.track_network
+        self.track_mouse = not CTX.disable_mouse and config.track_mouse
+        self.track_keyboard = not CTX.disable_keyboard and config.track_keyboard
+        self.track_gamepad = not CTX.disable_gamepad and config.track_gamepad
+        self.track_network = not CTX.disable_network and config.track_network
 
         # Setup pynput listeners
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use

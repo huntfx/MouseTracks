@@ -14,8 +14,8 @@ import numpy.typing as npt
 
 from .config import ProfileConfig
 from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .context import CTX
 from .utils.keycodes import CLICK_CODES
-from .runtime import DATA_DIR
 
 
 CURRENT_FILE_VERSION = 1
@@ -23,7 +23,7 @@ CURRENT_FILE_VERSION = 1
 EXTENSION = 'mtk'
 """Extension to use for the profile data."""
 
-PROFILE_DIR = DATA_DIR / 'Profiles'
+PROFILE_DIR = CTX.data_dir / 'Profiles'
 
 _DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
 

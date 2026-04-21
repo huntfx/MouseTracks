@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Callable, Iterator
 import psutil
 
 from . import ipc
-from ..cli import CLI
 from ..constants import DEFAULT_PROFILE_NAME
+from ..context import CTX
 from ..exceptions import ExitRequest
 from ..types import RectList, Application
 from ..utils.math import calculate_line
@@ -235,7 +235,7 @@ class MonitorComponent(Component):
         """Determine if running in single monitor mode.
         Override recommended.
         """
-        return bool(CLI.single_monitor)
+        return bool(CTX.single_monitor)
 
     def get_render_space_offset(self, pixel: tuple[int, int],
                                  ) -> tuple[tuple[int, int], tuple[int, int]] | None:

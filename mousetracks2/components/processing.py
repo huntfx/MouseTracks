@@ -12,15 +12,15 @@ from send2trash import send2trash
 
 from . import ipc
 from .abstract import AppComponent, MonitorComponent
-from ..cli import CLI
 from ..config import GlobalConfig
+from ..context import CTX
 from ..exceptions import ExitRequest
 from ..export import Export
 from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
-from ..utils.math import calculate_line, calculate_distance
+from ..utils.math import calculate_distance
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
@@ -150,7 +150,7 @@ class Processing(AppComponent, MonitorComponent):
     def is_single_monitor_mode(self) -> bool:
         """Determine if running in single or multi monitor mode."""
         if self.profile.config.multi_monitor is None:
-            return bool(CLI.single_monitor)
+            return bool(CTX.single_monitor)
         return not self.profile.config.multi_monitor
 
     def _record_move(self, data: MovementMaps, position: tuple[int, int],

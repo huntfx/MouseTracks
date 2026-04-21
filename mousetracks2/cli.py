@@ -2,13 +2,13 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
 from .version import VERSION
 
 
 
-def parse_args(strict: bool = False) -> argparse.Namespace:
+def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argparse.Namespace:
     """Parse the command line arguments.
 
     Parameters:
@@ -57,10 +57,10 @@ def parse_args(strict: bool = False) -> argparse.Namespace:
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
 
     if strict:
-        args = parser.parse_args()
+        result = parser.parse_args(args)
     else:
-        args, unknown = parser.parse_known_args()
-    return args
+        result, unknown = parser.parse_known_args(args)
+    return result
 
 
 def bool2str(value: bool | None) -> str:
@@ -75,7 +75,7 @@ def str2bool(value: str) -> bool:
     return bool(int(value))
 
 
-class _CLI:
+class CLI:
     """Store all the arguments in environment variables.
 
     When a new process is spawned, it may not retain `sys.argv`, but it
@@ -84,11 +84,11 @@ class _CLI:
     read by the child processes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, args: Sequence[str] | None = None) -> None:
         self._soft_load = False
-        self.args = self._load_args()
+        self.args = self._load_args(args)
 
-    def _load_args(self) -> argparse.Namespace:
+    def _load_args(self, args: Sequence[str] | None) -> argparse.Namespace:
         """Load in the command line arguments.
 
         When a new process is spawned, it may not retain `sys.argv`,
@@ -97,7 +97,7 @@ class _CLI:
         parent process and read by the child processes instead of being
         overwritten.
         """
-        args = parse_args()
+        result = parse_args(args)
 
         # Load in default values
         self._soft_load = True
@@ -122,37 +122,37 @@ class _CLI:
             self._soft_load = False
 
         # Only update if the value is different to the default
-        if args.data_dir is not None:
-            self.data_dir = Path(args.data_dir)
-        if args.start_hidden is not None:
-            self.start_hidden = args.start_hidden
-        if args.offline:
+        if result.data_dir is not None:
+            self.data_dir = Path(result.data_dir)
+        if result.start_hidden is not None:
+            self.start_hidden = result.start_hidden
+        if result.offline:
             self.offline = True
-        if args.autostart:
+        if result.autostart:
             self.autostart = True
-        if args.installed:
+        if result.installed:
             self.installed = True
-        if args.admin:
+        if result.admin:
             self.elevate = True
-        if args.no_splash:
+        if result.no_splash:
             self.disable_splash = True
-        if args.no_mouse:
+        if result.no_mouse:
             self.disable_mouse = True
-        if args.no_keyboard:
+        if result.no_keyboard:
             self.disable_keyboard = True
-        if args.no_gamepad:
+        if result.no_gamepad:
             self.disable_gamepad = True
-        if args.no_network:
+        if result.no_network:
             self.disable_network = True
-        if not args.multi_monitor:
+        if not result.multi_monitor:
             self.single_monitor = True
             self.multi_monitor = False
-        if args.post_install:
+        if result.post_install:
             self.post_install = True
-        if args.portable:
+        if result.portable:
             self.portable = True
 
-        return args
+        return result
 
     @property
     def _set(self) -> Callable:
@@ -321,9 +321,9 @@ class _CLI:
         self._set('MT_POST_INSTALL', bool2str(value))
 
 
-def run_cli_function() -> bool:
+def run_cli_function(cli: CLI) -> bool:
     """Run a single function and quit."""
-    match CLI.args:
+    match cli.args:
         case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':
             from .sign import get_runtime_public_key
 
@@ -370,6 +370,3 @@ def run_cli_function() -> bool:
         case _:
             return False
     return True
-
-
-CLI = _CLI()

@@ -11,7 +11,7 @@ from typing import Self
 
 from .base import Window as _Window
 from ...constants import PACKAGE_IDENTIFIER
-from ...runtime import LAUNCH_EXECUTABLE
+from ...context import CTX
 from ...types import Rect, RectList
 
 from AppKit import (  # type: ignore
@@ -129,7 +129,7 @@ def get_autostart() -> str | None:
 
 def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set an executable to run on startup using a LaunchAgent."""
-    program_args = [str(LAUNCH_EXECUTABLE)] + [arg for arg in args if arg not in ignore_args]
+    program_args = [str(CTX.launch_executable)] + [arg for arg in args if arg not in ignore_args]
 
     plist_content = {
         'Label': PACKAGE_IDENTIFIER,

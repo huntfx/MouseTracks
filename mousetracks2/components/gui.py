@@ -1,15 +1,15 @@
 import sys
 import time
-from typing import Callable, cast
+from typing import cast
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from . import ipc
 from .abstract import Component, AppComponent, MonitorComponent
+from ..context import CTX
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
 from ..gui.splash import SplashScreen
-from ..cli import CLI
 from ..utils.system import prepare_application_icon
 
 
@@ -64,7 +64,7 @@ class GUI(AppComponent, MonitorComponent):
         self.receiver_thread.finished.connect(self.receiver_worker.deleteLater)
 
         # Show a splash screen while loading
-        if not CLI.disable_splash:
+        if not CTX.disable_splash:
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
             self._splash = SplashScreen()
             self.receiver_worker.ready.connect(self._splash.close)

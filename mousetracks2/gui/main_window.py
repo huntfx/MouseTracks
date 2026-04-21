@@ -25,16 +25,16 @@ from ..cli import CLI
 from ..config import GlobalConfig
 from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
+from ..context import CTX
 from ..enums import BlendMode, Channel
 from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
-from ..runtime import SYS_EXECUTABLE, LAUNCH_EXECUTABLE
+from ..runtime import SYS_EXECUTABLE
 from ..types import Application
 from ..utils import keycodes
 from ..utils.input import get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance
-from ..utils.monitor import MonitorData
+from ..utils.math import calculate_distance
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
 from ..utils.update import is_latest_version, background_update
 
@@ -232,11 +232,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # installed version.
         _exe, _args = split_autostart()
         self.ui.prefs_autostart.setChecked(_exe is not None
-                                           and not CLI.installed
-                                           or (CLI.installed and '--installed' in _args))
+                                           and not CTX.installed
+                                           or (CTX.installed and '--installed' in _args))
         self.ui.prefs_autostart.setEnabled(_exe is None
                                            or '--installed' not in _args
-                                           or CLI.installed)
+                                           or CTX.installed)
         self.ui.prefs_automin.setEnabled(self.ui.prefs_autostart.isEnabled())
 
         self.ui.layer_presets.installEventFilter(self)
@@ -505,8 +505,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """Text a random tip."""
         tips = ['tip_tracking', 'tip_tooltip']
         if not is_latest_version():
-            if CLI.installed:
-                background_update(download=not CLI.offline)
+            if CTX.installed:
+                background_update(download=not CTX.offline)
                 tips = ['tip_install']
             else:
                 tips.append('tip_update')
@@ -1226,7 +1226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Determine if running in single or multi monitor mode."""
         if self.ui.opts_monitor.isChecked():
             return self.ui.single_monitor.isChecked()
-        return bool(CLI.single_monitor)
+        return bool(CTX.single_monitor)
 
     def start_rendering_timer(self) -> None:
         """Start the timer to display rendering text.
@@ -1745,8 +1745,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bytes_recv = message.bytes_recv
                 self.resolutions = message.resolutions
                 if message.multi_monitor is None:
-                    single_monitor = CLI.single_monitor
-                    multi_monitor = CLI.multi_monitor
+                    single_monitor = CTX.single_monitor
+                    multi_monitor = CTX.multi_monitor
                 else:
                     single_monitor = not message.multi_monitor
                     multi_monitor = message.multi_monitor
@@ -1768,19 +1768,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Resume signals on the track options
                 # If disabled, ensure they are unchecked
-                if CLI.disable_mouse:
+                if CTX.disable_mouse:
                     self.ui.track_mouse.setChecked(False)
                 else:
                     self.ui.track_mouse.setEnabled(not self._is_loading_profile)
-                if CLI.disable_keyboard:
+                if CTX.disable_keyboard:
                     self.ui.track_keyboard.setChecked(False)
                 else:
                     self.ui.track_keyboard.setEnabled(not self._is_loading_profile)
-                if CLI.disable_gamepad:
+                if CTX.disable_gamepad:
                     self.ui.track_gamepad.setChecked(False)
                 else:
                     self.ui.track_gamepad.setEnabled(not self._is_loading_profile)
-                if CLI.disable_network:
+                if CTX.disable_network:
                     self.ui.track_network.setChecked(False)
                 else:
                     self.ui.track_network.setEnabled(not self._is_loading_profile)
@@ -2557,11 +2557,11 @@ class MainWindow(QtWidgets.QMainWindow):
         exists = set(args)
         if '--autostart' not in exists:
             args.append('--autostart')
-        if CLI.installed and '--installed' not in exists:
+        if CTX.installed and '--installed' not in exists:
             args.append('--installed')
-        if CLI.portable and '--portable' not in exists:
+        if CTX.portable and '--portable' not in exists:
             args.append('--portable')
-        while args and Path(args[0]).resolve() in (SYS_EXECUTABLE.resolve(), LAUNCH_EXECUTABLE.resolve()):
+        while args and Path(args[0]).resolve() in (SYS_EXECUTABLE.resolve(), CTX.launch_executable.resolve()):
             args = args[1:]
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
 
@@ -2588,7 +2588,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config.save()
 
         # Rewrite autostart to remove the minimise on start flag
-        if CLI.start_hidden is not None and self.ui.prefs_autostart.isChecked():
+        if CTX.start_hidden is not None and self.ui.prefs_autostart.isChecked():
             self.set_autostart()
 
     @QtCore.Slot(bool)

@@ -50,7 +50,7 @@ import Xlib.display
 import Xlib.xobject
 
 from .base import Window as _Window
-from ...runtime import LAUNCH_EXECUTABLE
+from ...context import CTX
 from ...types import Rect, RectList
 
 
@@ -179,7 +179,7 @@ def get_autostart() -> str | None:
 
 def set_autostart(*args: str, ignore_args: tuple[str, ...] = ()) -> None:
     """Set an executable to run on startup."""
-    cmd = shlex.join([str(LAUNCH_EXECUTABLE)] + [arg for arg in args if arg not in ignore_args])
+    cmd = shlex.join([str(CTX.launch_executable)] + [arg for arg in args if arg not in ignore_args])
     content = DESKTOP_FILE_CONTENT.format(cmd=cmd)
     try:
         AUTOSTART_DIR.mkdir(parents=True, exist_ok=True)
