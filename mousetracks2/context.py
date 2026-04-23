@@ -11,8 +11,8 @@ from .runtime import APPDATA, CURRENT_DIR, SYS_EXECUTABLE, IS_BUILT_EXE, REPO_DI
 class Context:
     """Dynamically resolved global variables."""
 
-    def __init__(self, args: Sequence[str] | None = None) -> None:
-        self.cli = CLI(args)
+    def __init__(self, args: Sequence[str] | None = None, group: str = __name__) -> None:
+        self.cli = CLI(args, group=group)
 
         self._data_dir: Path | None = None
         self._launch_executable: Path | None = None

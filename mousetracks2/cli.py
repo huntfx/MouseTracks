@@ -53,7 +53,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
     parser.add_argument('--verify-executable', metavar='PATH', help=argparse.SUPPRESS)
 
-    parser.add_argument('--debug-print-autostart', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
 
     if strict:
@@ -75,6 +75,76 @@ def str2bool(value: str) -> bool:
     return bool(int(value))
 
 
+class EnvGroup:
+    """Light wrapper for `os.environ` to allow value groups.
+    This is purpose built for the `CLI` class and is not complete
+    enough to be used anywhere else.
+    """
+
+    SEP = '::'
+
+    def __init__(self, group: str) -> None:
+        self.env = os.environ
+        self.group = group.replace(self.SEP, '.')
+
+    def decode(self, data: str) -> dict[str | None, str]:
+        """Build a dict from an env string.
+
+        If there are any ungrouped items, they will also be applied to
+        the current group, as it's likely these were set outside of MT.
+        """
+        result: dict[str | None, str] = {}
+        for item in data.split(os.pathsep):
+            try:
+                group, value = item.split(self.SEP, 1)
+            except ValueError:
+                result[None] = item
+                # Value was set outside of EnvGroup, so apply to current group
+                if self.group not in result:
+                    result[self.group] = item
+            else:
+                result[group] = value
+        return result
+
+    def encode(self, data: dict[str | None, str]) -> str:
+        """Convert the env data back to its string form."""
+        return os.pathsep.join(f'{k}{self.SEP}{v}' if k is not None else v for k, v in data.items())
+
+    def __getitem__(self, key: str) -> str:
+        """Get data for a key in the current group."""
+        if key not in self.env:
+            raise KeyError(key)
+        data = self.decode(self.env[key])
+        if self.group in data:
+            return data[self.group]
+        raise KeyError(key)
+
+    def get(self, key: str) -> str | None:
+        """Get data for a key in the current group."""
+        if key not in self.env:
+            return None
+        data = self.decode(self.env[key])
+        return data.get(self.group)
+
+    def __setitem__(self, key: str, value: str) -> None:
+        """Set data for a key in the current group."""
+        if key in self.env:
+            data = self.decode(os.environ[key])
+        else:
+            data = {}
+        data[self.group] = value
+        self.env[key] = self.encode(data)
+
+    def setdefault(self, key: str, value: str) -> None:
+        """Set default data for a key in the current group."""
+        if key in self.env:
+            data = self.decode(os.environ[key])
+        else:
+            data = {}
+        data.setdefault(self.group, value)
+        self.env[key] = self.encode(data)
+
+
 class CLI:
     """Store all the arguments in environment variables.
 
@@ -84,11 +154,13 @@ class CLI:
     read by the child processes.
     """
 
-    def __init__(self, args: Sequence[str] | None = None) -> None:
+    def __init__(self, args: Sequence[str] | None = None, group: str = __name__) -> None:
         self._soft_load = False
-        self.args = self._load_args(args)
+        self._args = args
+        self.env = EnvGroup(group)
+        self.args = self._load_args()
 
-    def _load_args(self, args: Sequence[str] | None) -> argparse.Namespace:
+    def _load_args(self) -> argparse.Namespace:
         """Load in the command line arguments.
 
         When a new process is spawned, it may not retain `sys.argv`,
@@ -97,7 +169,7 @@ class CLI:
         parent process and read by the child processes instead of being
         overwritten.
         """
-        result = parse_args(args)
+        args = parse_args(self._args)
 
         # Load in default values
         self._soft_load = True
@@ -122,49 +194,49 @@ class CLI:
             self._soft_load = False
 
         # Only update if the value is different to the default
-        if result.data_dir is not None:
-            self.data_dir = Path(result.data_dir)
-        if result.start_hidden is not None:
-            self.start_hidden = result.start_hidden
-        if result.offline:
+        if args.data_dir is not None:
+            self.data_dir = Path(args.data_dir)
+        if args.start_hidden is not None:
+            self.start_hidden = args.start_hidden
+        if args.offline:
             self.offline = True
-        if result.autostart:
+        if args.autostart:
             self.autostart = True
-        if result.installed:
+        if args.installed:
             self.installed = True
-        if result.admin:
+        if args.admin:
             self.elevate = True
-        if result.no_splash:
+        if args.no_splash:
             self.disable_splash = True
-        if result.no_mouse:
+        if args.no_mouse:
             self.disable_mouse = True
-        if result.no_keyboard:
+        if args.no_keyboard:
             self.disable_keyboard = True
-        if result.no_gamepad:
+        if args.no_gamepad:
             self.disable_gamepad = True
-        if result.no_network:
+        if args.no_network:
             self.disable_network = True
-        if not result.multi_monitor:
+        if not args.multi_monitor:
             self.single_monitor = True
             self.multi_monitor = False
-        if result.post_install:
+        if args.post_install:
             self.post_install = True
-        if result.portable:
+        if args.portable:
             self.portable = True
 
-        return result
+        return args
 
     @property
     def _set(self) -> Callable:
         """Return a function to set an environment value."""
         if self._soft_load:
-            return os.environ.setdefault
-        return os.environ.__setitem__
+            return self.env.setdefault
+        return self.env.__setitem__
 
     @property
     def offline(self) -> bool:
         """Force offline mode so that no connections are ever made."""
-        return str2bool(os.environ['MT_OFFLINE'])
+        return str2bool(self.env['MT_OFFLINE'])
 
     @offline.setter
     def offline(self, value: bool) -> None:
@@ -174,7 +246,7 @@ class CLI:
     @property
     def start_hidden(self) -> bool | None:
         """Start the application as hidden."""
-        value = os.environ.get('MT_START_HIDDEN')
+        value = self.env.get('MT_START_HIDDEN')
         return str2bool(value) if value else None
 
     @start_hidden.setter
@@ -186,7 +258,7 @@ class CLI:
     @property
     def autostart(self) -> bool:
         """Flag when automatically launched at startup."""
-        return str2bool(os.environ['MT_AUTOSTART'])
+        return str2bool(self.env['MT_AUTOSTART'])
 
     @autostart.setter
     def autostart(self, value: bool) -> None:
@@ -196,7 +268,7 @@ class CLI:
     @property
     def data_dir(self) -> Path | None:
         """Get the data directory path."""
-        data_dir = os.environ['MT_DATA_DIR']
+        data_dir = self.env['MT_DATA_DIR']
         if data_dir:
             return Path(data_dir)
         return None
@@ -209,7 +281,7 @@ class CLI:
     @property
     def disable_splash(self) -> bool:
         """Disable the splash screen."""
-        return str2bool(os.environ['MT_DISABLE_SPLASH'])
+        return str2bool(self.env['MT_DISABLE_SPLASH'])
 
     @disable_splash.setter
     def disable_splash(self, value: bool) -> None:
@@ -219,7 +291,7 @@ class CLI:
     @property
     def disable_mouse(self) -> bool:
         """Disable mouse tracking."""
-        return str2bool(os.environ['MT_DISABLE_MOUSE'])
+        return str2bool(self.env['MT_DISABLE_MOUSE'])
 
     @disable_mouse.setter
     def disable_mouse(self, value: bool) -> None:
@@ -229,7 +301,7 @@ class CLI:
     @property
     def disable_keyboard(self) -> bool:
         """Disable keyboard tracking."""
-        return str2bool(os.environ['MT_DISABLE_KEYBOARD'])
+        return str2bool(self.env['MT_DISABLE_KEYBOARD'])
 
     @disable_keyboard.setter
     def disable_keyboard(self, value: bool) -> None:
@@ -239,7 +311,7 @@ class CLI:
     @property
     def disable_gamepad(self) -> bool:
         """Disable gamepad tracking."""
-        return str2bool(os.environ['MT_DISABLE_GAMEPAD'])
+        return str2bool(self.env['MT_DISABLE_GAMEPAD'])
 
     @disable_gamepad.setter
     def disable_gamepad(self, value: bool) -> None:
@@ -249,7 +321,7 @@ class CLI:
     @property
     def disable_network(self) -> bool:
         """Disable network tracking."""
-        return str2bool(os.environ['MT_DISABLE_NETWORK'])
+        return str2bool(self.env['MT_DISABLE_NETWORK'])
 
     @disable_network.setter
     def disable_network(self, value: bool) -> None:
@@ -259,7 +331,7 @@ class CLI:
     @property
     def elevate(self) -> bool:
         """Run with elevated privileges."""
-        return str2bool(os.environ['MT_ELEVATE'])
+        return str2bool(self.env['MT_ELEVATE'])
 
     @elevate.setter
     def elevate(self, value: bool) -> None:
@@ -268,8 +340,8 @@ class CLI:
 
     @property
     def portable(self) -> bool:
-        """Run as a portable application."""
-        return str2bool(os.environ['MT_PORTABLE'])
+        """If running as a portable application."""
+        return str2bool(self.env['MT_PORTABLE'])
 
     @portable.setter
     def portable(self, value: bool) -> None:
@@ -279,7 +351,7 @@ class CLI:
     @property
     def single_monitor(self) -> bool:
         """Treat all monitors as a single monitor."""
-        value = os.environ['MT_SINGLE_MONITOR']
+        value = self.env['MT_SINGLE_MONITOR']
         return str2bool(value)
 
     @single_monitor.setter
@@ -290,7 +362,7 @@ class CLI:
     @property
     def multi_monitor(self) -> bool:
         """Handle each monitor separately."""
-        value = os.environ['MT_MULTI_MONITOR']
+        value = self.env['MT_MULTI_MONITOR']
         return str2bool(value)
 
     @multi_monitor.setter
@@ -301,7 +373,7 @@ class CLI:
     @property
     def installed(self) -> bool:
         """Determine if running installed or portable."""
-        value = os.environ['MT_INSTALLED']
+        value = self.env['MT_INSTALLED']
         return str2bool(value)
 
     @installed.setter
@@ -312,7 +384,7 @@ class CLI:
     @property
     def post_install(self) -> bool:
         """Determine if running straight after being installed."""
-        value = os.environ['MT_POST_INSTALL']
+        value = self.env['MT_POST_INSTALL']
         return str2bool(value)
 
     @post_install.setter
@@ -358,7 +430,7 @@ def run_cli_function(cli: CLI) -> bool:
             from .sign import write_public_key_to_py
             write_public_key_to_py()
 
-        case argparse.Namespace(debug_print_autostart=True):
+        case argparse.Namespace(debug_get_autostart=True):
             from .utils.system import get_autostart
             print(f'Autostart command: {get_autostart()}')
 

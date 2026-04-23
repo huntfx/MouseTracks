@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
 from . import base
-from ...context import CTX
+from ...context import Context, CTX
 from ...runtime import IS_BUILT_EXE
 
 if TYPE_CHECKING:
@@ -70,6 +70,9 @@ def remap_autostart(cmd: str | None = None) -> bool:
     """Check if remapping the executable is required.
     This is in case a user downloads a new version.
     It is only designed to run for built executables.
+
+    It will not remap if the existing autostart is for the installed
+    application, or if the data directory doesn't match.
     """
     # Skip if running directly from Python
     if not IS_BUILT_EXE:
@@ -82,36 +85,26 @@ def remap_autostart(cmd: str | None = None) -> bool:
     if exe is None:
         return False
 
-    # Skip if MouseTracks was installed as it has a single launcher
-    if '--installed' in args:
+    saved_ctx = Context(args, group=__name__)
+
+    # Skip if MouseTracks was installed as the launcher takes highest priority
+    if saved_ctx.installed:
+        print(f'Skipping autostart remap, was set by installed launcher executable')
         return False
 
-    # Skip if data dir is different
-    for i, arg in enumerate(args):
-        if arg == '--data-dir':
-            try:
-                old_data_dir = Path(args[i + 1]).resolve()
-            except IndexError:
-                return False
-            break
-        elif arg.startswith('--data-dir='):
-            old_data_dir = Path(arg.split('=', 1)[1]).resolve()
-            break
-    if old_data_dir is not None:
-        if old_data_dir != CTX.data_dir.resolve():
-            return False
-
-    # Skip if portable state is different
-    if ('--portable' in args) != CTX.portable:
+    # Skip if data dir has changed
+    if CTX.data_dir != saved_ctx.data_dir:
+        print(f'Skipping autostart remap, current data dir does not match "{saved_ctx.data_dir}"')
         return False
 
     # Update the path to the current portable executable
     exe_path = Path(exe.strip('"')).resolve()
-    if exe_path != CTX.launch_executable.resolve():
+    if exe_path != CTX.launch_executable:
         print(f'Autostart path is outdated. Correcting "{exe}" to "{CTX.launch_executable}".')
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
         return True
 
+    print(f'Skipping autostart remap, executable and data dir match')
     return False
 
 
