@@ -96,6 +96,9 @@ This is the simplest way to get started. No installation is required.
 3. If on Linux, make the file executable: `chmod +x MouseTracks-2.0.0-linux-x64`
 4. Run the executable to launch the application.
 
+
+These files will still save to a common location no matter where they are moved. To save to the same directory as the executable, grab the files with the "-portable" suffix instead.
+
 Note that the releases may not be compatible with _every_ Linux / macOS system. If this is the case, you'll have to check the instructions below to either build or run from source.
 
 #### Linux Users
