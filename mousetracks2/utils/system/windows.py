@@ -6,9 +6,9 @@ import ctypes
 import ctypes.wintypes
 import shlex
 import sys
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Iterator, Self
 
 import subprocess
 import winreg
@@ -182,6 +182,15 @@ REG_STARTUP = r'Software\Microsoft\Windows\CurrentVersion\Run'
 
 AUTOSTART_NAME = 'MouseTracks'
 
+@contextmanager
+def _set_api_awareness_context(dpi_context: ctypes.wintypes.HANDLE | int) -> Iterator[None]:
+    """Temporarily set the DPI awareness for the current thread."""
+    original_ctx = user32.SetThreadDpiAwarenessContext(dpi_context)
+    try:
+        yield
+    finally:
+        user32.SetThreadDpiAwarenessContext(original_ctx)
+
 
 def monitor_locations(dpi_aware: bool = False) -> RectList:
     """Get the location of each monitor.
@@ -201,12 +210,9 @@ def monitor_locations(dpi_aware: bool = False) -> RectList:
         monitors.append(Rect.from_rect(rect.left, rect.top, rect.right, rect.bottom))
         return True
 
-    awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 if dpi_aware else DPI_AWARENESS_CONTEXT_UNAWARE
-    original_ctx = user32.SetThreadDpiAwarenessContext(awareness)
-    try:
+    dpi_context = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 if dpi_aware else DPI_AWARENESS_CONTEXT_UNAWARE
+    with _set_api_awareness_context(dpi_context):
         user32.EnumDisplayMonitors(0, None, MonitorEnumProc(callback), 0)
-    finally:
-        user32.SetThreadDpiAwarenessContext(original_ctx)
     return monitors
 
 
@@ -292,15 +298,16 @@ class PID:
         left = top = 2 << 31
         right = bottom = -2 << 31
 
-        valid = False
-        for hwnd in self.visible_hwnds:
-            rect = RECT()
-            if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-                valid = True
-                left = min(left, rect.left)
-                top = min(top, rect.top)
-                right = max(right, rect.right)
-                bottom = max(bottom, rect.bottom)
+        with _set_api_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2):
+            valid = False
+            for hwnd in self.visible_hwnds:
+                rect = RECT()
+                if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+                    valid = True
+                    left = min(left, rect.left)
+                    top = min(top, rect.top)
+                    right = max(right, rect.right)
+                    bottom = max(bottom, rect.bottom)
 
         if valid:
             return Rect.from_rect(left, top, right, bottom)

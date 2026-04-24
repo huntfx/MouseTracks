@@ -9,10 +9,10 @@ import psutil
 from . import ipc
 from .abstract import Component
 from ..applications import AppList, LOCAL_PATH
-from ..constants import DEFAULT_PROFILE_NAME, TRACKING_IGNORE
+from ..constants import APP_BORDER_TOLERANCE, DEFAULT_PROFILE_NAME, TRACKING_IGNORE
 from ..exceptions import ExitRequest
 from ..types import RectList
-from ..utils.system import Window, hide_child_process
+from ..utils.system import Window, hide_child_process, monitor_locations
 
 
 class AppDetection(Component):
@@ -136,19 +136,26 @@ class AppDetection(Component):
         self._previous_pos = position
         self._previous_res = resolution
 
-        # Somewhat hacky way to detect if the application is full screen spanning multiple monitors
-        # If this is the case, we want to record both monitors as normal
-        # TODO: Find an application to test this with before enabling
-        app_is_windowed = True
-        # if app_resolution is not None:
-        #     x_min = x_max = y_min = y_max = 0
-        #     for x1, y1, x2, y2 in monitor_locations():
-        #         x_min = min(x_min, x1)
-        #         x_max = max(x_max, x2)
-        #         y_min = min(y_min, y1)
-        #         y_max = max(y_max, y2)
-        #     if (x_max - x_min, y_max - y_min) == app_resolution:
-        #         app_is_windowed = False
+        # Check if an application spans the full virtual multi monitor resolution
+        # Tested with debug-scripts/virtual-resolution.py
+        if resolution is not None:
+            x_min = x_max = y_min = y_max = 0
+            locations = monitor_locations(dpi_aware=True)
+            if len(locations) > 1:
+
+                for x1, y1, x2, y2 in locations.rects:
+                    x_min = min(x_min, x1)
+                    x_max = max(x_max, x2)
+                    y_min = min(y_min, y1)
+                    y_max = max(y_max, y2)
+
+                phys_w = x_max - x_min
+                phys_h = y_max - y_min
+                app_w, app_h = resolution
+
+                # If it does, then clear out the rects and record each monitor separately
+                if max(abs(phys_w - app_w), abs(phys_h - app_h)) <= APP_BORDER_TOLERANCE:
+                    rects = RectList()
 
         if current_app != self._previous_app:
             if self._previous_app is not None:
@@ -156,13 +163,11 @@ class AppDetection(Component):
             if current_app is not None:
                 print(f'[Application Detection] {current_app[0]} gained focus')
 
-        if current_app != self._previous_app or rects != self._previous_rects:
+        if (current_app, rects) != (self._previous_app, self._previous_rects):
             if current_app is None:
                 self.send_data(ipc.TrackedApplicationDetected(DEFAULT_PROFILE_NAME, None))
-            elif app_is_windowed:
-                self.send_data(ipc.TrackedApplicationDetected(current_app[0], window.pid, window.rects))
             else:
-                self.send_data(ipc.TrackedApplicationDetected(current_app[0], window.pid))
+                self.send_data(ipc.TrackedApplicationDetected(current_app[0], window.pid, rects))
 
         self._previous_app = current_app
         self._previous_rects = rects
