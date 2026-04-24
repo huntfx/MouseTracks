@@ -50,7 +50,7 @@ python -m nuitka ^
   --product-version=%VERSION% ^
   --file-version=%VERSION% ^
   --copyright="Peter Hunt" ^
-  mousetracks2/__main__.py
+  launch.py
 
 if errorlevel 1 (
     echo Main application build failed.

@@ -28,7 +28,7 @@ hiddenimports = ['resources.build.scipy', 'pynput.keyboard._xorg', 'pynput.mouse
 upx_exclude = ['resources/build/scipy/ndimage/_nd_image.cp311-win_amd64.dll.a']
 
 a_main = Analysis(
-    ['mousetracks2/__main__.py'],
+    ['launch.py'],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -125,7 +125,7 @@ exe_main = EXE(
 
 # Portable executable
 a_portable = Analysis(
-    ['mousetracks2/__main__.py'],
+    ['launch.py'],
     pathex=[],
     binaries=[],
     datas=datas,
