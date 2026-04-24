@@ -255,14 +255,13 @@ def calculate_colour_map(colour_map: str) -> list[tuple[int, ...]]:
         raise ValueError('not enough colours to generate colour map')
     try:
         return parse_colour_text(parse_colour_file()['Maps'][to_lower(colour_map)]['Colour'])
-    except KeyError:
+    except KeyError as e:
         generated_map = parse_colour_text(colour_map)
         if generated_map:
             if len(generated_map) < 2:
-                raise ValueError('not enough colours to generate colour map')
+                raise ValueError('not enough colours to generate colour map') from e
             return generated_map
-        else:
-            raise ValueError('unknown colour map')
+        raise ValueError('unknown colour map') from e
 
 
 def get_luminance(r: int, g: int, b: int, a: int | None = None) -> float:

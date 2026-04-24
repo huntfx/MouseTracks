@@ -14,6 +14,7 @@ from ..types import RectList, Application
 from ..utils.math import calculate_line
 from ..utils.monitor import MonitorData
 from ..utils.system import UserResizeAppListener
+from ..utils.system.base import EventListener
 
 if TYPE_CHECKING:
     import multiprocessing.queues
@@ -129,7 +130,7 @@ class Component:
 
         # If an error happens on load, then stop here
         # A shutdown is triggered for all other components
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             q_send.put(ipc.Traceback(e, traceback.format_exc()))
             self = Component(q_send, q_receive)
             self.name = cls.__name__
@@ -151,7 +152,7 @@ class Component:
                 print(f'[{self.name}] Force shut down.')
                 return
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f'[{self.name}] Error shut down: {e}')
                 q_send.put(ipc.Traceback(e, traceback.format_exc()))
 
@@ -168,9 +169,13 @@ class Component:
 class AppComponent(Component):
     """Implement methods for tracking focused application."""
 
+    _app_change_hooks: list[Callable[[Application], None]]
+    _focused_app: Application
+    _resize_listener: EventListener
+
     def _register_mixin(self) -> None:
         # Setup the hook list
-        self._app_change_hooks: list[Callable[[Application], None]] = []
+        self._app_change_hooks = []
 
         # Setup the focused app tracking
         self._focused_app = Application('', RectList())
@@ -214,6 +219,8 @@ class AppComponent(Component):
 
 class MonitorComponent(Component):
     """Add additional methods for handling drawing with single/multi monitor modes."""
+
+    _monitor_data: MonitorData
 
     def _register_mixin(self) -> None:
         self._monitor_data = MonitorData()

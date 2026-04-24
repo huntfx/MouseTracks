@@ -6,3 +6,5 @@ types-PyYAML==6.0.*
 scipy-stubs==1.14.*
 types-python-xlib==0.33.*
 types-Send2Trash==1.8.*
+PySide6-stubs==6.7.3.*
+pylint==4.0.*

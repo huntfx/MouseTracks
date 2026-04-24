@@ -22,18 +22,19 @@ Possibly deprecated for `IS_BUILT_EXE`.
 
 # Pyinstaller overrides
 if hasattr(sys, '_MEIPASS'):
-    REPO_DIR = Path(sys._MEIPASS)
+    REPO_DIR = Path(sys._MEIPASS)  # pylint: disable=protected-access
     IS_BUILT_EXE = True
 
 # Nuitka overrides
 elif '__compiled__' in globals():
     REPO_DIR = Path(sys.executable).parent
-    SYS_EXECUTABLE = Path(cast(str, __compiled__.original_argv0))  # type: ignore
+    SYS_EXECUTABLE = Path(cast(str, globals()['__compiled__'].original_argv0))
     IS_BUILT_EXE = True
 
 # Current Dir Resolution
 CURRENT_DIR = SYS_EXECUTABLE.parent if IS_BUILT_EXE else REPO_DIR
 
+# Get AppData (https://github.com/ActiveState/appdirs/blob/master/appdirs.py)
 match sys.platform:
     case 'win32':
         APPDATA = Path(os.path.expandvars('%APPDATA%'))
@@ -41,6 +42,3 @@ match sys.platform:
         APPDATA = Path(os.path.expanduser('~/Library/Application Support/'))
     case _:
         APPDATA = Path(os.getenv('XDG_DATA_HOME', os.path.expanduser('~/.local/share')))
-"""The AppData folder.
-Source: https://github.com/ActiveState/appdirs/blob/master/appdirs.py
-"""

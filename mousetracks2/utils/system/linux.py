@@ -49,7 +49,7 @@ from typing import Any, Self
 import Xlib.display
 import Xlib.xobject
 
-from .base import Window as _Window
+from . import base
 from ...context import CTX
 from ...types import Rect, RectList
 
@@ -94,12 +94,13 @@ def get_focused_window(display: Xlib.display.Display) -> Xlib.xobject.drawable.W
     return _get_top_level_window(root, focus)
 
 
-class Window(_Window):
+class Window(base.Window):
     def __init__(self, display: Xlib.display.Display, window: Xlib.xobject.drawable.Window, **kwargs: Any) -> None:
         self._display = display
         self._window = window
         self._executable: str | None = None
         self._pid: int | None = None
+        super().__init__()
 
     @classmethod
     def get_focused(cls) -> Self:

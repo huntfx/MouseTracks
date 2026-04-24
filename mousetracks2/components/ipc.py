@@ -1,7 +1,7 @@
 """Standard format for data to be sent through communication queues."""
 
 from dataclasses import dataclass, field
-from enum import Enum, IntFlag, auto
+from enum import Enum, auto
 from typing import Literal
 
 import numpy as np

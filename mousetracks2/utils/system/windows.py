@@ -442,6 +442,7 @@ class Window(base.Window):
         self._hwnd = hwnd
         self._handle = WindowHandle(self._hwnd)
         self._pid = self._handle.pid
+        super().__init__()
 
     @classmethod
     def get_focused(cls) -> Self:
@@ -501,10 +502,9 @@ class _WindowMessageListener(base.EventListener):
         wndproc_c = WNDPROCTYPE(self._win_proc)
 
         class_name = type(self).__name__
-        wc = WNDCLASS()
-        wc.lpfnWndProc = wndproc_c
-        wc.lpszClassName = class_name
-        wc.hInstance = hinst
+        wc = WNDCLASS(lpfnWndProc=wndproc_c,
+                      lpszClassName=class_name,
+                      hInstance=hinst)
 
         if not user32.RegisterClassW(ctypes.byref(wc)):
             raise ctypes.WinError(ctypes.get_last_error())

@@ -38,7 +38,7 @@ def generate_keys() -> None:
     """
     assert not IS_BUILT_EXE
 
-    print(f'Generating build keys...')
+    print('Generating build keys...')
     if PRIVATE_KEY_PATH.exists():
         print('Existing private key found in folder, skipping')
         return
@@ -131,7 +131,7 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
     else:
         public_key = get_build_public_key()
     if public_key is None:
-        print(f'No public key set, signature verification disabled')
+        print('No public key set, signature verification disabled')
         return True
 
     # Read the last 10KB of the file
@@ -145,7 +145,7 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
         # Find the marker in the chunk
         marker_pos = chunk.rfind(MARKER)
         if marker_pos == -1:
-            print(f'No signature found')
+            print('No signature found')
             if write_untrusted:
                 _write_untrusted(file_path)
             return False
@@ -169,7 +169,7 @@ def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> boo
             _write_untrusted(file_path)
         return False
 
-    print(f'Signature verified')
+    print('Signature verified')
     return True
 
 

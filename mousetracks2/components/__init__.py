@@ -357,7 +357,7 @@ class Hub:
                     # Without this, the save on exit feature won't work
                     time.sleep(1 / UPDATES_PER_SECOND)
 
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             traceback.print_exc()
             # Show console if hidden
             self._toggle_console(True)

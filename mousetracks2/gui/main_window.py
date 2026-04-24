@@ -405,7 +405,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_donate.triggered.connect(self.open_url)
         self.ui.about.triggered.connect(self.about)
         self.ui.tip.linkActivated.connect(webbrowser.open)
-        self.ui.layer_list.currentItemChanged.connect(self.selected_layer_changed)
+        self.ui.layer_list.currentItemChanged.connect(self.layer_item_changed)
         self.ui.layer_list.itemChanged.connect(self.selected_layer_toggled)
         self.ui.layer_list.model().rowsMoved.connect(self.selected_layer_moved)
         self.ui.layer_blending.currentIndexChanged.connect(self.layer_blend_mode_changed)
@@ -453,7 +453,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Trigger initial setup
         self.profile_changed(0)
         self.ui.show_advanced.setChecked(False)
-        self.selected_layer_changed(background_layer, None)
+        if background_layer is not None:
+            self.set_selected_layer(background_layer)
         if not self.ui.layer_blending.currentIndex():
             self.layer_blend_mode_changed(0)
 
@@ -1102,12 +1103,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._is_setting_click_state = False
 
     @QtCore.Slot(bool)
-    def show_count_changed(self) -> None:
+    def show_count_changed(self, checked: bool) -> None:
         """Trigger when the count radio button changes."""
         self.request_thumbnail()
 
     @QtCore.Slot(bool)
-    def show_time_changed(self) -> None:
+    def show_time_changed(self, checked: bool) -> None:
         """Trigger when the time radio button changes."""
         self.request_thumbnail()
 
@@ -2867,15 +2868,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
 
     @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
-    def selected_layer_changed(self, current: QtWidgets.QListWidgetItem,
-                               previous: QtWidgets.QListWidgetItem) -> None:
+    def layer_item_changed(self, current: QtWidgets.QListWidgetItem,
+                                  previous: QtWidgets.QListWidgetItem) -> None:
         """Update widgets when the selected layer changes."""
-        if current == previous or current is None:
-            return
+        if current != previous:
+            self.set_selected_layer(current)
 
+    def set_selected_layer(self, item: QtWidgets.QListWidgetItem) -> None:
+        """Change the selected render layer."""
         self._is_updating_layer_options = True
         try:
-            self._selected_layer = current.data(QtCore.Qt.ItemDataRole.UserRole)
+            self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
             layer = self._layers[self._selected_layer]
 
             # Set the render type which will update the other widgets

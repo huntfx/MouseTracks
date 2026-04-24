@@ -186,7 +186,7 @@ def cleanup_old_executables(folder: Path | str, version: str = VERSION, keep: in
     """Delete any executables older than the given version.
     Optionally define a number to keep.
     """
-    lower, current, higher = get_local_executables(folder, version, include_untrusted=True)
+    lower, _current, _higher = get_local_executables(folder, version, include_untrusted=True)
 
     # Keep the highest few versions rather than removing everything
     if keep:

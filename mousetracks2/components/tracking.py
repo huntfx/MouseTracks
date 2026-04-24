@@ -113,6 +113,7 @@ class Tracking(Component):
         self.autosave = True
         self.update_apps = True
         self.update_monitors = True
+        self.data = DataState(0)
 
         config = GlobalConfig()
         self.track_mouse = not CTX.disable_mouse and config.track_mouse
@@ -312,7 +313,7 @@ class Tracking(Component):
         """
         try:
             yield
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self.send_data(ipc.Traceback(e, traceback.format_exc()))
 
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
@@ -512,15 +513,15 @@ class Tracking(Component):
                     prev_sent = data.bytes_sent_previous.get(interface_name, 0)
                     prev_recv = data.bytes_recv_previous.get(interface_name, 0)
 
+                    data.bytes_sent_previous[interface_name] = counters.bytes_sent
+                    data.bytes_recv_previous[interface_name] = counters.bytes_recv
+
                     # If a network disconnects its counters will reset
                     if counters.bytes_sent < prev_sent or counters.bytes_recv < prev_recv:
                         prev_sent = prev_recv = 0
-                    else:
-                        bytes_sent = counters.bytes_sent - prev_sent
-                        bytes_recv = counters.bytes_recv - prev_recv
 
-                    data.bytes_sent_previous[interface_name] = counters.bytes_sent
-                    data.bytes_recv_previous[interface_name] = counters.bytes_recv
+                    bytes_sent = counters.bytes_sent - prev_sent
+                    bytes_recv = counters.bytes_recv - prev_recv
 
                     if bytes_sent or bytes_recv:
                         mac_address = Interfaces.get_from_name(interface_name).mac

@@ -33,3 +33,7 @@ jobs:
       - name: Run Mypy
         run: |
           python -m mypy
+
+      - name: Run Pylint
+        run: |
+          python -m pylint mousetracks2 launcher.py --disable=fixme

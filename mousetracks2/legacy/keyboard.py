@@ -319,7 +319,7 @@ class KeyboardGrid(object):
         self.maps = parsed['Maps']
 
     def new_row(self) -> None:
-        self.row: list[dict[str, Any]] = []
+        self.row: list[dict[str, Any]] = []  # pylint: disable=attribute-defined-outside-init
         self.grid.append(self.row)
 
     def add_key(self, name: str | None, width: float | None = None, height: float | None = None,
@@ -356,7 +356,8 @@ class KeyboardGrid(object):
 
         try:
             colour_map_data = calculate_colour_map(GLOBALS.colour_map)
-        except Exception:  # Old code - just fallback to tranparent
+        # Old code, not worth fixing errors, just fallback to transparent
+        except Exception:  # pylint: disable=broad-exception-caught
             colour_map_data = [(0, 0, 0, 0)]
         colour_range = ColourRange(0, max_range, colour_map_data)
 

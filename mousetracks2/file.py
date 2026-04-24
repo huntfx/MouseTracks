@@ -1,5 +1,5 @@
+# pylint: disable=protected-access
 import os
-import pickle
 import re
 import time
 import zipfile
@@ -349,7 +349,7 @@ class TrackingProfile:
     daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
 
-    _last_accessed: float = field(default_factory=lambda: time.time(), init=False)
+    last_accessed: float = field(default_factory=time.time, init=False)
 
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
@@ -402,7 +402,7 @@ class TrackingProfile:
         self.daily_upload._write_to_zip(zf, 'stats/network/upload.npy')
         self.daily_download._write_to_zip(zf, 'stats/network/download.npy')
 
-        self._last_accessed = time.time()
+        self.last_accessed = time.time()
 
     def _load_from_zip(self, zf: zipfile.ZipFile, metadata_only: bool = False) -> None:
         all_paths = zf.namelist()
@@ -428,8 +428,8 @@ class TrackingProfile:
             self.mouse_double_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/double')
             self.mouse_held_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/held')
 
-        self.key_presses._load_from_zip(zf, f'data/keyboard/pressed.npy')
-        self.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
+        self.key_presses._load_from_zip(zf, 'data/keyboard/pressed.npy')
+        self.key_held._load_from_zip(zf, 'data/keyboard/held.npy')
 
         gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad/')}
         for path in all_paths:
@@ -467,7 +467,7 @@ class TrackingProfile:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
 
-        self._last_accessed = time.time()
+        self.last_accessed = time.time()
 
     def _save_main(self, path: str | None = None) -> bool:
         """Save the profile."""
@@ -523,8 +523,9 @@ class TrackingProfile:
 
     def save(self) -> bool:
         """Save the profile and handle the modified state."""
+        previous = self.modified
         if self.is_modified:
-            previous, self.modified = self.modified, int(time.time())
+            self.modified = int(time.time())
         if self._save_main():
             self.is_modified = False
             return True
@@ -569,12 +570,12 @@ class TrackingProfile:
             and cannot be recombined.
         """
         # Load the data using the legacy libraries
-        from mousetracks.files import CustomOpen, decode_file, upgrade_version
+        from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
 
         with CustomOpen(path, 'rb') as f:
             try:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f'Error importing {path}: {e}')
                 return False
 
@@ -686,7 +687,7 @@ class TrackingProfileLoader(MutableMapping):
         # Update the data
         if not profile.name or profile_name != sanitised:
             profile.name = profile_name
-        profile._last_accessed = time.time()
+        profile.last_accessed = time.time()
 
         # Force disabled profile config
         if profile_name == TRACKING_DISABLE:
@@ -703,11 +704,11 @@ class TrackingProfileLoader(MutableMapping):
         """
         sanitised = sanitise_profile_name(keep_loaded)
         data = ((profile.is_modified,  # Sort modified profiles first
-                 profile._last_accessed,  # Sort by recently accessed
+                 profile.last_accessed,  # Sort by recently accessed
                  name, profile)
                 for name, profile in self._profiles.items())
 
-        for i, (is_modified, load_time, name, profile) in enumerate(sorted(data, reverse=True)):
+        for i, (is_modified, _load_time, name, _profile) in enumerate(sorted(data, reverse=True)):
             if i < self.max_profiles or is_modified or name == sanitised:
                 continue
             del self._profiles[name]

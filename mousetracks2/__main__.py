@@ -25,7 +25,7 @@ try:
     from mousetracks2.utils.system import update_installer_version_number
 
 # Show any errors as the app otherwise will just silently fail
-except Exception:
+except Exception:  # pylint: disable=broad-exception-caught
     import traceback
     traceback.print_exc()
     input('Press enter to exit...')

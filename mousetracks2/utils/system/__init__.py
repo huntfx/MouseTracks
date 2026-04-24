@@ -89,7 +89,7 @@ def remap_autostart(cmd: str | None = None) -> bool:
 
     # Skip if MouseTracks was installed as the launcher takes highest priority
     if saved_ctx.installed:
-        print(f'Skipping autostart remap, was set by installed launcher executable')
+        print('Skipping autostart remap, was set by installed launcher executable')
         return False
 
     # Skip if data dir has changed
@@ -104,7 +104,7 @@ def remap_autostart(cmd: str | None = None) -> bool:
         set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
         return True
 
-    print(f'Skipping autostart remap, executable and data dir match')
+    print('Skipping autostart remap, executable and data dir match')
     return False
 
 

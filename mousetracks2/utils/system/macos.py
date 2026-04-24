@@ -9,7 +9,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Self
 
-from .base import Window as _Window
+from . import base
 from ...constants import PACKAGE_IDENTIFIER
 from ...context import CTX
 from ...types import Rect, RectList
@@ -37,13 +37,14 @@ AUTOSTART_DIR = Path.home() / 'Library' / 'LaunchAgents'
 AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{PACKAGE_IDENTIFIER}.plist'
 
 
-class Window(_Window):
+class Window(base.Window):
     """macOS implementation of the Window class."""
 
     def __init__(self, app_instance: NSRunningApplication, window_info: dict | None) -> None:
         self._app = app_instance
         self._window_info = window_info or {}  # Quartz CGWindowList
         self._pid = self._app.processIdentifier()
+        super().__init__()
 
     @classmethod
     def get_focused(cls) -> Self:

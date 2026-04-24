@@ -40,8 +40,9 @@ def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None
         res_y, res_x = array.shape
         popularity[(res_x, res_y)] += np.sum(np.greater(array, 0))
     threshold = max(popularity.values()) * 0.9
-    _width, _height = max(res for res, value in popularity.items() if value >= threshold)
-    aspect = _width / _height
+    result_width = result_height = native_width, native_height = \
+        max(res for res, value in popularity.items() if value >= threshold)
+    aspect = native_width / native_height
 
     # Calculate the resolutions from the given width / height
     if width is not None:
@@ -49,10 +50,8 @@ def array_target_resolution(arrays: list[np.typing.ArrayLike], width: int | None
     if height is not None:
         result_height = round(height * aspect), height
 
-    # Handle when only one resolution is given
+    # Handle when only one or no resolutions are given
     if width is None:
-        if height is None:
-            return _width, _height
         return result_height
     if height is None:
         return result_width
@@ -115,7 +114,7 @@ def _colour_to_np(bit_depth: int, r: int, g: int, b: int, a: int | None = None) 
     return colour
 
 
-def generate_colour_lut(*colours: tuple[int, ...], input_bit_depth: int,
+def generate_colour_lut(*colour_list: tuple[int, ...], input_bit_depth: int,
                         steps: int = 256) -> npt.NDArray[np.float64]:
     """Generate a color lookup transitioning smoothly between given colors.
 
@@ -129,20 +128,20 @@ def generate_colour_lut(*colours: tuple[int, ...], input_bit_depth: int,
         values normalised between 0.0 and 1.0.
     """
     # Return transparent black
-    if not colours:
+    if not colour_list:
         return np.zeros((steps, 4), dtype=np.float64)
 
     # Return single colour
-    if len(colours) == 1:
-        return np.tile(_colour_to_np(input_bit_depth, *colours[0]), (steps, 1))
+    if len(colour_list) == 1:
+        return np.tile(_colour_to_np(input_bit_depth, *colour_list[0]), (steps, 1))
 
     # Prepare the input array
-    rgba_array = np.zeros((len(colours), 4), dtype=np.float64)
-    for i, colour in enumerate(colours):
+    rgba_array = np.zeros((len(colour_list), 4), dtype=np.float64)
+    for i, colour in enumerate(colour_list):
         rgba_array[i] = _colour_to_np(input_bit_depth, *colour)
 
     # Define evenly spread positions for the input colours
-    stops = np.linspace(0, steps - 1, num=len(colours))
+    stops = np.linspace(0, steps - 1, num=len(colour_list))
 
     # Create the final lookup table by interpolating each channel
     lookup_indices = np.arange(steps)
@@ -246,7 +245,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         limit = np.log(np.finfo(combined_array.dtype).max)
 
         # Prevent overflow errors by reducing the array range
-        if True:
+        if True:  # pylint: disable = using-constant-test
             target = limit / contrast
             if max_value and np.log(max_value) > target:
                 new_max = int(np.exp(target))  # int conversion to round down
@@ -262,12 +261,13 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
 
     # Convert the array to 0-255 and map to a colour lookup table
     try:
-        colour_map_data = colours.calculate_colour_map(colour_map)
-    except Exception:  # Old code - just fallback to tranparent
-        colour_map_data = [(0, 0, 0, 0)]
+        colour_list = colours.calculate_colour_map(colour_map)
+    # Old code, not worth fixing errors, just fallback to transparent
+    except Exception:  # pylint: disable=broad-exception-caught
+        colour_list = [(0, 0, 0, 0)]
 
     if invert:
-        colour_map_data.reverse()
+        colour_list.reverse()
 
     # Setup the output array settings
     # This is hardcoded currently as PIL only supports writing 8 bit PNG images
@@ -278,7 +278,7 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
     bit_depth_peak = gradient_steps - 1
 
     # Generate a floating-point color lookup table (LUT) with values from 0.0 to 1.0
-    colour_lut_float = generate_colour_lut(*colour_map_data, input_bit_depth=8, steps=gradient_steps)
+    colour_lut_float = generate_colour_lut(*colour_list, input_bit_depth=8, steps=gradient_steps)
 
     # Normalize the high-precision input data
     normalised_data_float = normalise_array(combined_array)

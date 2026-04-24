@@ -33,7 +33,7 @@ LOCAL_PATH = CTX.data_dir / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
-APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
+APP_PATTERN = re.compile(r'^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
 MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/AppList.txt'
 
@@ -233,6 +233,7 @@ class AppList:
 
 # Some quick tests for debugging
 if __name__ == '__main__':
+    # pylint: disable=protected-access
     applist = AppList()
 
     applist.save()
@@ -263,7 +264,7 @@ if __name__ == '__main__':
     assert applist.match('myapp.exe') == 'Test App'
     assert applist.match('test/myapp.exe') == 'Test App'
     assert applist.match('path/test/myapp.exe') == 'Test App'
-    assert applist.match('other/myapp.exe') == None
+    assert applist.match('other/myapp.exe') is None
     assert applist.match('mspaint.exe') == 'MS Paint'
     assert applist.match('Borderlands.exe') == 'Borderlands'
     assert applist.match('C:/Tales from the Borderlands/Borderlands.exe') == 'Tales from the Borderlands'

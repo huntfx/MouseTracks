@@ -59,7 +59,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     if strict:
         result = parser.parse_args(args)
     else:
-        result, unknown = parser.parse_known_args(args)
+        result, _unknown = parser.parse_known_args(args)
     return result
 
 
@@ -394,6 +394,7 @@ class CLI:
 
 
 def run_cli_function(cli: CLI) -> bool:
+    # pylint: disable=import-outside-toplevel
     """Run a single function and quit."""
     match cli.args:
         case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':

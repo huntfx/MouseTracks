@@ -1,9 +1,8 @@
 import math
-import os
 import time
 from collections import defaultdict
 from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterator, Literal
 
 import numpy as np
@@ -21,7 +20,6 @@ from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
 from ..utils.math import calculate_distance
-from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
 from ..utils.system import hide_child_process
@@ -84,7 +82,7 @@ class Processing(AppComponent, MonitorComponent):
 
     def _send_profile_data(self, profile: TrackingProfile) -> None:
         """Send all the stats for the profile."""
-        profile._last_accessed = time.time()
+        profile.last_accessed = time.time()
 
         # Count total clicks
         clicks = 0
@@ -200,9 +198,9 @@ class Processing(AppComponent, MonitorComponent):
         data.tick = self.tick
 
         if data.requires_compression():
-            print(f'[Processing] Tracking threshold reached, reducing values...')
+            print('[Processing] Tracking threshold reached, reducing values...')
             data.run_compression()
-            print(f'[Processing] Reduced all arrays')
+            print('[Processing] Reduced all arrays')
 
         return distance
 
@@ -227,64 +225,64 @@ class Processing(AppComponent, MonitorComponent):
                 arrays[0, 0].extend(get_arrays(profile.cursor_map.speed_arrays))
 
             case ipc.RenderType.SingleClick:
-                for keycode, map in profile.mouse_single_clicks.items():
+                for keycode, res_map in profile.mouse_single_clicks.items():
                     if keycode == keycodes.VK_LBUTTON and not left_clicks:
                         continue
                     if keycode == keycodes.VK_MBUTTON and not middle_clicks:
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(get_arrays(map))
+                    arrays[0, 0].extend(get_arrays(res_map))
 
             case ipc.RenderType.DoubleClick:
-                for keycode, map in profile.mouse_double_clicks.items():
+                for keycode, res_map in profile.mouse_double_clicks.items():
                     if keycode == keycodes.VK_LBUTTON and not left_clicks:
                         continue
                     if keycode == keycodes.VK_MBUTTON and not middle_clicks:
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(get_arrays(map))
+                    arrays[0, 0].extend(get_arrays(res_map))
 
             case ipc.RenderType.HeldClick:
-                for keycode, map in profile.mouse_held_clicks.items():
+                for keycode, res_map in profile.mouse_held_clicks.items():
                     if keycode == keycodes.VK_LBUTTON and not left_clicks:
                         continue
                     if keycode == keycodes.VK_MBUTTON and not middle_clicks:
                         continue
                     if keycode == keycodes.VK_RBUTTON and not right_clicks:
                         continue
-                    arrays[0, 0].extend(get_arrays(map))
+                    arrays[0, 0].extend(get_arrays(res_map))
 
             case ipc.RenderType.ThumbstickMovement:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
-                        map = gamepad_maps.sequential_arrays
-                        arrays[0, 0].extend(map.values())
+                        resolution_map = gamepad_maps.sequential_arrays
+                        arrays[0, 0].extend(resolution_map.values())
                 if right_clicks:
                     for gamepad_maps in profile.thumbstick_r_map.values():
-                        map = gamepad_maps.sequential_arrays
-                        arrays[int(left_clicks), 0].extend(map.values())
+                        resolution_map = gamepad_maps.sequential_arrays
+                        arrays[int(left_clicks), 0].extend(resolution_map.values())
 
             case ipc.RenderType.ThumbstickSpeed:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
-                        map = gamepad_maps.speed_arrays
-                        arrays[0, 0].extend(map.values())
+                        resolution_map = gamepad_maps.speed_arrays
+                        arrays[0, 0].extend(resolution_map.values())
                 if right_clicks:
                     for gamepad_maps in profile.thumbstick_r_map.values():
-                        map = gamepad_maps.speed_arrays
-                        arrays[int(left_clicks), 0].extend(map.values())
+                        resolution_map = gamepad_maps.speed_arrays
+                        arrays[int(left_clicks), 0].extend(resolution_map.values())
 
             case ipc.RenderType.ThumbstickPosition:
                 if left_clicks:
                     for gamepad_maps in profile.thumbstick_l_map.values():
-                        map = gamepad_maps.density_arrays
-                        arrays[0, 0].extend(map.values())
+                        resolution_map = gamepad_maps.density_arrays
+                        arrays[0, 0].extend(resolution_map.values())
                 if right_clicks:
                     for gamepad_maps in profile.thumbstick_r_map.values():
-                        map = gamepad_maps.density_arrays
-                        arrays[int(left_clicks), 0].extend(map.values())
+                        resolution_map = gamepad_maps.density_arrays
+                        arrays[int(left_clicks), 0].extend(resolution_map.values())
 
             case _:
                 raise NotImplementedError(render_type)
@@ -463,11 +461,9 @@ class Processing(AppComponent, MonitorComponent):
                     if message.file_path is not None:
                         sampling *= 2
 
-                    assert message.show_count != message.show_time
-                    if message.show_count:
-                        data_set = 'count'
-                    if message.show_time:
-                        data_set = 'time'
+                    assert message.show_count != message.show_time  # TODO: Remove mutually exclusive options
+                    data_set = 'count' if message.show_count else 'time'
+
                     image = self._render_keyboard(profile, message.colour_map, data_set, sampling)
 
                 else:
@@ -664,7 +660,7 @@ class Processing(AppComponent, MonitorComponent):
                 self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
 
             case ipc.MonitorsChanged():
-                print(f'[Processing] Monitors changed.')
+                print('[Processing] Monitors changed.')
                 self.set_monitor_data(message.data)
 
             case ipc.ThumbstickMove():
