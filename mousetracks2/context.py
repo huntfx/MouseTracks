@@ -2,8 +2,6 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Sequence
 
-import psutil
-
 from .cli import CLI
 from .runtime import APPDATA, CURRENT_DIR, SYS_EXECUTABLE, IS_BUILT_EXE, REPO_DIR
 
@@ -27,6 +25,7 @@ class Context:
                 self._launch_executable = SYS_EXECUTABLE.parent / 'MouseTracks.exe'
 
                 # Attempt to get the correct path
+                import psutil
                 with suppress(psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     current_proc = psutil.Process()
                     current_exe = current_proc.exe()
