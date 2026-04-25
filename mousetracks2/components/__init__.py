@@ -336,7 +336,7 @@ class Hub:
         """Setup the tracking."""
         print('[Hub] Launching application...')
         running = True
-        error_occurred = False
+        error_to_raise: Exception | None = None
 
         try:
             if self.use_gui and (IS_EXE or should_minimise_on_start()):
@@ -357,11 +357,8 @@ class Hub:
                     # Without this, the save on exit feature won't work
                     time.sleep(1 / UPDATES_PER_SECOND)
 
-        except Exception:  # pylint: disable=broad-exception-caught
-            traceback.print_exc()
-            # Show console if hidden
-            self._toggle_console(True)
-            error_occurred = True
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error_to_raise = e
 
         finally:
             # Ensure threads are safely shut down
@@ -377,8 +374,9 @@ class Hub:
                     print('[Hub] GUI shut down')
                 self._q_gui.cancel_join_thread()
 
-        if error_occurred:
-            print('The above traceback has caused the application to shut down, please consider reporting it.')
-            input('Press enter to exit...')
 
         print('[Hub] Application exit')
+
+        # Re-raise after everything is safely shut down
+        if error_to_raise is not None:
+            raise error_to_raise

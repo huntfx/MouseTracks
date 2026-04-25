@@ -1,22 +1,25 @@
-"""Entry point for Mousetracks 2, with error handling.
-
-Usage: `python launch.py`
-"""
+"""Entry point for MouseTracks 2."""
 
 import sys
+import traceback
 from multiprocessing import freeze_support
 
 
 if __name__ == '__main__':
     freeze_support()
 
-    try:
-        from mousetracks2.__main__ import main
-        main()
+    while True:
+        try:
+            # We import inside the loop so the module namespace is re-evaluated if possible
+            from mousetracks2.__main__ import main
+            main()
 
-    # Show any errors as the app otherwise will just silently fail
-    except Exception:  # pylint: disable=broad-exception-caught
-        import traceback
-        traceback.print_exc()
-        input('Press enter to exit...')
-        sys.exit(1)
+        except Exception:  # pylint: disable=broad-exception-caught
+            exc_type, exc_val, exc_tb = sys.exc_info()
+
+            from mousetracks2.utils.crash import show_error_dialog
+            if not show_error_dialog(exc_type, exc_val, exc_tb):
+                sys.exit(1)
+
+        else:
+            break
