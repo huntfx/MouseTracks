@@ -71,7 +71,7 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
 
 ## Installation (v2.0)
 
-- Fully compatible with Windows.
+- Fully compatible with Windows, and backwards compatible with 1.0 files.
 - Mostly compatible with Linux _(tested with Ubuntu + Arch Linux)_ and macOS _(tested with 11.6.1)_.
 
 _On Linux, MouseTracks requires an __X11 (Xorg)__ session to work. On modern distributions like Ubuntu, you may need to select "Ubuntu on Xorg" from the gear icon on the login screen._
