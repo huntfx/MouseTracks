@@ -59,7 +59,7 @@ def show_error_dialog(exc_type: type[BaseException], exc_val: BaseException, exc
         # Ensure the console is visible
         if sys.platform == 'win32':
             with suppress(Exception):
-                from .system.windows import WindowHandle, get_window_handle
+                from .utils.system.windows import WindowHandle, get_window_handle
                 handle = WindowHandle(get_window_handle(console=True))
                 if handle is not None and handle.pid and handle.title:
                     handle.show()
@@ -67,6 +67,61 @@ def show_error_dialog(exc_type: type[BaseException], exc_val: BaseException, exc
         # Ask the user to restart
         while True:
             choice = input('Would you like to restart MouseTracks? [Y/n] ').strip().lower()
+            match choice:
+                case 'y' | '':
+                    return True
+                case 'n':
+                    return False
+
+
+def show_temp_warning_dialog() -> bool:
+    """Show a GUI warning when running from a temporary directory.
+    If it fails to launch, the console will be used instead.
+    """
+    message = 'Warning: MouseTracks is running from a temporary folder.'
+    detail = (
+        'Any settings or tracks saved during this session will be lost '
+        'when the application closes.\n\n'
+        'To save your data permanently, please extract the application '
+        'from the ZIP file into a normal folder before running it.'
+    )
+
+    # Print to console as a baseline
+    print(message)
+    print(detail.replace('\n\n', '\n'))
+
+    # Try to launch the GUI
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        # Create a hidden root window so only the dialog shows
+        root = tk.Tk()
+        root.withdraw()
+
+        # Use the native OS warning dialog
+        result = messagebox.askokcancel(
+            title='MouseTracks Portable',
+            message=message,
+            detail=f'{detail}\n\nPress OK to ignore this warning and continue.',
+        )
+
+        root.destroy()
+        return result
+
+    # Catch ImportError (no tk installed) or tk.TclError (headless Linux with no display)
+    except Exception:  # pylint: disable=broad-except
+
+        # Ensure the console is visible
+        if sys.platform == 'win32':
+            with suppress(Exception):
+                from .utils.system.windows import WindowHandle, get_window_handle
+                handle = WindowHandle(get_window_handle(console=True))
+                if handle is not None and handle.pid and handle.title:
+                    handle.show()
+
+        while True:
+            choice = input('Would you like to ignore this warning and continue? [Y/n] ').strip().lower()
             match choice:
                 case 'y' | '':
                     return True

@@ -12,6 +12,7 @@ from .components import Hub
 from .config import GlobalConfig
 from .context import CTX
 from .cli import parse_args, run_cli_function
+from .popups import show_temp_warning_dialog
 from .utils.system import is_elevated, relaunch_as_elevated, remap_autostart
 from .utils.update import background_update
 from .utils.system import update_installer_version_number
@@ -19,7 +20,10 @@ from .utils.system import update_installer_version_number
 
 def run() -> None:
     """Run the application."""
+    # Warn if saving to temp dir
     print(f'Application data location: {CTX.data_dir}')
+    if CTX.saving_to_temp and not show_temp_warning_dialog():
+        return
 
     # Set the installer version number to the currently running version
     if CTX.installed:

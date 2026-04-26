@@ -25,6 +25,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--data-dir', type=str, default=None, help='specify the data directory')
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
     parser.add_argument('--portable', action='store_true', help='run as portable (save data next to executable)')
+    parser.add_argument('--disable-temp-warning', action='store_true', help='disable the startup warning message when saving to the temporary directory')
 
     startup_group = parser.add_argument_group('Startup Options')
     startup_group.set_defaults(start_hidden=None)
@@ -189,6 +190,7 @@ class CLI:
             self.multi_monitor = True
             self.post_install = False
             self.portable = False
+            self.disable_temp_warning = False
 
         finally:
             self._soft_load = False
@@ -223,6 +225,8 @@ class CLI:
             self.post_install = True
         if args.portable:
             self.portable = True
+        if args.disable_temp_warning:
+            self.disable_temp_warning = True
 
         return args
 
@@ -391,6 +395,17 @@ class CLI:
     def post_install(self, value: bool) -> None:
         """Set if running straight after being installed."""
         self._set('MT_POST_INSTALL', bool2str(value))
+
+    @property
+    def disable_temp_warning(self) -> bool:
+        """Determine if the temp drive warning should be disabled."""
+        value = self.env['MT_DISABLE_TMP_WARNING']
+        return str2bool(value)
+
+    @disable_temp_warning.setter
+    def disable_temp_warning(self, value: bool) -> None:
+        """Set if the temp drive warning is disabled."""
+        self._set('MT_DISABLE_TMP_WARNING', bool2str(value))
 
 
 def run_cli_function(cli: CLI) -> bool:
