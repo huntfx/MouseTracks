@@ -12,7 +12,7 @@ from .components import Hub
 from .config import GlobalConfig
 from .context import CTX
 from .cli import parse_args, run_cli_function
-from .popups import show_temp_warning_dialog
+from .popups import show_temp_warning_dialog, show_already_running_dialog
 from .utils.system import is_elevated, relaunch_as_elevated, remap_autostart
 from .utils.update import background_update
 from .utils.system import update_installer_version_number
@@ -64,8 +64,7 @@ def main() -> None:
 
         # Notify the user if another instance is running
         except filelock.Timeout:
-            print(f'Error: Another instance of MouseTracks is already writing to "{CTX.data_dir}".')
-            input('Press enter to exit...')
+            show_already_running_dialog(CTX.data_dir)
 
 
 if __name__ == '__main__':

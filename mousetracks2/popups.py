@@ -1,6 +1,7 @@
 import sys
 import traceback
 from contextlib import suppress
+from pathlib import Path
 from types import TracebackType
 
 
@@ -127,3 +128,47 @@ def show_temp_warning_dialog() -> bool:
                     return True
                 case 'n':
                     return False
+
+
+def show_already_running_dialog(data_dir: Path | str) -> None:
+    """Show a GUI error dialog when another instance is already running.
+    If it fails to launch, the console will be used instead.
+    """
+    message = 'Error: Another instance of MouseTracks is already running.'
+    detail = f'The application cannot start because the following data directory is already being written to:\n{data_dir}'
+
+    # Print to console as a baseline
+    print(message)
+    print(f'Locked path: "{data_dir}"')
+
+    # Try to launch the GUI
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        # Create a hidden root window so only the dialog shows
+        root = tk.Tk()
+        root.withdraw()
+
+        # Use the native OS error dialog
+        messagebox.showerror(
+            title='MouseTracks',
+            message=message,
+            detail=detail,
+        )
+
+        root.destroy()
+
+    # Catch ImportError (no tk installed) or tk.TclError (headless Linux with no display)
+    except Exception:  # pylint: disable=broad-except
+
+        # Ensure the console is visible
+        if sys.platform == 'win32':
+            with suppress(Exception):
+                from .utils.system.windows import WindowHandle, get_window_handle
+                handle = WindowHandle(get_window_handle(console=True))
+                if handle is not None and handle.pid and handle.title:
+                    handle.show()
+
+        # Pause execution before the app abruptly exits
+        input('Press enter to exit...')
