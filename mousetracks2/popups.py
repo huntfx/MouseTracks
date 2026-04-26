@@ -5,6 +5,25 @@ from pathlib import Path
 from types import TracebackType
 
 
+def _get_ghost_root():
+    """Create an invisible root window that still appears in the taskbar."""
+    import tkinter as tk
+
+    root = tk.Tk()
+    root.title('MouseTracks')
+    root.geometry('0x0')
+
+    # Make it completely transparent (Supported on Win/Mac, gracefully fails on unsupported Linux)
+    with suppress(tk.TclError):
+        root.attributes('-alpha', 0.0)
+
+    root.eval('tk::PlaceWindow . center')
+    root.attributes('-topmost', True)
+    root.focus_force()
+
+    return root
+
+
 def show_error_dialog(exc_type: type[BaseException], exc_val: BaseException, exc_tb: TracebackType) -> bool:
     """Show a GUI error dialog.
     If it fails to launch, the console will be used instead.
@@ -25,12 +44,10 @@ def show_error_dialog(exc_type: type[BaseException], exc_val: BaseException, exc
 
     # Try to launch the GUI
     try:
-        import tkinter as tk
         from tkinter import messagebox
 
         # Create a hidden root window so only the dialog shows
-        root = tk.Tk()
-        root.withdraw()
+        root = _get_ghost_root()
 
         # Build the text for the dialog
         copy_msg = 'Press Ctrl+C to copy this error.\n\n' if sys.platform == 'win32' else ''
@@ -93,12 +110,10 @@ def show_temp_warning_dialog() -> bool:
 
     # Try to launch the GUI
     try:
-        import tkinter as tk
         from tkinter import messagebox
 
         # Create a hidden root window so only the dialog shows
-        root = tk.Tk()
-        root.withdraw()
+        root = _get_ghost_root()
 
         # Use the native OS warning dialog
         result = messagebox.askokcancel(
@@ -143,12 +158,10 @@ def show_already_running_dialog(data_dir: Path | str) -> None:
 
     # Try to launch the GUI
     try:
-        import tkinter as tk
         from tkinter import messagebox
 
         # Create a hidden root window so only the dialog shows
-        root = tk.Tk()
-        root.withdraw()
+        root = _get_ghost_root()
 
         # Use the native OS error dialog
         messagebox.showerror(
