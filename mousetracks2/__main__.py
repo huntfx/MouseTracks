@@ -3,6 +3,7 @@
 Usage: `python -m mousetracks2`
 """
 
+import tempfile
 from contextlib import suppress
 from multiprocessing import freeze_support
 
@@ -20,9 +21,13 @@ from .utils.system import update_installer_version_number
 
 def run() -> None:
     """Run the application."""
-    # Warn if saving to temp dir
+    # Warn if automatically saving to temp dir
+    # This will only happen when running straight out of a zip file
     print(f'Application data location: {CTX.data_dir}')
-    if CTX.saving_to_temp and not show_temp_warning_dialog():
+    if (not CTX.cli.disable_temp_warning
+            and CTX.portable
+            and CTX.data_dir.is_relative_to(tempfile.gettempdir())
+            and not show_temp_warning_dialog()):
         return
 
     # Set the installer version number to the currently running version

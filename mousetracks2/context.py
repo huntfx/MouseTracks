@@ -70,25 +70,15 @@ class Context:
         if self._data_dir is None:
             if self.cli.data_dir is None:
                 if self.cli.portable:
-                    self._data_dir = CURRENT_DIR / '.mousetracks'
+                    if CURRENT_DIR.is_relative_to(tempfile.gettempdir()):
+                        self._data_dir = Path(tempfile.gettempdir()) / '.mousetracks'
+                    else:
+                        self._data_dir = CURRENT_DIR / '.mousetracks'
                 else:
                     self._data_dir = APPDATA / 'MouseTracks'
             else:
                 self._data_dir = self.cli.data_dir
         return self._data_dir
-
-    @property
-    def saving_to_temp(self) -> bool:
-        """Determine if saving to the temp dir as a portable executable.
-        This will happen if running directly from the zip file.
-
-        This won't flag up a warning if the user has manually set the
-        data directory to the temp drive.
-        """
-        return (not self.cli.disable_temp_warning  # Warning disabled
-                and self.portable  # Is portable
-                and CURRENT_DIR.is_relative_to(tempfile.gettempdir())  # Running from temp
-                and self.data_dir == CURRENT_DIR / '.mousetracks')  # Saving to default location
 
     @property
     def disable_splash(self) -> bool:
