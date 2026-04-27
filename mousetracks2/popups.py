@@ -117,8 +117,8 @@ def show_temp_warning_dialog() -> bool:
     """
     message = 'Warning: MouseTracks is running from a temporary folder.'
     detail = (
-        'Any settings or tracks saved during this session will be lost '
-        'when the application closes.\n\n'
+        'Any settings or tracks saved during this session may be lost '
+        'at any time.\n\n'
         'To save your data permanently, please extract the application '
         'from the ZIP file into a normal folder before running it.'
     )
