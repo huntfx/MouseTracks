@@ -81,10 +81,11 @@ class Queue(multiprocessing.queues.Queue, Generic[T]):
 
     def get(self, block: bool = True, timeout: float | None = None) -> T:
         """Get an item from the queue."""
+        result = super().get(block, timeout)
         if self._use_custom_counter:
             with self._counter.get_lock():
                 self._counter.value -= 1
-        return super().get(block, timeout)
+        return result
 
 
 class Hub:
