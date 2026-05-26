@@ -1820,12 +1820,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         msg.setText('Not all profiles were saved.\n'
                                     f'  Successful: {", ".join(message.succeeded)}\n'
                                     f'  Failed: {", ".join(message.failed)}\n')
+                        msg.exec()
                     else:
-                        msg.setWindowTitle('Successful')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                        msg.setText('All profiles have been saved.')
-
-                    msg.exec()
+                        self.notify('All profiles have been saved.')
 
                 if self.save_profile_request_sent:
                     self.save_profile_request_sent = False
@@ -1837,14 +1834,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         msg.setWindowTitle('Save Failed')
                         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
                         msg.setText(f'Profile "{message.failed[0]}" failed to save.')
+                        msg.exec()
                     elif message.succeeded:
-                        msg.setWindowTitle('Successful')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                        msg.setText(f'Profile "{message.succeeded[0]}" has been saved.')
+                        self.notify(f'Profile "{message.succeeded[0]}" has been saved.')
                     else:
                         raise RuntimeError('incorrect message format')
-
-                    msg.exec()
 
                 # Continue shutdown now save message has been received
                 if self._is_closing:
