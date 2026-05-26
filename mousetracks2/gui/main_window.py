@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._resolution_options: dict[tuple[int, int], bool] = {}
         self._is_updating_layer_options = False
         self._window_ready = False
-        self._startup_notify_queue: list[str] = []
+        self._startup_notify_queue: list[tuple[str, str]] = []
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
 
@@ -489,7 +489,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tray.show()
 
         while self._startup_notify_queue:
-            self.notify(self._startup_notify_queue.pop(0))
+            self.notify(*self._startup_notify_queue.pop(0))
 
     def set_tip_timer_state(self, enabled: bool) -> None:
         """Set the state of the tip update timer.
@@ -2661,23 +2661,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
         self.ui.layer_group.setVisible(show_advanced and not is_keyboard)
 
-    def notify(self, message: str) -> None:
+    def notify(self, message: str, title: str | None = None) -> None:
         """Show a notification.
         If the tray messages are not available, a popup will be shown
         instead. If called on startup, then the message will be queue
         until the window is ready.
         """
+        if title is None:
+            title = self.windowTitle()
+
         if not self._window_ready:
-            self._startup_notify_queue.append(message)
+            self._startup_notify_queue.append((message, title))
         elif self.tray is None or not self.tray.supportsMessages():
             if self.isVisible():
                 msg = QtWidgets.QMessageBox(self)
-                msg.setWindowTitle(self.windowTitle())
+                msg.setWindowTitle(title)
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.setText(message)
                 msg.exec()
         else:
-            self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
+            self.tray.showMessage(title, message, self.tray.icon(), 2000)
 
     @QtCore.Slot()
     def import_profile(self) -> None:
