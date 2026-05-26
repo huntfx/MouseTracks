@@ -541,7 +541,7 @@ class TrackingProfile:
         return profile
 
     @classmethod
-    def get_name(self, path: str) -> str | None:
+    def get_name(cls, path: str) -> str | None:
         """Get the profile name if possible.
         If not possible, it's likely a legacy profile.
         """
