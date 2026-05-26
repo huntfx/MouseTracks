@@ -1825,6 +1825,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                         msg.setText('All profiles have been saved.')
 
+                    msg.exec()
+
                 if self.save_profile_request_sent:
                     self.save_profile_request_sent = False
 
