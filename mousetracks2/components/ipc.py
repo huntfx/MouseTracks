@@ -528,16 +528,6 @@ class InvalidConsole(Message):
 
 
 @dataclass
-class CloseSplashScreen(Message):
-    """Send a request to close the splash screen.
-    The splash screen is run by the hub, and waits for the GUI to finish
-    loading before closing.
-    """
-
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
-
-
-@dataclass
 class ImportProfile(Message):
     """Send a request to import a profile."""
 
