@@ -44,7 +44,7 @@ class DefaultList(list[T], Generic[T]):
             if step > 0:
                 idx = stop - divmod(stop - start, step)[1]
             else:
-                idx = start - divmod(start - stop, step)[1]
+                idx = start
 
         while len(self) <= idx.__index__():
             self.append(self.default_factory())
