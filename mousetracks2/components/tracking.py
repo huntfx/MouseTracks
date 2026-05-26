@@ -413,9 +413,6 @@ class Tracking(Component):
 
     def run(self) -> None:
         """Run the tracking."""
-        print('[Tracking] Loaded.')
-        self.send_data(ipc.ComponentLoaded(ipc.Target.Tracking))
-
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
