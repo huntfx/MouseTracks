@@ -517,7 +517,10 @@ class TrackingProfile:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
             if os.path.exists(del_file):
-                os.remove(del_file)
+                if not os.path.exists(path):
+                    os.rename(del_file, path)
+                else:
+                    os.remove(del_file)
 
         return True
 
