@@ -680,8 +680,6 @@ class TrackingProfileLoader(MutableMapping):
         sanitised = sanitise_profile_name(profile_name)
         if os.path.exists(filename):
             profile = TrackingProfile.load(filename)
-            if profile is None:
-                raise KeyError(profile_name)
         else:
             profile = TrackingProfile()
         self._profiles[sanitised] = profile
