@@ -335,12 +335,6 @@ class SaveComplete(Message):
 
 
 @dataclass
-class Load(Message):
-    target: int = field(default=Target.Processing, init=False)
-    application: str | None = field(default=None)
-
-
-@dataclass
 class ProfileDataRequest(Message):
     target: int = field(default=Target.Processing, init=False)
     sanitised_name: str
