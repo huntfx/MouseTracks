@@ -705,14 +705,13 @@ class TrackingProfileLoader(MutableMapping):
         """Unload if too many profiles are loaded into memory at once.
         The argument to `keep_loaded` must be sanitised already.
         """
-        sanitised = sanitise_profile_name(keep_loaded)
         data = ((profile.is_modified,  # Sort modified profiles first
                  profile.last_accessed,  # Sort by recently accessed
                  name, profile)
                 for name, profile in self._profiles.items())
 
         for i, (is_modified, _load_time, name, _profile) in enumerate(sorted(data, reverse=True)):
-            if i < self.max_profiles or is_modified or name == sanitised:
+            if i < self.max_profiles or is_modified or name == keep_loaded:
                 continue
             del self._profiles[name]
 
