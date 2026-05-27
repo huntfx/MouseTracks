@@ -1302,10 +1302,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if sanitised_profile_name is None:
             return
 
-        use_custom_width = self.ui.custom_width.isEnabled()
-        use_custom_height = self.ui.custom_height.isEnabled()
-        custom_width = self.ui.custom_width.value() if use_custom_width else None
-        custom_height = self.ui.custom_height.value() if use_custom_height else None
+        custom_width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
+        custom_height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
         lock_aspect = self.ui.lock_aspect.isChecked()
 
         if file_path is None:
@@ -1319,7 +1317,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
                 height += self.ui.vertical_splitter.handleWidth()
 
-            if not lock_aspect and use_custom_width and use_custom_height:
+            if not lock_aspect and custom_width and custom_height:
                 # Set the aspect ratio to requested
                 aspect_ratio = custom_width / custom_height
                 if aspect_ratio > width / height:
@@ -1328,9 +1326,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     width = round(height * aspect_ratio)
 
             # Ensure resolutions aren't greater than requested
-            if use_custom_width:
+            if custom_width:
                 width = min(width, custom_width)
-            if use_custom_height:
+            if custom_height:
                 height = min(height, custom_height)
 
         else:
