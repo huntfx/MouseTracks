@@ -1279,16 +1279,25 @@ class MainWindow(QtWidgets.QMainWindow):
         if sanitised_profile_name is None:
             return False
 
+        layers = list(self.get_render_layer_data())
+        if not layers:
+            return False
+
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
-
-        # TODO: If RenderLayerRequest ends up empty, then this might get stuck?
         self.start_rendering_timer()
-
-        self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data())))
+        self.component.send_data(ipc.RenderLayerRequest(layers))
         return True
 
     def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
+        """Yield all render layer data for the current layer stack.
+
+        When `file_path` is None (thumbnail preview), dimensions are derived from
+        the thumbnail widget and constrained by any custom width/height settings.
+        When `file_path` is provided (export), the custom dimensions are used directly.
+
+        Layers are yielded in bottom-to-top order.
+        """
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
