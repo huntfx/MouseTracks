@@ -46,6 +46,14 @@ class PreviousMouseClick:
 
 
 class Processing(AppComponent, MonitorComponent):
+    """Process raw input events into tracking data and handle render requests.
+
+    Maintains tracking profiles for each application, updating movement,
+    click, keyboard, gamepad, and network data as events arrive.
+    """
+
+    target = ipc.Target.Processing
+
     def __post_init__(self) -> None:
         hide_child_process()
 

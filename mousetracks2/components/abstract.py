@@ -2,7 +2,7 @@ import multiprocessing
 import os
 import time
 import traceback
-from typing import TYPE_CHECKING, Callable, Iterator
+from typing import TYPE_CHECKING, Callable, ClassVar, Iterator
 
 import psutil
 
@@ -21,6 +21,14 @@ if TYPE_CHECKING:
 
 
 class Component:
+    """Base class for all independently running components.
+
+    Manages IPC queue communication and provides lifecycle hooks
+    for initialisation, running, and clean shutdown.
+    """
+
+    target: ClassVar[int]
+
     def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         self._q_send = q_send
         self._q_recv = q_receive
@@ -44,22 +52,6 @@ class Component:
     def name(self, name: str) -> None:
         """Set the component name."""
         self._name = name
-
-    @property
-    def target(self) -> int:
-        """Get the component target enum."""
-        # TODO: Define this in subclasses
-        match self.name:
-            case 'Tracking':
-                return ipc.Target.Tracking
-            case 'Processing':
-                return ipc.Target.Processing
-            case 'AppDetection':
-                return ipc.Target.AppDetection
-            case 'GUI':
-                return ipc.Target.GUI
-            case _:
-                raise NotImplementedError(self.name)
 
     def is_hub_running(self) -> bool:
         """Determine if the Hub is still running.
@@ -124,6 +116,8 @@ class Component:
 
     @classmethod
     def launch(cls, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
+        target = cls.target
+
         # Attempt to initialise the class
         try:
             self = cls(q_send, q_receive)
@@ -160,7 +154,7 @@ class Component:
                 self.on_exit()
 
         if self.is_hub_running():
-            q_send.put(ipc.ProcessShutDownNotification(self.target))
+            q_send.put(ipc.ProcessShutDownNotification(target))
             print(f'[{self.name}] Sent process closed notification.')
         else:
             print(f'[{self.name}] Process closed due to Hub not running.')

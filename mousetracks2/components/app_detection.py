@@ -16,7 +16,13 @@ from ..utils.system import Window, hide_child_process, monitor_locations
 
 
 class AppDetection(Component):
-    """Application detection component."""
+    """Monitor the foreground application and notify other components on change.
+
+    Matches the active window against the configured app list to determine
+    which tracking profile should be active.
+    """
+
+    target = ipc.Target.AppDetection
 
     def __post_init__(self) -> None:
         hide_child_process()

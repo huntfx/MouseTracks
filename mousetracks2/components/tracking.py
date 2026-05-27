@@ -105,6 +105,14 @@ class DataState:
 
 
 class Tracking(Component):
+    """Capture raw input events and forward them for processing.
+
+    Listens for mouse, keyboard, gamepad, and monitor events using
+    pynput and platform-specific listeners.
+    """
+
+    target = ipc.Target.Tracking
+
     def __post_init__(self) -> None:
         hide_child_process()
 

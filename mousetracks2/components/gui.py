@@ -46,6 +46,14 @@ class QueueWorker(QtCore.QObject):
 
 
 class GUI(AppComponent, MonitorComponent):
+    """Run the Qt GUI and relay IPC messages to the main window.
+
+    Dispatches incoming messages via a dedicated receiver thread, and shows
+    a splash screen while the other components finish loading.
+    """
+
+    target = ipc.Target.GUI
+
     def __post_init__(self) -> None:
         """Setup the threads."""
         self.error: Exception | None = None
