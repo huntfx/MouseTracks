@@ -283,7 +283,7 @@ class MovementMaps:
             array_resolution_map._write_to_zip(zf, f'{subfolder}/{array_type}')
         zf.writestr(f'{subfolder}/distance', str(self.distance))
         zf.writestr(f'{subfolder}/counter', str(self.counter))
-        zf.writestr(f'{subfolder}/ticks', str(self.counter))
+        zf.writestr(f'{subfolder}/ticks', str(self.ticks))
 
     def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str) -> None:
         folders = {path[len(subfolder):].lstrip('/').split('/', 1)[0]
