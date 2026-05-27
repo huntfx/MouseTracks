@@ -1275,8 +1275,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._thumbnail_redraw_required = True
             return True
 
-        width = self.ui.thumbnail.width()
-        height = self.ui.thumbnail.height()
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return False
@@ -1284,34 +1282,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
 
-        # Account for collapsed splitters
-        if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
-            width += self.ui.horizontal_splitter.handleWidth()
-        if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
-            height += self.ui.vertical_splitter.handleWidth()
-
+        # TODO: If RenderLayerRequest ends up empty, then this might get stuck?
         self.start_rendering_timer()
-
-        # Handle custom resolution
-        custom_width = self.ui.custom_width.value()
-        custom_height = self.ui.custom_height.value()
-        use_custom_width = self.ui.custom_width.isEnabled()
-        use_custom_height = self.ui.custom_height.isEnabled()
-        lock_aspect = self.ui.lock_aspect.isChecked()
-        if not lock_aspect and (use_custom_width or use_custom_height):
-
-            # Set the aspect ratio to requested
-            aspect_ratio = custom_width / custom_height
-            if aspect_ratio > width / height:
-                height = round(width / aspect_ratio)
-            else:
-                width = round(height * aspect_ratio)
-
-        # Ensure resolutions aren't greater than requested
-        if use_custom_width:
-            width = min(width, custom_width)
-        if use_custom_height:
-            height = min(height, custom_height)
 
         self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data())))
         return True
@@ -1338,9 +1310,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
                 height += self.ui.vertical_splitter.handleWidth()
 
-            if not lock_aspect and (use_custom_width or use_custom_height):
+            if not lock_aspect and use_custom_width and use_custom_height:
                 # Set the aspect ratio to requested
-                aspect_ratio = width / height
+                aspect_ratio = custom_width / custom_height
                 if aspect_ratio > width / height:
                     height = round(width / aspect_ratio)
                 else:
