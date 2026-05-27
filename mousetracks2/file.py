@@ -1,6 +1,7 @@
 # pylint: disable=protected-access
 import os
 import re
+import shutil
 import time
 import zipfile
 from collections import defaultdict
@@ -37,7 +38,6 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
     an array in-place isn't supported.
     """
 
-    array: npt.NDArray[_DType_co]
     auto_pad: list[bool]
 
     def __init__(self, shape: int | Sequence[int] | npt.NDArray[Any],
@@ -50,11 +50,16 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
                 An existing array may be passed in here.
             auto_pad: If the array can increase in size.
         """
-        # Create the array
+        self._loaded = True
+        self._lazy_zip_path: str | None = None
+        self._lazy_zip_name: str | None = None
+
+        # TODO: zero array is created here even when _load_from_zip will immediately
+        # replace it with lazy loading, wasting a small amount of memory until first access.
         if isinstance(shape, np.ndarray):
-            self.array = shape.astype(dtype)
+            self._array = shape.astype(dtype)
         else:
-            self.array = np.zeros(shape, dtype=dtype)
+            self._array = np.zeros(shape, dtype=dtype)
 
         # Set auto padding settings
         if isinstance(auto_pad, bool):
@@ -63,6 +68,28 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             raise ValueError('length of auto_pad must match number of array dimensions')
         else:
             self.auto_pad = auto_pad
+
+    @property
+    def array(self) -> npt.NDArray[_DType_co]:
+        if not self._loaded:
+            self._load_array()
+        return self._array
+
+    @array.setter
+    def array(self, value: npt.NDArray[_DType_co]) -> None:
+        self._set_array(value)
+
+    def _load_array(self) -> None:
+        """Load the array from the ZIP file and mark it as loaded."""
+        with zipfile.ZipFile(self._lazy_zip_path, 'r') as zf:
+            with zf.open(self._lazy_zip_name, 'r') as f:
+                self._array = np.load(f, allow_pickle=False)
+        self._loaded = True
+
+    def _set_array(self, value: npt.NDArray[_DType_co]) -> None:
+        """Assign an array directly and mark it as loaded."""
+        self._loaded = True
+        self._array = value
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
@@ -138,12 +165,18 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             self.array[item] = value
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'w') as f:
-            np.save(f, self, allow_pickle=False)
+        if not self._loaded:
+            with zipfile.ZipFile(self._lazy_zip_path, 'r') as src:
+                with src.open(self._lazy_zip_name, 'r') as src_f, zf.open(path, 'w') as dst_f:
+                    shutil.copyfileobj(src_f, dst_f)
+        else:
+            with zf.open(path, 'w') as f:
+                np.save(f, self, allow_pickle=False)
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'r') as f:
-            self.array = np.load(f, allow_pickle=False)
+        self._lazy_zip_path = zf.filename
+        self._lazy_zip_name = path
+        self._loaded = False
 
 
 class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
@@ -185,15 +218,15 @@ class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
         """Get an array item."""
         return int(super().__getitem__(item))
 
+    def _load_array(self) -> None:
+        super()._load_array()
+        self.max_value = np.iinfo(self._array.dtype).max
+
     def __setitem__(self, item: int | tuple[int, ...], value: int) -> None:
         """Set an array item, changing dtype if required."""
+        _ = self.array  # ensure loaded and max_value updated before dtype check
         self._check_dtype(value)
         super().__setitem__(item, value)
-
-    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        """Load data and update the internal max value."""
-        super()._load_from_zip(zf, path)
-        self.max_value = np.iinfo(self.dtype).max
 
     def _check_dtype(self, value: int) -> None:
         """Check that the dtype is valid for the given value."""
