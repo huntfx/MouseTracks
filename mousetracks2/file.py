@@ -52,18 +52,21 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         """
         self._loaded = True
         self._lazy_zip: tuple[str, str] | None = None
+        self._pending: tuple[tuple[int, ...], Any] | None = None
 
-        # TODO: zero array is created here even when _load_from_zip will immediately
-        # replace it with lazy loading, wasting a small amount of memory until first access.
         if isinstance(shape, np.ndarray):
-            self._array = shape.astype(dtype)
+            self.array = shape.astype(dtype)
+            ndim = shape.ndim
         else:
-            self._array = np.zeros(shape, dtype=dtype)
+            shape_tuple: tuple[int, ...] = (shape,) if isinstance(shape, int) else tuple(shape)
+            ndim = len(shape_tuple)
+            self._pending = (shape_tuple, dtype)
+            self._loaded = False
 
         # Set auto padding settings
         if isinstance(auto_pad, bool):
-            self.auto_pad = [auto_pad] * self.ndim
-        elif len(auto_pad) != self.ndim:
+            self.auto_pad = [auto_pad] * ndim
+        elif len(auto_pad) != ndim:
             raise ValueError('length of auto_pad must match number of array dimensions')
         else:
             self.auto_pad = auto_pad
@@ -76,21 +79,25 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
 
     @array.setter
     def array(self, value: npt.NDArray[_DType_co]) -> None:
-        self._set_array(value)
+        self._loaded = True
+        self._array = value
 
     def _load_array(self) -> None:
         """Load the array from the ZIP file and mark it as loaded."""
+        # Load from zip file
         if self._lazy_zip is not None:
             zip_path, zip_name = self._lazy_zip
             with zipfile.ZipFile(zip_path, 'r') as zf:
                 with zf.open(zip_name, 'r') as f:
                     self._array = np.load(f, allow_pickle=False)
-        self._loaded = True
 
-    def _set_array(self, value: npt.NDArray[_DType_co]) -> None:
-        """Assign an array directly and mark it as loaded."""
+        # Generate empty array
+        elif self._pending is not None:
+            shape, dtype = self._pending
+            self._array = np.zeros(shape, dtype=dtype)
+            self._pending = None
+
         self._loaded = True
-        self._array = value
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
@@ -182,6 +189,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         if zf.filename is None:
             raise RuntimeError('ZipFile must be opened from a path, not a file object')
         self._lazy_zip = zf.filename, path
+        self._pending = None
         self._loaded = False
         if CTX.eager_load:
             self._load_array()
