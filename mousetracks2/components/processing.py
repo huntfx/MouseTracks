@@ -58,6 +58,8 @@ class Processing(AppComponent, MonitorComponent):
         # Load in the default profile
         self.all_profiles = TrackingProfileLoader()
 
+        self.config = GlobalConfig()
+
         # Reset the cursor position on focused application change
         def on_application_change(app: Application) -> None:
             self.profile.cursor_map.position = None
@@ -405,7 +407,7 @@ class Processing(AppComponent, MonitorComponent):
         # To keep the active/inactive time in sync with elapsed,
         # temporarily add the current data to the profile
         # This is the same logic in the GUI
-        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
+        inactivity_threshold = UPDATES_PER_SECOND * self.config.inactivity_time
         tick_diff = self._get_tick_diff(profile_name)
         if tick_diff > inactivity_threshold:
             self._record_inactive_tick(profile_name, tick_diff)

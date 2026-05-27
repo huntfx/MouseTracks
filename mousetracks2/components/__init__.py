@@ -102,6 +102,7 @@ class Hub:
             self._wait_to_load.add(ipc.Target.GUI)
 
         self._q_main: Queue[ipc.Message] = Queue()
+        self.config = GlobalConfig()
 
         self._create_tracking_processes(first_run=True)
 
@@ -319,7 +320,7 @@ class Hub:
         If this fails an error will be raised.
         """
         current_time = time.time()
-        if self._previous_component_check + GlobalConfig.component_check_frequency > current_time:
+        if self._previous_component_check + self.config.component_check_frequency > current_time:
             return
 
         if self.state == ipc.TrackingState.Running:

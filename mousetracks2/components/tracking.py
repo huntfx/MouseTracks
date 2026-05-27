@@ -115,11 +115,11 @@ class Tracking(Component):
         self.update_monitors = True
         self.data = DataState(0)
 
-        config = GlobalConfig()
-        self.track_mouse = not CTX.disable_mouse and config.track_mouse
-        self.track_keyboard = not CTX.disable_keyboard and config.track_keyboard
-        self.track_gamepad = not CTX.disable_gamepad and config.track_gamepad
-        self.track_network = not CTX.disable_network and config.track_network
+        self.config = GlobalConfig()
+        self.track_mouse = not CTX.disable_mouse and self.config.track_mouse
+        self.track_keyboard = not CTX.disable_keyboard and self.config.track_keyboard
+        self.track_gamepad = not CTX.disable_gamepad and self.config.track_gamepad
+        self.track_network = not CTX.disable_network and self.config.track_network
 
         # Setup pynput listeners
         self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
@@ -274,7 +274,7 @@ class Tracking(Component):
         if self.data.tick_modified is None:
             return 0
 
-        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
+        inactivity_threshold = UPDATES_PER_SECOND * self.config.inactivity_time
         diff = self.data.tick_modified - self.data.tick_previous
         if diff > inactivity_threshold:
             self.send_data(ipc.Inactive(self.profile_name, diff))
@@ -528,7 +528,7 @@ class Tracking(Component):
             self._calculate_inactivity()
 
             # Save every 5 mins
-            if self.autosave and tick and not tick % int(UPDATES_PER_SECOND * GlobalConfig.save_frequency):
+            if self.autosave and tick and not tick % int(UPDATES_PER_SECOND * self.config.save_frequency):
                 self.send_data(ipc.Save())
 
     def on_exit(self) -> None:

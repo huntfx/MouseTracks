@@ -893,7 +893,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # The active and inactive time don't update every tick
         # Add the difference to keep the GUI in sync
-        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
+        inactivity_threshold = UPDATES_PER_SECOND * self.config.inactivity_time
         tick_diff = self.elapsed_time - (self.active_time + self.inactive_time)
         if tick_diff > inactivity_threshold:
             inactive_time += tick_diff
@@ -1513,7 +1513,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         # Only render every `update_frequency` ticks
-        if count % math.ceil(update_frequency / GlobalConfig.preview_frequency_multiplier):
+        if count % math.ceil(update_frequency / self.config.preview_frequency_multiplier):
             return
 
         # Skip repeat renders
@@ -1909,7 +1909,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.setWindowTitle(f'Export Successful')
                 msg.setText(f'"{message.source.path}" was successfully saved.')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                msg.exec_with_timeout('Closing notification', GlobalConfig.export_notification_timeout)
+                msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
@@ -2136,7 +2136,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Cancel)
 
-        match msg.exec_with_timeout('Saving automatically', GlobalConfig.shutdown_timeout):
+        match msg.exec_with_timeout('Saving automatically', self.config.shutdown_timeout):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 if self.state != ipc.TrackingState.Stopped:
                     self.component.send_data(ipc.StartTracking())
