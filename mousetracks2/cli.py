@@ -54,6 +54,8 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--sign-executable', metavar='PATH', help=argparse.SUPPRESS)
     parser.add_argument('--verify-executable', metavar='PATH', help=argparse.SUPPRESS)
 
+    parser.add_argument('--eager-load', action='store_true', help='disable lazy loading of profile data')
+
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
 
@@ -191,6 +193,7 @@ class CLI:
             self.post_install = False
             self.portable = False
             self.disable_temp_warning = False
+            self.eager_load = False
 
         finally:
             self._soft_load = False
@@ -227,6 +230,8 @@ class CLI:
             self.portable = True
         if args.disable_temp_warning:
             self.disable_temp_warning = True
+        if args.eager_load:
+            self.eager_load = True
 
         return args
 
@@ -406,6 +411,16 @@ class CLI:
     def disable_temp_warning(self, value: bool) -> None:
         """Set if the temp drive warning is disabled."""
         self._set('MT_DISABLE_TMP_WARNING', bool2str(value))
+
+    @property
+    def eager_load(self) -> bool:
+        """Disable lazy loading of profile data."""
+        return str2bool(self.env['MT_EAGER_LOAD'])
+
+    @eager_load.setter
+    def eager_load(self, value: bool) -> None:
+        """Set eager loading mode."""
+        self._set('MT_EAGER_LOAD', bool2str(value))
 
 
 def run_cli_function(cli: CLI) -> bool:

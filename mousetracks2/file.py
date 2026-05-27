@@ -177,6 +177,8 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         self._lazy_zip_path = zf.filename
         self._lazy_zip_name = path
         self._loaded = False
+        if CTX.eager_load:
+            self._load_array()
 
 
 class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):

@@ -135,5 +135,10 @@ class Context:
         """Determine if running straight after being installed."""
         return self.cli.post_install
 
+    @property
+    def eager_load(self) -> bool:
+        """Disable lazy loading of profile data."""
+        return self.cli.eager_load
+
 
 CTX = Context()
