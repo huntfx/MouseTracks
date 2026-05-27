@@ -53,6 +53,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         self._loaded = True
         self._lazy_zip: tuple[str, str] | None = None
         self._pending: tuple[tuple[int, ...], Any] | None = None
+        self._accessed_since_save: bool = True
 
         if isinstance(shape, np.ndarray):
             self.array = shape.astype(dtype)
@@ -75,6 +76,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
     def array(self) -> npt.NDArray[_DType_co]:
         if not self._loaded:
             self._load_array()
+        self._accessed_since_save = True
         return self._array
 
     @array.setter
@@ -194,6 +196,18 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         if CTX.eager_load:
             self._load_array()
 
+    def unload(self) -> None:
+        """Unload the array from memory so it can be reloaded on next access."""
+        if self._lazy_zip is not None and self._loaded:
+            del self._array
+            self._loaded = False
+
+    def _on_save(self) -> None:
+        """Unload if not accessed since the last save, then reset the access flag."""
+        if not self._accessed_since_save:
+            self.unload()
+        self._accessed_since_save = False
+
 
 class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
     """Create an integer array and update the dtype when required.
@@ -283,6 +297,10 @@ class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
             width, height = map(int, match.groups())
             self[(width, height)]._load_from_zip(zf, f'{subfolder}/{relative_path}')
 
+    def _on_save(self) -> None:
+        for array in self.values():
+            array._on_save()
+
 
 @dataclass
 class MovementMaps:
@@ -352,6 +370,10 @@ class MovementMaps:
                 self.density_arrays._load_from_zip(zf, path)
             elif folder == 'speed':
                 self.speed_arrays._load_from_zip(zf, path)
+
+    def _on_save(self) -> None:
+        for _, arm in self._iter_array_types():
+            arm._on_save()
 
 
 @dataclass
@@ -573,6 +595,26 @@ class TrackingProfile:
 
         return True
 
+    def _on_save(self) -> None:
+        """Unload arrays not accessed since the last save."""
+        array: TrackingArray
+
+        self.cursor_map._on_save()
+        for arm_dict in (self.mouse_single_clicks, self.mouse_double_clicks, self.mouse_held_clicks):
+            for arm in arm_dict.values():
+                arm._on_save()
+        for mm_dict in (self.thumbstick_l_map, self.thumbstick_r_map):
+            for mm in mm_dict.values():
+                mm._on_save()
+        for array_dict in (self.button_presses, self.button_held):
+            for array in array_dict.values():
+                array._on_save()
+        for array in (self.key_presses, self.key_held,
+                      self.daily_ticks, self.daily_distance, self.daily_clicks,
+                      self.daily_scrolls, self.daily_keys, self.daily_buttons,
+                      self.daily_upload, self.daily_download):
+            array._on_save()
+
     def save(self) -> bool:
         """Save the profile and handle the modified state."""
         previous = self.modified
@@ -580,6 +622,7 @@ class TrackingProfile:
             self.modified = int(time.time())
         if self._save_main():
             self.is_modified = False
+            self._on_save()
             return True
         self.modified = previous
         return False
