@@ -51,8 +51,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             auto_pad: If the array can increase in size.
         """
         self._loaded = True
-        self._lazy_zip_path: str | None = None
-        self._lazy_zip_name: str | None = None
+        self._lazy_zip: tuple[str, str] | None = None
 
         # TODO: zero array is created here even when _load_from_zip will immediately
         # replace it with lazy loading, wasting a small amount of memory until first access.
@@ -81,9 +80,11 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
 
     def _load_array(self) -> None:
         """Load the array from the ZIP file and mark it as loaded."""
-        with zipfile.ZipFile(self._lazy_zip_path, 'r') as zf:
-            with zf.open(self._lazy_zip_name, 'r') as f:
-                self._array = np.load(f, allow_pickle=False)
+        if self._lazy_zip is not None:
+            zip_path, zip_name = self._lazy_zip
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                with zf.open(zip_name, 'r') as f:
+                    self._array = np.load(f, allow_pickle=False)
         self._loaded = True
 
     def _set_array(self, value: npt.NDArray[_DType_co]) -> None:
@@ -165,17 +166,22 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             self.array[item] = value
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        if not self._loaded:
-            with zipfile.ZipFile(self._lazy_zip_path, 'r') as src:
-                with src.open(self._lazy_zip_name, 'r') as src_f, zf.open(path, 'w') as dst_f:
+        # Directly copy the file from the source if not already loaded
+        if not self._loaded and self._lazy_zip is not None:
+            zip_path, zip_name = self._lazy_zip
+            with zipfile.ZipFile(zip_path, 'r') as src:
+                with src.open(zip_name, 'r') as src_f, zf.open(path, 'w') as dst_f:
                     shutil.copyfileobj(src_f, dst_f)
+
+        # Write out the array to disk
         else:
             with zf.open(path, 'w') as f:
                 np.save(f, self, allow_pickle=False)
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        self._lazy_zip_path = zf.filename
-        self._lazy_zip_name = path
+        if zf.filename is None:
+            raise RuntimeError('ZipFile must be opened from a path, not a file object')
+        self._lazy_zip = zf.filename, path
         self._loaded = False
         if CTX.eager_load:
             self._load_array()
