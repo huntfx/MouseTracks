@@ -228,13 +228,9 @@ class RenderRequest(Message):
     show_left_clicks: bool = True
     show_middle_clicks: bool = True
     show_right_clicks: bool = True
-    show_count: bool = True
-    show_time: bool = False
+    show_keyboard_time: bool = False
     interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
     layer_visible: bool = True
-
-    def __post_init__(self) -> None:
-        assert self.show_count != self.show_time
 
 
 @dataclass

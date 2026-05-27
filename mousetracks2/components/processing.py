@@ -463,9 +463,7 @@ class Processing(AppComponent, MonitorComponent):
                     if message.file_path is not None:
                         sampling *= 2
 
-                    assert message.show_count != message.show_time  # TODO: Remove mutually exclusive options
-                    data_set = 'count' if message.show_count else 'time'
-
+                    data_set = 'time' if message.show_keyboard_time else 'count'
                     image = self._render_keyboard(profile, message.colour_map, data_set, sampling)
 
                 else:

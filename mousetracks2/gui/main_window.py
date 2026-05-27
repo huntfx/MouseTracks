@@ -1360,8 +1360,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 show_left_clicks=self.show_left_clicks,
                 show_middle_clicks=self.show_middle_clicks,
                 show_right_clicks=self.show_right_clicks,
-                show_count=self.ui.show_count.isChecked(),
-                show_time=self.ui.show_time.isChecked(),
+                show_keyboard_time=self.ui.show_time.isChecked(),
                 interpolation_order=self.ui.interpolation_order.value(),
                 layer_visible=item.checkState() == QtCore.Qt.CheckState.Checked,
             )
