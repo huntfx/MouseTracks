@@ -18,7 +18,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from .about import AboutWindow
 from .applist import AppListWindow
 from .ui import layout
-from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
+from .utils import format_distance, format_ticks, format_bytes, format_network_speed, join_and, ICON_PATH
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..cli import CLI
@@ -184,10 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_colour_change = False
         self._pixel_redraw_queue: list[tuple[tuple[int, int] | None, tuple[int, int] | None, tuple[int, int] | None]] = []
         self._last_save_time = self._last_thumbnail_time = self._last_app_reload_time = int(time.time() * 10)
-        self._delete_mouse_pressed = False
-        self._delete_keyboard_pressed = False
-        self._delete_gamepad_pressed = False
-        self._delete_network_pressed = False
+        self._delete_pressed = ipc.Device(0)
         self._profile_names = get_profile_names()
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
@@ -1739,10 +1736,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.track_network.setChecked(message.config.track_network)
 
                 # Update the visibility of the delete options
-                self._delete_mouse_pressed = False
-                self._delete_keyboard_pressed = False
-                self._delete_gamepad_pressed = False
-                self._delete_network_pressed = False
+                self._delete_pressed = ipc.Device(0)
                 self.handle_delete_button_visibility()
 
                 # Resume signals on the track options
@@ -2288,99 +2282,58 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.thumbnail.freeze_scale(aspect_mode):
             self.request_thumbnail()
 
-    def delete_mouse(self) -> None:
-        """Request deletion of mouse data for the current profile."""
+    def _delete_device_data(self, devices: ipc.Device) -> None:
+        """Request deletion of device data for the current profile."""
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None or profile_name is None:
-            return None
+            return
+
+        detail: list[str] = []
+        if devices & ipc.Device.Mouse:
+            detail.append('Mouse movement, clicks and scroll data')
+        if devices & ipc.Device.Keyboard:
+            detail.append('Keyboard keypress data')
+        if devices & ipc.Device.Gamepad:
+            detail.append('Gamepad button and thumbstick data')
+        if devices & ipc.Device.Network:
+            detail.append('Network upload and download data')
+
+        name_str = join_and(device.name for device in ipc.Device
+                            if device.name is not None and devices & device)
+        title = f'Delete {name_str.title()} Data'
+        lines = [f'Are you sure you want to delete all {name_str.lower()} data for {profile_name}?']
+        if len(detail) > 1:
+            lines.append('This will remove:')
+            lines.extend(f'    {line}' for line in detail)
+        lines.append('It will not trigger an autosave, but it cannot be undone.')
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all mouse data for {profile_name}?\n'
-                    'This involves the movement, click and scroll data.\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setWindowTitle(title)
+        msg.setText('\n'.join(lines))
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_mouse_pressed = True
+            self._delete_pressed |= devices
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteMouseData(sanitised_profile_name))
+            self.component.send_data(ipc.DeleteData(sanitised_profile_name, devices))
             self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
             self.request_profile_data(sanitised_profile_name)
+
+    def delete_mouse(self) -> None:
+        self._delete_device_data(ipc.Device.Mouse)
 
     def delete_keyboard(self) -> None:
-        """Request deletion of keyboard data for the current profile."""
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None or profile_name is None:
-            return None
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all keyboard data for {profile_name}?\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_keyboard_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteKeyboardData(sanitised_profile_name))
-            self.mark_profiles_unsaved(profile_name)
-            self._redraw_profile_combobox()
-            self.request_profile_data(sanitised_profile_name)
+        self._delete_device_data(ipc.Device.Keyboard)
 
     def delete_gamepad(self) -> None:
-        """Request deletion of gamepad data for the current profile."""
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None or profile_name is None:
-            return None
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all gamepad data for {profile_name}?\n'
-                    'This involves both the buttons and the thumbstick maps.\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_gamepad_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteGamepadData(sanitised_profile_name))
-            self.mark_profiles_unsaved(profile_name)
-            self._redraw_profile_combobox()
-            self.request_profile_data(sanitised_profile_name)
+        self._delete_device_data(ipc.Device.Gamepad)
 
     def delete_network(self) -> None:
-        """Request deletion of network data for the current profile."""
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None or profile_name is None:
-            return None
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Network Data')
-        msg.setText(f'Are you sure you want to delete all upload and download data for {profile_name}?\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_network_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteNetworkData(sanitised_profile_name))
-            self.mark_profiles_unsaved(profile_name)
-            self._redraw_profile_combobox()
-            self.request_profile_data(sanitised_profile_name)
+        self._delete_device_data(ipc.Device.Network)
 
     def delete_profile(self) -> None:
         """Delete the selected profile."""
@@ -2409,73 +2362,53 @@ class MainWindow(QtWidgets.QMainWindow):
             self._redraw_profile_combobox()
             self.profile_changed(0)
 
-    @QtCore.Slot(QtCore.Qt.CheckState)
-    def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_mouse.isEnabled():
+    def _toggle_profile_tracking(self, device: ipc.Device, widget: QtWidgets.QCheckBox, state: QtCore.Qt.CheckState) -> None:
+        """Enable or disable tracking of a device for the current profile."""
+        if not widget.isEnabled():
             return
         sanitised_profile_name, profile_name = self._selected_profile_data()
         if sanitised_profile_name is None:
             return
+        self.component.send_data(ipc.SetProfileTracking(sanitised_profile_name, device, state == QtCore.Qt.CheckState.Checked.value))
 
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileMouseTracking(sanitised_profile_name, enable))
+    @QtCore.Slot(QtCore.Qt.CheckState)
+    def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
+        self._toggle_profile_tracking(ipc.Device.Mouse, self.ui.track_mouse, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_keyboard.isEnabled():
-            return
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None:
-            return
-
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileKeyboardTracking(sanitised_profile_name, enable))
+        self._toggle_profile_tracking(ipc.Device.Keyboard, self.ui.track_keyboard, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_gamepad.isEnabled():
-            return
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None:
-            return
-
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileGamepadTracking(sanitised_profile_name, enable))
+        self._toggle_profile_tracking(ipc.Device.Gamepad, self.ui.track_gamepad, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_network.isEnabled():
-            return
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None:
-            return
+        self._toggle_profile_tracking(ipc.Device.Network, self.ui.track_network, state)
 
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileNetworkTracking(sanitised_profile_name, enable))
+    def _set_global_tracking_enabled(self, device: ipc.Device, value: bool) -> None:
+        """Enable or disable global tracking of a device."""
+        if device.name is not None:
+            setattr(self.config, f'track_{device.name.lower()}', value)
+            self.config.save()
+        self.component.send_data(ipc.SetGlobalTracking(device, value))
 
     @QtCore.Slot(bool)
     def set_mouse_tracking_enabled(self, value: bool) -> None:
-        self.config.track_mouse = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalMouseTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Mouse, value)
 
     @QtCore.Slot(bool)
     def set_keyboard_tracking_enabled(self, value: bool) -> None:
-        self.config.track_keyboard = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalKeyboardTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Keyboard, value)
 
     @QtCore.Slot(bool)
     def set_gamepad_tracking_enabled(self, value: bool) -> None:
-        self.config.track_gamepad = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalGamepadTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Gamepad, value)
 
     @QtCore.Slot(bool)
     def set_network_tracking_enabled(self, value: bool) -> None:
-        self.config.track_network = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalNetworkTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Network, value)
 
     @QtCore.Slot(bool)
     def set_app_detection_disabled(self, value: bool) -> None:
@@ -2516,10 +2449,10 @@ class MainWindow(QtWidgets.QMainWindow):
         processing is not waiting to delete. Deleting a profile is only
         allowed once all tracking is disabled as a safety measure.
         """
-        delete_mouse = not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
-        delete_keyboard = not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
-        delete_gamepad = not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
-        delete_network = not self.ui.track_network.isChecked() and not self._delete_network_pressed
+        delete_mouse = not self.ui.track_mouse.isChecked() and not (self._delete_pressed & ipc.Device.Mouse)
+        delete_keyboard = not self.ui.track_keyboard.isChecked() and not (self._delete_pressed & ipc.Device.Keyboard)
+        delete_gamepad = not self.ui.track_gamepad.isChecked() and not (self._delete_pressed & ipc.Device.Gamepad)
+        delete_network = not self.ui.track_network.isChecked() and not (self._delete_pressed & ipc.Device.Network)
 
         self.ui.delete_mouse.setEnabled(delete_mouse)
         self.ui.delete_keyboard.setEnabled(delete_keyboard)

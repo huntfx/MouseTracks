@@ -744,34 +744,14 @@ class Processing(AppComponent, MonitorComponent):
                 profile.name = message.profile_name  # Ensure the name gets updated
                 self._send_profile_data(profile)
 
-            case ipc.SetProfileMouseTracking():
-                self._set_profile_tracking_state(message.profile_name, track_mouse=message.enable)
+            case ipc.SetProfileTracking():
+                self._set_profile_tracking_state(message.profile_name, message.device, message.enable)
 
-            case ipc.SetProfileKeyboardTracking():
-                self._set_profile_tracking_state(message.profile_name, track_keyboard=message.enable)
-
-            case ipc.SetProfileGamepadTracking():
-                self._set_profile_tracking_state(message.profile_name, track_gamepad=message.enable)
-
-            case ipc.SetProfileNetworkTracking():
-                self._set_profile_tracking_state(message.profile_name, track_network=message.enable)
-
-            case ipc.DeleteMouseData():
-                self._delete_profile_data(message.profile_name, delete_mouse=True)
-
-            case ipc.DeleteKeyboardData():
-                self._delete_profile_data(message.profile_name, delete_keyboard=True)
-
-            case ipc.DeleteGamepadData():
-                self._delete_profile_data(message.profile_name, delete_gamepad=True)
-
-            case ipc.DeleteNetworkData():
-                self._delete_profile_data(message.profile_name, delete_network=True)
+            case ipc.DeleteData():
+                self._delete_profile_data(message.profile_name, message.devices)
 
             case ipc.DeleteProfile():
-                self._delete_profile_data(message.profile_name, delete_mouse=True,
-                                          delete_keyboard=True, delete_gamepad=True,
-                                          delete_network=True)
+                self._delete_profile(message.profile_name)
 
             case ipc.ImportProfile():
                 profile = self.all_profiles[message.name] = TrackingProfile.load(message.path)
@@ -806,48 +786,32 @@ class Processing(AppComponent, MonitorComponent):
             case _:
                 raise NotImplementedError(message)
 
-    def _set_profile_tracking_state(self, profile_name: str,
-                                    track_mouse: bool | None = None,
-                                    track_keyboard: bool | None = None,
-                                    track_gamepad: bool | None = None,
-                                    track_network: bool | None = None) -> None:
-        """Enable or disable tracking on different devices."""
+    def _set_profile_tracking_state(self, profile_name: str, devices: ipc.Device, enable: bool) -> None:
+        """Enable or disable tracking for one or more devices."""
         profile = self.all_profiles[profile_name]
         profile.is_modified = True
+        for device in ipc.Device:
+            if device.name is not None and devices & device:
+                print(f'[Processing] Setting {device.name.lower()} tracking state on {profile_name}: {enable}')
+                setattr(profile.config, f'track_{device.name.lower()}', enable)
 
-        if track_mouse is not None:
-            print(f'[Processing] Setting mouse tracking state on {profile_name}: {track_mouse}')
-            profile.config.track_mouse = track_mouse
-        if track_keyboard is not None:
-            print(f'[Processing] Setting keyboard tracking state on {profile_name}: {track_keyboard}')
-            profile.config.track_keyboard = track_keyboard
-        if track_gamepad is not None:
-            print(f'[Processing] Setting gamepad tracking state on {profile_name}: {track_gamepad}')
-            profile.config.track_gamepad = track_gamepad
-        if track_network is not None:
-            print(f'[Processing] Setting network tracking state on {profile_name}: {track_network}')
-            profile.config.track_network = track_network
+    def _delete_profile(self, profile_name: str) -> None:
+        """Delete a profile entirely."""
+        print(f'[Processing] Deleting profile {profile_name}...')
+        del self.all_profiles[profile_name]
+        with suppress(FileNotFoundError):
+            send2trash(get_filename(profile_name))
 
-    def _delete_profile_data(self, profile_name: str, delete_mouse: bool = False,
-                             delete_keyboard: bool = False, delete_gamepad: bool = False,
-                             delete_network: bool = False) -> None:
-        """Delete data in a profile.
-        If all arguments are set to True, then the entire profile will be deleted.
-        """
-        # Shortcut to delete entire profile
-        if delete_mouse and delete_keyboard and delete_gamepad and delete_network:
-            print(f'[Processing] Deleting profile {profile_name}...')
-            del self.all_profiles[profile_name]
-            with suppress(FileNotFoundError):
-                send2trash(get_filename(profile_name))
-            return
+    def _delete_profile_data(self, profile_name: str, devices: ipc.Device) -> None:
+        """Delete tracking data for one or more devices."""
+        device_names = ', '.join(device.name.lower() for device in ipc.Device
+                                 if device.name is not None and devices & device)
+        print(f'[Processing] Deleting {device_names} data for {profile_name}...')
 
         profile = self.all_profiles[profile_name]
         profile.is_modified = True
 
-        # Delete individual profile parts
-        if delete_mouse:
-            print(f'[Processing] Deleting all mouse data for {profile_name}...')
+        if devices & ipc.Device.Mouse:
             profile.cursor_map = type(profile.cursor_map)()
             profile.mouse_single_clicks.clear()
             profile.mouse_double_clicks.clear()
@@ -859,23 +823,20 @@ class Processing(AppComponent, MonitorComponent):
                 profile.key_presses[code] = 0
                 profile.key_held[code] = 0
 
-        if delete_keyboard:
-            print(f'[Processing] Deleting all keyboard data for {profile_name}...')
+        if devices & ipc.Device.Keyboard:
             profile.daily_keys = profile.daily_keys.as_zero()
             for code in keycodes.KEYBOARD_CODES:
                 profile.key_presses[code] = 0
                 profile.key_held[code] = 0
 
-        if delete_gamepad:
-            print(f'[Processing] Deleting all gamepad data for {profile_name}...')
+        if devices & ipc.Device.Gamepad:
             profile.thumbstick_l_map.clear()
             profile.thumbstick_r_map.clear()
             profile.button_presses.clear()
             profile.button_held.clear()
             profile.daily_buttons = profile.daily_buttons.as_zero()
 
-        if delete_network:
-            print(f'[Processing] Deleting all network data for {profile_name}...')
+        if devices & ipc.Device.Network:
             profile.data_interfaces.clear()
             profile.data_upload.clear()
             profile.data_download.clear()

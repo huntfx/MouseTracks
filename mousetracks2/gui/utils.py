@@ -1,6 +1,7 @@
 """General functions being used by the GUI."""
 
 import math
+from collections.abc import Iterable
 
 from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND
@@ -80,3 +81,13 @@ def should_minimise_on_start() -> bool:
     if CTX.post_install:
         return False
     return CTX.start_hidden or CTX.autostart and GlobalConfig().minimise_on_start
+
+
+def join_and(lines: Iterable[str]) -> str:
+    """Join together multiple strings into a comma separated sentence."""
+    items = list(lines)
+    if not items:
+        return ''
+    if len(items) == 1:
+        return items[0]
+    return f'{", ".join(items[:-1])} and {items[-1]}'

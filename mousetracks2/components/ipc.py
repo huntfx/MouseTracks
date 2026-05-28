@@ -1,7 +1,7 @@
 """Standard format for data to be sent through communication queues."""
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, IntFlag, auto
 from typing import Literal
 
 import numpy as np
@@ -50,6 +50,15 @@ class TrackingState(Enum):
     Running = auto()
     Paused = auto()
     Stopped = auto()
+
+
+class Device(IntFlag):
+    """Input devices that can be tracked."""
+
+    Mouse = auto()
+    Keyboard = auto()
+    Gamepad = auto()
+    Network = auto()
 
 
 @dataclass
@@ -388,54 +397,17 @@ class Inactive(Message):
 
 
 @dataclass
-class SetProfileMouseTracking(Message):
+class SetProfileTracking(Message):
     target: int = field(default=Target.Processing, init=False)
     profile_name: str
+    device: Device
     enable: bool
 
 
 @dataclass
-class SetProfileKeyboardTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetProfileGamepadTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetProfileNetworkTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetGlobalMouseTracking(Message):
+class SetGlobalTracking(Message):
     target: int = field(default=Target.Tracking, init=False)
-    enable: bool
-
-
-@dataclass
-class SetGlobalKeyboardTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
-    enable: bool
-
-
-@dataclass
-class SetGlobalGamepadTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
-    enable: bool
-
-
-@dataclass
-class SetGlobalNetworkTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    device: Device
     enable: bool
 
 
@@ -452,27 +424,10 @@ class DebugDisableMonitorCheck(Message):
 
 
 @dataclass
-class DeleteMouseData(Message):
+class DeleteData(Message):
     target: int = field(default=Target.Processing, init=False)
     profile_name: str
-
-
-@dataclass
-class DeleteKeyboardData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-
-
-@dataclass
-class DeleteGamepadData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-
-
-@dataclass
-class DeleteNetworkData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
+    devices: Device
 
 
 @dataclass

@@ -183,28 +183,23 @@ class Tracking(Component):
                     self.autosave = message.enabled
                     print(f'[Tracking] Autosave Enabled: {message.enabled}')
 
-                case ipc.SetGlobalMouseTracking():
-                    print(f'[Tracking] Tracking mouse data: {message.enable}')
-                    self.track_mouse = message.enable
-
-                case ipc.SetGlobalKeyboardTracking():
-                    print(f'[Tracking] Tracking keyboard data: {message.enable}')
-                    self.track_keyboard = message.enable
-
-                case ipc.SetGlobalGamepadTracking():
-                    print(f'[Tracking] Tracking gamepad data: {message.enable}')
-                    self.track_gamepad = message.enable
-                    if message.enable:
-                        self._controller_listener = ControllerEventListener()
-                        self._controller_listener.start()
-                    else:
-                        self._controller_listener.stop()
-
-                case ipc.SetGlobalNetworkTracking():
-                    print(f'[Tracking] Tracking network data: {message.enable}')
-                    self.track_network = message.enable
-                    if message.enable:
-                        self.data.reset_byte_counter()
+                case ipc.SetGlobalTracking():
+                    print(f'[Tracking] Tracking {message.device.name} data: {message.enable}')
+                    if message.device & ipc.Device.Mouse:
+                        self.track_mouse = message.enable
+                    if message.device & ipc.Device.Keyboard:
+                        self.track_keyboard = message.enable
+                    if message.device & ipc.Device.Gamepad:
+                        self.track_gamepad = message.enable
+                        if message.enable:
+                            self._controller_listener = ControllerEventListener()
+                            self._controller_listener.start()
+                        else:
+                            self._controller_listener.stop()
+                    if message.device & ipc.Device.Network:
+                        self.track_network = message.enable
+                        if message.enable:
+                            self.data.reset_byte_counter()
 
                 case ipc.DebugDisableAppDetection():
                     print(f'[Tracking] Disabled check for running applications: {message.disable}')
