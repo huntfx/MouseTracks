@@ -184,8 +184,10 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
 
         # Write out the array to disk
         else:
+            if not self._loaded:
+                self._load_array()
             with zf.open(path, 'w') as f:
-                np.save(f, self, allow_pickle=False)
+                np.save(f, self._array, allow_pickle=False)
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         if zf.filename is None:
