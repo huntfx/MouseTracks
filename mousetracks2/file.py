@@ -75,7 +75,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
     @property
     def array(self) -> npt.NDArray[_DType_co]:
         if not self._loaded:
-            self._load_array()
+            self.load()
         self._accessed_since_save = True
         return self._array
 
@@ -84,8 +84,8 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         self._loaded = True
         self._array = value
 
-    def _load_array(self) -> None:
-        """Load the array from the ZIP file and mark it as loaded."""
+    def load(self) -> None:
+        """Load or reload the array from its source."""
         # Load from zip file
         if self._lazy_zip is not None:
             zip_path, zip_name = self._lazy_zip
@@ -100,6 +100,14 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             self._pending = None
 
         self._loaded = True
+
+    def unload(self) -> None:
+        """Unload the array from memory if it has been saved to disk.
+        Unsaved changes will be discarded.
+        """
+        if self._lazy_zip is not None and self._loaded:
+            del self._array
+            self._loaded = False
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
@@ -185,7 +193,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         # Write out the array to disk
         else:
             if not self._loaded:
-                self._load_array()
+                self.load()
             with zf.open(path, 'w') as f:
                 np.save(f, self._array, allow_pickle=False)
 
@@ -199,13 +207,7 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
         self._pending = None
         self._loaded = False
         if CTX.eager_load:
-            self._load_array()
-
-    def unload(self) -> None:
-        """Unload the array from memory so it can be reloaded on next access."""
-        if self._lazy_zip is not None and self._loaded:
-            del self._array
-            self._loaded = False
+            self.load()
 
     def _on_save(self) -> None:
         """Unload if not accessed since the last save, then reset the access flag."""
@@ -253,8 +255,8 @@ class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
         """Get an array item."""
         return int(super().__getitem__(item))
 
-    def _load_array(self) -> None:
-        super()._load_array()
+    def load(self) -> None:
+        super().load()
         self.max_value = np.iinfo(self._array.dtype).max
 
     def __setitem__(self, item: int | tuple[int, ...], value: int) -> None:
