@@ -189,6 +189,9 @@ class TrackingArray(Generic[_DType_co, _ScalarType_co]):
             with zf.open(path, 'w') as f:
                 np.save(f, self._array, allow_pickle=False)
 
+            if self._lazy_zip is None and zf.filename is not None:
+                self._lazy_zip = zf.filename, path
+
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
         if zf.filename is None:
             raise RuntimeError('ZipFile must be opened from a path, not a file object')
@@ -584,6 +587,7 @@ class TrackingProfile:
 
             # Replace file
             os.rename(temp_file, path)
+            self._update_lazy_paths(temp_file, path)
 
         finally:
             # Clean up files
@@ -597,24 +601,30 @@ class TrackingProfile:
 
         return True
 
-    def _on_save(self) -> None:
-        """Unload arrays not accessed since the last save."""
-        array: TrackingArray
-
-        self.cursor_map._on_save()
+    def _iter_arrays(self) -> Iterator[TrackingArray[Any, Any]]:
+        """Iterate over every TrackingArray in this profile."""
+        for mm in (self.cursor_map, *self.thumbstick_l_map.values(), *self.thumbstick_r_map.values()):
+            for _, arm in mm._iter_array_types():
+                yield from arm.values()
         for arm_dict in (self.mouse_single_clicks, self.mouse_double_clicks, self.mouse_held_clicks):
             for arm in arm_dict.values():
-                arm._on_save()
-        for mm_dict in (self.thumbstick_l_map, self.thumbstick_r_map):
-            for mm in mm_dict.values():
-                mm._on_save()
+                yield from arm.values()
         for array_dict in (self.button_presses, self.button_held):
-            for array in array_dict.values():
-                array._on_save()
-        for array in (self.key_presses, self.key_held,
-                      self.daily_ticks, self.daily_distance, self.daily_clicks,
-                      self.daily_scrolls, self.daily_keys, self.daily_buttons,
-                      self.daily_upload, self.daily_download):
+            yield from array_dict.values()
+        yield from (self.key_presses, self.key_held,
+                    self.daily_ticks, self.daily_distance, self.daily_clicks,
+                    self.daily_scrolls, self.daily_keys, self.daily_buttons,
+                    self.daily_upload, self.daily_download)
+
+    def _update_lazy_paths(self, temp_file: str, final_path: str) -> None:
+        """Update any _lazy_zip paths that still point to the temp file."""
+        for array in self._iter_arrays():
+            if array._lazy_zip is not None and array._lazy_zip[0] == temp_file:
+                array._lazy_zip = (final_path, array._lazy_zip[1])
+
+    def _on_save(self) -> None:
+        """Unload arrays not accessed since the last save."""
+        for array in self._iter_arrays():
             array._on_save()
 
     def save(self) -> bool:
