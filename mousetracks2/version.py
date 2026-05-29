@@ -8,6 +8,9 @@ The process is as follows:
 3. Create release, using the commit message as release notes.
 4. Build executable and attach to release.
 
+A 4 component version (eg. 2.0.0.1) is treated as a local build and will
+not trigger a release.
+
 Some processing will be done on the commit message so the format can be
 kept simple. The recommend commit message format is as follows:
     Created new option.
@@ -17,4 +20,4 @@ kept simple. The recommend commit message format is as follows:
     - Fixed potential crash when thing happens ({commit_sha})
 """
 
-VERSION = '2.5.0.3'
+VERSION = '2.5.0.4'

@@ -64,6 +64,7 @@ jobs:
           call .venv\Scripts\deactivate
 
       - name: Check if tag already exists
+        if: steps.extract_version.outputs.skip != 'true'
         shell: bash
         run: |
           TAG_NAME="${{ steps.extract_version.outputs.tag_name }}"
@@ -77,12 +78,14 @@ jobs:
           fi
 
       - name: Configure Git committer
+        if: steps.extract_version.outputs.skip != 'true'
         shell: bash
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
       - name: Prepare Release Notes Body
+        if: steps.extract_version.outputs.skip != 'true'
         id: prep_release_notes
         shell: python
         env:
@@ -131,6 +134,7 @@ jobs:
             print(delim, file=f)
 
       - name: Create Git Tag and Push
+        if: steps.extract_version.outputs.skip != 'true'
         shell: bash
         run: |
           TAG_NAME="${{ steps.extract_version.outputs.tag_name }}"
@@ -145,6 +149,7 @@ jobs:
           git push origin "$TAG_NAME"
 
       - name: Create GitHub Release
+        if: steps.extract_version.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.CREATE_RELEASE_TOKEN }}  # Permissions: Contents RW
