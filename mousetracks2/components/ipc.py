@@ -1,11 +1,14 @@
 """Standard format for data to be sent through communication queues."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, auto
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import numpy as np
-import numpy.typing as npt
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
 
 from ..config import ProfileConfig
 from ..enums import BlendMode, Channel
