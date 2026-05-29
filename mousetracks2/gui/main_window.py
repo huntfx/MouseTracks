@@ -17,6 +17,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from .about import AboutWindow
 from .applist import AppListWindow
+from .layers import LayerManager, LayerOption, LayerView, Preset
 from .ui import layout
 from .utils import format_distance, format_ticks, format_bytes, format_network_speed, join_and, ICON_PATH
 from .widgets import Pixel, AutoCloseMessageBox
@@ -55,9 +56,6 @@ class MapData:
     position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
-
-
-from .layers import LayerManager, LayerOption, Preset
 
 
 @dataclass
@@ -464,10 +462,11 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def pixel_colour(self) -> QtGui.QColor:
         """Get the pixel colour to draw with."""
-        colour_map = self.render_colour
+        layer = self.current_layer
+        colour_map = layer.render_colour
         if colour_map not in self._pixel_colour_cache:
             try:
-                generated_map = colours.calculate_colour_map(self.render_colour)
+                generated_map = colours.calculate_colour_map(colour_map)
 
             # This is legacy code with bad error handling
             # If any error occurs, just show a transparent image
@@ -480,7 +479,7 @@ class MainWindow(QtWidgets.QMainWindow):
         colour = self._pixel_colour_cache[colour_map]
         if colour is None:
             return QtGui.QColor(QtCore.Qt.GlobalColor.transparent)
-        return colour[self.invert]
+        return colour[layer.invert]
 
     @property
     def render_type(self) -> ipc.RenderType:
@@ -509,48 +508,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.addItems(sorted(colour_maps))
 
         # Set it back to the previous colour selection
-        if (idx := self.ui.colour_option.findText(self.render_colour)) == -1:
-            self.ui.colour_option.setCurrentText(self.render_colour)
+        layer = self.current_layer
+        if (idx := self.ui.colour_option.findText(layer.render_colour)) == -1:
+            self.ui.colour_option.setCurrentText(layer.render_colour)
         else:
             self.ui.colour_option.setCurrentIndex(idx)
 
         # Load in other settings
-        self.ui.contrast.setValue(self.contrast)
+        self.ui.contrast.setValue(layer.contrast)
         self.ui.sampling.setValue(self.sampling)
         self.ui.thumbnail_sampling.setValue(self.sampling_preview)
-        self.ui.padding.setValue(self.padding)
-        self.ui.clipping.setValue(self.clipping)
-        self.ui.blur.setValue(self.blur)
-        self.ui.linear.setChecked(self.linear)
-        self.ui.invert.setChecked(self.invert)
-        self.ui.show_left_clicks.setChecked(self.show_left_clicks)
-        self.ui.show_middle_clicks.setChecked(self.show_middle_clicks)
-        self.ui.show_right_clicks.setChecked(self.show_right_clicks)
+        self.ui.padding.setValue(layer.padding)
+        self.ui.clipping.setValue(layer.clipping)
+        self.ui.blur.setValue(layer.blur)
+        self.ui.linear.setChecked(layer.linear)
+        self.ui.invert.setChecked(layer.invert)
+        self.ui.show_left_clicks.setChecked(layer.show_left_clicks)
+        self.ui.show_middle_clicks.setChecked(layer.show_middle_clicks)
+        self.ui.show_right_clicks.setChecked(layer.show_right_clicks)
         self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
 
     @property
-    def render_colour(self) -> str:
-        """Get the render colour for the current render type."""
-        return self.selected_layer.render_colour.get(self.render_type)
-
-    @render_colour.setter
-    def render_colour(self, colour: str) -> None:
-        """Set the render colour for the current render type.
-        This will update the current pixel colour too.
-        """
-        self.selected_layer.render_colour.set(self.render_type, colour)
-
-    @property
-    def contrast(self) -> float:
-        """Get the contrast for the current render type."""
-        return self.selected_layer.contrast.get(self.render_type)
-
-    @contrast.setter
-    def contrast(self, value: float) -> None:
-        """Set a new constrast value for the current render type."""
-        self.selected_layer.contrast.set(self.render_type, value)
+    def current_layer(self) -> LayerView:
+        """Return a render-type-bound view of the selected layer."""
+        return self.selected_layer.view(self.render_type)
 
     @property
     def sampling(self) -> int:
@@ -571,86 +554,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def sampling_preview(self, value: int) -> None:
         """Set a new thumbnail sampling value for the current render type."""
         self._sampling_preview = value
-
-    @property
-    def padding(self) -> int:
-        """Get the padding for the current render type."""
-        return self.selected_layer.padding.get(self.render_type)
-
-    @padding.setter
-    def padding(self, value: int) -> None:
-        """Set a new padding value for the current render type."""
-        self.selected_layer.padding.set(self.render_type, value)
-
-    @property
-    def clipping(self) -> float:
-        """Get the clipping for the current render type."""
-        return self.selected_layer.clipping.get(self.render_type)
-
-    @clipping.setter
-    def clipping(self, value: float) -> None:
-        """Set a new clipping value for the current render type."""
-        self.selected_layer.clipping.set(self.render_type, value)
-
-    @property
-    def blur(self) -> float:
-        """Get the blur for the current render type."""
-        return self.selected_layer.blur.get(self.render_type)
-
-    @blur.setter
-    def blur(self, value: float) -> None:
-        """Set a new blur value for the current render type."""
-        self.selected_layer.blur.set(self.render_type, value)
-
-    @property
-    def linear(self) -> bool:
-        """Get if linear mapping is enabled for the current render type."""
-        return self.selected_layer.linear.get(self.render_type)
-
-    @linear.setter
-    def linear(self, value: bool) -> None:
-        """Set if linear mapping is enabled for the current render type."""
-        self.selected_layer.linear.set(self.render_type, value)
-
-    @property
-    def invert(self) -> bool:
-        """Get if inverting colours for the current render type."""
-        return self.selected_layer.invert.get(self.render_type)
-
-    @invert.setter
-    def invert(self, value: bool) -> None:
-        """Set if inverting colours for the current render type."""
-        self.selected_layer.invert.set(self.render_type, value)
-
-    @property
-    def show_left_clicks(self) -> bool:
-        """Get if left clicks should be shown for the current render type."""
-        return self.selected_layer.show_left_clicks
-
-    @show_left_clicks.setter
-    def show_left_clicks(self, value: bool) -> None:
-        """Set if left clicks should be shown for the current render type."""
-        self.selected_layer.show_left_clicks = value
-
-    @property
-    def show_middle_clicks(self) -> bool:
-        """Get if middle clicks should be shown for the current render type."""
-        return self.selected_layer.show_middle_clicks
-
-    @show_middle_clicks.setter
-    def show_middle_clicks(self, value: bool) -> None:
-        """Set if middle clicks should be shown for the current render type."""
-        self.selected_layer.show_middle_clicks = value
-
-    @property
-    def show_right_clicks(self) -> bool:
-        """Get if right clicks should be shown for the current render type."""
-        return self.selected_layer.show_right_clicks
-
-    @show_right_clicks.setter
-    def show_right_clicks(self, value: bool) -> None:
-        """Set if right clicks should be shown for the current render type."""
-        self.selected_layer.show_right_clicks = value
 
     @property
     def mouse_click_count(self) -> int:
@@ -1027,9 +930,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     checkbox.setChecked(False)
                 sender.setChecked(True)
 
-        self.show_left_clicks = self.ui.show_left_clicks.isChecked()
-        self.show_middle_clicks = self.ui.show_middle_clicks.isChecked()
-        self.show_right_clicks = self.ui.show_right_clicks.isChecked()
+        layer = self.current_layer
+        layer.show_left_clicks = self.ui.show_left_clicks.isChecked()
+        layer.show_middle_clicks = self.ui.show_middle_clicks.isChecked()
+        layer.show_right_clicks = self.ui.show_right_clicks.isChecked()
 
         self.request_thumbnail()
         self.update_layer_item_name()
@@ -1065,7 +969,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the colour is changed."""
         if self.pause_colour_change:
             return
-        self.render_colour = colour
+        self.current_layer.render_colour = colour
         self.request_thumbnail()
 
     @QtCore.Slot(int)
@@ -1073,7 +977,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the padding is changed."""
         if self.pause_colour_change:
             return
-        self.padding = value
+        self.current_layer.padding = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -1081,7 +985,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the contrast is changed."""
         if self.pause_colour_change:
             return
-        self.contrast = value
+        self.current_layer.contrast = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -1089,7 +993,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the clipping is changed."""
         if self.pause_colour_change:
             return
-        self.clipping = value
+        self.current_layer.clipping = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -1097,7 +1001,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the blur is changed."""
         if self.pause_colour_change:
             return
-        self.blur = value
+        self.current_layer.blur = value
         self.request_thumbnail()
 
     @QtCore.Slot(bool)
@@ -1105,7 +1009,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the linear mapping is changed."""
         if self.pause_colour_change:
             return
-        self.linear = value
+        self.current_layer.linear = value
         self.request_thumbnail()
 
     @QtCore.Slot(bool)
@@ -1113,7 +1017,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the invert option is changed."""
         if self.pause_colour_change:
             return
-        self.invert = value
+        self.current_layer.invert = value
         self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
@@ -1371,7 +1275,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Generate the default image name
         sort_key = f'{math.isqrt(round(elapsed_time / UPDATES_PER_SECOND)):05}'
         ticks_str = format_ticks(elapsed_time, UPDATES_PER_SECOND)
-        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.render_colour})'
+        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.current_layer.render_colour})'
 
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 

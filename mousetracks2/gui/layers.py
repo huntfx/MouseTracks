@@ -73,6 +73,110 @@ class LayerOption:
     show_middle_clicks: bool = True
     show_right_clicks: bool = True
 
+    def view(self, render_type: ipc.RenderType) -> LayerView:
+        """Return a view of this layer for a specific render type."""
+        return LayerView(self, render_type)
+
+
+class LayerView:
+    """A specific render type of a LayerOption."""
+
+    __slots__ = ('_layer', '_render_type')
+
+    def __init__(self, layer: LayerOption, render_type: ipc.RenderType) -> None:
+        self._layer = layer
+        self._render_type = render_type
+
+    @property
+    def render_colour(self) -> str:
+        """Name of the colour map used for rendering."""
+        return self._layer.render_colour.get(self._render_type)
+
+    @render_colour.setter
+    def render_colour(self, value: str) -> None:
+        self._layer.render_colour.set(self._render_type, value)
+
+    @property
+    def contrast(self) -> float:
+        """Contrast applied to the colour map."""
+        return self._layer.contrast.get(self._render_type)
+
+    @contrast.setter
+    def contrast(self, value: float) -> None:
+        self._layer.contrast.set(self._render_type, value)
+
+    @property
+    def padding(self) -> int:
+        """Padding added around the render output."""
+        return self._layer.padding.get(self._render_type)
+
+    @padding.setter
+    def padding(self, value: int) -> None:
+        self._layer.padding.set(self._render_type, value)
+
+    @property
+    def clipping(self) -> float:
+        """Fraction of low values clipped before colour mapping."""
+        return self._layer.clipping.get(self._render_type)
+
+    @clipping.setter
+    def clipping(self, value: float) -> None:
+        self._layer.clipping.set(self._render_type, value)
+
+    @property
+    def blur(self) -> float:
+        """Amount of Gaussian blur applied before rendering."""
+        return self._layer.blur.get(self._render_type)
+
+    @blur.setter
+    def blur(self, value: float) -> None:
+        self._layer.blur.set(self._render_type, value)
+
+    @property
+    def linear(self) -> bool:
+        """Use linear interpolation when scaling the data."""
+        return self._layer.linear.get(self._render_type)
+
+    @linear.setter
+    def linear(self, value: bool) -> None:
+        self._layer.linear.set(self._render_type, value)
+
+    @property
+    def invert(self) -> bool:
+        """Reverse the colour map."""
+        return self._layer.invert.get(self._render_type)
+
+    @invert.setter
+    def invert(self, value: bool) -> None:
+        self._layer.invert.set(self._render_type, value)
+
+    @property
+    def show_left_clicks(self) -> bool:
+        """Include left mouse button clicks in the render."""
+        return self._layer.show_left_clicks
+
+    @show_left_clicks.setter
+    def show_left_clicks(self, value: bool) -> None:
+        self._layer.show_left_clicks = value
+
+    @property
+    def show_middle_clicks(self) -> bool:
+        """Include middle mouse button clicks in the render."""
+        return self._layer.show_middle_clicks
+
+    @show_middle_clicks.setter
+    def show_middle_clicks(self, value: bool) -> None:
+        self._layer.show_middle_clicks = value
+
+    @property
+    def show_right_clicks(self) -> bool:
+        """Include right mouse button clicks in the render."""
+        return self._layer.show_right_clicks
+
+    @show_right_clicks.setter
+    def show_right_clicks(self, value: bool) -> None:
+        self._layer.show_right_clicks = value
+
 
 class LayerManager:
     """Handles the layer stack state and outputs it as IPC messages."""
