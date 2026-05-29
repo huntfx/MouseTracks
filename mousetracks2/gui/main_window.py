@@ -1483,78 +1483,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.component.set_monitor_data(message.data)
 
             case ipc.Render():
-                if message.array.any():
-                    height, width, channels = message.array.shape
-                else:
-                    height = width = channels = 0
-                failed = width == height == 0
-
-                target_height = round(height / (message.request.sampling or 1))
-                target_width = round(width / (message.request.sampling or 1))
-
-                # Draw the new pixmap
-                if message.request.file_path is None:
-                    self._timer_rendering.stop()
-                    self.ui.thumbnail.hide_rendering_text()
-                    self._last_thumbnail_time = int(time.time() * 10)
-
-                    if failed:
-                        self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
-
-                    else:
-                        stride = channels * width
-                        array = message.array
-
-                        # Normalise down to 8 bit arrays
-                        if array.dtype != np.uint8:
-                            match message.array.dtype:
-                                case np.uint16:
-                                    array = message.array / 257
-                                case np.uint32:
-                                    array = message.array / (65537 * 257)
-                                case np.uint64:
-                                    array = message.array / (4294967297 * 65537 * 257)
-                                case _:
-                                    raise NotImplementedError(array.dtype)
-                            array = array.round().astype(np.uint8)
-
-                        match channels:
-                            case 1:
-                                image_format = QtGui.QImage.Format.Format_Grayscale8
-                            case 3:
-                                image_format = QtGui.QImage.Format.Format_RGB888
-                            case 4:
-                                image_format = QtGui.QImage.Format.Format_RGBA8888
-                            case _:
-                                raise NotImplementedError(channels)
-
-                        image = QtGui.QImage(array.data, width, height, stride, image_format)
-
-                        # Scale the QImage to fit the pixmap size
-                        scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
-                        self.ui.thumbnail.set_pixmap(scaled_image)
-
-                    self.pause_redraw -= 1
-
-                    # Check if the flag was set that a new thumbnail was requested
-                    if not self.pause_redraw and self._thumbnail_redraw_required:
-                        self._request_thumbnail()
-                        self._thumbnail_redraw_required = False
-
-                # Save a render
-                elif failed:
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setWindowTitle('Render Failed')
-                    msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-                    msg.setText('No data is available for this render.')
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-                    msg.exec()
-
-                else:
-                    im = Image.fromarray(message.array)
-                    im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
-                    im.save(message.request.file_path)
-                    os.startfile(message.request.file_path)
+                self._handle_render(message)
 
             case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled and not self.component.app_resizing:
                 self.mouse_held_count += 1
@@ -1625,70 +1554,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Show the correct distance
             case ipc.ProfileData():
-                self._is_loading_profile -= 1
-                self.ui.tab_options.setTabText(1, f'{message.profile_name} Options')
-
-                self.cursor_data.distance = message.distance
-                self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
-                self.cursor_data.counter = message.cursor_counter
-                self.thumbstick_l_data.counter = message.thumb_l_counter
-                self.thumbstick_r_data.counter = message.thumb_r_counter
-
-                self.mouse_click_count = message.clicks
-                self.mouse_scroll_count = message.scrolls
-                self.key_press_count = message.keys_pressed
-                self.button_press_count = message.buttons_pressed
-                self.elapsed_time = message.elapsed_ticks
-                self.active_time = message.active_ticks
-                self.inactive_time = message.inactive_ticks
-                self.bytes_sent = message.bytes_sent
-                self.bytes_recv = message.bytes_recv
-                self.resolutions = message.resolutions
-                if message.multi_monitor is None:
-                    single_monitor = CTX.single_monitor
-                    multi_monitor = CTX.multi_monitor
-                else:
-                    single_monitor = not message.multi_monitor
-                    multi_monitor = message.multi_monitor
-                self.ui.single_monitor.setChecked(single_monitor)
-                self.ui.multi_monitor.setChecked(multi_monitor)
-                self.ui.opts_monitor.setChecked(message.multi_monitor is not None)
-
-                self.ui.track_mouse.setChecked(message.config.track_mouse)
-                self.ui.track_keyboard.setChecked(message.config.track_keyboard)
-                self.ui.track_gamepad.setChecked(message.config.track_gamepad)
-                self.ui.track_network.setChecked(message.config.track_network)
-
-                # Update the visibility of the delete options
-                self._delete_pressed = ipc.Device(0)
-                self.handle_delete_button_visibility()
-
-                # Resume signals on the track options
-                # If disabled, ensure they are unchecked
-                if CTX.disable_mouse:
-                    self.ui.track_mouse.setChecked(False)
-                else:
-                    self.ui.track_mouse.setEnabled(not self._is_loading_profile)
-                if CTX.disable_keyboard:
-                    self.ui.track_keyboard.setChecked(False)
-                else:
-                    self.ui.track_keyboard.setEnabled(not self._is_loading_profile)
-                if CTX.disable_gamepad:
-                    self.ui.track_gamepad.setChecked(False)
-                else:
-                    self.ui.track_gamepad.setEnabled(not self._is_loading_profile)
-                if CTX.disable_network:
-                    self.ui.track_network.setChecked(False)
-                else:
-                    self.ui.track_network.setEnabled(not self._is_loading_profile)
-
-                # Enable widgets and redraw when loading has finished
-                if not self._is_loading_profile:
-                    self.request_thumbnail()
-                    self.ui.opts_status.setEnabled(True)
-                    self.ui.opts_resolution.setEnabled(True)
-                    self.ui.opts_monitor.setEnabled(True)
-                    self.ui.opts_tracking.setEnabled(message.profile_name != TRACKING_DISABLE)
+                self._handle_profile_data(message)
 
             case ipc.DataTransfer():
                 if self.is_live and self.ui.track_network.isChecked():
@@ -1697,48 +1563,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self._network_speed.set(message)
 
             case ipc.SaveComplete():
-                self._last_save_message = message
-                self._last_save_time = int(time.time() * 10)
-                self.mark_profiles_saved(*message.succeeded)
-                self.mark_profiles_unsaved(self.component.focused_app.name)
-                self._redraw_profile_combobox()
-
-                # Notify when complete
-                if self.save_all_request_sent:
-                    self.save_all_request_sent = False
-
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-
-                    if message.failed:
-                        msg.setWindowTitle('Save Failed')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-                        msg.setText('Not all profiles were saved.\n'
-                                    f'  Successful: {", ".join(message.succeeded)}\n'
-                                    f'  Failed: {", ".join(message.failed)}\n')
-                        msg.exec()
-                    else:
-                        self.notify('All profiles have been saved.')
-
-                if self.save_profile_request_sent:
-                    self.save_profile_request_sent = False
-
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-
-                    if message.failed:
-                        msg.setWindowTitle('Save Failed')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-                        msg.setText(f'Profile "{message.failed[0]}" failed to save.')
-                        msg.exec()
-                    elif message.succeeded:
-                        self.notify(f'Profile "{message.succeeded[0]}" has been saved.')
-                    else:
-                        raise RuntimeError('incorrect message format')
-
-                # Continue shutdown now save message has been received
-                if self._is_closing:
-                    self.shut_down(force=True)
+                self._handle_save_complete(message)
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
@@ -1828,6 +1653,191 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.ShowPopup():
                 self.notify(message.content)
+
+    def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
+        """Handle a save completion message."""
+        self._last_save_message = message
+        self._last_save_time = int(time.time() * 10)
+        self.mark_profiles_saved(*message.succeeded)
+        self.mark_profiles_unsaved(self.component.focused_app.name)
+        self._redraw_profile_combobox()
+
+        # Notify when complete
+        if self.save_all_request_sent:
+            self.save_all_request_sent = False
+
+            msg = QtWidgets.QMessageBox(self)
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+            if message.failed:
+                msg.setWindowTitle('Save Failed')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText('Not all profiles were saved.\n'
+                            f'  Successful: {", ".join(message.succeeded)}\n'
+                            f'  Failed: {", ".join(message.failed)}\n')
+                msg.exec()
+            else:
+                self.notify('All profiles have been saved.')
+
+        if self.save_profile_request_sent:
+            self.save_profile_request_sent = False
+
+            msg = QtWidgets.QMessageBox(self)
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+            if message.failed:
+                msg.setWindowTitle('Save Failed')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText(f'Profile "{message.failed[0]}" failed to save.')
+                msg.exec()
+            elif message.succeeded:
+                self.notify(f'Profile "{message.succeeded[0]}" has been saved.')
+            else:
+                raise RuntimeError('incorrect message format')
+
+        # Continue shutdown now save message has been received
+        if self._is_closing:
+            self.shut_down(force=True)
+
+    def _handle_profile_data(self, message: ipc.ProfileData) -> None:
+        """Handle an incoming profile data message."""
+        self._is_loading_profile -= 1
+        self.ui.tab_options.setTabText(1, f'{message.profile_name} Options')
+
+        self.cursor_data.distance = message.distance
+        self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
+        self.cursor_data.counter = message.cursor_counter
+        self.thumbstick_l_data.counter = message.thumb_l_counter
+        self.thumbstick_r_data.counter = message.thumb_r_counter
+
+        self.mouse_click_count = message.clicks
+        self.mouse_scroll_count = message.scrolls
+        self.key_press_count = message.keys_pressed
+        self.button_press_count = message.buttons_pressed
+        self.elapsed_time = message.elapsed_ticks
+        self.active_time = message.active_ticks
+        self.inactive_time = message.inactive_ticks
+        self.bytes_sent = message.bytes_sent
+        self.bytes_recv = message.bytes_recv
+        self.resolutions = message.resolutions
+        if message.multi_monitor is None:
+            single_monitor = CTX.single_monitor
+            multi_monitor = CTX.multi_monitor
+        else:
+            single_monitor = not message.multi_monitor
+            multi_monitor = message.multi_monitor
+        self.ui.single_monitor.setChecked(single_monitor)
+        self.ui.multi_monitor.setChecked(multi_monitor)
+        self.ui.opts_monitor.setChecked(message.multi_monitor is not None)
+
+        self.ui.track_mouse.setChecked(message.config.track_mouse)
+        self.ui.track_keyboard.setChecked(message.config.track_keyboard)
+        self.ui.track_gamepad.setChecked(message.config.track_gamepad)
+        self.ui.track_network.setChecked(message.config.track_network)
+
+        # Update the visibility of the delete options
+        self._delete_pressed = ipc.Device(0)
+        self.handle_delete_button_visibility()
+
+        # Resume signals on the track options
+        # If disabled, ensure they are unchecked
+        if CTX.disable_mouse:
+            self.ui.track_mouse.setChecked(False)
+        else:
+            self.ui.track_mouse.setEnabled(not self._is_loading_profile)
+        if CTX.disable_keyboard:
+            self.ui.track_keyboard.setChecked(False)
+        else:
+            self.ui.track_keyboard.setEnabled(not self._is_loading_profile)
+        if CTX.disable_gamepad:
+            self.ui.track_gamepad.setChecked(False)
+        else:
+            self.ui.track_gamepad.setEnabled(not self._is_loading_profile)
+        if CTX.disable_network:
+            self.ui.track_network.setChecked(False)
+        else:
+            self.ui.track_network.setEnabled(not self._is_loading_profile)
+
+        # Enable widgets and redraw when loading has finished
+        if not self._is_loading_profile:
+            self.request_thumbnail()
+            self.ui.opts_status.setEnabled(True)
+            self.ui.opts_resolution.setEnabled(True)
+            self.ui.opts_monitor.setEnabled(True)
+            self.ui.opts_tracking.setEnabled(message.profile_name != TRACKING_DISABLE)
+
+    def _handle_render(self, message: ipc.Render) -> None:
+        """Handle a completed render message."""
+        if message.array.any():
+            height, width, channels = message.array.shape
+        else:
+            height = width = channels = 0
+        failed = width == height == 0
+
+        target_height = round(height / (message.request.sampling or 1))
+        target_width = round(width / (message.request.sampling or 1))
+
+        # Draw the new pixmap
+        if message.request.file_path is None:
+            self._timer_rendering.stop()
+            self.ui.thumbnail.hide_rendering_text()
+            self._last_thumbnail_time = int(time.time() * 10)
+
+            if failed:
+                self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
+
+            else:
+                stride = channels * width
+                array = message.array
+
+                # Normalise down to 8 bit arrays
+                if array.dtype != np.uint8:
+                    match message.array.dtype:
+                        case np.uint16:
+                            array = message.array / 257
+                        case np.uint32:
+                            array = message.array / (65537 * 257)
+                        case np.uint64:
+                            array = message.array / (4294967297 * 65537 * 257)
+                        case _:
+                            raise NotImplementedError(array.dtype)
+                    array = array.round().astype(np.uint8)
+
+                match channels:
+                    case 1:
+                        image_format = QtGui.QImage.Format.Format_Grayscale8
+                    case 3:
+                        image_format = QtGui.QImage.Format.Format_RGB888
+                    case 4:
+                        image_format = QtGui.QImage.Format.Format_RGBA8888
+                    case _:
+                        raise NotImplementedError(channels)
+
+                image = QtGui.QImage(array.data, width, height, stride, image_format)
+                scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+                self.ui.thumbnail.set_pixmap(scaled_image)
+
+            self.pause_redraw -= 1
+
+            # Check if the flag was set that a new thumbnail was requested
+            if not self.pause_redraw and self._thumbnail_redraw_required:
+                self._request_thumbnail()
+                self._thumbnail_redraw_required = False
+
+        # Save a render
+        elif failed:
+            msg = QtWidgets.QMessageBox(self)
+            msg.setWindowTitle('Render Failed')
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+            msg.setText('No data is available for this render.')
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+            msg.exec()
+
+        else:
+            im = Image.fromarray(message.array)
+            im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            im.save(message.request.file_path)
+            os.startfile(message.request.file_path)
 
     @QtCore.Slot()
     def start_tracking(self) -> None:
