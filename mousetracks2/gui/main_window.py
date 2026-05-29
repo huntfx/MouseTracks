@@ -57,7 +57,7 @@ class MapData:
     counter: int = field(default=0)
 
 
-from .layers import LayerOption
+from .layers import LayerManager, LayerOption, Preset
 
 
 @dataclass
@@ -240,9 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._sampling = 4
         self._sampling_preview = 0
 
-        self._layers: dict[int, LayerOption] = {}
-        self._layer_counter = 0
-        self._selected_layer = 0
+        self.layer_manager = LayerManager()
         self.ui.layer_list.clear()
         for enum in BlendMode:
             self.ui.layer_blending.addItem(enum.name, enum)
@@ -406,14 +404,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
         self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
 
-        self.ui.layer_presets.addItem('Reset')
-        self.ui.layer_presets.addItem('Heatmap Overlay')
-        self.ui.layer_presets.addItem('Heatmap Tracks')
-        self.ui.layer_presets.addItem('Alpha Multiply')
-        self.ui.layer_presets.addItem('Urban Moss')
-        self.ui.layer_presets.addItem('Eraser')
-        self.ui.layer_presets.addItem('Plasma')
-        self.ui.layer_presets.addItem('RGB Clicks')
+        self.ui.layer_presets.addItems(Preset.names())
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
         # Ignore scroll events on the layer presets combobox
@@ -1231,19 +1222,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.RenderLayerRequest(layers))
         return True
 
-    def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
-        """Yield all render layer data for the current layer stack.
+    def _resolve_render_dimensions(self, file_path: str | None) -> tuple[int | None, int | None, int, bool]:
+        """Resolve the render width, height, sampling and lock_aspect from the current UI state.
 
         When `file_path` is None (thumbnail preview), dimensions are derived from
         the thumbnail widget and constrained by any custom width/height settings.
         When `file_path` is provided (export), the custom dimensions are used directly.
-
-        Layers are yielded in bottom-to-top order.
         """
-        sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None:
-            return
-
         custom_width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
         custom_height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
         lock_aspect = self.ui.lock_aspect.isChecked()
@@ -1278,38 +1263,32 @@ class MainWindow(QtWidgets.QMainWindow):
             width = custom_width
             height = custom_height
 
-        old_layer = self._selected_layer
+        return width, height, sampling, lock_aspect
 
-        for i in range(self.ui.layer_list.count(), 0, -1):
-            item = self.ui.layer_list.item(i - 1)
-            self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+    def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
+        """Yield all render layer data, starting with the bottom layer."""
+        sanitised_profile_name, _profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return
 
-            layer = ipc.RenderRequest(
-                type=self.render_type,
-                width=width,
-                height=height,
-                lock_aspect=lock_aspect,
-                profile=sanitised_profile_name,
-                file_path=file_path,
-                colour_map=self.render_colour,
-                padding=self.padding,
-                sampling=sampling,
-                contrast=self.contrast,
-                clipping=self.clipping,
-                blur=self.blur,
-                linear=self.linear,
-                invert=self.invert,
-                show_left_clicks=self.show_left_clicks,
-                show_middle_clicks=self.show_middle_clicks,
-                show_right_clicks=self.show_right_clicks,
-                show_keyboard_time=self.ui.show_time.isChecked(),
-                interpolation_order=self.ui.interpolation_order.value(),
-                layer_visible=item.checkState() == QtCore.Qt.CheckState.Checked,
-            )
+        width, height, sampling, lock_aspect = self._resolve_render_dimensions(file_path)
 
-            yield ipc.RenderLayer(layer, self.selected_layer.blend_mode, self.selected_layer.channels, self.selected_layer.opacity)
-
-        self._selected_layer = old_layer
+        layer_items = (
+            (self.ui.layer_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole),
+             self.ui.layer_list.item(i).checkState() == QtCore.Qt.CheckState.Checked)
+            for i in range(self.ui.layer_list.count() - 1, -1, -1)
+        )
+        yield from self.layer_manager.render_layers(
+            layer_items,
+            profile=sanitised_profile_name,
+            file_path=file_path,
+            width=width,
+            height=height,
+            sampling=sampling,
+            lock_aspect=lock_aspect,
+            show_keyboard_time=self.ui.show_time.isChecked(),
+            interpolation_order=self.ui.interpolation_order.value(),
+        )
 
     @QtCore.Slot(QtCore.QSize)
     def thumbnail_resize(self, size: QtCore.QSize) -> None:
@@ -2685,13 +2664,17 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def selected_layer(self) -> LayerOption:
         """Get the selected layer data."""
-        return self._layers[self._selected_layer]
+        return self.layer_manager.selected_layer
 
-    def add_render_layer(self, reselect: bool = True) -> QtWidgets.QListWidgetItem:
+    def add_render_layer(self, option: LayerOption | None = None, reselect: bool = True) -> QtWidgets.QListWidgetItem:
         """Add a new disabled render layer."""
+        if option is None:
+            option = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
+
         item = QtWidgets.QListWidgetItem()
         item.setCheckState(QtCore.Qt.CheckState.Unchecked)
-        item.setData(QtCore.Qt.ItemDataRole.UserRole, self._layer_counter)
+        layer_id = self.layer_manager.add(option)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, layer_id)
 
         selected_items = self.ui.layer_list.selectedItems()
         self.ui.layer_list.insertItem(0, item)
@@ -2701,9 +2684,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     previous.setSelected(True)
         else:
             item.setSelected(True)
-
-        self._layers[self._layer_counter] = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
-        self._layer_counter += 1
         self.update_layer_item_name(item)
         return item
 
@@ -2726,15 +2706,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def layer_item_changed(self, current: QtWidgets.QListWidgetItem,
                                   previous: QtWidgets.QListWidgetItem) -> None:
         """Update widgets when the selected layer changes."""
-        if current != previous:
+        if current is not None and current != previous:
             self.set_selected_layer(current)
 
     def set_selected_layer(self, item: QtWidgets.QListWidgetItem) -> None:
         """Change the selected render layer."""
         self._is_updating_layer_options = True
         try:
-            self._selected_layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            layer = self._layers[self._selected_layer]
+            layer_id = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            layer = self.layer_manager.select(layer_id)
 
             # Set the render type which will update the other widgets
             idx = self.ui.map_type.findData(layer.render_type)
@@ -2834,163 +2814,31 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int)
     def layer_preset_chosen(self, idx: int) -> None:
-        """Load in a layer preset.
-        This is hardcoded for now as the current system wouldn't work
-        well with loading from a file.
-        """
+        """Load in a layer preset."""
         if not idx:
             return
 
-        match self.ui.layer_presets.currentText():
-            case 'Reset':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
+        # Clear out any existing settings
+        self.ui.layer_list.clear()
+        self.layer_manager.clear()
 
-            case 'Heatmap Overlay':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
+        # Load in the preset options
+        for option in Preset.get(self.ui.layer_presets.currentText()).build():
+            item = self.add_render_layer(option)
+            item.setCheckState(QtCore.Qt.CheckState.Checked)
+        self.layer_manager.select(0)
 
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.opacity = 50
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = BlendMode.LuminanceMask
-                self.selected_layer.clipping.heatmap = 0.01
-                self.selected_layer.contrast.heatmap = 1.5
-
-            case 'Heatmap Tracks':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-                self.selected_layer.render_colour.movement = 'Chalk'
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.blend_mode = BlendMode.Multiply
-                self.selected_layer.render_type = ipc.RenderType.MousePosition
-                self.selected_layer.render_colour.heatmap = 'Inferno'
-                self.selected_layer.blur.heatmap = 0.001
-
-            case 'Alpha Multiply':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MousePosition
-                self.selected_layer.blend_mode = BlendMode.Multiply
-                self.selected_layer.channels = Channel.A
-                self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
-                self.selected_layer.blur.heatmap = 0
-                self.selected_layer.clipping.heatmap = 0.85
-                self.selected_layer.contrast.heatmap = 0.5
-
-            case 'Urban Moss':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-                self.selected_layer.render_colour.movement = 'Chalk'
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseSpeed
-                self.selected_layer.render_colour.speed = 'TransparentBlackToBlackToGreen'
-
-            case 'Eraser':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-                self.selected_layer.render_colour.movement = 'Graphite'
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = BlendMode.Subtract
-                self.selected_layer.render_colour.heatmap = 'TransparentWhiteToWhite'
-                self.selected_layer.channels = Channel.A
-                self.selected_layer.clipping.heatmap = 0.2
-                self.selected_layer.contrast.heatmap = 1.5
-
-            case 'Plasma':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.MouseMovement
-                self.selected_layer.render_colour.movement = 'Demon'
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.blend_mode = BlendMode.HardLight
-                self.selected_layer.render_colour.heatmap = 'Riptide'
-                self.selected_layer.clipping.heatmap = 0.01
-                self.selected_layer.blur.heatmap = 0.02
-
-            case 'RGB Clicks':
-                self.ui.layer_list.clear()
-                layer_0 = self.add_render_layer()
-                layer_0.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_1 = self.add_render_layer()
-                layer_1.setCheckState(QtCore.Qt.CheckState.Checked)
-                layer_2 = self.add_render_layer()
-                layer_2.setCheckState(QtCore.Qt.CheckState.Checked)
-
-                self._selected_layer = layer_0.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.blend_mode = BlendMode.Screen
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'Chalk'
-                self.selected_layer.show_middle_clicks = False
-                self.selected_layer.show_right_clicks = False
-                self.selected_layer.channels = Channel.R | Channel.A
-
-                self._selected_layer = layer_1.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.blend_mode = BlendMode.Screen
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'Chalk'
-                self.selected_layer.show_left_clicks = False
-                self.selected_layer.show_right_clicks = False
-                self.selected_layer.channels = Channel.G | Channel.A
-
-                self._selected_layer = layer_2.data(QtCore.Qt.ItemDataRole.UserRole)
-                self.selected_layer.blend_mode = BlendMode.Screen
-                self.selected_layer.render_type = ipc.RenderType.SingleClick
-                self.selected_layer.render_colour.heatmap = 'Chalk'
-                self.selected_layer.show_left_clicks = False
-                self.selected_layer.show_middle_clicks = False
-                self.selected_layer.channels = Channel.B | Channel.A
-
-        self._selected_layer = 0
+        # Reset the preset input
         self.ui.layer_presets.setCurrentIndex(0)
-        self.ui.layer_list.setCurrentItem(layer_0)
 
-        for item in map(self.ui.layer_list.item, range(self.ui.layer_list.count())):
+        # Update names
+        count = self.ui.layer_list.count()
+        for item in map(self.ui.layer_list.item, range(count)):
             self.update_layer_item_name(item)
+
+        # Select the top layer
+        if count:
+            self.ui.layer_list.setCurrentItem(item)
 
     def update_layer_item_name(self, item: QtWidgets.QListWidgetItem | None = None) -> None:
         """Generate the name of each layer."""
@@ -2999,7 +2847,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Read the layer from the given item
         layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
-        data = self._layers[layer]
+        data = self.layer_manager[layer]
 
         tyoe_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
 
