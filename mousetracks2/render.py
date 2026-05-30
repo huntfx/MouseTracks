@@ -490,7 +490,7 @@ class LayerBlend:
     @_simple_blend
     def divide(self, image: npt.NDArray[np.float64], opacity: float,
                channels: Channel) -> npt.NDArray[np.float64]:
-        return np.divide(self.image, image, where=image > 1e-6)
+        return np.divide(self.image, image, out=np.ones_like(self.image), where=image > 1e-6)
 
     @_simple_blend
     def maximum(self, image: npt.NDArray[np.float64], opacity: float,
@@ -536,12 +536,12 @@ class LayerBlend:
     @_simple_blend
     def colour_dodge(self, image: npt.NDArray[np.float64], opacity: float,
                      channels: Channel) -> npt.NDArray[np.float64]:
-        return np.divide(self.image, 1 - image, where=(1 - image) > 1e-6)
+        return np.divide(self.image, 1 - image, out=np.ones_like(self.image), where=(1 - image) > 1e-6)
 
     @_simple_blend
     def colour_burn(self, image: npt.NDArray[np.float64], opacity: float,
                     channels: Channel) -> npt.NDArray[np.float64]:
-        return np.subtract(1, np.divide(1 - self.image, image, where=image > 1e-6))
+        return np.subtract(1, np.divide(1 - self.image, image, out=np.ones_like(self.image), where=image > 1e-6))
 
     def add_checkerbox(self) -> Self:
         """Apply the checkerbox background."""
