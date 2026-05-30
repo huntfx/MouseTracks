@@ -308,7 +308,7 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
     colour_maps: dict[str, dict[str, Any]] = {}
 
     with open(path, 'r', encoding='utf-8') as f:
-        for line in f:
+        for line in filter(bool, map(str.strip, f)):
             var, value = [i.strip() for i in line.split('=', 1)]
             var_parts = var.split('.')
 
