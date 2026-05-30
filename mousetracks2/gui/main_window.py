@@ -207,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # The `addAction` is required for a hidden menubar
         self.addAction(self.ui.full_screen)
         self._margins_main = self.ui.main_layout.contentsMargins()
-        self._margins_render = self.ui.main_layout.contentsMargins()
+        self._margins_render = self.ui.render_layout.contentsMargins()
 
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
