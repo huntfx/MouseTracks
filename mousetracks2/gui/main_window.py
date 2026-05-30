@@ -2488,7 +2488,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the mouse statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
         sanitised_profile_name, profile_name = self._selected_profile_data()
@@ -2506,7 +2506,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the keyboard statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
         sanitised_profile_name, profile_name = self._selected_profile_data()
@@ -2524,7 +2524,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the gamepad statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
         sanitised_profile_name, profile_name = self._selected_profile_data()
@@ -2542,7 +2542,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the network statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
         sanitised_profile_name, profile_name = self._selected_profile_data()
@@ -2560,7 +2560,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the daily statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
         sanitised_profile_name, profile_name = self._selected_profile_data()
