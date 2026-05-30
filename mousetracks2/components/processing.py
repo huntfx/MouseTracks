@@ -182,14 +182,14 @@ class Processing(AppComponent, MonitorComponent):
         moving, and will always skip the first frame of movement.
         """
         # Convert pixels from logical coordinates to physical
-        old_position = position
-        new_position = data.position
+        old_position = data.position
+        new_position = position
 
         # If the ticks match then overwrite the old data
         if self.tick == data.tick:
             data.position = position
 
-        distance = calculate_distance(position, data.position)
+        distance = calculate_distance(old_position, new_position)
         data.distance += distance
         moving = self.tick == data.tick + 1
 
