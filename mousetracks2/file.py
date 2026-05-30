@@ -344,8 +344,8 @@ class MovementMaps:
                 if not np.any(maps[res]):
                     del maps[res]
 
-            # Compress the counter by the same amount
-            self.counter = round(self.counter / factor)
+        # Compress the counter by the same amount
+        self.counter = round(self.counter / factor)
 
     def _iter_array_types(self) -> Iterator[tuple[str, ArrayResolutionMap]]:
         yield 'sequential', self.sequential_arrays
