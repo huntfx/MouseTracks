@@ -267,7 +267,7 @@ class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
 
     def _check_dtype(self, value: int) -> None:
         """Check that the dtype is valid for the given value."""
-        if value >= self.max_value:
+        if value > self.max_value:
             for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
                 if value < max_value:
                     self.max_value = max_value
