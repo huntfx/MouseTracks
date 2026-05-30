@@ -2761,7 +2761,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
         data = self.layer_manager[layer]
 
-        tyoe_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
+        type_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
 
         # Override the type name if any click options are disabled
         if data.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
@@ -2773,7 +2773,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if data.show_right_clicks:
                 enabled.append('RMB')
             if enabled and len(enabled) < 3:
-                tyoe_name = '|'.join(enabled)
+                type_name = '|'.join(enabled)
 
         # Override the type name if any thumbstick options are disabled
         if data.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickPosition, ipc.RenderType.ThumbstickSpeed):
@@ -2783,12 +2783,12 @@ class MainWindow(QtWidgets.QMainWindow):
             if data.show_right_clicks:
                 enabled.append('Right')
             if enabled and len(enabled) < 2:
-                tyoe_name = f'{enabled[0]} {tyoe_name}'
+                type_name = f'{enabled[0]} {type_name}'
 
         # Generate the name
         name_parts: list[Any] = [
             f'Layer {layer}',
-            tyoe_name,
+            type_name,
             data.blend_mode.name,
             f'{data.opacity}%',
             Channel(data.channels).name,
