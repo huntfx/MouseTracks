@@ -502,7 +502,7 @@ def shorten_number(n: float, limit: int = 5, sig_figures: int | None = None, dec
         max_decimals = max(0, sig_figures - int_length - bool(prefix))
         if sig_figures and max_decimals:
             result_parts = str(result).split('.')
-            decimal = str(round(float('0.{result_parts[1]}'), max_decimals))[2:]
+            decimal = str(round(float(f'0.{result_parts[1]}'), max_decimals))[2:]
             extra_zeroes = max_decimals - len(decimal)
             result = f'{result_parts[0]}.{decimal}{"0" * extra_zeroes}'
         else:
