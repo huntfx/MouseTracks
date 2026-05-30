@@ -1596,8 +1596,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.exec()
             elif message.succeeded:
                 self.notify(f'Profile "{message.succeeded[0]}" has been saved.')
-            else:
-                raise RuntimeError('incorrect message format')
 
         # Continue shutdown now save message has been received
         if self._is_closing:
