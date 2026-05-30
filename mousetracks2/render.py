@@ -529,7 +529,7 @@ class LayerBlend:
     @_simple_blend
     def hard_light(self, image: npt.NDArray[np.float64], opacity: float,
                    channels: Channel) -> npt.NDArray[np.float64]:
-        return np.where(self.image <= 0.5,
+        return np.where(image <= 0.5,
                         2 * self.image * image,
                         1 - 2 * (1 - self.image) * (1 - image))
 

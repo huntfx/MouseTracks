@@ -374,7 +374,7 @@ class Eraser(Preset):
 
 
 class Plasma(Preset):
-    """Hard Light blend mode for high contrast and deep colours."""
+    """Overlay blend mode for high contrast and deep colours."""
 
     name = 'Plasma'
 
@@ -384,7 +384,7 @@ class Plasma(Preset):
         l0.render_colour.movement = 'Demon'
         yield l0
 
-        l1 = LayerOption(ipc.RenderType.SingleClick, blend_mode=BlendMode.HardLight)
+        l1 = LayerOption(ipc.RenderType.SingleClick, blend_mode=BlendMode.Overlay)
         l1.render_colour.heatmap = 'Riptide'
         l1.clipping.heatmap = 0.01
         l1.blur.heatmap = 0.02
