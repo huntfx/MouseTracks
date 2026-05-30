@@ -88,9 +88,9 @@ class GUI(AppComponent, MonitorComponent):
 
     def on_exit(self) -> None:
         """Safely exit the threads."""
+        self.receiver_worker.stop()
         self.receiver_thread.quit()
         self.receiver_thread.wait()
-        self.receiver_worker.stop()
 
     def exception_raised(self, exc: Exception) -> None:
         """Force the application to shut down when an error is raised.
