@@ -400,7 +400,7 @@ class KeyboardGrid(object):
 
                     else:
                         key_name = values['Name']
-                        key_count = 0
+                        key_count = count_time = count_press = 0
 
                     # Get key name
                     display_name = keys.get(key_name, key_name)
