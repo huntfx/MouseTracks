@@ -453,7 +453,7 @@ class Tracking(Component):
             for opcode in tuple(self.data.pynput_opcodes):
                 self._key_press(opcode)
             while self.data.pynput_quick_press:
-                self._key_press(self.data.pynput_quick_press.pop(), quick_press=True)
+                self._key_press(self.data.pynput_quick_press.pop(0), quick_press=True)
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
