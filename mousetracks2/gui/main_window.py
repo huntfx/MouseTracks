@@ -2095,27 +2095,10 @@ class MainWindow(QtWidgets.QMainWindow):
             for _old_position, _new_position, _force_monitor in redraw:
                 self.draw_pixmap_line(_old_position, _new_position, _force_monitor)
 
+    @QtCore.Slot()
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        width = self.ui.thumbnail.width()
-        height = self.ui.thumbnail.height()
-        custom_width = self.ui.custom_width.isEnabled()
-        custom_height = self.ui.custom_height.isEnabled()
-        lock_aspect = self.ui.lock_aspect.isChecked()
-
-        # If the aspect is locked, or both width and height are set
-        if lock_aspect or (custom_width and custom_height):
-            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
-
-        # If the custom width or height is too low
-        elif custom_width < width or custom_height < height:
-            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
-
-        # Allow the render to fill the widget
-        else:
-            aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
-
-        if self.ui.thumbnail.freeze_scale(aspect_mode):
+        if self.ui.thumbnail.freeze_scale():
             self.request_thumbnail()
 
     def _delete_device_data(self, devices: ipc.Device) -> None:
