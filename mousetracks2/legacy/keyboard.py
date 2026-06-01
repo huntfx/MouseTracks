@@ -627,7 +627,7 @@ class DrawKeyboard(object):
             stats.append(f'Total key presses: {total_presses}')
             stats.append('Colour based on how long keys were pressed for.')
         elif GLOBALS.data_set == 'time':
-            total_time = format_ticks(sum(self.pressed_keys.values()))
+            total_time = format_ticks(sum(self.held_keys.values()))
             stats.append(f'Total press time: {total_time}')
             stats.append('Colour based on number of key presses.')
         stats_text = [f'{self.name}:', '\n'.join(stats)]
