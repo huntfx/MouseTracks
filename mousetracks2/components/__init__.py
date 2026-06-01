@@ -142,13 +142,16 @@ class Hub:
         app_detection_running = self._p_app_detection.is_alive()
         while tracking_running or processing_running or app_detection_running:
             try:
-                match self._q_main.get(timeout=30):
+                message = self._q_main.get(timeout=30)
+                match message:
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
                         tracking_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
                         processing_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.AppDetection):
                         app_detection_running = False
+                    case _:
+                        self._process_message(message)
             except queue.Empty:
                 if tracking_running:
                     print('[Hub] No notification received from tracking, terminating...')
@@ -346,7 +349,7 @@ class Hub:
 
             # Listen for events
             print('[Hub] Queue handler started.')
-            while running or not self._q_main.empty():
+            while running:
                 self._test_components()
                 try:
                     self._process_message(self._q_main.get())

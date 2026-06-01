@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import queue
 import time
 import traceback
 from typing import TYPE_CHECKING, Callable, ClassVar, Iterator
@@ -89,15 +90,14 @@ class Component:
                 yield ipc.Exit()
                 return
 
-            # Check if the queue is empty
-            if self._q_recv.empty():
+            # Read from the queue
+            try:
+                message = self._q_recv.get(block=False)
+            except queue.Empty:
                 if not polling_rate:
                     return
                 time.sleep(polling_rate)
                 continue
-
-            # Read from the queue
-            message = self._q_recv.get()
 
             # Intercept message if required, otherwise yield
             match message:
