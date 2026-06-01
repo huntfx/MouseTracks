@@ -278,7 +278,7 @@ class AutoCloseMessageBox(QtWidgets.QMessageBox):
         update_message()
 
         # Use a QTimer to update the countdown
-        timer = QtCore.QTimer(parent)
+        timer = QtCore.QTimer(self)
         timer.timeout.connect(update_message)
         timer.start(10 ** (3 - accuracy))
 
