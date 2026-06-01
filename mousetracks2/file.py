@@ -338,10 +338,13 @@ class MovementMaps:
             # Compress all arrays
             for res, tracking_array in tuple(maps.items()):
                 array = np.asarray(tracking_array)
-                maps[res] = (array.astype(np.float64) / factor).astype(array.dtype)
+                reduced_array = (array.astype(np.float64) / factor).astype(array.dtype)
+
+                if np.any(reduced_array):
+                    tracking_array.array = reduced_array
 
                 # Remove array if it no longer contains data
-                if not np.any(maps[res]):
+                else:
                     del maps[res]
 
         # Compress the counter by the same amount
