@@ -316,6 +316,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
+        self.ui.tray_open_exe_dir.triggered.connect(self.open_executable_dir)
+        self.ui.tray_open_data_dir.triggered.connect(self.open_data_dir)
         self.ui.prefs_autostart.triggered.connect(self.toggle_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
@@ -1857,10 +1859,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.setVisible(not self.isVisible())
         self.ui.tray_hide.setVisible(self.isVisible())
 
-        # Determine if the debug menu should be visible
+        # Debug is only shown when shift is held
         modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
         shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
         self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
+
+    def open_executable_dir(self) -> None:
+        """Open the path to the program executables."""
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(CTX.executable_dir)))
+
+    def open_data_dir(self) -> None:
+        """Open the path to the program data."""
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(CTX.data_dir)))
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         """What to do when showing the window.

@@ -2323,32 +2323,41 @@ This should be used after manually editing it.</string>
     <property name="title">
      <string>_Tray_</string>
     </property>
-    <widget class="QMenu" name="menu_debug">
+    <widget class="QMenu" name="menu_advanced">
      <property name="title">
-      <string>Debug</string>
+      <string>Advanced</string>
      </property>
-     <widget class="QMenu" name="menu_debug_state">
+     <widget class="QMenu" name="menu_debug">
       <property name="title">
-       <string>Set Tracking State</string>
+       <string>Debug</string>
       </property>
-      <addaction name="debug_state_running"/>
-      <addaction name="debug_state_paused"/>
-      <addaction name="debug_state_stopped"/>
+      <widget class="QMenu" name="menu_debug_state">
+       <property name="title">
+        <string>Set Tracking State</string>
+       </property>
+       <addaction name="debug_state_running"/>
+       <addaction name="debug_state_paused"/>
+       <addaction name="debug_state_stopped"/>
+      </widget>
+      <widget class="QMenu" name="menu_debug_raise">
+       <property name="title">
+        <string>Raise Exception</string>
+       </property>
+       <addaction name="debug_raise_hub"/>
+       <addaction name="debug_raise_tracking"/>
+       <addaction name="debug_raise_processing"/>
+       <addaction name="debug_raise_gui"/>
+       <addaction name="debug_raise_app"/>
+      </widget>
+      <addaction name="menu_debug_state"/>
+      <addaction name="menu_debug_raise"/>
+      <addaction name="debug_pause_app"/>
+      <addaction name="debug_pause_monitor"/>
      </widget>
-     <widget class="QMenu" name="menu_debug_raise">
-      <property name="title">
-       <string>Raise Exception</string>
-      </property>
-      <addaction name="debug_raise_hub"/>
-      <addaction name="debug_raise_tracking"/>
-      <addaction name="debug_raise_processing"/>
-      <addaction name="debug_raise_gui"/>
-      <addaction name="debug_raise_app"/>
-     </widget>
-     <addaction name="menu_debug_state"/>
-     <addaction name="menu_debug_raise"/>
-     <addaction name="debug_pause_app"/>
-     <addaction name="debug_pause_monitor"/>
+     <addaction name="tray_open_exe_dir"/>
+     <addaction name="tray_open_data_dir"/>
+     <addaction name="separator"/>
+     <addaction name="menu_debug"/>
     </widget>
     <addaction name="tray_show"/>
     <addaction name="tray_hide"/>
@@ -2357,7 +2366,7 @@ This should be used after manually editing it.</string>
     <addaction name="separator"/>
     <addaction name="tray_donate"/>
     <addaction name="separator"/>
-    <addaction name="menu_debug"/>
+    <addaction name="menu_advanced"/>
     <addaction name="tray_about"/>
     <addaction name="separator"/>
     <addaction name="tray_exit"/>
@@ -2459,6 +2468,16 @@ This should be used after manually editing it.</string>
   <action name="tray_exit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="tray_open_exe_dir">
+   <property name="text">
+    <string>Open Executable Folder</string>
+   </property>
+  </action>
+  <action name="tray_open_data_dir">
+   <property name="text">
+    <string>Open Data Folder</string>
    </property>
   </action>
   <action name="tray_show">
