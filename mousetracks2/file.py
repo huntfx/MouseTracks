@@ -720,7 +720,10 @@ class TrackingProfile:
         # This was not recorded properly in the legacy code, so a very
         # rough formula is used to estimate based on the data available
         self.elapsed = data['Ticks']['Total']
-        self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+        try:
+            self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+        except ZeroDivisionError:
+            self.active = data['Ticks']['Recorded']
         self.inactive = data['Ticks']['Total'] - self.active
 
         # Process key/button data
