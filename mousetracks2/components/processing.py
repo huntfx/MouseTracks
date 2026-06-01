@@ -207,9 +207,9 @@ class Processing(AppComponent, MonitorComponent):
         data.ticks += 1
         data.tick = self.tick
 
-        if data.requires_compression():
+        if data.requires_decay():
             print('[Processing] Tracking threshold reached, reducing values...')
-            data.run_compression()
+            data.run_decay()
             print('[Processing] Reduced all arrays')
 
         return distance

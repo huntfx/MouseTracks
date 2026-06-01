@@ -8,11 +8,11 @@ DOUBLE_CLICK_MS = 500
 DOUBLE_CLICK_TOL = 8
 """Maximum pixels where a double click is valid."""
 
-COMPRESSION_THRESHOLD = 425000  # Max: 2 ** 64 - 1
-"""How many ticks to trigger track compression."""
+DECAY_THRESHOLD = 425000  # Max: 2 ** 64 - 1
+"""How many ticks to trigger array value decay."""
 
-COMPRESSION_FACTOR = 1.1
-"""How much to compress tracks by."""
+DECAY_FACTOR = 1.1
+"""How much to decay the arrays by."""
 
 RADIAL_ARRAY_SIZE = 2048
 """Size to use for gamepad radial arrays."""

@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .config import ProfileConfig
-from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, TRACKING_DISABLE
 from .context import CTX
 from .utils.keycodes import CLICK_CODES
 
@@ -325,12 +325,12 @@ class MovementMaps:
     tick: int = field(default=0)  # TODO: Don't store here
 
 
-    def requires_compression(self, threshold: int = COMPRESSION_THRESHOLD) -> bool:
-        """Check if compression is required."""
+    def requires_decay(self, threshold: int = DECAY_THRESHOLD) -> bool:
+        """Check if array decay is required."""
         return self.counter > min(threshold, self._MAX_VALUE)
 
-    def run_compression(self, factor: float = COMPRESSION_FACTOR) -> None:
-        """Compress down the values.
+    def run_decay(self, factor: float = DECAY_FACTOR) -> None:
+        """Decay the array values by dividing by a factor.
         This is important for the time arrays, but helps flatten out
         speed values that are too large.
         """

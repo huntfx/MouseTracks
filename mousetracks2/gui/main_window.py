@@ -24,7 +24,7 @@ from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..cli import CLI
 from ..config import GlobalConfig
-from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, RADIAL_ARRAY_SIZE
+from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
 from ..context import CTX
 from ..enums import BlendMode, Channel
@@ -2051,9 +2051,9 @@ class MainWindow(QtWidgets.QMainWindow):
         data.counter += 1
         data.position = position
 
-        # Check if array compression has been done
-        if data.counter > COMPRESSION_THRESHOLD:
-            data.counter = round(data.counter / COMPRESSION_FACTOR)
+        # Check if array decay has been done
+        if data.counter > DECAY_THRESHOLD:
+            data.counter = round(data.counter / DECAY_FACTOR)
 
     @property
     def is_live(self) -> bool:
