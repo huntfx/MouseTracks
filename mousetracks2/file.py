@@ -595,6 +595,9 @@ class TrackingProfile:
             os.rename(temp_file, path)
             self._update_lazy_paths(temp_file, path)
 
+        except Exception:  # pylint: disable=broad-exception-caught
+            return False
+
         finally:
             # Clean up files
             if os.path.exists(temp_file):
