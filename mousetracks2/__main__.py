@@ -9,7 +9,7 @@ from multiprocessing import freeze_support
 
 import filelock
 
-from .components import Hub
+from .components.hub import Hub
 from .config import GlobalConfig
 from .context import CTX
 from .cli import parse_args, run_cli_function
