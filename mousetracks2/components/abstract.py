@@ -36,7 +36,7 @@ class Component:
         self.name = type(self).__name__
         self._register_mixin()
         self.__post_init__()
-        self._parent_pid = os.getppid()
+        self._parent_process = psutil.Process(os.getppid())
 
     def _register_mixin(self) -> None:
         """Subclass to implement custom mixin code."""
@@ -59,7 +59,10 @@ class Component:
         If it is not running, then attempting to read from a queue will
         lock the entire process.
         """
-        return psutil.pid_exists(self._parent_pid)
+        try:
+            return self._parent_process.is_running()
+        except psutil.NoSuchProcess:
+            return False
 
     def send_data(self, message: ipc.Message) -> None:
         self._q_send.put(message)
