@@ -15,11 +15,6 @@ IS_BUILT_EXE = False
 Supports both PyInstaller and Nuitka.
 """
 
-IS_EXE = getattr(sys, 'frozen', False)
-"""If the application is running as an executable.
-Possibly deprecated for `IS_BUILT_EXE`.
-"""
-
 # Pyinstaller overrides
 if hasattr(sys, '_MEIPASS'):
     REPO_DIR = Path(sys._MEIPASS)  # pylint: disable=protected-access

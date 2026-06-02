@@ -24,7 +24,7 @@ from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 from ..gui.utils import should_minimise_on_start
-from ..runtime import IS_EXE
+from ..runtime import IS_BUILT_EXE
 
 if TYPE_CHECKING:
     from multiprocessing.sharedctypes import Synchronized
@@ -344,7 +344,7 @@ class Hub:
         error_to_raise: Exception | None = None
 
         try:
-            if self.use_gui and (IS_EXE or should_minimise_on_start()):
+            if self.use_gui and (IS_BUILT_EXE or should_minimise_on_start()):
                 self._process_message(ipc.ToggleConsole(False))
 
             # Listen for events
