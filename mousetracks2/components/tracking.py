@@ -321,7 +321,7 @@ class Tracking(Component):
 
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
-        if self.state != ipc.TrackingState.Running or not self.track_mouse:
+        if self.state != ipc.TrackingState.Running:
             return
 
         with self._exception_handler():
@@ -361,7 +361,7 @@ class Tracking(Component):
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
-        if self.state != ipc.TrackingState.Running or key is None or not self.track_keyboard:
+        if self.state != ipc.TrackingState.Running or key is None:
             return
 
         with self._exception_handler():
@@ -387,27 +387,31 @@ class Tracking(Component):
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
+        is_click = keycode in keycodes.CLICK_CODES
+        is_scroll = keycode in keycodes.SCROLL_CODES
 
         # Handle all standard keypresses
         if keycode <= 0xFF:
-            # First press
-            if quick_press or press_latest != self.data.tick_current - 1:
-                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
-                self.send_data(ipc.KeyPress(int(keycode)))
+            if is_click and self.track_mouse or not is_click and self.track_keyboard:
+                # First press
+                if quick_press or press_latest != self.data.tick_current - 1:
+                    if is_click and self.data.mouse_position is not None:
+                        self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
+                    self.send_data(ipc.KeyPress(int(keycode)))
 
-            # Being held
-            else:
-                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
-                self.send_data(ipc.KeyHeld(int(keycode)))
+                # Being held
+                else:
+                    if is_click and self.data.mouse_position is not None:
+                        self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
+                    self.send_data(ipc.KeyHeld(int(keycode)))
 
         # Special case for scroll events
         # It is being sent to the "held" array instead of "pressed"
         # since the events will vastly outnumber individual key presses
         # Also note that multiple events may be sent per tick
-        elif keycode in keycodes.SCROLL_CODES:
-            self.send_data(ipc.KeyHeld(keycode))
+        elif is_scroll:
+            if self.track_mouse:
+                self.send_data(ipc.KeyHeld(keycode))
 
         else:
             raise RuntimeError(f'unexpected keycode: {keycode}')
