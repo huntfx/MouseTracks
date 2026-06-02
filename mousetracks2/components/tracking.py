@@ -130,7 +130,8 @@ class Tracking(Component):
         self.track_network = not CTX.disable_network and self.config.track_network
 
         # Setup pynput listeners
-        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
+        self._live_mouse_position = get_cursor_pos()
+        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=self._pynput_mouse_move,
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
         self._pynput_keyboard_listener = pynput.keyboard.Listener(on_press=self._pynput_key_press,
@@ -319,6 +320,14 @@ class Tracking(Component):
         except Exception as e:  # pylint: disable=broad-exception-caught
             self.send_data(ipc.Traceback(e, traceback.format_exc()))
 
+    def _pynput_mouse_move(self, x: int, y: int) -> None:
+        """Record the exact mouse position when the cursor is moved.
+
+        This sometimes reports out of bounds coordinates, so the actual
+        coordinates are ignored and read from another function.
+        """
+        self._live_mouse_position = get_cursor_pos()
+
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
         if self.state != ipc.TrackingState.Running:
@@ -433,7 +442,7 @@ class Tracking(Component):
 
             # Update mouse data
             if self.track_mouse:
-                mouse_position = get_cursor_pos()
+                mouse_position = self._live_mouse_position
 
                 # Check if mouse position is inactive (such as a screensaver)
                 if mouse_position is None:

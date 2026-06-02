@@ -1,13 +1,16 @@
 import pynput
 
+_CONTROLLER = pynput.mouse.Controller()
+
 
 def get_cursor_pos() -> tuple[int, int] | None:
     """Get the current cursor position.
 
-    This is only used for switching profiles, as the mouse move listener
-    can handle all other events.
+    This is used instead of pynput's mouse move listener, as the values
+    it returns seem to be all over the place, sometimes even leaving the
+    screen.
     """
-    pos = pynput.mouse.Controller().position
+    pos = _CONTROLLER.position
     if pos is None:
         return None
     return int(pos[0]), int(pos[1])
