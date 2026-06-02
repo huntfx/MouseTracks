@@ -150,7 +150,7 @@ class ButtonHeld(Message):
 
 @dataclass
 class ThumbstickMove(Message):
-    """Thumbstic location."""
+    """Thumbstick location."""
 
     class Thumbstick(Enum):
         Left = auto()

@@ -403,8 +403,8 @@ class Processing(AppComponent, MonitorComponent):
 
     def _save(self, profile_name: str) -> bool:
         """Save a profile to disk.
-        See `ipc.SaveReady` for information on why the `inactivity`
-        parameter is required.
+        Temporarily adjusts active/inactive ticks to keep them in sync with
+        elapsed before saving, then reverts the adjustment afterwards.
         """
         print(f'[Processing] Saving {profile_name}...')
         profile = self.all_profiles[profile_name]
