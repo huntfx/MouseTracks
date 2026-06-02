@@ -322,7 +322,7 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
                     continue
                 rgb = tuple(colour[1])
                 if rgb is not None:
-                    colours[to_lower(var_parts[1])] = {'Uppercase': var_parts[1], 'Colour': rgb}
+                    colours[to_lower(var_parts[1])] = {'UpperCase': var_parts[1], 'Colour': rgb}
 
             # Parse colour map part
             elif var_parts[0] == 'map':
