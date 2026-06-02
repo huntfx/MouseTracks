@@ -545,7 +545,7 @@ class Tracking(Component):
             self._calculate_inactivity()
 
             # Save every 5 mins
-            if self.autosave and tick and not tick % int(UPDATES_PER_SECOND * self.config.save_frequency):
+            if self.autosave and tick and not tick % round(UPDATES_PER_SECOND * self.config.save_frequency):
                 self.send_data(ipc.Save())
 
     def on_exit(self) -> None:
