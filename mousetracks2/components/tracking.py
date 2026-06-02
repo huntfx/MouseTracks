@@ -470,8 +470,9 @@ class Tracking(Component):
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
-                if self._controller_listener.triggered:
+                if self._controller_listener.triggered or data.gamepad_force_recheck:
                     data.gamepads_current = XInput.get_connected()
+                    data.gamepad_force_recheck = False
 
                     if data.gamepads_current != data.gamepads_previous:
                         print('[Tracking] Gamepad change detected')
