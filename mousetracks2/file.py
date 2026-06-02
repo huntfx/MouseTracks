@@ -315,15 +315,16 @@ class MovementMaps:
 
     _MAX_VALUE = 2 ** 64 - 1
 
-    position: tuple[int, int] | None = field(default=None)  # TODO: Don't store here
     sequential_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     density_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     speed_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
     ticks: int = field(default=0)
-    tick: int = field(default=0)  # TODO: Don't store here
 
+    # Runtime states, intentionally not saved
+    position: tuple[int, int] | None = field(default=None)
+    tick: int = field(default=0)
 
     def requires_decay(self, threshold: int = DECAY_THRESHOLD) -> bool:
         """Check if array decay is required."""
