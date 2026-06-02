@@ -720,7 +720,7 @@ class TrackingProfile:
 
         # Load in the metadata
         self.created = int(data['Time']['Created'])
-        self.cursor_map.distance = int(data['Distance']['Tracks'])
+        self.cursor_map.distance = float(data['Distance']['Tracks'])
         self.cursor_map.counter = int(data['Ticks']['Tracks'])
 
         # Calculate the active / inactive time
