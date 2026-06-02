@@ -311,7 +311,7 @@ class Processing(AppComponent, MonitorComponent):
                                                        middle_clicks=middle_clicks, right_clicks=right_clicks)
 
         # Add extra padding
-        if padding is not None:
+        if padding:
             for position, arrays in positional_arrays.items():
                 positional_arrays[position] = [np.pad(array, padding) for array in arrays]
 
