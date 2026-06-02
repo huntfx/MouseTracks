@@ -84,7 +84,7 @@ class DataState:
     gamepad_stick_l_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     gamepad_stick_r_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     key_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
-    button_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
+    button_presses: dict[tuple[int, int], tuple[int, int]] = field(default_factory=dict)
     bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
@@ -494,13 +494,13 @@ class Tracking(Component):
                             button = f'BUTTON_{button}'
                         keycode = XINPUT_OPCODES[button]
 
-                        press_start, press_latest = data.button_presses.get(keycode, (0, 0))
+                        press_start, press_latest = data.button_presses.get((gamepad, keycode), (0, 0))
                         if press_latest != tick - 1:
                             self.send_data(ipc.ButtonPress(gamepad, keycode))
-                            data.button_presses[keycode] = (tick, tick)
+                            data.button_presses[(gamepad, keycode)] = (tick, tick)
                         else:
                             self.send_data(ipc.ButtonHeld(gamepad, keycode))
-                            data.button_presses[keycode] = (press_start, tick)
+                            data.button_presses[(gamepad, keycode)] = (press_start, tick)
 
                     if stick_l != data.gamepad_stick_l_position.get(gamepad):
                         self.data.tick_modified = self.data.tick_current
