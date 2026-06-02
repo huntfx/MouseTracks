@@ -376,12 +376,9 @@ def _simple_blend(fn: Callable[[LayerBlend, npt.NDArray[np.float64], float, Chan
     @wraps(fn)
     def wrapper(self: LayerBlend, image: npt.NDArray[np.float64],
                 opacity: float, channels: Channel) -> LayerBlend:
-        original_render = self.image.copy()
-        result = fn(self, image, opacity, channels)
-
         idx: tuple[slice | list[int], ...] = (slice(None), slice(None), Channel.get_indices(channels))  # [:, :, indexes]
-        self.image[idx] = alpha_blend(original_render, result, opacity, idx)
-
+        result = fn(self, image, opacity, channels)
+        self.image[idx] = alpha_blend(self.image, result, opacity, idx)
         return self
     return wrapper
 
