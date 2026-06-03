@@ -433,6 +433,12 @@ class TrackingProfile:
 
     last_accessed: float = field(default_factory=time.time, init=False)
 
+    def age_days(self, timestamp: int | None = None) -> int:
+        """Get the number of days since the profile was created."""
+        if timestamp is None:
+            timestamp = int(time.time())
+        return max(0, timestamp // 86400 - self.created // 86400)
+
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed

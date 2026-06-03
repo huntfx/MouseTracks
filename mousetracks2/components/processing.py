@@ -146,14 +146,6 @@ class Processing(AppComponent, MonitorComponent):
             multi_monitor=profile.config.multi_monitor,
         ))
 
-    @property
-    def profile_age_days(self) -> int:
-        """Get the number of days since the profile was created.
-        This is for use with the daily stats.
-        """
-        creation_day = self.profile.created // 86400
-        current_day = self.timestamp // 86400
-        return max(0, current_day - creation_day)
 
     def is_single_monitor_mode(self) -> bool:
         """Determine if running in single or multi monitor mode."""
@@ -220,7 +212,7 @@ class Processing(AppComponent, MonitorComponent):
             return
 
         distance = self._record_move(profile.cursor_map, message.position)
-        profile.daily_distance[self.profile_age_days] += distance
+        profile.daily_distance[profile.age_days(self.timestamp)] += distance
 
     def _handle_mouse_held(self, profile: TrackingProfile, message: ipc.MouseHeld) -> None:
         """Record a held mouse button event into the given profile."""
@@ -244,9 +236,9 @@ class Processing(AppComponent, MonitorComponent):
         profile.key_presses[message.keycode] += 1
         profile.key_held[message.keycode] += 1
         if message.keycode in keycodes.MOUSE_CODES:
-            profile.daily_clicks[self.profile_age_days] += 1
+            profile.daily_clicks[profile.age_days(self.timestamp)] += 1
         else:
-            profile.daily_keys[self.profile_age_days] += 1
+            profile.daily_keys[profile.age_days(self.timestamp)] += 1
 
     def _handle_key_held(self, profile: TrackingProfile, message: ipc.KeyHeld) -> None:
         """Record a key held event into the given profile."""
@@ -254,7 +246,7 @@ class Processing(AppComponent, MonitorComponent):
             return
         if message.keycode in keycodes.SCROLL_CODES:
             print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
-            profile.daily_scrolls[self.profile_age_days] += 1
+            profile.daily_scrolls[profile.age_days(self.timestamp)] += 1
         profile.key_held[message.keycode] += 1
 
     def _handle_mouse_click(self, profile: TrackingProfile, message: ipc.MouseClick) -> None:
@@ -289,7 +281,7 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] {keycodes.GamepadCode(message.keycode)} pressed.')
         profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
         profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
-        profile.daily_buttons[self.profile_age_days] += 1
+        profile.daily_buttons[profile.age_days(self.timestamp)] += 1
 
     def _handle_button_held(self, profile: TrackingProfile, message: ipc.ButtonHeld) -> None:
         """Record a gamepad button held event into the given profile."""
@@ -319,8 +311,8 @@ class Processing(AppComponent, MonitorComponent):
             return
         profile.data_upload[message.mac_address] += message.bytes_sent
         profile.data_download[message.mac_address] += message.bytes_recv
-        profile.daily_upload[self.profile_age_days] += message.bytes_sent
-        profile.daily_download[self.profile_age_days] += message.bytes_recv
+        profile.daily_upload[profile.age_days(self.timestamp)] += message.bytes_sent
+        profile.daily_download[profile.age_days(self.timestamp)] += message.bytes_recv
         if message.mac_address not in profile.data_interfaces:
             profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
 
@@ -473,7 +465,7 @@ class Processing(AppComponent, MonitorComponent):
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.active += ticks
-        profile.daily_ticks[self.profile_age_days, 1] += ticks
+        profile.daily_ticks[profile.age_days(self.timestamp), 1] += ticks
 
         if DEBUG:
             self._get_tick_diff(profile_name)
@@ -481,7 +473,7 @@ class Processing(AppComponent, MonitorComponent):
     def _record_inactive_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.inactive += ticks
-        profile.daily_ticks[self.profile_age_days, 2] += ticks
+        profile.daily_ticks[profile.age_days(self.timestamp), 2] += ticks
 
         if DEBUG:
             self._get_tick_diff(profile_name)
@@ -557,7 +549,7 @@ class Processing(AppComponent, MonitorComponent):
 
                 # Update profile data
                 self.profile.elapsed += 1
-                self.profile.daily_ticks[self.profile_age_days, 0] += 1
+                self.profile.daily_ticks[self.profile.age_days(self.timestamp), 0] += 1
 
                 # This message triggers once per tick, so the current profile is always "modified"
                 self.profile.is_modified = True
