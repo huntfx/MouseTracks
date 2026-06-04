@@ -58,6 +58,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
 
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--test-recording', action='store_true', help=argparse.SUPPRESS)
 
     if strict:
         result = parser.parse_args(args)
@@ -469,6 +470,10 @@ def run_cli_function(cli: CLI) -> bool:
             from .utils.system import remap_autostart
             result = remap_autostart()
             print(f'Remapped autostart: {result}')
+
+        case argparse.Namespace(test_recording=True):
+            from .components.recording import _test
+            _test()
 
         case _:
             return False

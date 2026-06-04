@@ -624,3 +624,31 @@ class ShowPopup(Message):
 
     target: int = field(default=Target.GUI, init=False)
     content: str
+
+
+@dataclass
+class StartRecording(Message):
+    """Hub begins recording all tracked messages, streaming to the given path.
+
+    The hub records this as the first event in the file, anchoring
+    the tick number to wall-clock time.
+    """
+
+    target: int = field(default=Target.Hub | Target.Processing, init=False)
+    timestamp: int
+    path: str
+
+
+@dataclass
+class StopRecording(Message):
+    """Hub stops recording and writes a completion marker to the file."""
+
+    target: int = field(default=Target.Hub, init=False)
+
+
+@dataclass
+class RecordingComplete(Message):
+    """Notify GUI that recording has been saved successfully."""
+
+    target: int = field(default=Target.GUI, init=False)
+    path: str
