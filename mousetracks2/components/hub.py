@@ -17,9 +17,10 @@ import multiprocessing
 import multiprocessing.queues
 import queue
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import IO, TYPE_CHECKING, Any, Generic, TypeVar
 
 from . import ipc
+from .recording import open_recording, write_event, RECORDED_MESSAGE_TYPES
 from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
@@ -96,6 +97,8 @@ class Hub:
         self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
         self._previous_component_check: float = 0.0
+        self._current_tick: int = 0
+        self._recording: IO[str] | None = None
 
         self._wait_to_load = {ipc.Target.AppDetection, ipc.Target.Tracking, ipc.Target.Processing}
         if self.use_gui:
@@ -245,6 +248,19 @@ class Hub:
         # Process messages meant for the hub
         if message.target & ipc.Target.Hub:
             match message:
+                case ipc.Tick():
+                    self._current_tick = message.tick
+
+                case ipc.StartRecording():
+                    self._recording = open_recording(message.path)
+
+                case ipc.StopRecording():
+                    if self._recording is not None:
+                        write_event(self._recording, self._current_tick, message)
+                        self._recording.close()
+                        self._recording = None
+                        self._q_main.put(ipc.RecordingComplete())
+
                 case ipc.StartTracking():
                     self.state = ipc.TrackingState.Running
                     self._startup_tracking_processes()
@@ -300,6 +316,10 @@ class Hub:
         # Forward messages to the app detection process
         if message.target & ipc.Target.AppDetection:
             self._q_app_detection.put(message)
+
+        # Record message if recording is active
+        if self._recording is not None and type(message) in RECORDED_MESSAGE_TYPES:
+            write_event(self._recording, self._current_tick, message)
 
     def _get_console_handle(self) -> WindowHandle | None:
         """Get the handle to the console."""

@@ -2379,6 +2379,9 @@ This should be used after manually editing it.</string>
     <addaction name="prefs_track_keyboard"/>
     <addaction name="prefs_track_gamepad"/>
     <addaction name="prefs_track_network"/>
+    <addaction name="separator"/>
+    <addaction name="recording_start"/>
+    <addaction name="recording_stop"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPreferences"/>
@@ -2689,6 +2692,16 @@ This should be used after manually editing it.</string>
    </property>
    <property name="text">
     <string>Pause Monitor Check</string>
+   </property>
+  </action>
+  <action name="recording_start">
+   <property name="text">
+    <string>Start Recording</string>
+   </property>
+  </action>
+  <action name="recording_stop">
+   <property name="text">
+    <string>Stop Recording</string>
    </property>
   </action>
  </widget>

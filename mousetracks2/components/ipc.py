@@ -81,7 +81,7 @@ class Message:
 class Tick(Message):
     """Send the current tick."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: int = field(default=Target.Hub | Target.Processing | Target.GUI, init=False)
     tick: int
     timestamp: int
 
@@ -651,4 +651,3 @@ class RecordingComplete(Message):
     """Notify GUI that recording has been saved successfully."""
 
     target: int = field(default=Target.GUI, init=False)
-    path: str

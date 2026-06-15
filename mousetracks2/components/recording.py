@@ -21,7 +21,7 @@ import typing
 from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from . import ipc
 from ..types import Rect, RectList
@@ -144,13 +144,13 @@ def _deserialise_line(line: str) -> tuple[int, ipc.Message] | None:
 
 # --- File I/O ---
 
-def open_recording(path: str) -> gzip.GzipFile:
+def open_recording(path: str) -> IO[str]:
     """Open a .jsonl.gz file for streaming writes. Caller must close it."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     return gzip.open(path, 'wt', encoding='utf-8')
 
 
-def write_event(f: gzip.GzipFile, tick: int, message: ipc.Message) -> None:
+def write_event(f: IO[str], tick: int, message: ipc.Message) -> None:
     """Write a single event line to an open recording file."""
     f.write(serialise_event(tick, message) + '\n')
 

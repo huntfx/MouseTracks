@@ -318,6 +318,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_exit.triggered.connect(self.shut_down)
         self.ui.tray_open_exe_dir.triggered.connect(self.open_executable_dir)
         self.ui.tray_open_data_dir.triggered.connect(self.open_data_dir)
+        self.ui.recording_start.triggered.connect(self.start_recording)
+        self.ui.recording_stop.triggered.connect(self.stop_recording)
+        self.ui.recording_stop.setEnabled(False)
         self.ui.prefs_autostart.triggered.connect(self.toggle_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
@@ -1560,6 +1563,11 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.ShowPopup():
                 self.notify(message.content)
 
+            case ipc.RecordingComplete():
+                self.notify('Recording saved.')
+                self.ui.recording_start.setEnabled(True)
+                self.ui.recording_stop.setEnabled(False)
+
     def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
         """Handle a save completion message."""
         self._last_save_message = message
@@ -1871,6 +1879,25 @@ class MainWindow(QtWidgets.QMainWindow):
     def open_data_dir(self) -> None:
         """Open the path to the program data."""
         QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(CTX.data_dir)))
+
+    def start_recording(self) -> None:
+        """Prompt for a save path and begin recording."""
+        path, accepted = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save Recording',
+            str(CTX.data_dir / 'recording.jsonl.gz'),
+            'JSON Lines (*.jsonl.gz)',
+        )
+        if not accepted or not path:
+            return
+        if not path.endswith('.jsonl.gz'):
+            path += '.jsonl.gz'
+        self.ui.recording_start.setEnabled(False)
+        self.ui.recording_stop.setEnabled(True)
+        self.component.send_data(ipc.StartRecording(timestamp=int(time.time()), path=path))
+
+    def stop_recording(self) -> None:
+        """Stop the current recording."""
+        self.component.send_data(ipc.StopRecording())
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         """What to do when showing the window.

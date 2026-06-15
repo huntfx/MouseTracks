@@ -139,6 +139,10 @@ class Ui_MainWindow(object):
         self.debug_pause_monitor = QAction(MainWindow)
         self.debug_pause_monitor.setObjectName(u"debug_pause_monitor")
         self.debug_pause_monitor.setCheckable(True)
+        self.recording_start = QAction(MainWindow)
+        self.recording_start.setObjectName(u"recording_start")
+        self.recording_stop = QAction(MainWindow)
+        self.recording_stop.setObjectName(u"recording_stop")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.main_layout = QVBoxLayout(self.centralwidget)
@@ -1423,6 +1427,9 @@ class Ui_MainWindow(object):
         self.menuTracking.addAction(self.prefs_track_keyboard)
         self.menuTracking.addAction(self.prefs_track_gamepad)
         self.menuTracking.addAction(self.prefs_track_network)
+        self.menuTracking.addSeparator()
+        self.menuTracking.addAction(self.recording_start)
+        self.menuTracking.addAction(self.recording_stop)
 
         self.retranslateUi(MainWindow)
         self.tray_about.triggered.connect(self.about.trigger)
@@ -1500,6 +1507,8 @@ class Ui_MainWindow(object):
         self.link_donate.setText(QCoreApplication.translate("MainWindow", u"Donate", None))
         self.debug_pause_app.setText(QCoreApplication.translate("MainWindow", u"Pause Application Detection", None))
         self.debug_pause_monitor.setText(QCoreApplication.translate("MainWindow", u"Pause Monitor Check", None))
+        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
+        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Recording", None))
 #if QT_CONFIG(tooltip)
         self.thumbnail.setToolTip(QCoreApplication.translate("MainWindow", u"Live preview of the render.\n"
 "\n"
