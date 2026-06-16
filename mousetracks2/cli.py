@@ -59,6 +59,8 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--test-recording', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--playback', metavar='FILE', default=None,
+                        help='play back a .jsonl.gz recording instead of live tracking')
 
     if strict:
         result = parser.parse_args(args)
@@ -195,11 +197,17 @@ class CLI:
             self.portable = False
             self.disable_temp_warning = False
             self.eager_load = False
+            self.playback_file = None
 
         finally:
             self._soft_load = False
 
         # Only update if the value is different to the default
+        if args.playback is not None:
+            self.playback_file = Path(args.playback)
+            if args.data_dir is None:
+                import tempfile
+                self.data_dir = Path(tempfile.mkdtemp(prefix='mousetracks_playback_'))
         if args.data_dir is not None:
             self.data_dir = Path(args.data_dir)
         if args.start_hidden is not None:
@@ -422,6 +430,17 @@ class CLI:
     def eager_load(self, value: bool) -> None:
         """Set eager loading mode."""
         self._set('MT_EAGER_LOAD', bool2str(value))
+
+    @property
+    def playback_file(self) -> Path | None:
+        """Path to a playback file, or None for live tracking."""
+        value = self.env.get('MT_PLAYBACK_FILE')
+        return Path(value) if value else None
+
+    @playback_file.setter
+    def playback_file(self, value: Path | None) -> None:
+        """Set the playback file path."""
+        self._set('MT_PLAYBACK_FILE', str(value) if value else '')
 
 
 def run_cli_function(cli: CLI) -> bool:
