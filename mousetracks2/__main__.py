@@ -46,7 +46,7 @@ def run() -> None:
         remap_autostart()
 
     # Run the main application
-    Hub(use_gui=True, playback_file=CTX.playback_file).run()
+    Hub(use_gui=True, playback_mode=CTX.playback_file is not None).run()
 
 
 def main() -> None:
