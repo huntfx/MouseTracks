@@ -16,15 +16,15 @@ from ..types import RectList
 from ..utils.monitor import MonitorData
 
 
-class Target:
+class Target(IntFlag):
     """System components that can send or receive messages."""
 
-    Hub = 2 ** 0
-    Tracking = 2 ** 1
-    Processing = 2 ** 2
-    GUI = 2 ** 3
-    AppDetection = 2 ** 4
-    Playback = 2 ** 5  # TODO: Convert Target to an IntFlag enum
+    Hub = auto()
+    Tracking = auto()
+    Processing = auto()
+    GUI = auto()
+    AppDetection = auto()
+    Playback = auto()
 
 
 class RenderType(Enum):
@@ -75,14 +75,14 @@ class Message:
         data: Optional data payload associated with the message.
     """
 
-    target: int = field(default=0)
+    target: Target = field(default=Target(0))
 
 
 @dataclass
 class Tick(Message):
     """Send the current tick."""
 
-    target: int = field(default=Target.Hub | Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Processing | Target.GUI, init=False)
     tick: int
     timestamp: int
 
@@ -91,7 +91,7 @@ class Tick(Message):
 class MouseMove(Message):
     """Mouse has moved to a new location on the screen."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     position: tuple[int, int]
 
 
@@ -99,7 +99,7 @@ class MouseMove(Message):
 class MouseClick(Message):
     """Mouse has been clicked."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     button: int
     position: tuple[int, int]
 
@@ -108,7 +108,7 @@ class MouseClick(Message):
 class MouseHeld(Message):
     """Mouse button is being held."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     button: int
     position: tuple[int, int]
 
@@ -117,7 +117,7 @@ class MouseHeld(Message):
 class KeyPress(Message):
     """Key has been pressed."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     keycode: int
 
 
@@ -127,7 +127,7 @@ class KeyHeld(Message):
     This does not trigger on the first press.
     """
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     keycode: int
 
 
@@ -135,7 +135,7 @@ class KeyHeld(Message):
 class ButtonPress(Message):
     """Gamepad button has been pressed."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     gamepad: int
     keycode: int
 
@@ -144,7 +144,7 @@ class ButtonPress(Message):
 class ButtonHeld(Message):
     """Gamepad button is being held."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     gamepad: int
     keycode: int
 
@@ -157,7 +157,7 @@ class ThumbstickMove(Message):
         Left = auto()
         Right = auto()
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     gamepad: int
     thumbstick: Thumbstick
     position: tuple[float, float]
@@ -167,7 +167,7 @@ class ThumbstickMove(Message):
 class Traceback(Message):
     """Send data when a traceback is raised."""
 
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
     exception: Exception
     traceback: str
 
@@ -186,32 +186,32 @@ class StartTracking(Message):
     """Send a request to start tracking.
     Once this is processed, the `TrackingStarted` message will be sent.
     """
-    target: int = field(default=Target.Tracking | Target.Hub, init=False)
+    target: Target = field(default=Target.Tracking | Target.Hub, init=False)
 
 
 @dataclass
 class TrackingStarted(Message):
     """Send a message after tracking has started."""
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
 
 
 @dataclass
 class PauseTracking(Message):
     """Send a request to pause tracking."""
-    target: int = field(default=Target.Hub | Target.Tracking | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.GUI, init=False)
 
 
 @dataclass
 class StopTracking(Message):
     """Send a request to stop tracking."""
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
 class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: Target = field(default=Target.GUI | Target.Processing, init=False)
     data: MonitorData
 
 
@@ -223,7 +223,7 @@ class RenderRequest(Message):
     rendered.
     """
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     type: RenderType
     profile: str | None
     file_path: str | None
@@ -250,7 +250,7 @@ class RenderRequest(Message):
 class Render(Message):
     """A render has been completed."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     array: npt.NDArray[np.uint8]
     request: RenderRequest
 
@@ -260,7 +260,7 @@ class Render(Message):
 class RequestRunningAppCheck(Message):
     """Check which applications are running."""
 
-    target: int = field(default=Target.AppDetection, init=False)
+    target: Target = field(default=Target.AppDetection, init=False)
 
 
 @dataclass
@@ -274,7 +274,7 @@ class TrackedApplicationDetected(Message):
     other components, but in sync with the ticks.
     """
 
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     name: str
     process_id: int | None
     rects: RectList = field(default_factory=RectList)
@@ -288,7 +288,7 @@ class CurrentProfileChanged(Message):
     sync with the tick counter to prevent race conditions.
     """
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     process_id: int | None
     rects: RectList = field(default_factory=RectList)
@@ -300,7 +300,7 @@ class ApplicationFocusChanged(Message):
     This is for debugging and is not used for logic.
     """
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     exe: str
     title: str
     tracked: bool
@@ -311,7 +311,7 @@ class ApplicationFocusChanged(Message):
 class Exit(Message):
     """Quit the whole application."""
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
@@ -322,7 +322,7 @@ class DebugRaiseError(Message):
 @dataclass
 class ProcessShutDownNotification(Message):
     """Send a notification from a process that it has ended."""
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
     source: int
 
 
@@ -330,7 +330,7 @@ class ProcessShutDownNotification(Message):
 class Save(Message):
     """Once a save is ready to be done."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str | None = None
 
 
@@ -338,14 +338,14 @@ class Save(Message):
 class SaveComplete(Message):
     """After a profile has been saved."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     succeeded: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ProfileDataRequest(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     sanitised_name: str
     profile_name: str
 
@@ -354,7 +354,7 @@ class ProfileDataRequest(Message):
 class ProfileData(Message):
     """Information about a profile."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     profile_name: str
     distance: float
     cursor_counter: int
@@ -378,7 +378,7 @@ class ProfileData(Message):
 class DataTransfer(Message):
     """Upload and download data since the previous message."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     mac_address: str
     bytes_sent: int
     bytes_recv: int
@@ -387,7 +387,7 @@ class DataTransfer(Message):
 @dataclass
 class Active(Message):
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     profile_name: str
     ticks: int
 
@@ -395,14 +395,14 @@ class Active(Message):
 @dataclass
 class Inactive(Message):
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     profile_name: str
     ticks: int
 
 
 @dataclass
 class SetProfileTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
     device: Device
     enable: bool
@@ -410,50 +410,50 @@ class SetProfileTracking(Message):
 
 @dataclass
 class SetGlobalTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     device: Device
     enable: bool
 
 
 @dataclass
 class DebugDisableAppDetection(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     disable: bool
 
 
 @dataclass
 class DebugDisableMonitorCheck(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     disable: bool
 
 
 @dataclass
 class DeleteData(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
     devices: Device
 
 
 @dataclass
 class DeleteProfile(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
 
 
 @dataclass
 class Autosave(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     enabled: bool
 
 
 @dataclass
 class RequestQueueSize(Message):
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
 
 
 @dataclass
 class QueueSize(Message):
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     hub: int
     tracking: int
     processing: int
@@ -464,7 +464,7 @@ class QueueSize(Message):
 @dataclass
 class ToggleConsole(Message):
     """Change the visible state of the console."""
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI, init=False)
     show: bool
 
 
@@ -473,14 +473,14 @@ class InvalidConsole(Message):
     """Triggered if the console is determined to be not valid.
     This may be the built in console in an IDE for example.
     """
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
 
 
 @dataclass
 class ImportProfile(Message):
     """Send a request to import a profile."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     path: str
 
@@ -489,7 +489,7 @@ class ImportProfile(Message):
 class ImportLegacyProfile(Message):
     """Send a request to import a legacy profile."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     path: str
 
@@ -498,13 +498,13 @@ class ImportLegacyProfile(Message):
 class FailedProfileImport(Message):
     """Send a request to import a legacy profile."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     source: ImportProfile | ImportLegacyProfile
 
 
 @dataclass
 class ExportStats(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     path: str
 
@@ -538,7 +538,7 @@ class ExportDailyStats(ExportStats):
 class ExportStatsSuccessful(Message):
     """Send a message when the export was successful."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     source: ExportStats
 
 
@@ -546,14 +546,14 @@ class ExportStatsSuccessful(Message):
 class ReloadAppList(Message):
     """Reload AppList.txt."""
 
-    target: int = field(default=Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
 class ToggleProfileResolution(Message):
     """Enable or disable a resolution for a profile."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     resolution: tuple[int, int]
     enable: bool
@@ -563,7 +563,7 @@ class ToggleProfileResolution(Message):
 class ToggleProfileMultiMonitor(Message):
     """Change multi monitor handling for a profile."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     multi_monitor: bool | None
 
@@ -577,7 +577,7 @@ class RequestPID(Message):
 class SendPID(Message):
     """Send a components PID."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     source: int
     pid: int
 
@@ -600,7 +600,7 @@ class RenderLayerRequest(Message):
     rather than once per render layer request.
     """
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     layers: list[RenderLayer]
 
 
@@ -608,22 +608,22 @@ class RenderLayerRequest(Message):
 class ComponentLoaded(Message):
     """Notify when a single component has loaded."""
 
-    target: int = field(default=Target.Hub, init=False)
-    component: int
+    target: Target = field(default=Target.Hub, init=False)
+    component: Target
 
 
 @dataclass
 class AllComponentsLoaded(Message):
     """Notify once every component has been loaded."""
 
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI, init=False)
 
 
 @dataclass
 class ShowPopup(Message):
     """Trigger a popup message in the GUI."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     content: str
 
 
@@ -631,7 +631,7 @@ class ShowPopup(Message):
 class StartRecording(Message):
     """Hub begins recording all tracked messages, streaming to the given path."""
 
-    target: int = field(default=Target.Hub | Target.Processing, init=False)
+    target: Target = field(default=Target.Hub | Target.Processing, init=False)
     path: str
 
 
@@ -639,11 +639,11 @@ class StartRecording(Message):
 class StopRecording(Message):
     """Hub stops recording and writes a completion marker to the file."""
 
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
 
 
 @dataclass
 class RecordingComplete(Message):
     """Notify GUI that recording has been saved successfully."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)

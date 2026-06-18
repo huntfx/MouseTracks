@@ -30,7 +30,7 @@ class Component:
     for initialisation, running, and clean shutdown.
     """
 
-    target: ClassVar[int]
+    target: ClassVar[ipc.Target]
 
     def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         self._q_send = q_send
