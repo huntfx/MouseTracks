@@ -115,15 +115,15 @@ class Hub:
         self._current_timestamp: int = 0
         self._recording: IO[str] | None = None
 
-        self._wait_to_load = {ipc.Target.Processing}
+        self._wait_to_load = ipc.Target.Processing
         if not playback_mode:
-            self._wait_to_load.add(ipc.Target.AppDetection)
-            self._wait_to_load.add(ipc.Target.Tracking)
+            self._wait_to_load |= ipc.Target.AppDetection
+            self._wait_to_load |= ipc.Target.Tracking
         else:
-            self._wait_to_load.add(ipc.Target.Playback)
+            self._wait_to_load |= ipc.Target.Playback
         if use_gui:
-            self._wait_to_load.add(ipc.Target.GUI)
-        self._loaded_components = frozenset(self._wait_to_load)
+            self._wait_to_load |= ipc.Target.GUI
+        self._loaded_components = self._wait_to_load
 
         self._q_main: Queue[ipc.Message] = Queue()
         self.config = GlobalConfig()
@@ -354,7 +354,7 @@ class Hub:
                     self._q_main.put(ipc.SendPID(source=ipc.Target.Hub, pid=os.getpid()))
 
                 case ipc.ComponentLoaded():
-                    self._wait_to_load.discard(message.component)
+                    self._wait_to_load &= ~message.component
                     if not self._wait_to_load:
                         self._q_main.put(ipc.AllComponentsLoaded())
 
