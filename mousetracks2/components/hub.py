@@ -35,6 +35,21 @@ if TYPE_CHECKING:
 T = TypeVar('T')
 
 
+class _InactiveProcess(multiprocessing.Process):
+    """Stand in for a Process that is not used."""
+
+    def __init__(self) -> None: ...
+
+    def is_alive(self) -> bool:
+        return False
+
+    def join(self, timeout: float | None = None) -> None:
+        pass
+
+    def terminate(self) -> None:
+        pass
+
+
 class Queue(multiprocessing.queues.Queue, Generic[T]):
     """Custom implementation of a queue to ensure `qsize()` works.
 
@@ -92,15 +107,22 @@ class Queue(multiprocessing.queues.Queue, Generic[T]):
 class Hub:
     """Set up individual components with queues for communication."""
 
-    def __init__(self, use_gui: bool = True) -> None:
+    def __init__(self, use_gui: bool = True, playback_file: Any = None) -> None:
         """Initialise the hub with queues and processes."""
         self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
+        self.playback_file = playback_file
         self._previous_component_check: float = 0.0
         self._current_tick: int = 0
+        self._current_timestamp: int = 0
         self._recording: IO[str] | None = None
 
-        self._wait_to_load = {ipc.Target.AppDetection, ipc.Target.Tracking, ipc.Target.Processing}
+        self._wait_to_load = {ipc.Target.Processing}
+        if not playback_file:
+            self._wait_to_load.add(ipc.Target.AppDetection)
+            self._wait_to_load.add(ipc.Target.Tracking)
+        else:
+            self._wait_to_load.add(ipc.Target.Playback)
         if self.use_gui:
             self._wait_to_load.add(ipc.Target.GUI)
 
@@ -141,14 +163,17 @@ class Hub:
 
         print('[Hub] Waiting for close notification from processes...')
         tracking_running = self._p_tracking.is_alive()
+        playback_running = self._p_playback.is_alive()
         processing_running = self._p_processing.is_alive()
         app_detection_running = self._p_app_detection.is_alive()
-        while tracking_running or processing_running or app_detection_running:
+        while tracking_running or playback_running or processing_running or app_detection_running:
             try:
                 message = self._q_main.get(timeout=30)
                 match message:
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
                         tracking_running = False
+                    case ipc.ProcessShutDownNotification(source=ipc.Target.Playback):
+                        playback_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
                         processing_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.AppDetection):
@@ -159,6 +184,9 @@ class Hub:
                 if tracking_running:
                     print('[Hub] No notification received from tracking, terminating...')
                     self._p_tracking.terminate()
+                if playback_running:
+                    print('[Hub] No notification received from playback, terminating...')
+                    self._p_playback.terminate()
                 if processing_running:
                     print('[Hub] No notification received from processing, terminating...')
                     self._p_processing.terminate()
@@ -170,18 +198,21 @@ class Hub:
         # Wait for processes to end
         print('[Hub] Joining processes...')
         self._p_tracking.join()
+        self._p_playback.join()
         self._p_processing.join()
         self._p_app_detection.join()
 
         # Ensure queues are closed
         print('[Hub] Closing queues...')
         self._q_tracking.close()
+        self._q_playback.close()
         self._q_processing.close()
         self._q_app_detection.close()
 
         # Discard any data left in the queue
         print('[Hub] Flushing queues...')
         self._q_tracking.cancel_join_thread()
+        self._q_playback.cancel_join_thread()
         self._q_processing.cancel_join_thread()
         self._q_app_detection.cancel_join_thread()
 
@@ -192,12 +223,15 @@ class Hub:
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
-        from .app_detection import AppDetection
-        from .gui import GUI
         from .processing import Processing
-        from .tracking import Tracking
+
+        self._p_tracking: multiprocessing.Process
+        self._p_playback: multiprocessing.Process
+        self._p_processing: multiprocessing.Process
+        self._p_app_detection: multiprocessing.Process
 
         if first_run:
+            from .gui import GUI
             self._q_gui: Queue[ipc.Message] = Queue()
             self._p_gui = multiprocessing.Process(target=GUI.launch, args=(self._q_main, self._q_gui))
             self._p_gui.daemon = True
@@ -205,19 +239,32 @@ class Hub:
                 self._p_gui.start()
 
         self._q_tracking: Queue[ipc.Message] = Queue()
-        self._p_tracking = multiprocessing.Process(target=Tracking.launch, args=(self._q_main, self._q_tracking))
-        self._p_tracking.daemon = True
-        self._p_tracking.start()
+        self._q_playback: Queue[ipc.Message] = Queue()
+        self._q_app_detection: Queue[ipc.Message] = Queue()
+
+        if self.playback_file:
+            from .playback import Playback
+            self._p_tracking = _InactiveProcess()
+            self._p_playback = multiprocessing.Process(target=Playback.launch, args=(self._q_main, self._q_playback))
+            self._p_playback.daemon = True
+            self._p_playback.start()
+            self._p_app_detection = _InactiveProcess()
+
+        else:
+            from .app_detection import AppDetection
+            from .tracking import Tracking
+            self._p_tracking = multiprocessing.Process(target=Tracking.launch, args=(self._q_main, self._q_tracking))
+            self._p_tracking.daemon = True
+            self._p_tracking.start()
+            self._p_playback = _InactiveProcess()
+            self._p_app_detection = multiprocessing.Process(target=AppDetection.launch, args=(self._q_main, self._q_app_detection))
+            self._p_app_detection.daemon = True
+            self._p_app_detection.start()
 
         self._q_processing: Queue[ipc.Message] = Queue()
         self._p_processing = multiprocessing.Process(target=Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
-
-        self._q_app_detection: Queue[ipc.Message] = Queue()
-        self._p_app_detection = multiprocessing.Process(target=AppDetection.launch, args=(self._q_main, self._q_app_detection))
-        self._p_app_detection.daemon = True
-        self._p_app_detection.start()
 
     def _startup_tracking_processes(self) -> None:
         """Ensure the tracking processes exist.
@@ -225,13 +272,13 @@ class Hub:
         up new ones.
         """
         print('[Hub] Checking tracking processes...')
-        tracking_running = self._p_tracking.is_alive()
+        tracking_running = self._p_playback.is_alive() if self.playback_file else self._p_tracking.is_alive()
         processing_running = self._p_processing.is_alive()
         app_detection_running = self._p_app_detection.is_alive()
         print(f'[Hub] Tracking process alive: {tracking_running}')
         print(f'[Hub] Processing process alive: {processing_running}')
         print(f'[Hub] Application Detection process alive: {app_detection_running}')
-        if tracking_running and processing_running and app_detection_running:
+        if tracking_running and processing_running and (self.playback_file or app_detection_running):
             return
 
         # Shut down any existing processes if only one is running
@@ -250,13 +297,15 @@ class Hub:
             match message:
                 case ipc.Tick():
                     self._current_tick = message.tick
+                    self._current_timestamp = message.timestamp
 
                 case ipc.StartRecording():
                     self._recording = open_recording(message.path)
+                    write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
 
                 case ipc.StopRecording():
                     if self._recording is not None:
-                        write_event(self._recording, self._current_tick, message)
+                        write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
                         self._recording.close()
                         self._recording = None
                         self._q_main.put(ipc.RecordingComplete())
@@ -301,9 +350,11 @@ class Hub:
                 case ipc.AllComponentsLoaded():
                     self.start_tracking()
 
-        # Forward messages to the tracking process
+        # Forward messages to the tracking/playback process
         if message.target & ipc.Target.Tracking:
             self._q_tracking.put(message)
+        if message.target & ipc.Target.Playback:
+            self._q_playback.put(message)
 
         # Forward messages to the processing process
         if message.target & ipc.Target.Processing:
@@ -347,12 +398,16 @@ class Hub:
             return
 
         if self.state == ipc.TrackingState.Running:
-            if not self._p_tracking.is_alive():
-                raise RuntimeError('[Hub] Unexpected shutdown of Tracking component')
+            if self.playback_file:
+                if not self._p_playback.is_alive():
+                    raise RuntimeError('[Hub] Unexpected shutdown of Playback component')
+            else:
+                if not self._p_tracking.is_alive():
+                    raise RuntimeError('[Hub] Unexpected shutdown of Tracking component')
+                if not self._p_app_detection.is_alive():
+                    raise RuntimeError('[Hub] Unexpected shutdown of Application Detection component')
             if not self._p_processing.is_alive():
                 raise RuntimeError('[Hub] Unexpected shutdown of Processing component')
-            if not self._p_app_detection.is_alive():
-                raise RuntimeError('[Hub] Unexpected shutdown of Application Detection component')
             if self.use_gui and not self._p_gui.is_alive():
                 raise RuntimeError('[Hub] Unexpected shutdown of GUI component')
         self._previous_component_check = current_time
@@ -398,7 +453,6 @@ class Hub:
                     self._p_gui.join()
                     print('[Hub] GUI shut down')
                 self._q_gui.cancel_join_thread()
-
 
         print('[Hub] Application exit')
 

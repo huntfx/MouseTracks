@@ -24,6 +24,7 @@ class Target:
     Processing = 2 ** 2
     GUI = 2 ** 3
     AppDetection = 2 ** 4
+    Playback = 2 ** 5  # TODO: Convert Target to an IntFlag enum
 
 
 class RenderType(Enum):
@@ -203,7 +204,7 @@ class PauseTracking(Message):
 @dataclass
 class StopTracking(Message):
     """Send a request to stop tracking."""
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
@@ -310,7 +311,7 @@ class ApplicationFocusChanged(Message):
 class Exit(Message):
     """Quit the whole application."""
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: int = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
@@ -628,14 +629,9 @@ class ShowPopup(Message):
 
 @dataclass
 class StartRecording(Message):
-    """Hub begins recording all tracked messages, streaming to the given path.
-
-    The hub records this as the first event in the file, anchoring
-    the tick number to wall-clock time.
-    """
+    """Hub begins recording all tracked messages, streaming to the given path."""
 
     target: int = field(default=Target.Hub | Target.Processing, init=False)
-    timestamp: int
     path: str
 
 

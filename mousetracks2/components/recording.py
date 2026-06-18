@@ -29,8 +29,6 @@ from ..utils.monitor import MonitorData
 
 
 RECORDED_MESSAGE_TYPES: frozenset[type] = frozenset({
-    ipc.StartRecording,
-    ipc.StopRecording,
     ipc.MouseMove,
     ipc.MouseClick,
     ipc.MouseHeld,
@@ -73,7 +71,7 @@ def _build_serialiser(cls: type) -> Any:
     return serialiser
 
 
-_SERIALISERS: dict[type, Any] = {cls: _build_serialiser(cls) for cls in RECORDED_MESSAGE_TYPES}
+_SERIALISERS: dict[type, Any] = {cls: _build_serialiser(cls) for cls in RECORDED_MESSAGE_TYPES | {ipc.Tick}}
 
 
 def serialise_event(tick: int, message: ipc.Message) -> str:
@@ -105,7 +103,7 @@ def _convert_value(value: Any, hint: Any) -> Any:
         return tuple(value)
     if isinstance(hint, type) and issubclass(hint, Enum):
         return hint[value]
-    return value  # int, str, float, bool, None all pass through unchanged
+    return value
 
 
 def _build_parser(cls: type) -> Any:
@@ -121,7 +119,7 @@ def _build_parser(cls: type) -> Any:
 
 _PARSERS: dict[str, Any] = {
     cls.__name__: _build_parser(cls)
-    for cls in RECORDED_MESSAGE_TYPES
+    for cls in RECORDED_MESSAGE_TYPES | {ipc.Tick}
 }
 
 
@@ -174,8 +172,9 @@ def _test() -> None:
     monitor.logical = RectList([Rect.from_rect(0, 0, 1920, 1080), Rect.from_rect(1920, 0, 3840, 1080)])
     monitor.physical = RectList([Rect.from_rect(0, 0, 2560, 1440)])
 
+    ts = int(time.time())
     test_cases: list[tuple[int, ipc.Message]] = [
-        (0,  ipc.StartRecording(timestamp=int(time.time()), path='test.jsonl.gz')),
+        (0,  ipc.Tick(tick=0, timestamp=ts)),
         (1,  ipc.MouseMove(position=(640, 480))),
         (1,  ipc.MouseClick(button=1, position=(640, 480))),
         (1,  ipc.MouseHeld(button=1, position=(640, 480))),
@@ -188,7 +187,7 @@ def _test() -> None:
         (6,  ipc.MonitorsChanged(data=monitor)),
         (7,  ipc.CurrentProfileChanged(name='Firefox', process_id=1234, rects=RectList([Rect.from_rect(100, 200, 1820, 880)]))),
         (8,  ipc.CurrentProfileChanged(name='Default', process_id=None, rects=RectList())),
-        (9,  ipc.StopRecording()),
+        (9,  ipc.Tick(tick=9, timestamp=ts + 1)),
     ]
 
     with tempfile.TemporaryDirectory() as tmp_dir:

@@ -1893,7 +1893,7 @@ class MainWindow(QtWidgets.QMainWindow):
             path += '.jsonl.gz'
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(True)
-        self.component.send_data(ipc.StartRecording(timestamp=int(time.time()), path=path))
+        self.component.send_data(ipc.StartRecording(path=path))
 
     def stop_recording(self) -> None:
         """Stop the current recording."""
