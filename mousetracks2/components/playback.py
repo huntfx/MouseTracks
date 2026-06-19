@@ -42,7 +42,7 @@ class Playback(Component):
         start_tick = next_event[0]
         start_timestamp = int(time.time())
 
-        paused = False
+        paused = ready = False
         tick_offset = 0
 
         self.send_data(ipc.StartPlayback())
@@ -58,8 +58,12 @@ class Playback(Component):
                         self.send_data(ipc.TrackingStarted())
                     case ipc.StopTracking() | ipc.Exit():
                         raise ExitRequest
+                    case ipc.AllComponentsLoaded():
+                        ready = True
+                    case _:
+                        raise NotImplementedError(message)
 
-            if paused:
+            if paused or not ready:
                 tick_offset += 1
                 continue
 

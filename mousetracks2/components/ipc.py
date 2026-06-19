@@ -628,7 +628,7 @@ class ComponentLoaded(Message):
 class AllComponentsLoaded(Message):
     """Notify once every component has been loaded."""
 
-    target: Target = field(default=Target.Hub | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI | Target.Playback, init=False)
 
 
 @dataclass
