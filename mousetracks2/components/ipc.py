@@ -186,7 +186,7 @@ class StartTracking(Message):
     """Send a request to start tracking.
     Once this is processed, the `TrackingStarted` message will be sent.
     """
-    target: Target = field(default=Target.Tracking | Target.Hub, init=False)
+    target: Target = field(default=Target.Tracking | Target.Playback | Target.Hub, init=False)
 
 
 @dataclass
@@ -196,9 +196,21 @@ class TrackingStarted(Message):
 
 
 @dataclass
+class StartPlayback(Message):
+    """Sent when the playback component begins replaying events."""
+    target: Target = field(default=Target.GUI | Target.Processing, init=False)
+
+
+@dataclass
+class StopPlayback(Message):
+    """Sent when the playback component has finished replaying events."""
+    target: Target = field(default=Target.GUI | Target.Processing, init=False)
+
+
+@dataclass
 class PauseTracking(Message):
     """Send a request to pause tracking."""
-    target: Target = field(default=Target.Hub | Target.Tracking | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.GUI, init=False)
 
 
 @dataclass

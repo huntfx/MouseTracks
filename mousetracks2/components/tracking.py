@@ -34,8 +34,6 @@ else:
                       if isinstance(v, int) and hasattr(keycodes, k)}
 
 
-
-
 def _getConnectedGamepads() -> tuple[bool, bool, bool, bool]:
     """Determine which gamepad indexes are connected."""
     if XInput is None:

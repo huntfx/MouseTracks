@@ -146,6 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._startup_notify_queue: list[tuple[str, str]] = []
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
+        self.is_playback = CTX.playback_file is not None
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -1384,6 +1385,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.applist_reload.setEnabled(False)
                 self.set_profile_modified_text()
 
+            case ipc.StartPlayback():
+                self.is_playback = True
+                self.cursor_data.position = None
+
+            case ipc.StopPlayback():
+                self.is_playback = False
+
             case ipc.Exit():
                 self.shut_down(force=True)
 
@@ -1755,7 +1763,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_tracking(self) -> None:
         """Start/unpause the tracking."""
         self.notify(f'{self.windowTitle()} has resumed tracking.')
-        self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
+        if not self.is_playback:
+            self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
         self.component.send_data(ipc.StartTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)

@@ -59,6 +59,7 @@ class Processing(AppComponent, MonitorComponent):
 
         self.tick = 0
         self._timestamp = -1
+        self.is_playback = CTX.playback_file is not None
 
         self.previous_mouse_click: PreviousMouseClick | None = None
         self.previous_monitor = None
@@ -717,8 +718,14 @@ class Processing(AppComponent, MonitorComponent):
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
+            case ipc.StartPlayback():
+                self.is_playback = True
+
+            case ipc.StopPlayback():
+                self.is_playback = False
+
             case ipc.TrackingStarted():
-                self.profile.cursor_map.position = get_cursor_pos()
+                self.profile.cursor_map.position = None if self.is_playback else get_cursor_pos()
 
             case ipc.StartRecording():
                 # Send a snapshot of the current state so the recording

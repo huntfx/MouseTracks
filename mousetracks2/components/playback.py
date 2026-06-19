@@ -42,8 +42,28 @@ class Playback(Component):
         start_tick = next_event[0]
         start_timestamp = int(time.time())
 
+        paused = False
+        tick_offset = 0
+
+        self.send_data(ipc.StartPlayback())
+
         # Iterate per tick to keep the correct timing
-        for tick in ticks(UPDATES_PER_SECOND):
+        for _tick in ticks(UPDATES_PER_SECOND):
+            for message in self.receive_data():
+                match message:
+                    case ipc.PauseTracking():
+                        paused = True
+                    case ipc.StartTracking():
+                        paused = False
+                        self.send_data(ipc.TrackingStarted())
+                    case ipc.StopTracking() | ipc.Exit():
+                        raise ExitRequest
+
+            if paused:
+                tick_offset += 1
+                continue
+
+            tick = _tick - tick_offset
             recorded_tick = start_tick + tick
             timestamp = start_timestamp + tick // UPDATES_PER_SECOND
             self.send_data(ipc.Tick(recorded_tick, timestamp))
@@ -56,13 +76,8 @@ class Playback(Component):
                 self.send_data(message)
                 next_event = next(stream, None)
 
-            # Check for stop/exit signals
-            for message in self.receive_data():
-                match message:
-                    case ipc.StopTracking() | ipc.Exit():
-                        raise ExitRequest
-
             if next_event is None:
                 break
 
+        self.send_data(ipc.StopPlayback())
         self.send_data(ipc.PauseTracking())
