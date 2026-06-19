@@ -2110,12 +2110,15 @@ class MainWindow(QtWidgets.QMainWindow):
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
         """
-        if not self.isVisible() or not self.is_live or self._is_closing or self.ui.thumbnail.pixmap().isNull():
+        if not self.isVisible() or not self.is_live or self._is_closing:
             return
 
         # If in the middle of switching profiles, queue the coordinates to redraw after
         if self.pause_redraw:
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
+
+        if self.ui.thumbnail.pixmap().isNull():
+            return
 
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
