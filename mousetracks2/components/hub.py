@@ -115,12 +115,10 @@ class Hub:
         self._current_timestamp: int = 0
         self._recording: IO[str] | None = None
 
-        self._wait_to_load = ipc.Target.Processing
+        self._wait_to_load = ipc.Target.Processing | ipc.Target.Playback
         if not playback_mode:
             self._wait_to_load |= ipc.Target.AppDetection
             self._wait_to_load |= ipc.Target.Tracking
-        else:
-            self._wait_to_load |= ipc.Target.Playback
         if use_gui:
             self._wait_to_load |= ipc.Target.GUI
         self._loaded_components = self._wait_to_load

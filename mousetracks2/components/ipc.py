@@ -82,7 +82,7 @@ class Message:
 class Tick(Message):
     """Send the current tick."""
 
-    target: Target = field(default=Target.Hub | Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Processing | Target.GUI | Target.Playback, init=False)
     tick: int
     timestamp: int
 
@@ -91,7 +91,7 @@ class Tick(Message):
 class MouseMove(Message):
     """Mouse has moved to a new location on the screen."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     position: tuple[int, int]
 
 
@@ -99,7 +99,7 @@ class MouseMove(Message):
 class MouseClick(Message):
     """Mouse has been clicked."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     button: int
     position: tuple[int, int]
 
@@ -108,7 +108,7 @@ class MouseClick(Message):
 class MouseHeld(Message):
     """Mouse button is being held."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     button: int
     position: tuple[int, int]
 
@@ -117,7 +117,7 @@ class MouseHeld(Message):
 class KeyPress(Message):
     """Key has been pressed."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     keycode: int
 
 
@@ -127,7 +127,7 @@ class KeyHeld(Message):
     This does not trigger on the first press.
     """
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     keycode: int
 
 
@@ -135,7 +135,7 @@ class KeyHeld(Message):
 class ButtonPress(Message):
     """Gamepad button has been pressed."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     gamepad: int
     keycode: int
 
@@ -144,7 +144,7 @@ class ButtonPress(Message):
 class ButtonHeld(Message):
     """Gamepad button is being held."""
 
-    target: Target = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing | Target.Playback, init=False)
     gamepad: int
     keycode: int
 
@@ -157,7 +157,7 @@ class ThumbstickMove(Message):
         Left = auto()
         Right = auto()
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     gamepad: int
     thumbstick: Thumbstick
     position: tuple[float, float]
@@ -223,7 +223,7 @@ class StopTracking(Message):
 class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
-    target: Target = field(default=Target.GUI | Target.Processing, init=False)
+    target: Target = field(default=Target.GUI | Target.Processing | Target.Playback, init=False)
     data: MonitorData
 
 
@@ -300,7 +300,7 @@ class CurrentProfileChanged(Message):
     sync with the tick counter to prevent race conditions.
     """
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     name: str
     process_id: int | None
     rects: RectList = field(default_factory=RectList)
@@ -390,7 +390,7 @@ class ProfileData(Message):
 class DataTransfer(Message):
     """Upload and download data since the previous message."""
 
-    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     mac_address: str
     bytes_sent: int
     bytes_recv: int

@@ -1,12 +1,17 @@
-"""Playback component — replaces the tracking component during playback.
+"""Playback component - caches live events for history playback, or replays a recording file.
 
-Reads a .jsonl.gz recording file and replays the stored events back through
-the hub at the original 60 ticks per second rate.
+In normal operation (no playback file) the component runs continuously, caching
+incoming events into a history deque so they can be replayed later.
+
+When launched with a recording file (--playback), it replays the stored events
+back through the hub at the original tick rate instead.
 """
 
 from __future__ import annotations
 
 import time
+from collections import deque
+from typing import Iterator
 
 from . import ipc
 from .abstract import Component
@@ -15,27 +20,48 @@ from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
 from ..utils.system import hide_child_process
-
 from ..utils.timing import ticks
 
 
 class Playback(Component):
-    """Replace the tracking to replay a .jsonl.gz recording."""
+    """Cache live events for history playback, or replay a .jsonl.gz recording."""
 
     target = ipc.Target.Playback
 
     def __post_init__(self) -> None:
         hide_child_process()
+        self._is_playing_back = CTX.playback_file is not None
+        self._history: deque[tuple[int, ipc.Message]] = deque()
+        self._current_tick = 0
 
     def run(self) -> None:
-        """Read the recording and emit events tick by tick."""
-        path = CTX.playback_file
-        if path is None:
+        if CTX.playback_file is not None:
+            self._run_file_playback()
+        else:
+            self._run_cache()
+
+    def _run_cache(self) -> None:
+        """Cache events from live tracking for history playback."""
+        for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
+            match message:
+                case ipc.Tick():
+                    self._current_tick = message.tick
+
+                case ipc.StopTracking() | ipc.Exit():
+                    raise ExitRequest
+
+                case _:
+                    if not self._is_playing_back:
+                        self._history.append((self._current_tick, message))
+
+    def _run_file_playback(self) -> None:
+        """Replay a recording file."""
+        if CTX.playback_file is None:
             return
+        self._replay(read_recording(str(CTX.playback_file)))
 
-        stream = read_recording(str(path))
-
-        # Grab data from the first recorded event
+    def _replay(self, stream: Iterator[tuple[int, ipc.Message]]) -> None:
+        """Replay events from an iterator of (tick, message) pairs at the live tick rate."""
         next_event = next(stream, None)
         if next_event is None:
             return
@@ -47,7 +73,6 @@ class Playback(Component):
 
         self.send_data(ipc.StartPlayback())
 
-        # Iterate per tick to keep the correct timing
         for _tick in ticks(UPDATES_PER_SECOND):
             for message in self.receive_data():
                 match message:
@@ -60,8 +85,6 @@ class Playback(Component):
                         raise ExitRequest
                     case ipc.AllComponentsLoaded():
                         ready = True
-                    case _:
-                        raise NotImplementedError(message)
 
             if paused or not ready:
                 tick_offset += 1
@@ -72,7 +95,6 @@ class Playback(Component):
             timestamp = start_timestamp + tick // UPDATES_PER_SECOND
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
-            # Process all events for the specific tick
             while next_event is not None and next_event[0] <= recorded_tick:
                 message = next_event[1]
                 if isinstance(message, ipc.Tick):
