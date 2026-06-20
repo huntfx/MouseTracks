@@ -33,6 +33,7 @@ class Playback(Component):
         self._is_playing_back = CTX.playback_file is not None
         self._history: deque[tuple[int, ipc.Message]] = deque()
         self._current_tick = 0
+        self._history_length = 0
 
     def run(self) -> None:
         if CTX.playback_file is not None:
@@ -46,12 +47,21 @@ class Playback(Component):
             match message:
                 case ipc.Tick():
                     self._current_tick = message.tick
+                    if self._history_length:
+                        cutoff = message.tick - self._history_length
+                        while self._history and self._history[0][0] < cutoff:
+                            self._history.popleft()
+
+                case ipc.SetHistoryLength():
+                    self._history_length = message.ticks
+                    if not message.ticks:
+                        self._history.clear()
 
                 case ipc.StopTracking() | ipc.Exit():
                     raise ExitRequest
 
                 case _:
-                    if not self._is_playing_back:
+                    if self._history_length and not self._is_playing_back:
                         self._history.append((self._current_tick, message))
 
     def _run_file_playback(self) -> None:

@@ -640,6 +640,14 @@ class ShowPopup(Message):
 
 
 @dataclass
+class SetHistoryLength(Message):
+    """Set the history window in ticks. 0 disables caching and clears history."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    ticks: int
+
+
+@dataclass
 class StartRecording(Message):
     """Hub begins recording all tracked messages, streaming to the given path."""
 
