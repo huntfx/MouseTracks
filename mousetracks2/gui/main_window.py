@@ -1528,7 +1528,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.FailedProfileImport():
                 # Undo adding the profile
-                sanitised_profile_name = sanitise_profile_name(message.source.name)
+                sanitised_profile_name = sanitise_profile_name(message.request.name)
                 del self._profile_names[sanitised_profile_name]
                 self._unsaved_profiles.discard(sanitised_profile_name)
                 self._redraw_profile_combobox()
@@ -1539,13 +1539,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg = QtWidgets.QMessageBox()
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
                 msg.setWindowTitle('Failed Import')
-                msg.setText(f'Failed to import "{message.source.path}" as a profile.')
+                msg.setText(f'Failed to import "{message.request.path}" as a profile.')
                 msg.exec()
 
             case ipc.ExportStatsSuccessful():
                 msg = AutoCloseMessageBox(self)
                 msg.setWindowTitle(f'Export Successful')
-                msg.setText(f'"{message.source.path}" was successfully saved.')
+                msg.setText(f'"{message.request.path}" was successfully saved.')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
 

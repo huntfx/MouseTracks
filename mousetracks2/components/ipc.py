@@ -71,11 +71,11 @@ class Message:
 
     Attributes:
         target: The intended recipient component of the message.
-        type: The type of message being sent.
-        data: Optional data payload associated with the message.
+        source: The component that sent the message.
     """
 
     target: Target = field(default=Target(0))
+    source: Target = field(default_factory=lambda: Target(0), init=False)
 
 
 @dataclass
@@ -335,7 +335,7 @@ class DebugRaiseError(Message):
 class ProcessShutDownNotification(Message):
     """Send a notification from a process that it has ended."""
     target: Target = field(default=Target.Hub, init=False)
-    source: int
+    source: Target
 
 
 @dataclass
@@ -511,7 +511,7 @@ class FailedProfileImport(Message):
     """Send a request to import a legacy profile."""
 
     target: Target = field(default=Target.GUI, init=False)
-    source: ImportProfile | ImportLegacyProfile
+    request: ImportProfile | ImportLegacyProfile
 
 
 @dataclass
@@ -551,7 +551,7 @@ class ExportStatsSuccessful(Message):
     """Send a message when the export was successful."""
 
     target: Target = field(default=Target.GUI, init=False)
-    source: ExportStats
+    request: ExportStats
 
 
 @dataclass
@@ -590,7 +590,7 @@ class SendPID(Message):
     """Send a components PID."""
 
     target: Target = field(default=Target.GUI, init=False)
-    source: int
+    source: Target
     pid: int
 
 
