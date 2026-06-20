@@ -540,6 +540,32 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Failed to save {profile_name}')
         return False
 
+    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str]]:
+        """Save all loaded profiles to disk, unloading unmodified ones.
+        If `profile_name` is given, only that profile is processed.
+        """
+        succeeded: list[str] = []
+        failed: list[str] = []
+
+        profile_names = []
+        if profile_name is not None:
+            if profile_name in self.all_profiles:
+                profile_names.append(profile_name)
+        else:
+            profile_names.extend(profile.name for profile in self.all_profiles.values())
+
+        for name in profile_names:
+            profile = self.all_profiles[name]
+            if not profile.is_modified:
+                print(f'[Processing] Unloading profile: {name}')
+                del self.all_profiles[name]
+            elif self._save(name):
+                succeeded.append(name)
+            else:
+                failed.append(name)
+
+        return succeeded, failed
+
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
@@ -759,31 +785,7 @@ class Processing(AppComponent, MonitorComponent):
                 self.focused_app = Application(message.name, message.rects)
 
             case ipc.Save():
-                # Keep track of what saved and what didn't
-                succeeded = []
-                failed = []
-
-                profile_names = []
-                if message.profile_name is not None:
-                    if message.profile_name in self.all_profiles:
-                        profile_names.append(message.profile_name)
-                else:
-                    profile_names.extend(profile.name for profile in self.all_profiles.values())
-
-                for profile_name in profile_names:
-                    profile = self.all_profiles[profile_name]
-
-                    # If not modified since last time, unload it from memory
-                    if not profile.is_modified:
-                        print(f'[Processing] Unloading profile: {profile_name}')
-                        del self.all_profiles[profile_name]
-
-                    # Attempt the save
-                    elif self._save(profile_name):
-                        succeeded.append(profile_name)
-
-                    else:
-                        failed.append(profile_name)
+                succeeded, failed = self.save(message.profile_name)
                 self.send_data(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
