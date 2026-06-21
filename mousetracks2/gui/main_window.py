@@ -1389,9 +1389,12 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.StartPlayback():
                 self.is_playback = True
                 self.cursor_data.position = None
+                self.ui.recording_start.setEnabled(False)
+                self.ui.recording_stop.setEnabled(False)
 
             case ipc.StopPlayback():
                 self.is_playback = False
+                self.ui.recording_start.setEnabled(True)
 
             case ipc.Exit():
                 self.shut_down(force=True)
