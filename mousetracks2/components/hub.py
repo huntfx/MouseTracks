@@ -332,10 +332,10 @@ class Hub:
                 case ipc.StopTracking():
                     self.state = ipc.TrackingState.Stopped
 
-                case ipc.StartPlayback():
+                case ipc.PlaybackStarted():
                     self._playback_active = True
 
-                case ipc.StopPlayback():
+                case ipc.PlaybackFinished():
                     self._playback_active = False
                     for msg in self._playback_buffer:
                         if not isinstance(msg, ipc.Save):

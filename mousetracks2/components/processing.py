@@ -743,13 +743,13 @@ class Processing(AppComponent, MonitorComponent):
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
-            case ipc.StartPlayback():
+            case ipc.PlaybackStarted():
                 self.save()
                 self.all_profiles = TrackingProfileLoader(profile_dir=None)
                 self.previous_mouse_click = None
                 self.is_playback = True
 
-            case ipc.StopPlayback():
+            case ipc.PlaybackFinished():
                 self.is_playback = False
                 self.all_profiles = TrackingProfileLoader()
                 self.previous_mouse_click = None

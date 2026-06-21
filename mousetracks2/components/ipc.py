@@ -196,13 +196,13 @@ class TrackingStarted(Message):
 
 
 @dataclass
-class StartPlayback(Message):
+class PlaybackStarted(Message):
     """Sent when the playback component begins replaying events."""
     target: Target = field(default=Target.Hub | Target.GUI | Target.Processing, init=False)
 
 
 @dataclass
-class StopPlayback(Message):
+class PlaybackFinished(Message):
     """Sent when the playback component has finished replaying events."""
     target: Target = field(default=Target.Hub | Target.GUI | Target.Processing, init=False)
 

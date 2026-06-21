@@ -80,7 +80,7 @@ class Playback(Component):
         paused = ready = False
         tick_offset = 0
 
-        self.send_data(ipc.StartPlayback())
+        self.send_data(ipc.PlaybackStarted())
 
         for _tick in ticks(UPDATES_PER_SECOND):
             for message in self.receive_data():
@@ -116,5 +116,5 @@ class Playback(Component):
             if next_event is None:
                 break
 
-        self.send_data(ipc.StopPlayback())
+        self.send_data(ipc.PlaybackFinished())
         self.send_data(ipc.PauseTracking())

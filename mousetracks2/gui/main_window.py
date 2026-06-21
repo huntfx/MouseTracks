@@ -1386,13 +1386,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.applist_reload.setEnabled(False)
                 self.set_profile_modified_text()
 
-            case ipc.StartPlayback():
+            case ipc.PlaybackStarted():
                 self.is_playback = True
                 self.cursor_data.position = None
                 self.ui.recording_start.setEnabled(False)
                 self.ui.recording_stop.setEnabled(False)
 
-            case ipc.StopPlayback():
+            case ipc.PlaybackFinished():
                 self.is_playback = False
                 self.ui.recording_start.setEnabled(True)
 
