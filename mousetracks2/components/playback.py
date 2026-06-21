@@ -30,7 +30,6 @@ class Playback(Component):
 
     def __post_init__(self) -> None:
         hide_child_process()
-        self._is_playing_back = CTX.playback_file is not None
         self._history: deque[tuple[int, ipc.Message]] = deque()
         self._current_tick = 0
         self._history_length = 0
@@ -61,7 +60,7 @@ class Playback(Component):
                     raise ExitRequest
 
                 case _:
-                    if self._history_length and not self._is_playing_back:
+                    if self._history_length and message.source != ipc.Target.Playback:
                         self._history.append((self._current_tick, message))
 
     def _run_file_playback(self) -> None:
@@ -85,6 +84,8 @@ class Playback(Component):
 
         for _tick in ticks(UPDATES_PER_SECOND):
             for message in self.receive_data():
+                if message.source == ipc.Target.Playback:
+                    continue
                 match message:
                     case ipc.PauseTracking():
                         paused = True
