@@ -115,6 +115,9 @@ class Hub:
         self._current_timestamp: int = 0
         self._recording: IO[str] | None = None
 
+        self._playback_active = False
+        self._playback_buffer: list[ipc.Message] = []
+
         self._wait_to_load = ipc.Target.Processing | ipc.Target.Playback
         if not playback_mode:
             self._wait_to_load |= ipc.Target.AppDetection
@@ -329,6 +332,16 @@ class Hub:
                 case ipc.StopTracking():
                     self.state = ipc.TrackingState.Stopped
 
+                case ipc.StartPlayback():
+                    self._playback_active = True
+
+                case ipc.StopPlayback():
+                    self._playback_active = False
+                    for msg in self._playback_buffer:
+                        if not isinstance(msg, ipc.Save):
+                            self._process_message(msg)
+                    self._playback_buffer.clear()
+
                 case ipc.Exit():
                     raise ExitRequest
 
@@ -361,6 +374,11 @@ class Hub:
                     self.start_tracking()
 
         lc = self._loaded_components
+
+        # Intercept tracking and app detection messages if in playback mode
+        if self._playback_active and message.source & (ipc.Target.Tracking | ipc.Target.AppDetection):
+            self._playback_buffer.append(message)
+            return
 
         if message.target & ipc.Target.Tracking and ipc.Target.Tracking in lc:
             self._q_tracking.put(message)
