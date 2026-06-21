@@ -343,7 +343,8 @@ class Hub:
                                                    self._q_tracking.qsize(),
                                                    self._q_processing.qsize(),
                                                    self._q_gui.qsize(),
-                                                   self._q_app_detection.qsize()))
+                                                   self._q_app_detection.qsize(),
+                                                   self._q_playback.qsize()))
 
                 case ipc.ToggleConsole():
                     self._toggle_console(message.show)

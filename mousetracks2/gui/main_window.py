@@ -407,6 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.component.send_data(ipc.RequestPID(ipc.Target.Processing))
         self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
         self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
+        self.component.send_data(ipc.RequestPID(ipc.Target.Playback))
 
         self.ui.layer_presets.addItems(Preset.names())
 
@@ -1493,6 +1494,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     (self.ui.status_processing_state, self.ui.status_processing_queue): message.processing,
                     (self.ui.status_gui_state, self.ui.status_gui_queue): message.gui,
                     (self.ui.status_app_state, self.ui.status_app_queue): message.app_detection,
+                    (self.ui.status_playback_state, self.ui.status_playback_queue): message.playback,
                 }
 
                 for (status_widget, queue_widget), value in widget_values.items():
@@ -1564,6 +1566,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.ui.status_gui_pid.setText(str(message.pid))
                     case ipc.Target.AppDetection:
                         self.ui.status_app_pid.setText(str(message.pid))
+                    case ipc.Target.Playback:
+                        self.ui.status_playback_pid.setText(str(message.pid))
 
             case ipc.AllComponentsLoaded():
                 self.on_app_ready()

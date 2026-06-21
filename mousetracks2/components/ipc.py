@@ -471,6 +471,7 @@ class QueueSize(Message):
     processing: int
     gui: int
     app_detection: int
+    playback: int
 
 
 @dataclass

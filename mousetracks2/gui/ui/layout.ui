@@ -1917,6 +1917,13 @@ This should be used after manually editing it.</string>
                  <string>Components</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_8">
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="status_hub_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="1" column="2">
                   <widget class="QLabel" name="status_hub_state">
                    <property name="text">
@@ -1931,99 +1938,6 @@ This should be used after manually editing it.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="status_hub_pid">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="2">
-                  <widget class="QLabel" name="status_tracking_state">
-                   <property name="text">
-                    <string>Running</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="status_header_name">
-                   <property name="text">
-                    <string>**Name**</string>
-                   </property>
-                   <property name="textFormat">
-                    <enum>Qt::TextFormat::MarkdownText</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="status_gui_name">
-                   <property name="text">
-                    <string>GUI</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="1">
-                  <widget class="QLabel" name="status_processing_pid">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="2">
-                  <widget class="QLabel" name="status_header_state">
-                   <property name="text">
-                    <string>**State**</string>
-                   </property>
-                   <property name="textFormat">
-                    <enum>Qt::TextFormat::MarkdownText</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="1">
-                  <widget class="QLabel" name="status_app_pid">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="status_hub_name">
-                   <property name="text">
-                    <string>Hub</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="status_header_pid">
-                   <property name="text">
-                    <string>**PID**</string>
-                   </property>
-                   <property name="textFormat">
-                    <enum>Qt::TextFormat::MarkdownText</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="0">
-                  <widget class="QLabel" name="status_app_name">
-                   <property name="text">
-                    <string>App Detection</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="status_tracking_name">
-                   <property name="text">
-                    <string>Tracking</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="2">
-                  <widget class="QLabel" name="status_processing_state">
-                   <property name="text">
-                    <string>Busy</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="4" column="2">
                   <widget class="QLabel" name="status_gui_state">
                    <property name="text">
@@ -2031,22 +1945,15 @@ This should be used after manually editing it.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="status_processing_name">
+                 <item row="2" column="3">
+                  <widget class="QLabel" name="status_tracking_queue">
                    <property name="text">
-                    <string>Processing</string>
+                    <string>3</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="status_tracking_pid">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="status_gui_pid">
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="status_app_pid">
                    <property name="text">
                     <string/>
                    </property>
@@ -2068,17 +1975,44 @@ This should be used after manually editing it.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="3">
-                  <widget class="QLabel" name="status_hub_queue">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="status_header_name">
                    <property name="text">
-                    <string>0</string>
+                    <string>**Name**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="3">
-                  <widget class="QLabel" name="status_tracking_queue">
+                 <item row="3" column="2">
+                  <widget class="QLabel" name="status_processing_state">
                    <property name="text">
-                    <string>3</string>
+                    <string>Busy</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="status_hub_name">
+                   <property name="text">
+                    <string>Hub</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="status_processing_name">
+                   <property name="text">
+                    <string>Processing</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="status_header_pid">
+                   <property name="text">
+                    <string>**PID**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
                    </property>
                   </widget>
                  </item>
@@ -2089,6 +2023,13 @@ This should be used after manually editing it.</string>
                    </property>
                   </widget>
                  </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="status_tracking_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="4" column="3">
                   <widget class="QLabel" name="status_gui_queue">
                    <property name="text">
@@ -2096,10 +2037,97 @@ This should be used after manually editing it.</string>
                    </property>
                   </widget>
                  </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="status_header_state">
+                   <property name="text">
+                    <string>**State**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="status_hub_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="5" column="3">
                   <widget class="QLabel" name="status_app_queue">
                    <property name="text">
                     <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="status_gui_name">
+                   <property name="text">
+                    <string>GUI</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLabel" name="status_processing_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="status_app_name">
+                   <property name="text">
+                    <string>App Detection</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="status_tracking_name">
+                   <property name="text">
+                    <string>Tracking</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="status_gui_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QLabel" name="status_tracking_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="status_playback_name">
+                   <property name="text">
+                    <string>Playback</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="2">
+                  <widget class="QLabel" name="status_playback_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="3">
+                  <widget class="QLabel" name="status_playback_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLabel" name="status_playback_pid">
+                   <property name="text">
+                    <string/>
                    </property>
                   </widget>
                  </item>
