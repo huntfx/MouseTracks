@@ -1,4 +1,5 @@
 import math
+import os
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -15,7 +16,7 @@ from ..config import GlobalConfig
 from ..context import CTX
 from ..exceptions import ExitRequest
 from ..export import Export
-from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ..file import ArrayResolutionMap, MovementMaps, PROFILE_DIR, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
@@ -852,7 +853,7 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Deleting profile {profile_name}...')
         del self.all_profiles[profile_name]
         with suppress(FileNotFoundError):
-            send2trash(get_filename(profile_name))
+            send2trash(os.path.join(PROFILE_DIR, get_filename(profile_name)))
 
     def _delete_profile_data(self, profile_name: str, devices: ipc.Device) -> None:
         """Delete tracking data for one or more devices."""

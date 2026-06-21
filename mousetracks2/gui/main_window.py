@@ -1271,7 +1271,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # from disk if the requested profile isn't current
         if self._is_loading_profile:
             try:
-                _profile = TrackingProfile.load(get_filename(profile_name), metadata_only=True)
+                _profile = TrackingProfile.load(os.path.join(PROFILE_DIR, get_filename(profile_name)), metadata_only=True)
             except FileNotFoundError:
                 elapsed_time = 0
             else:
@@ -2500,7 +2500,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Check if the profile already exists
             if not PROFILE_DIR.exists():
                 break
-            if os.path.basename(get_filename(profile_name)) not in os.listdir(PROFILE_DIR):
+            if get_filename(profile_name) not in os.listdir(PROFILE_DIR):
                 if sanitise_profile_name(profile_name) not in self._profile_names:
                     break
 
