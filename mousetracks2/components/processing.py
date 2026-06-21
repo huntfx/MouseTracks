@@ -61,9 +61,7 @@ class Processing(AppComponent, MonitorComponent):
         self.tick = 0
         self._timestamp = -1
         self.is_playback = CTX.playback_file is not None
-
         self.previous_mouse_click: PreviousMouseClick | None = None
-        self.previous_monitor = None
 
         # Load in the default profile
         self.all_profiles = TrackingProfileLoader()
@@ -746,10 +744,15 @@ class Processing(AppComponent, MonitorComponent):
                 raise RuntimeError('test exception')
 
             case ipc.StartPlayback():
+                self.save()
+                self.all_profiles = TrackingProfileLoader(profile_dir=None)
+                self.previous_mouse_click = None
                 self.is_playback = True
 
             case ipc.StopPlayback():
                 self.is_playback = False
+                self.all_profiles = TrackingProfileLoader()
+                self.previous_mouse_click = None
 
             case ipc.TrackingStarted():
                 self.profile.cursor_map.position = None if self.is_playback else get_cursor_pos()
