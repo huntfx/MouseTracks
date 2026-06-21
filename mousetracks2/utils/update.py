@@ -47,7 +47,7 @@ def _get_release_data(version: str = 'latest') -> dict | None:
         with urlopen(url, timeout=5) as response:
             release = json.load(response)
 
-    except (URLError, json.decoder.JSONDecodeError) as e:
+    except (URLError, TimeoutError, json.decoder.JSONDecodeError) as e:
         print(f'Error reading version {version}: {e}')
         return None
 

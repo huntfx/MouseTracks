@@ -11,7 +11,7 @@ def download_file(url: str, path: str | Path, timeout: int = 10) -> bool:
     try:
         with urlopen(url, timeout=timeout) as response, open(path, 'wb') as f:
             shutil.copyfileobj(response, f)
-    except URLError as e:
+    except (URLError, TimeoutError) as e:
         print(f'Error downloading {url}: {e}')
         return False
     return True
