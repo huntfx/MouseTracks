@@ -556,6 +556,15 @@ class ExportStatsSuccessful(Message):
 
 
 @dataclass
+class HistoryExported(Message):
+    """Notify the GUI that a history export has been saved successfully."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    path: str
+    duration_ticks: int
+
+
+@dataclass
 class ReloadAppList(Message):
     """Reload AppList.txt."""
 
@@ -646,6 +655,16 @@ class SetHistoryLength(Message):
 
     target: Target = field(default=Target.Playback, init=False)
     ticks: int
+
+
+@dataclass
+class ExportHistory(Message):
+    """Export a slice of the history buffer to a .jsonl.gz file."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    path: str
+    start_percentage: float
+    end_percentage: float
 
 
 @dataclass

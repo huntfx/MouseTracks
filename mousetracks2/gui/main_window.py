@@ -369,6 +369,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
         self.ui.record_history.toggled.connect(self.history_toggled)
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
+        self.ui.playback_play.clicked.connect(self.history_play)
+        self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
@@ -407,6 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_selected_layer(background_layer)
         if not self.ui.layer_blending.currentIndex():
             self.layer_blend_mode_changed(0)
+        self.history_length_changed(self.ui.history_length.value())
 
         self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
         self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
@@ -1557,6 +1560,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg = AutoCloseMessageBox(self)
                 msg.setWindowTitle(f'Export Successful')
                 msg.setText(f'"{message.request.path}" was successfully saved.')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+                msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
+
+            case ipc.HistoryExported():
+                msg = AutoCloseMessageBox(self)
+                msg.setWindowTitle('Export Successful')
+                msg.setText(f'"{message.path}" was successfully saved.')
+                msg.setInformativeText(f'Exported {format_ticks(message.duration_ticks)} of activity history.')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
 
@@ -2859,3 +2870,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_range.setValue((0, length))
         if self.ui.record_history.isChecked():
             self.component.send_data(ipc.SetHistoryLength(length * 60 * UPDATES_PER_SECOND))
+
+    @QtCore.Slot()
+    def history_play(self) -> None:
+        """Play back the selected history range."""
+        pass
+
+    @QtCore.Slot()
+    def history_export(self) -> None:
+        """Export the selected history range to a recording file."""
+        path, accepted = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Export History',
+            str(CTX.data_dir / 'history.jsonl.gz'),
+            'JSON Lines (*.jsonl.gz)',
+        )
+        if not accepted or not path:
+            return
+        if not path.endswith('.jsonl.gz'):
+            path += '.jsonl.gz'
+
+        start, end = self.ui.playback_range.value()
+        total = self.ui.history_length.value()
+        if not total or not self.ui.record_history.isChecked():
+            return
+
+        start_percentage = start / total if total else 0.0
+        end_percentage = end / total if total else 1.0
+        self.component.send_data(ipc.ExportHistory(path=path, start_percentage=start_percentage, end_percentage=end_percentage))

@@ -15,7 +15,7 @@ from typing import Iterator
 
 from . import ipc
 from .abstract import Component
-from .recording import read_recording
+from .recording import open_recording, read_recording, write_event, RECORDED_MESSAGE_TYPES
 from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
@@ -32,6 +32,7 @@ class Playback(Component):
         hide_child_process()
         self._history: deque[tuple[int, ipc.Message]] = deque()
         self._current_tick = 0
+        self._current_timestamp = 0
         self._history_length = 0
 
     def run(self) -> None:
@@ -46,6 +47,7 @@ class Playback(Component):
             match message:
                 case ipc.Tick():
                     self._current_tick = message.tick
+                    self._current_timestamp = message.timestamp
                     if self._history_length:
                         cutoff = message.tick - self._history_length
                         while self._history and self._history[0][0] < cutoff:
@@ -56,12 +58,53 @@ class Playback(Component):
                     if not message.ticks:
                         self._history.clear()
 
+                case ipc.ExportHistory():
+                    self._export_history(message.path, message.start_percentage, message.end_percentage)
+
                 case ipc.StopTracking() | ipc.Exit():
                     raise ExitRequest
 
                 case _:
                     if self._history_length and message.source != ipc.Target.Playback:
                         self._history.append((self._current_tick, message))
+
+    def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
+        """Export a slice of the history to disk."""
+        # Safety check - this shouldn't ever happen
+        if not self._history or not self._history_length:
+            print(f'[Playback] No history being recorded')
+            return
+
+        oldest_tick = self._current_tick - self._history_length
+        start_tick = oldest_tick + round(start_percentage * self._history_length)
+        end_tick = oldest_tick + round(end_percentage * self._history_length)
+
+        # Filter events within the playback window
+        events = [(tick, msg) for tick, msg in self._history
+                  if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
+
+        # Safety check - this shouldn't ever happen
+        if not events:
+            print(f'[Playback] No matching events found')
+            return
+
+        # Get the ticks and timestamps
+        first_tick = events[0][0]
+        last_tick = events[-1][0]
+        first_timestamp = self._current_timestamp - (self._current_tick - first_tick) // UPDATES_PER_SECOND
+        last_timestamp = first_timestamp + (last_tick - first_tick) // UPDATES_PER_SECOND
+
+        # Write to file
+        print(f'[Playback] Writing to {path}')
+        with open_recording(path) as f:
+            write_event(f, first_tick, ipc.Tick(first_tick, first_timestamp))
+            for tick, msg in events:
+                write_event(f, tick, msg)
+            write_event(f, last_tick, ipc.Tick(last_tick, last_timestamp))
+
+        # Notify the GUI it's saved
+        print(f'[Playback] History saved to {path}')
+        self.send_data(ipc.HistoryExported(path=path, duration_ticks=last_tick - first_tick))
 
     def _run_file_playback(self) -> None:
         """Replay a recording file."""
