@@ -152,10 +152,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.ui.playback_range.setEnabled(True)
+        self.ui.playback_range.setRange(0, 100)
+        self.ui.playback_range.setValue((0, 100))
+        self.ui.playback_range.setOrientation(QtCore.Qt.Orientation.Horizontal)
+
         # Set initial widget states
         self.ui.statusbar.setVisible(False)
         self.ui.output_logs.setVisible(False)
-        self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
@@ -363,6 +367,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_up.clicked.connect(self.move_layer_up)
         self.ui.layer_down.clicked.connect(self.move_layer_down)
         self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
+        self.ui.record_history.toggled.connect(self.history_toggled)
+        self.ui.history_length.valueChanged.connect(self.history_length_changed)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
@@ -2839,3 +2845,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stat_app_exe.setText(os.path.basename(exe))
         self.ui.stat_app_title.setText(title)
         self.ui.stat_app_tracked.setText('Yes' if tracked else 'No')
+
+    @QtCore.Slot(bool)
+    def history_toggled(self, enabled: bool) -> None:
+        """Enable or disable recording history."""
+        ticks = self.ui.history_length.value() * 60 * UPDATES_PER_SECOND if enabled else 0
+        self.component.send_data(ipc.SetHistoryLength(ticks))
+
+    @QtCore.Slot(int)
+    def history_length_changed(self, length: int) -> None:
+        """Set the recorded history length."""
+        self.ui.playback_range.setRange(0, length)
+        self.ui.playback_range.setValue((0, length))
+        if self.ui.record_history.isChecked():
+            self.component.send_data(ipc.SetHistoryLength(length * 60 * UPDATES_PER_SECOND))

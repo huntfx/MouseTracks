@@ -20,11 +20,11 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QScrollBar, QSizePolicy, QSpacerItem,
-    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
-    QWidget)
+    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
 from mousetracks2.gui.widgets import (ResizableImage, Splitter)
+from superqt import QRangeSlider
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -760,9 +760,8 @@ class Ui_MainWindow(object):
 
         self.record_history = QGroupBox(self.scrollAreaWidgetContents)
         self.record_history.setObjectName(u"record_history")
-        self.record_history.setEnabled(False)
         self.record_history.setCheckable(True)
-        self.record_history.setChecked(False)
+        self.record_history.setChecked(True)
         self.verticalLayout_12 = QVBoxLayout(self.record_history)
         self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.horizontalLayout = QHBoxLayout()
@@ -774,20 +773,41 @@ class Ui_MainWindow(object):
 
         self.history_length = QSpinBox(self.record_history)
         self.history_length.setObjectName(u"history_length")
-        self.history_length.setValue(2)
+        self.history_length.setMinimum(1)
+        self.history_length.setMaximum(9999)
+        self.history_length.setValue(120)
 
         self.horizontalLayout.addWidget(self.history_length)
 
 
         self.verticalLayout_12.addLayout(self.horizontalLayout)
 
-        self.history_current = QScrollBar(self.record_history)
-        self.history_current.setObjectName(u"history_current")
-        self.history_current.setMaximum(3600)
-        self.history_current.setValue(3600)
-        self.history_current.setOrientation(Qt.Orientation.Horizontal)
+        self.groupBox = QGroupBox(self.record_history)
+        self.groupBox.setObjectName(u"groupBox")
+        self.verticalLayout_16 = QVBoxLayout(self.groupBox)
+        self.verticalLayout_16.setObjectName(u"verticalLayout_16")
+        self.playback_range = QRangeSlider(self.groupBox)
+        self.playback_range.setObjectName(u"playback_range")
 
-        self.verticalLayout_12.addWidget(self.history_current)
+        self.verticalLayout_16.addWidget(self.playback_range)
+
+        self.horizontalLayout_12 = QHBoxLayout()
+        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
+        self.playback_play = QPushButton(self.groupBox)
+        self.playback_play.setObjectName(u"playback_play")
+
+        self.horizontalLayout_12.addWidget(self.playback_play)
+
+        self.playback_export = QPushButton(self.groupBox)
+        self.playback_export.setObjectName(u"playback_export")
+
+        self.horizontalLayout_12.addWidget(self.playback_export)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_12)
+
+
+        self.verticalLayout_12.addWidget(self.groupBox)
 
 
         self.verticalLayout_3.addWidget(self.record_history)
@@ -1380,6 +1400,7 @@ class Ui_MainWindow(object):
         self.label_24.setBuddy(self.colour_option)
         self.label_33.setBuddy(self.layer_blending)
         self.label_32.setBuddy(self.layer_opacity)
+        self.label_7.setBuddy(self.history_length)
 #endif // QT_CONFIG(shortcut)
 
         self.menubar.addAction(self.menuFile.menuAction())
@@ -1808,7 +1829,10 @@ class Ui_MainWindow(object):
         self.stat_download_current.setText(QCoreApplication.translate("MainWindow", u"3.5 Mb/s (0.3 MB/s)", None))
         self.stat_upload_current.setText(QCoreApplication.translate("MainWindow", u"80 Mb/s (8.2 MB/s)", None))
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Playback Controls", None))
+        self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Start Playback", None))
+        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
         self.tip.setText(QCoreApplication.translate("MainWindow", u"Tip: Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
         self.tip.setProperty(u"tip_tracking", QCoreApplication.translate("MainWindow", u"Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
         self.tip.setProperty(u"tip_update", QCoreApplication.translate("MainWindow", u"A new update is available. <a href=\"https://github.com/huntfx/MouseTracks/releases/latest\">Click here</a> to visit the download page.", None))

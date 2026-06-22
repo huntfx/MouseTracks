@@ -1238,9 +1238,6 @@ For example, it can be limited to Alpha to copy the transparency.</string>
               </item>
               <item>
                <widget class="QGroupBox" name="record_history">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
                 <property name="title">
                  <string>History</string>
                 </property>
@@ -1248,7 +1245,7 @@ For example, it can be limited to Alpha to copy the transparency.</string>
                  <bool>true</bool>
                 </property>
                 <property name="checked">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
                  <item>
@@ -1256,30 +1253,56 @@ For example, it can be limited to Alpha to copy the transparency.</string>
                    <item>
                     <widget class="QLabel" name="label_7">
                      <property name="text">
-                      <string>Number of hours to keep available</string>
+                      <string>Number of minutes to keep available</string>
+                     </property>
+                     <property name="buddy">
+                      <cstring>history_length</cstring>
                      </property>
                     </widget>
                    </item>
                    <item>
                     <widget class="QSpinBox" name="history_length">
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
                      <property name="value">
-                      <number>2</number>
+                      <number>120</number>
                      </property>
                     </widget>
                    </item>
                   </layout>
                  </item>
                  <item>
-                  <widget class="QScrollBar" name="history_current">
-                   <property name="maximum">
-                    <number>3600</number>
+                  <widget class="QGroupBox" name="groupBox">
+                   <property name="title">
+                    <string>Playback Controls</string>
                    </property>
-                   <property name="value">
-                    <number>3600</number>
-                   </property>
-                   <property name="orientation">
-                    <enum>Qt::Orientation::Horizontal</enum>
-                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_16">
+                    <item>
+                     <widget class="QRangeSlider" name="playback_range" native="true"/>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_12">
+                      <item>
+                       <widget class="QPushButton" name="playback_play">
+                        <property name="text">
+                         <string>Start Playback</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="playback_export">
+                        <property name="text">
+                         <string>Export Replay</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
                   </widget>
                  </item>
                 </layout>
@@ -2743,6 +2766,12 @@ This should be used after manually editing it.</string>
    <class>Splitter</class>
    <extends>QSplitter</extends>
    <header>mousetracks2.gui.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QRangeSlider</class>
+   <extends>QWidget</extends>
+   <header>superqt</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
