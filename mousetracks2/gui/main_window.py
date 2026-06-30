@@ -2899,21 +2899,31 @@ class MainWindow(QtWidgets.QMainWindow):
         end_percentage = end / total
         self.component.send_data(ipc.StartPlayback(start_percentage=start_percentage, end_percentage=end_percentage))
 
+    def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:
+        """Reset all render frequency counters when entering/exiting playback mode."""
+        self.cursor_data = MapData(cursor_position)
+        self.thumbstick_l_data = MapData((0, 0))
+        self.thumbstick_r_data = MapData((0, 0))
+        self.mouse_click_count = 0
+        self.mouse_held_count = 0
+        self.key_press_count = 0
+        self.last_render = (self.render_type, -1)
+
     def _enter_playback_mode(self) -> None:
         """Enter history playback mode and configure the UI accordingly."""
         self.is_playback = True
         self._playback_running = True
-        self.cursor_data.position = None
-        self.last_render = (self.render_type, -1)
         self.ui.thumbnail.clear_pixmap()
         self.ui.thumbnail.playback_overlay.playback_state = True
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
+        self._reset_render_counters()
 
     def _exit_playback_mode(self) -> None:
         """Exit history playback mode and restore the live UI state."""
         self.is_playback = False
         self.ui.recording_start.setEnabled(True)
+        self._reset_render_counters(get_cursor_pos())
 
     @QtCore.Slot()
     def history_stop(self) -> None:
