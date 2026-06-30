@@ -202,9 +202,15 @@ class PlaybackStarted(Message):
 
 
 @dataclass
+class PlaybackFinishing(Message):
+    """Allow components to run code before playback is fully ended."""
+    target: Target = field(default=Target.Processing, init=False)
+
+
+@dataclass
 class PlaybackFinished(Message):
     """Sent when the playback component has finished replaying events."""
-    target: Target = field(default=Target.Hub | Target.GUI | Target.Processing, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI | Target.Processing | Target.Tracking, init=False)
 
 
 @dataclass
@@ -668,8 +674,38 @@ class ExportHistory(Message):
 
 
 @dataclass
+class StartPlayback(Message):
+    """Start replaying the buffered history."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    start_percentage: float
+    end_percentage: float
+
+
+@dataclass
+class StopPlayback(Message):
+    """Stop history playback mode."""
+
+    target: Target = field(default=Target.Hub | Target.Playback | Target.Tracking, init=False)
+
+
+@dataclass
+class PausePlayback(Message):
+    """Pause history playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class ResumePlayback(Message):
+    """Resume a paused history playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
 class StartRecording(Message):
-    """Hub begins recording all tracked messages, streaming to the given path."""
+    """Record tracking messages to a specific path."""
 
     target: Target = field(default=Target.Hub | Target.Processing, init=False)
     path: str
@@ -677,7 +713,7 @@ class StartRecording(Message):
 
 @dataclass
 class StopRecording(Message):
-    """Hub stops recording and writes a completion marker to the file."""
+    """Finish recording messages."""
 
     target: Target = field(default=Target.Hub, init=False)
 

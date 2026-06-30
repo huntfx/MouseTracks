@@ -34,20 +34,22 @@ class Playback(Component):
         self._current_tick = 0
         self._current_timestamp = 0
         self._history_length = 0
+        self._components_loaded = False
 
     def run(self) -> None:
         if CTX.playback_file is not None:
             self._run_file_playback()
-        else:
-            self._run_cache()
+        self._cache_live_events()
 
-    def _run_cache(self) -> None:
-        """Cache events from live tracking for history playback."""
+    def _cache_live_events(self) -> None:
+        """Cache messages from live tracking."""
         for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
             match message:
                 case ipc.Tick():
                     self._current_tick = message.tick
                     self._current_timestamp = message.timestamp
+
+                    # Trim the history length if required
                     if self._history_length:
                         cutoff = message.tick - self._history_length
                         while self._history and self._history[0][0] < cutoff:
@@ -58,15 +60,31 @@ class Playback(Component):
                     if not message.ticks:
                         self._history.clear()
 
+                case ipc.AllComponentsLoaded():
+                    self._components_loaded = True
+
                 case ipc.ExportHistory():
                     self._export_history(message.path, message.start_percentage, message.end_percentage)
+
+                case ipc.StartPlayback():
+                    oldest_tick = self._current_tick - self._history_length
+                    start_tick = oldest_tick + round(message.start_percentage * self._history_length)
+                    end_tick = oldest_tick + round(message.end_percentage * self._history_length)
+                    snapshot = (
+                        (tick, msg) for tick, msg in self._history
+                        if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES
+                    )
+                    self._replay(snapshot)
+
+                # Don't record these events to history
+                case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback(): ...
 
                 case ipc.StopTracking() | ipc.Exit():
                     raise ExitRequest
 
-                case _:
-                    if self._history_length and message.source != ipc.Target.Playback:
-                        self._history.append((self._current_tick, message))
+                # Record all other events in the history queue
+                case _ if self._history_length and message.source != ipc.Target.Playback:
+                    self._history.append((self._current_tick, message))
 
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
         """Export a slice of the history to disk."""
@@ -120,35 +138,44 @@ class Playback(Component):
         start_tick = next_event[0]
         start_timestamp = int(time.time())
 
-        paused = ready = False
+        paused = stopped = False
         tick_offset = 0
 
         self.send_data(ipc.PlaybackStarted())
 
+        # Use the tracking tick handler for a constant 60 ups
         for _tick in ticks(UPDATES_PER_SECOND):
+
+            # Process any messages sent during the replay
             for message in self.receive_data():
                 if message.source == ipc.Target.Playback:
                     continue
                 match message:
-                    case ipc.PauseTracking():
+                    case ipc.PausePlayback():
                         paused = True
-                    case ipc.StartTracking():
+                    case ipc.ResumePlayback():
                         paused = False
-                        self.send_data(ipc.TrackingStarted())
                     case ipc.StopTracking() | ipc.Exit():
                         raise ExitRequest
                     case ipc.AllComponentsLoaded():
-                        ready = True
+                        self._components_loaded = True
+                    case ipc.StopPlayback():
+                        stopped = True
 
-            if paused or not ready:
+            # Handle exit / pause
+            if stopped:
+                break
+            if paused or not self._components_loaded:
                 tick_offset += 1
                 continue
 
+            # Calculate the correct tick
             tick = _tick - tick_offset
             recorded_tick = start_tick + tick
             timestamp = start_timestamp + tick // UPDATES_PER_SECOND
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
+            # Process events for the current tick
             while next_event is not None and next_event[0] <= recorded_tick:
                 message = next_event[1]
                 if isinstance(message, ipc.Tick):
@@ -159,5 +186,5 @@ class Playback(Component):
             if next_event is None:
                 break
 
+        self.send_data(ipc.PlaybackFinishing())
         self.send_data(ipc.PlaybackFinished())
-        self.send_data(ipc.PauseTracking())

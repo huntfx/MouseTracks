@@ -1313,6 +1313,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_12.addWidget(self.playback_play)
 
+        self.playback_stop = QPushButton(self.groupBox)
+        self.playback_stop.setObjectName(u"playback_stop")
+
+        self.horizontalLayout_12.addWidget(self.playback_stop)
+
         self.playback_export = QPushButton(self.groupBox)
         self.playback_export.setObjectName(u"playback_export")
 
@@ -2041,6 +2046,7 @@ class Ui_MainWindow(object):
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Playback Controls", None))
         self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Start Playback", None))
+        self.playback_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Playback", None))
         self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))
 

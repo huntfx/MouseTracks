@@ -64,7 +64,7 @@ class Processing(AppComponent, MonitorComponent):
         self.previous_mouse_click: PreviousMouseClick | None = None
 
         # Load in the default profile
-        self.all_profiles = TrackingProfileLoader()
+        self.all_profiles = self._all_profiles = TrackingProfileLoader()
 
         self.config = GlobalConfig()
 
@@ -743,16 +743,20 @@ class Processing(AppComponent, MonitorComponent):
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
+            # When playback starts, switch to empty tracking profiles
             case ipc.PlaybackStarted():
-                self.save()
                 self.all_profiles = TrackingProfileLoader(profile_dir=None)
                 self.previous_mouse_click = None
                 self.is_playback = True
 
-            case ipc.PlaybackFinished():
-                self.is_playback = False
-                self.all_profiles = TrackingProfileLoader()
+            # When playback is in the process of finishing, switch back
+            case ipc.PlaybackFinishing():
+                self.all_profiles = self._all_profiles
                 self.previous_mouse_click = None
+                self.is_playback = False
+
+            # Nothing needs to be done, added here to avoid NotImplementedError
+            case ipc.PlaybackFinished(): ...
 
             case ipc.TrackingStarted():
                 self.profile.cursor_map.position = None if self.is_playback else get_cursor_pos()

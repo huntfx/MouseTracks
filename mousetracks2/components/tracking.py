@@ -138,6 +138,10 @@ class Tracking(Component):
                 case ipc.StopTracking():
                     self.state = ipc.TrackingState.Stopped
 
+                case ipc.PlaybackFinished() | ipc.StopPlayback():
+                    self.data.tick_previous = self.data.tick_current
+                    self.data.tick_modified = None
+
                 case ipc.Exit():
                     raise ExitRequest
 

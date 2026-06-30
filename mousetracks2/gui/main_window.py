@@ -147,6 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
         self.is_playback = CTX.playback_file is not None
+        self._playback_running = False
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -370,6 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.record_history.toggled.connect(self.history_toggled)
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
         self.ui.playback_play.clicked.connect(self.history_play)
+        self.ui.playback_stop.clicked.connect(self.history_stop)
         self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
@@ -1226,7 +1228,15 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def thumbnail_click(self, state: bool) -> None:
         """Handle what to do when the thumbnail is clicked."""
-        if state:
+        if self.is_playback:
+            if state:
+                if self._playback_running:
+                    self.component.send_data(ipc.ResumePlayback())
+                else:
+                    self.history_play()
+            else:
+                self.component.send_data(ipc.PausePlayback())
+        elif state:
             self.start_tracking()
         else:
             self.pause_tracking()
@@ -1361,6 +1371,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.elapsed_time += 1
                 self.thumbnail_render_check()
 
+            case ipc.Tick() if self._playback_running:
+                self.thumbnail_render_check()
+
             case ipc.Active() if self.is_live:
                 self.active_time += message.ticks
 
@@ -1396,14 +1409,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.set_profile_modified_text()
 
             case ipc.PlaybackStarted():
-                self.is_playback = True
-                self.cursor_data.position = None
-                self.ui.recording_start.setEnabled(False)
-                self.ui.recording_stop.setEnabled(False)
+                self._enter_playback_mode()
 
             case ipc.PlaybackFinished():
-                self.is_playback = False
-                self.ui.recording_start.setEnabled(True)
+                self._playback_running = False
+                self.ui.thumbnail.playback_overlay.playback_state = False
+                sanitised_profile_name, _profile_name = self._selected_profile_data()
+                if sanitised_profile_name is not None:
+                    self.request_profile_data(sanitised_profile_name)
 
             case ipc.Exit():
                 self.shut_down(force=True)
@@ -1423,6 +1436,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
+
+            case ipc.MouseMove() if self._playback_running:
+                self.update_track_data(self.cursor_data, message.position)
 
             case ipc.ThumbstickMove() if self.is_live and self.ui.track_gamepad.isChecked():
                 match message.thumbstick:
@@ -2874,7 +2890,36 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def history_play(self) -> None:
         """Play back the selected history range."""
-        pass
+        start, end = self.ui.playback_range.value()
+        total = self.ui.history_length.value()
+        if not total or not self.ui.record_history.isChecked():
+            return
+
+        start_percentage = start / total
+        end_percentage = end / total
+        self.component.send_data(ipc.StartPlayback(start_percentage=start_percentage, end_percentage=end_percentage))
+
+    def _enter_playback_mode(self) -> None:
+        """Enter history playback mode and configure the UI accordingly."""
+        self.is_playback = True
+        self._playback_running = True
+        self.cursor_data.position = None
+        self.last_render = (self.render_type, -1)
+        self.ui.thumbnail.clear_pixmap()
+        self.ui.thumbnail.playback_overlay.playback_state = True
+        self.ui.recording_start.setEnabled(False)
+        self.ui.recording_stop.setEnabled(False)
+
+    def _exit_playback_mode(self) -> None:
+        """Exit history playback mode and restore the live UI state."""
+        self.is_playback = False
+        self.ui.recording_start.setEnabled(True)
+
+    @QtCore.Slot()
+    def history_stop(self) -> None:
+        """Stop history playback."""
+        self._exit_playback_mode()
+        self.component.send_data(ipc.StopPlayback())
 
     @QtCore.Slot()
     def history_export(self) -> None:

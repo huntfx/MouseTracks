@@ -2182,6 +2182,13 @@ This should be used after manually editing it.</string>
                        </widget>
                       </item>
                       <item>
+                       <widget class="QPushButton" name="playback_stop">
+                        <property name="text">
+                         <string>Stop Playback</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
                        <widget class="QPushButton" name="playback_export">
                         <property name="text">
                          <string>Export Replay</string>

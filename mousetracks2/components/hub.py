@@ -16,13 +16,13 @@ import traceback
 import multiprocessing
 import multiprocessing.queues
 import queue
-from dataclasses import dataclass
-from typing import IO, TYPE_CHECKING, Any, Generic, TypeVar
+from dataclasses import dataclass, field, fields
+from typing import IO, TYPE_CHECKING, Any, ClassVar, Generic, Iterator, TypeVar, get_type_hints
 
 from . import ipc
 from .recording import open_recording, write_event, RECORDED_MESSAGE_TYPES
 from ..config import GlobalConfig
-from ..constants import UPDATES_PER_SECOND
+from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 from ..gui.utils import should_minimise_on_start
 from ..runtime import IS_BUILT_EXE
@@ -104,6 +104,26 @@ class Queue(multiprocessing.queues.Queue, Generic[T]):
         return result
 
 
+@dataclass
+class _LiveState:
+    """Snapshot of tracking state to restoring after playback."""
+
+    monitors: ipc.MonitorsChanged = field(default_factory=lambda: ipc.MonitorsChanged(data=ipc.MonitorData()))
+    profile: ipc.CurrentProfileChanged = field(default_factory=lambda: ipc.CurrentProfileChanged(DEFAULT_PROFILE_NAME, None))
+
+    types: ClassVar[tuple[type[ipc.Message], ...]] = (ipc.MonitorsChanged, ipc.CurrentProfileChanged)
+
+    def __iter__(self) -> Iterator[ipc.Message]:
+        for f in fields(self):
+            yield getattr(self, f.name)
+
+    def update(self, message: ipc.Message) -> None:
+        for f, t in zip(fields(self), self.types):
+            if isinstance(message, t):
+                setattr(self, f.name, message)
+                return
+
+
 class Hub:
     """Set up individual components with queues for communication."""
 
@@ -117,6 +137,9 @@ class Hub:
 
         self._playback_active = False
         self._playback_buffer: list[ipc.Message] = []
+        self._playback_replay_finished = False
+        self._playback_stop_requested = False
+        self._live_state = _LiveState()
 
         self._wait_to_load = ipc.Target.Processing | ipc.Target.Playback
         if not playback_mode:
@@ -302,6 +325,13 @@ class Hub:
         self._create_tracking_processes()
         print('[Hub] Started tracking processes')
 
+    def _release_playback_buffer(self) -> None:
+        """Exit playback mode and replay the buffered live messages."""
+        self._playback_active = False
+        for msg in self._playback_buffer:
+            self._process_message(msg)
+        self._playback_buffer.clear()
+
     def _process_message(self, message: ipc.Message) -> None:
         """Execute or forward a message based on its target."""
         # Process messages meant for the hub
@@ -334,13 +364,19 @@ class Hub:
 
                 case ipc.PlaybackStarted():
                     self._playback_active = True
+                    self._playback_replay_finished = False
+                    self._playback_stop_requested = False
+                    self._playback_buffer.extend(self._live_state)
 
                 case ipc.PlaybackFinished():
-                    self._playback_active = False
-                    for msg in self._playback_buffer:
-                        if not isinstance(msg, ipc.Save):
-                            self._process_message(msg)
-                    self._playback_buffer.clear()
+                    self._playback_replay_finished = True
+                    if self._playback_stop_requested:
+                        self._release_playback_buffer()
+
+                case ipc.StopPlayback():
+                    self._playback_stop_requested = True
+                    if self._playback_replay_finished:
+                        self._release_playback_buffer()
 
                 case ipc.Exit():
                     raise ExitRequest
@@ -375,10 +411,14 @@ class Hub:
 
         lc = self._loaded_components
 
-        # Intercept tracking and app detection messages if in playback mode
-        if self._playback_active and message.source & (ipc.Target.Tracking | ipc.Target.AppDetection):
+        # Buffer tracking messages while the playback component is active
+        if self._playback_active and message.source & ipc.Target.Tracking:
             self._playback_buffer.append(message)
             return
+
+        # Keep track of important states that need to be set when playback ends
+        if not self._playback_active and isinstance(message, self._live_state.types):
+            self._live_state.update(message)
 
         if message.target & ipc.Target.Tracking and ipc.Target.Tracking in lc:
             self._q_tracking.put(message)
