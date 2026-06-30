@@ -166,14 +166,18 @@ class Playback(Component):
             if stopped:
                 break
             if paused or not self._components_loaded:
-                tick_offset += 1
+                tick_offset -= 1
                 continue
 
             # Calculate the correct tick
-            tick = _tick - tick_offset
+            tick = _tick + tick_offset
             recorded_tick = start_tick + tick
             timestamp = start_timestamp + tick // UPDATES_PER_SECOND
             self.send_data(ipc.Tick(recorded_tick, timestamp))
+
+            # Skip over empty ticks
+            ticks_until_action = next_event[0] - recorded_tick - 1
+            tick_offset += max(0, ticks_until_action)
 
             # Process events for the current tick
             while next_event is not None and next_event[0] <= recorded_tick:
