@@ -411,8 +411,8 @@ class Hub:
 
         lc = self._loaded_components
 
-        # Buffer tracking messages while the playback component is active
-        if self._playback_active and message.source & ipc.Target.Tracking:
+        # Buffer tracking messages meant for processing while the playback component is active
+        if self._playback_active and message.source & ipc.Target.Tracking and message.target & ipc.Target.Processing:
             self._playback_buffer.append(message)
             return
 
