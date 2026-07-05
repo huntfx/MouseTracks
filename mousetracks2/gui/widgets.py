@@ -246,6 +246,16 @@ class ResizableImage(QtWidgets.QLabel):
                                        (self.height() - self.playback_overlay.height()) // 2)
 
 
+class ClickSlider(QtWidgets.QSlider):
+    """A QSlider that jumps to the clicked position on left click."""
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            ratio = event.position().x() / self.width()
+            self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
+        super().mousePressEvent(event)
+
+
 class Splitter(QtWidgets.QSplitter):
     """Add extra methods to the QSplitter."""
 

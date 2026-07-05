@@ -2220,7 +2220,7 @@ This should be used after manually editing it.</string>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QSlider" name="playback_speed">
+                       <widget class="ClickSlider" name="playback_speed">
                         <property name="maximum">
                          <number>100</number>
                         </property>
@@ -2840,6 +2840,11 @@ This should be used after manually editing it.</string>
   </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ClickSlider</class>
+   <extends>QSlider</extends>
+   <header>mousetracks2.gui.widgets</header>
+  </customwidget>
   <customwidget>
    <class>ResizableImage</class>
    <extends>QLabel</extends>

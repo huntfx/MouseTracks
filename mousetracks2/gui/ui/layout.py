@@ -20,11 +20,10 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QSizePolicy, QSlider, QSpacerItem,
-    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
-    QWidget)
+    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.gui.widgets import (ResizableImage, Splitter)
+from mousetracks2.gui.widgets import (ClickSlider, ResizableImage, Splitter)
 from superqt import QRangeSlider
 
 class Ui_MainWindow(object):
@@ -1340,7 +1339,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addWidget(self.label_12)
 
-        self.playback_speed = QSlider(self.groupBox)
+        self.playback_speed = ClickSlider(self.groupBox)
         self.playback_speed.setObjectName(u"playback_speed")
         self.playback_speed.setMaximum(100)
         self.playback_speed.setValue(50)
