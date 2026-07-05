@@ -1,5 +1,12 @@
+"""Custom widgets.
+
+Note that custom methods are written with snake_case to be in line with
+the rest of the application.
+"""
+
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -246,14 +253,51 @@ class ResizableImage(QtWidgets.QLabel):
                                        (self.height() - self.playback_overlay.height()) // 2)
 
 
+class MappedFloatSlider(QtWidgets.QSlider):
+    """A QSlider that allows a custom float mapping."""
+
+    mapped_value_changed = QtCore.Signal(float)
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._value_map: Callable[[int], float] = float
+        self.valueChanged.connect(self.__value_changed)
+
+    def set_value_map(self, mapping: Callable[[int], float]) -> None:
+        """Set a custom int to float mapping.
+        The default behaviour is `float()`.
+        """
+        self._value_map = mapping
+
+    def value_map(self) -> Callable[[int], float]:
+        """Get the int to float mapping."""
+        return self._value_map
+
+    def mapped_value(self) -> float:
+        """Get the value, remapped to float."""
+        return self._value_map(self.value())
+
+    @QtCore.Slot(int)
+    def __value_changed(self, value: int) -> None:
+        """Emit the new remapped value."""
+        remapped = self._value_map(value)
+        self.mapped_value_changed.emit(remapped)
+
+
 class ClickSlider(QtWidgets.QSlider):
     """A QSlider that jumps to the clicked position on left click."""
+
+    mapped_value_changed = QtCore.Signal(float)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             ratio = event.position().x() / self.width()
             self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
         super().mousePressEvent(event)
+
+
+class Slider(ClickSlider, MappedFloatSlider):
+    """Joined QSlider combining the other subclasses."""
 
 
 class Splitter(QtWidgets.QSplitter):

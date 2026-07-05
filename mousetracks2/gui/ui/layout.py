@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
     QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.gui.widgets import (ClickSlider, ResizableImage, Splitter)
+from mousetracks2.gui.widgets import (ResizableImage, Slider, Splitter)
 from superqt import QRangeSlider
 
 class Ui_MainWindow(object):
@@ -1339,13 +1339,21 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addWidget(self.label_12)
 
-        self.playback_speed = ClickSlider(self.groupBox)
+        self.playback_speed = Slider(self.groupBox)
         self.playback_speed.setObjectName(u"playback_speed")
         self.playback_speed.setMaximum(100)
         self.playback_speed.setValue(50)
         self.playback_speed.setOrientation(Qt.Orientation.Horizontal)
 
         self.horizontalLayout_11.addWidget(self.playback_speed)
+
+        self.playback_speed_visual = QLabel(self.groupBox)
+        self.playback_speed_visual.setObjectName(u"playback_speed_visual")
+        self.playback_speed_visual.setMinimumSize(QSize(28, 0))
+        self.playback_speed_visual.setMaximumSize(QSize(28, 16777215))
+        self.playback_speed_visual.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.horizontalLayout_11.addWidget(self.playback_speed_visual)
 
 
         self.verticalLayout_16.addLayout(self.horizontalLayout_11)
@@ -2075,6 +2083,7 @@ class Ui_MainWindow(object):
         self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
         self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Speed:", None))
+        self.playback_speed_visual.setText(QCoreApplication.translate("MainWindow", u"1.0x", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))
 
         __sortingEnabled1 = self.listWidget_3.isSortingEnabled()

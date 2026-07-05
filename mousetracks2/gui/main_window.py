@@ -54,13 +54,12 @@ def _get_docs_folder() -> Path:
 def _playback_speed_to_ups(slider: int) -> float:
     """Convert 0-100 slider value to UPS.
 
-    The minimum UPS is set to 1, otherwise the user may try to increase
-    it from a low value and not get any feedback for multiple seconds.
+    The minimum is set to 0.5, as that lines up with 0.01x speed in the UI.
     """
     if slider == 0:
         return 0
     if slider <= 50:
-        return max(1.0, UPDATES_PER_SECOND * (slider / 50) ** 2)
+        return max(0.5, UPDATES_PER_SECOND * (slider / 50) ** 2)
     return UPDATES_PER_SECOND ** (slider / 50)
 
 
@@ -166,6 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Setup UI
         self.ui = layout.Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.playback_speed.set_value_map(_playback_speed_to_ups)
 
         self.ui.playback_range.setEnabled(True)
         self.ui.playback_range.setRange(0, 100)
@@ -386,7 +386,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
         self.ui.playback_play.clicked.connect(self.history_play)
         self.ui.playback_stop.clicked.connect(self.history_stop)
-        self.ui.playback_speed.valueChanged.connect(self.playback_speed_changed)
+        self.ui.playback_speed.mapped_value_changed.connect(self.playback_speed_changed)
         self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
         self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
@@ -1798,7 +1798,7 @@ class MainWindow(QtWidgets.QMainWindow):
             was_in_flight = self.pause_redraw > 0
             self.pause_redraw = max(0, self.pause_redraw - 1)
 
-            # Signal Playback to resume if this render was triggered by a profile switch or start
+            # Resume playback if render was triggered by a profile switch
             if was_in_flight and self._profile_change_pending:
                 self._profile_change_pending = False
                 if self.is_playback:
@@ -2914,16 +2914,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
 
     @QtCore.Slot()
-    def playback_speed_changed(self, value: int) -> None:
+    def playback_speed_changed(self, value: float) -> None:
         """Send updated playback options when the speed slider moves."""
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
         self.component.send_data(ipc.PlaybackOptions(
-            ups=_playback_speed_to_ups(value),
+            ups=value,
             skip_empty_ticks=self.ui.playback_skip.isChecked(),
             start_percentage=start / total if total else 0.0,
             end_percentage=end / total if total else 1.0,
         ))
+
+        times_speed = value / UPDATES_PER_SECOND
+        self.ui.playback_speed_visual.setText(f'{round(times_speed, 1 + (times_speed < 10))}x')  # Round to 3 SF
 
     @QtCore.Slot(bool)
     def playback_skip_toggled(self, checked: bool) -> None:
@@ -2943,7 +2946,7 @@ class MainWindow(QtWidgets.QMainWindow):
             start_percentage=start_percentage,
             end_percentage=end_percentage,
             skip_empty_ticks=self.ui.playback_skip.isChecked(),
-            ups=_playback_speed_to_ups(self.ui.playback_speed.value()),
+            ups=self.ui.playback_speed.mapped_value(),
         )))
 
     def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:

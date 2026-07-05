@@ -2220,7 +2220,7 @@ This should be used after manually editing it.</string>
                        </widget>
                       </item>
                       <item>
-                       <widget class="ClickSlider" name="playback_speed">
+                       <widget class="Slider" name="playback_speed">
                         <property name="maximum">
                          <number>100</number>
                         </property>
@@ -2229,6 +2229,28 @@ This should be used after manually editing it.</string>
                         </property>
                         <property name="orientation">
                          <enum>Qt::Orientation::Horizontal</enum>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="playback_speed_visual">
+                        <property name="minimumSize">
+                         <size>
+                          <width>28</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>28</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                        <property name="text">
+                         <string>1.0x</string>
+                        </property>
+                        <property name="alignment">
+                         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                         </property>
                        </widget>
                       </item>
@@ -2841,7 +2863,7 @@ This should be used after manually editing it.</string>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ClickSlider</class>
+   <class>Slider</class>
    <extends>QSlider</extends>
    <header>mousetracks2.gui.widgets</header>
   </customwidget>
