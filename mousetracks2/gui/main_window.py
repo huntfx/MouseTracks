@@ -51,6 +51,19 @@ def _get_docs_folder() -> Path:
     return Path(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.StandardLocation.DocumentsLocation))
 
 
+def _playback_speed_to_ups(slider: int) -> float:
+    """Convert 0-100 slider value to UPS.
+
+    The minimum UPS is set to 1, otherwise the user may try to increase
+    it from a low value and not get any feedback for multiple seconds.
+    """
+    if slider == 0:
+        return 0
+    if slider <= 50:
+        return max(1.0, UPDATES_PER_SECOND * (slider / 50) ** 2)
+    return UPDATES_PER_SECOND ** (slider / 50)
+
+
 @dataclass
 class MapData:
     position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
@@ -148,6 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state = ipc.TrackingState.Paused
         self.is_playback = CTX.playback_file is not None
         self._playback_running = False
+        self._profile_change_pending = False
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -372,6 +386,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
         self.ui.playback_play.clicked.connect(self.history_play)
         self.ui.playback_stop.clicked.connect(self.history_stop)
+        self.ui.playback_speed.valueChanged.connect(self.playback_speed_changed)
+        self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
         self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
@@ -1113,7 +1129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
-        self._timer_thumbnail_update.start(100)
+        self._timer_thumbnail_update.start(0 if self.is_playback else 100)
         return True
 
     def _request_thumbnail(self) -> bool:
@@ -1414,9 +1430,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackFinished():
                 self._playback_running = False
                 self.ui.thumbnail.playback_overlay.playback_state = False
-                sanitised_profile_name, _profile_name = self._selected_profile_data()
-                if sanitised_profile_name is not None:
-                    self.request_profile_data(sanitised_profile_name)
+                self.request_thumbnail()
+
+            case ipc.PlaybackStopped():
+                QtWidgets.QApplication.restoreOverrideCursor()
 
             case ipc.Exit():
                 self.shut_down(force=True)
@@ -1489,9 +1506,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.CurrentProfileChanged():
                 self.component.focused_app = Application(message.name, message.rects)
 
-                if self.is_live:
+                if self.is_playback or self.is_live:
                     for sanitised_profile_name, profile_name in self._profile_names.items():
                         if profile_name == message.name:
+                            self._profile_change_pending = True
                             self.request_profile_data(sanitised_profile_name)
                             break
 
@@ -1777,7 +1795,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
                 self.ui.thumbnail.set_pixmap(scaled_image)
 
-            self.pause_redraw -= 1
+            was_in_flight = self.pause_redraw > 0
+            self.pause_redraw = max(0, self.pause_redraw - 1)
+
+            # Signal Playback to resume if this render was triggered by a profile switch or start
+            if was_in_flight and self._profile_change_pending:
+                self._profile_change_pending = False
+                if self.is_playback:
+                    self.component.send_data(ipc.PlaybackResumeRender())
 
             # Check if the flag was set that a new thumbnail was requested
             if not self.pause_redraw and self._thumbnail_redraw_required:
@@ -2153,8 +2178,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible() or not self.is_live or self._is_closing:
             return
 
-        # If in the middle of switching profiles, queue the coordinates to redraw after
-        if self.pause_redraw:
+        # If in the middle of switching profiles or rendering, queue the coordinates to redraw after
+        # Do not queue if changing profiles during playback, as it looks noticeably wrong
+        if self.pause_redraw and not (self.is_playback and self._profile_change_pending):
             self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
 
         if self.ui.thumbnail.pixmap().isNull():
@@ -2876,7 +2902,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def history_toggled(self, enabled: bool) -> None:
         """Enable or disable recording history."""
-        ticks = self.ui.history_length.value() * 60 * UPDATES_PER_SECOND if enabled else 0
+        ticks = round(self.ui.history_length.value() * 60 * UPDATES_PER_SECOND if enabled else 0)
         self.component.send_data(ipc.SetHistoryLength(ticks))
 
     @QtCore.Slot(int)
@@ -2885,9 +2911,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_range.setRange(0, length)
         self.ui.playback_range.setValue((0, length))
         if self.ui.record_history.isChecked():
-            self.component.send_data(ipc.SetHistoryLength(length * 60 * UPDATES_PER_SECOND))
+            self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
 
     @QtCore.Slot()
+    def playback_speed_changed(self, value: int) -> None:
+        """Send updated playback options when the speed slider moves."""
+        start, end = self.ui.playback_range.value()
+        total = self.ui.history_length.value()
+        self.component.send_data(ipc.PlaybackOptions(
+            ups=_playback_speed_to_ups(value),
+            skip_empty_ticks=self.ui.playback_skip.isChecked(),
+            start_percentage=start / total if total else 0.0,
+            end_percentage=end / total if total else 1.0,
+        ))
+
+    @QtCore.Slot(bool)
+    def playback_skip_toggled(self, checked: bool) -> None:
+        """Send updated playback options when the skip idle time option is toggled."""
+        self.playback_speed_changed(self.ui.playback_speed.value())
+
     def history_play(self) -> None:
         """Play back the selected history range."""
         start, end = self.ui.playback_range.value()
@@ -2897,7 +2939,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start_percentage = start / total
         end_percentage = end / total
-        self.component.send_data(ipc.StartPlayback(start_percentage=start_percentage, end_percentage=end_percentage))
+        self.component.send_data(ipc.StartPlayback(options=ipc.PlaybackOptions(
+            start_percentage=start_percentage,
+            end_percentage=end_percentage,
+            skip_empty_ticks=self.ui.playback_skip.isChecked(),
+            ups=_playback_speed_to_ups(self.ui.playback_speed.value()),
+        )))
 
     def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:
         """Reset all render frequency counters when entering/exiting playback mode."""
@@ -2908,6 +2955,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mouse_held_count = 0
         self.key_press_count = 0
         self.last_render = (self.render_type, -1)
+        self.pause_redraw = 0
+        self._thumbnail_redraw_required = False
 
     def _enter_playback_mode(self) -> None:
         """Enter history playback mode and configure the UI accordingly."""
@@ -2922,6 +2971,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def _exit_playback_mode(self) -> None:
         """Exit history playback mode and restore the live UI state."""
         self.is_playback = False
+        self._profile_change_pending = False
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.ui.recording_start.setEnabled(True)
         self._reset_render_counters(get_cursor_pos())
 

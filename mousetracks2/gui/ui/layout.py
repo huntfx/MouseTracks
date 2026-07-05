@@ -20,8 +20,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
-    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
+    QScrollArea, QSizePolicy, QSlider, QSpacerItem,
+    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from mousetracks2.gui.widgets import (ResizableImage, Splitter)
 from superqt import QRangeSlider
@@ -1326,6 +1327,30 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_16.addLayout(self.horizontalLayout_12)
 
+        self.playback_skip = QCheckBox(self.groupBox)
+        self.playback_skip.setObjectName(u"playback_skip")
+        self.playback_skip.setChecked(True)
+
+        self.verticalLayout_16.addWidget(self.playback_skip)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
+        self.label_12 = QLabel(self.groupBox)
+        self.label_12.setObjectName(u"label_12")
+
+        self.horizontalLayout_11.addWidget(self.label_12)
+
+        self.playback_speed = QSlider(self.groupBox)
+        self.playback_speed.setObjectName(u"playback_speed")
+        self.playback_speed.setMaximum(100)
+        self.playback_speed.setValue(50)
+        self.playback_speed.setOrientation(Qt.Orientation.Horizontal)
+
+        self.horizontalLayout_11.addWidget(self.playback_speed)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_11)
+
 
         self.verticalLayout_12.addWidget(self.groupBox)
 
@@ -1427,6 +1452,7 @@ class Ui_MainWindow(object):
         self.label_33.setBuddy(self.layer_blending)
         self.label_32.setBuddy(self.layer_opacity)
         self.label_7.setBuddy(self.history_length)
+        self.label_12.setBuddy(self.playback_speed)
 #endif // QT_CONFIG(shortcut)
 
         self.menubar.addAction(self.menuFile.menuAction())
@@ -2048,6 +2074,8 @@ class Ui_MainWindow(object):
         self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Start Playback", None))
         self.playback_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Playback", None))
         self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
+        self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Speed:", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))
 
         __sortingEnabled1 = self.listWidget_3.isSortingEnabled()

@@ -328,9 +328,11 @@ class Hub:
     def _release_playback_buffer(self) -> None:
         """Exit playback mode and replay the buffered live messages."""
         self._playback_active = False
+        self._process_message(ipc.PlaybackStopping())
         for msg in self._playback_buffer:
             self._process_message(msg)
         self._playback_buffer.clear()
+        self._process_message(ipc.PlaybackStopped())
 
     def _process_message(self, message: ipc.Message) -> None:
         """Execute or forward a message based on its target."""

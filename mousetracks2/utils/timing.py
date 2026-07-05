@@ -3,7 +3,7 @@ from itertools import count
 from typing import Iterator
 
 
-def ticks(ups: int) -> Iterator[int]:
+def ticks(ups: float) -> Iterator[int]:
     """Count up at a constant speed.
 
     If any delay occurs, it will account for this and will continue to

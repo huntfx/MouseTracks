@@ -749,8 +749,7 @@ class Processing(AppComponent, MonitorComponent):
                 self.previous_mouse_click = None
                 self.is_playback = True
 
-            # When playback is in the process of finishing, switch back
-            case ipc.PlaybackFinishing():
+            case ipc.PlaybackStopping():
                 self.all_profiles = self._all_profiles
                 self.previous_mouse_click = None
                 self.is_playback = False

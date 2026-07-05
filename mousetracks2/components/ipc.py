@@ -202,9 +202,21 @@ class PlaybackStarted(Message):
 
 
 @dataclass
-class PlaybackFinishing(Message):
-    """Allow components to run code before playback is fully ended."""
+class PlaybackStopping(Message):
+    """Sent during the playback stop process."""
     target: Target = field(default=Target.Processing, init=False)
+
+
+@dataclass
+class PlaybackStopped(Message):
+    """Sent once the playback has successfully stopped."""
+    target: Target = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class PlaybackResumeRender(Message):
+    """Notification sent once a render has been received so playback can continue."""
+    target: Target = field(default=Target.Playback, init=False)
 
 
 @dataclass
@@ -241,7 +253,7 @@ class RenderRequest(Message):
     rendered.
     """
 
-    target: Target = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing | Target.Playback, init=False)
     type: RenderType
     profile: str | None
     file_path: str | None
@@ -268,7 +280,7 @@ class RenderRequest(Message):
 class Render(Message):
     """A render has been completed."""
 
-    target: Target = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI | Target.Playback, init=False)
     array: npt.NDArray[np.uint8]
     request: RenderRequest
 
@@ -674,12 +686,22 @@ class ExportHistory(Message):
 
 
 @dataclass
+class PlaybackOptions(Message):
+    """Configure playback settings before or during playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    ups: float
+    skip_empty_ticks: bool
+    start_percentage: float
+    end_percentage: float
+
+
+@dataclass
 class StartPlayback(Message):
     """Start replaying the buffered history."""
 
     target: Target = field(default=Target.Playback, init=False)
-    start_percentage: float
-    end_percentage: float
+    options: PlaybackOptions
 
 
 @dataclass
