@@ -52,14 +52,11 @@ def _get_docs_folder() -> Path:
 
 
 def _playback_speed_to_ups(slider: int) -> float:
-    """Convert 0-100 slider value to UPS.
-
-    The minimum is set to 0.5, as that lines up with 0.01x speed in the UI.
-    """
+    """Convert 0-100 slider value to UPS."""
     if slider == 0:
         return 0
     if slider <= 50:
-        return max(0.5, UPDATES_PER_SECOND * (slider / 50) ** 2)
+        return UPDATES_PER_SECOND * (slider / 50) ** 2
     return UPDATES_PER_SECOND ** (slider / 50)
 
 
@@ -2946,7 +2943,7 @@ class MainWindow(QtWidgets.QMainWindow):
             start_percentage=start_percentage,
             end_percentage=end_percentage,
             skip_empty_ticks=self.ui.playback_skip.isChecked(),
-            ups=self.ui.playback_speed.mapped_value(),
+            ups=max(1.0, self.ui.playback_speed.mapped_value()),  # Don't allow UPS to go too low
         )))
 
     def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:
