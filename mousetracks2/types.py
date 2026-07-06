@@ -157,8 +157,9 @@ class RectList(list[Rect]):
             return None
 
         if combined:
-            x_min, y_min, x_max, y_max = self[0].rect
-            for x1, y1, x2, y2 in self[1:].rects:
+            rects = self.rects
+            x_min, y_min, x_max, y_max = rects[0]
+            for x1, y1, x2, y2 in rects[1:]:
                 x_min = min(x_min, x1)
                 y_min = min(y_min, y1)
                 x_max = max(x_max, x2)
@@ -180,6 +181,16 @@ class RectList(list[Rect]):
     @property
     def rects(self) -> list[tuple[int, int, int, int]]:
         return [item.rect for item in self]
+
+    @property
+    def size(self) -> tuple[int, int]:
+        """Get the combined bounding box size of all rects."""
+        rects = self.rects
+        x_min = min(r[0] for r in rects)
+        y_min = min(r[1] for r in rects)
+        x_max = max(r[2] for r in rects)
+        y_max = max(r[3] for r in rects)
+        return x_max - x_min, y_max - y_min
 
     @property
     def sizes(self) -> list[tuple[int, int]]:

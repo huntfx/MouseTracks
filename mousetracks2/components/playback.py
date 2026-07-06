@@ -14,7 +14,7 @@ from collections import deque
 from typing import Iterator
 
 from . import ipc
-from .abstract import Component
+from .abstract import MonitorComponent
 from .recording import open_recording, read_recording, write_event, RECORDED_MESSAGE_TYPES
 from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
@@ -23,7 +23,7 @@ from ..utils.system import hide_child_process
 from ..utils.timing import ticks
 
 
-class Playback(Component):
+class Playback(MonitorComponent):
     """Cache live events for history playback, or replay a .jsonl.gz recording."""
 
     target = ipc.Target.Playback
@@ -35,6 +35,8 @@ class Playback(Component):
         self._current_timestamp = 0
         self._history_length = 0
         self._components_loaded = False
+        self._last_monitors_changed: ipc.MonitorsChanged | None = None
+        self._last_profile_changed: ipc.CurrentProfileChanged | None = None
         self._options = ipc.PlaybackOptions(ups=UPDATES_PER_SECOND, skip_empty_ticks=True,
                                             start_percentage=0.0, end_percentage=1.0)
 
@@ -46,6 +48,8 @@ class Playback(Component):
     def _cache_live_events(self) -> None:
         """Cache messages from live tracking."""
         for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
+            if message.source == ipc.Target.Playback:
+                continue
             match message:
                 case ipc.Tick():
                     self._current_tick = message.tick
@@ -55,7 +59,12 @@ class Playback(Component):
                     if self._history_length:
                         cutoff = message.tick - self._history_length
                         while self._history and self._history[0][0] < cutoff:
-                            self._history.popleft()
+                            _, pruned = self._history.popleft()
+                            match pruned:
+                                case ipc.MonitorsChanged():
+                                    self._last_monitors_changed = pruned
+                                case ipc.CurrentProfileChanged():
+                                    self._last_profile_changed = pruned
 
                 case ipc.SetHistoryLength():
                     self._history_length = message.ticks
@@ -88,8 +97,21 @@ class Playback(Component):
                 case ipc.StopTracking() | ipc.Exit():
                     raise ExitRequest
 
+                case ipc.MonitorsChanged():
+                    self.set_monitor_data(message.data)
+                    if self._last_monitors_changed is None:
+                        self._last_monitors_changed = message
+                    if self._history_length:
+                        self._history.append((self._current_tick, message))
+
+                case ipc.CurrentProfileChanged():
+                    if self._last_profile_changed is None:
+                        self._last_profile_changed = message
+                    if self._history_length:
+                        self._history.append((self._current_tick, message))
+
                 # Record all other events in the history queue
-                case _ if self._history_length and message.source != ipc.Target.Playback:
+                case _ if self._history_length:
                     self._history.append((self._current_tick, message))
 
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
@@ -141,12 +163,20 @@ class Playback(Component):
         offset = 1
         yield 0
         while True:
-            ups = self._options.ups or UPDATES_PER_SECOND
+            ups = self._options.ups or 5
+            break_required = False
+
             for tick in ticks(ups):
+                if break_required:
+                    break
+
                 yield tick + offset
+
+                # Catch if the user has changed playback speed
+                # To account for the final pause, break on next loop
                 if self._options.ups != ups:
                     offset += tick + 1
-                    break
+                    break_required = True
 
     def _replay(self, stream: Iterator[tuple[int, ipc.Message]]) -> None:
         """Replay events from an iterator of (tick, message) pairs at the live tick rate."""
@@ -161,6 +191,11 @@ class Playback(Component):
         tick_offset = 0
 
         self.send_data(ipc.PlaybackStarted())
+
+        # Start with the correct monitor and profile setup
+        self.send_data(self._last_monitors_changed or ipc.MonitorsChanged(data=self._monitor_data))
+        if self._last_profile_changed is not None:
+            self.send_data(self._last_profile_changed)
 
         # Use the tracking tick handler for a constant 60 ups
         for _tick in self._iter_ticks():

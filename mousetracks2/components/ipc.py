@@ -274,6 +274,7 @@ class RenderRequest(Message):
     show_keyboard_time: bool = False
     interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
     layer_visible: bool = True
+    allow_empty_render: bool = False
 
 
 @dataclass

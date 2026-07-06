@@ -51,13 +51,21 @@ def _get_docs_folder() -> Path:
     return Path(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.StandardLocation.DocumentsLocation))
 
 
-def _playback_speed_to_ups(slider: int) -> float:
+def _playback_speed_to_ups(percentage: int) -> float:
     """Convert 0-100 slider value to UPS."""
-    if slider == 0:
+    if not percentage:
         return 0
-    if slider <= 50:
-        return UPDATES_PER_SECOND * (slider / 50) ** 2
-    return UPDATES_PER_SECOND ** (slider / 50)
+
+    if percentage <= 50:
+        value = UPDATES_PER_SECOND * (percentage / 50) ** 2
+    else:
+        value = UPDATES_PER_SECOND ** (percentage / 50)
+
+    # Don't allow outputs between 0 and 1
+    if value and value < 1:
+        value = 1.0
+
+    return value
 
 
 @dataclass
@@ -157,6 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state = ipc.TrackingState.Paused
         self.is_playback = CTX.playback_file is not None
         self._playback_running = False
+        self._playback_monitor_size: tuple[int, int] | None = None
         self._profile_change_pending = False
 
         # Setup UI
@@ -1151,6 +1160,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if not layers:
             return False
 
+        # When playing back history, we want an empty render to start with
+        if self.is_playback:
+            for layer in layers:
+                layer.request.allow_empty_render = True
+
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
         self.start_rendering_timer()
@@ -1192,6 +1206,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 width = min(width, custom_width)
             if custom_height:
                 height = min(height, custom_height)
+
+            # When playing back, there's no data yet, so force the monitor aspect ratio
+            if self.is_playback and self._playback_monitor_size is not None:
+                monitor_width, monitor_height = self._playback_monitor_size
+                if monitor_width > 0 and monitor_height > 0:
+                    scale = min(width / monitor_width, height / monitor_height)
+                    width = max(1, round(monitor_width * scale))
+                    height = max(1, round(monitor_height * scale))
 
         else:
             sampling = self.ui.sampling.value()
@@ -1438,6 +1460,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
                 self.component.set_monitor_data(message.data)
+
+                # Force a render when the first monitor size message comes from playback
+                if self.is_playback:
+                    self._playback_monitor_size = message.data.physical.size
+                    self.request_thumbnail()
 
             case ipc.Render():
                 self._handle_render(message)
@@ -1743,7 +1770,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _handle_render(self, message: ipc.Render) -> None:
         """Handle a completed render message."""
-        if message.array.any():
+        if (message.request.allow_empty_render and message.array.size) or message.array.any():
             height, width, channels = message.array.shape
         else:
             height = width = channels = 0
@@ -2943,7 +2970,7 @@ class MainWindow(QtWidgets.QMainWindow):
             start_percentage=start_percentage,
             end_percentage=end_percentage,
             skip_empty_ticks=self.ui.playback_skip.isChecked(),
-            ups=max(1.0, self.ui.playback_speed.mapped_value()),  # Don't allow UPS to go too low
+            ups=self.ui.playback_speed.mapped_value(),
         )))
 
     def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:
@@ -2967,10 +2994,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
         self._reset_render_counters()
+        self.request_thumbnail()
 
     def _exit_playback_mode(self) -> None:
         """Exit history playback mode and restore the live UI state."""
         self.is_playback = False
+        self._playback_monitor_size = None
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.ui.recording_start.setEnabled(True)
