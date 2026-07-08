@@ -407,6 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_queue_size)
         self.timer_activity.timeout.connect(self.update_current_network_stats)
         self.timer_activity.timeout.connect(self.update_history_length)
+        self.timer_activity.timeout.connect(self.update_playback_progress)
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
@@ -821,6 +822,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_history_length(self) -> None:
         """Request an update on the length of history."""
         self.component.send_data(ipc.RequestHistoryLength())
+
+    @QtCore.Slot()
+    def update_playback_progress(self) -> None:
+        """Request the current playback position."""
+        self.component.send_data(ipc.RequestPlaybackProgress())
 
     @property
     def bytes_sent(self) -> int:
@@ -1456,6 +1462,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.PlaybackStarted():
                 self._enter_playback_mode()
+
+            case ipc.PlaybackProgress():
+                self.ui.playback_progress.setValue(round(message.percentage * 1000))
 
             case ipc.PlaybackFinished():
                 self._playback_running = False
@@ -3052,7 +3061,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.setEnabled(False)
         self.ui.recording_start.setEnabled(True)
-        self._reset_render_counters(get_cursor_pos())
+        self._reset_render_counters()
 
     @QtCore.Slot()
     def history_stop(self) -> None:

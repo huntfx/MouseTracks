@@ -727,6 +727,21 @@ class ResumePlayback(Message):
 
 
 @dataclass
+class RequestPlaybackProgress(Message):
+    """Request the current playback position."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class PlaybackProgress(Message):
+    """Current playback position within the history range."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    percentage: float
+
+
+@dataclass
 class StartRecording(Message):
     """Record tracking messages to a specific path."""
 

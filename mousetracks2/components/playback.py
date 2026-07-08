@@ -15,7 +15,7 @@ from typing import Iterator
 
 from . import ipc
 from .abstract import MonitorComponent
-from .recording import open_recording, read_recording, write_event, RECORDED_MESSAGE_TYPES
+from .recording import open_recording, read_recording, get_recording_length, write_event, RECORDED_MESSAGE_TYPES
 from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
@@ -92,14 +92,19 @@ class Playback(MonitorComponent):
                     oldest_tick = self._current_tick - self._history_length
                     start_tick = oldest_tick + round(self._options.start_percentage * self._history_length)
                     end_tick = oldest_tick + round(self._options.end_percentage * self._history_length)
-                    snapshot = (
+                    events = [
                         (tick, msg) for tick, msg in self._history
                         if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES
-                    )
-                    self._replay(snapshot)
+                    ]
+                    tick_count = (events[-1][0] - events[0][0]) if events else 0
+                    self._replay(iter(events), tick_count)
 
                 # Don't record these events to history
                 case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback(): ...
+
+                # Prevent this being recorded too, but also update the GUI
+                case ipc.RequestPlaybackProgress():
+                    self.send_data(ipc.PlaybackProgress(1.0))
 
                 case ipc.StopTracking() | ipc.Exit():
                     raise ExitRequest
@@ -166,7 +171,8 @@ class Playback(MonitorComponent):
         """Replay a recording file."""
         if CTX.playback_file is None:
             return
-        self._replay(read_recording(str(CTX.playback_file)))
+        path = str(CTX.playback_file)
+        self._replay(read_recording(path), get_recording_length(path))
 
     def _iter_ticks(self) -> Iterator[int]:
         """Yield a continuously incrementing tick count, restarting ticks() when speed changes."""
@@ -188,12 +194,12 @@ class Playback(MonitorComponent):
                     offset += tick + 1
                     break_required = True
 
-    def _replay(self, stream: Iterator[tuple[int, ipc.Message]]) -> None:
+    def _replay(self, stream: Iterator[tuple[int, ipc.Message]], total_ticks: int) -> None:
         """Replay events from an iterator of (tick, message) pairs at the live tick rate."""
         next_event = next(stream, None)
         if next_event is None:
             return
-        start_tick = next_event[0]
+        start_tick = recorded_tick = next_event[0]
         start_timestamp = int(time.time())
 
         pause_manual = stopped = False
@@ -229,6 +235,11 @@ class Playback(MonitorComponent):
                         stopped = True
                     case ipc.PlaybackResumeRender():
                         pause_render = False
+                    case ipc.RequestPlaybackProgress():
+                        if total_ticks:
+                            self.send_data(ipc.PlaybackProgress((recorded_tick - start_tick) / total_ticks))
+                        else:
+                            self.send_data(ipc.PlaybackProgress(1.0))
 
             # Handle exit / pause
             if stopped:

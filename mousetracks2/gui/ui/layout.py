@@ -20,8 +20,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
-    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
+    QScrollArea, QSizePolicy, QSlider, QSpacerItem,
+    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from mousetracks2.gui.widgets import (ResizableImage, Slider, Splitter)
 from superqt import QRangeSlider
@@ -1349,6 +1350,24 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_16.addWidget(self.playback_skip)
 
+        self.horizontalLayout_15 = QHBoxLayout()
+        self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
+        self.label_37 = QLabel(self.groupBox)
+        self.label_37.setObjectName(u"label_37")
+
+        self.horizontalLayout_15.addWidget(self.label_37)
+
+        self.playback_progress = QSlider(self.groupBox)
+        self.playback_progress.setObjectName(u"playback_progress")
+        self.playback_progress.setEnabled(False)
+        self.playback_progress.setMaximum(1000)
+        self.playback_progress.setOrientation(Qt.Orientation.Horizontal)
+
+        self.horizontalLayout_15.addWidget(self.playback_progress)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_15)
+
         self.horizontalLayout_11 = QHBoxLayout()
         self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
         self.label_12 = QLabel(self.groupBox)
@@ -1476,6 +1495,7 @@ class Ui_MainWindow(object):
         self.label_33.setBuddy(self.layer_blending)
         self.label_32.setBuddy(self.layer_opacity)
         self.label_7.setBuddy(self.history_length)
+        self.label_37.setBuddy(self.playback_progress)
         self.label_12.setBuddy(self.playback_speed)
 #endif // QT_CONFIG(shortcut)
 
@@ -2101,6 +2121,7 @@ class Ui_MainWindow(object):
         self.playback_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Playback", None))
         self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
         self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
+        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Progress", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Speed:", None))
         self.playback_speed_visual.setText(QCoreApplication.translate("MainWindow", u"1.0x", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))

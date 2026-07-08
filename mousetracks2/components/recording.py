@@ -161,6 +161,16 @@ def read_recording(path: str) -> Iterator[tuple[int, ipc.Message]]:
         yield from deserialised_lines
 
 
+def get_recording_length(path: str) -> int:
+    """Return the tick range of a recording file without loading it into memory."""
+    first_tick = last_tick = 0
+    for i, (tick, _) in enumerate(read_recording(path)):
+        if not i:
+            first_tick = tick
+        last_tick = tick
+    return last_tick - first_tick
+
+
 def _test() -> None:
     """Write a recording to a temp file, read it back, and verify the roundtrip."""
     import tempfile
