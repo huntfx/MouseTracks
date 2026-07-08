@@ -1301,10 +1301,27 @@ class Ui_MainWindow(object):
         self.groupBox.setObjectName(u"groupBox")
         self.verticalLayout_16 = QVBoxLayout(self.groupBox)
         self.verticalLayout_16.setObjectName(u"verticalLayout_16")
+        self.horizontalLayout_14 = QHBoxLayout()
+        self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
+        self.playback_start = QLabel(self.groupBox)
+        self.playback_start.setObjectName(u"playback_start")
+
+        self.horizontalLayout_14.addWidget(self.playback_start)
+
         self.playback_range = QRangeSlider(self.groupBox)
         self.playback_range.setObjectName(u"playback_range")
+        sizePolicy1.setHeightForWidth(self.playback_range.sizePolicy().hasHeightForWidth())
+        self.playback_range.setSizePolicy(sizePolicy1)
 
-        self.verticalLayout_16.addWidget(self.playback_range)
+        self.horizontalLayout_14.addWidget(self.playback_range)
+
+        self.playback_end = QLabel(self.groupBox)
+        self.playback_end.setObjectName(u"playback_end")
+
+        self.horizontalLayout_14.addWidget(self.playback_end)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_14)
 
         self.horizontalLayout_12 = QHBoxLayout()
         self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
@@ -2078,6 +2095,8 @@ class Ui_MainWindow(object):
         self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Playback Controls", None))
+        self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
+        self.playback_end.setText(QCoreApplication.translate("MainWindow", u"---", None))
         self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Start Playback", None))
         self.playback_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Playback", None))
         self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))

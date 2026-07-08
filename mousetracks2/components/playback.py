@@ -45,6 +45,13 @@ class Playback(MonitorComponent):
             self._run_file_playback()
         self._cache_live_events()
 
+    @property
+    def history_length(self) -> int:
+        """Get the actual history length in ticks."""
+        if not self._history:
+            return 0
+        return self._current_tick - self._history[0][0]
+
     def _cache_live_events(self) -> None:
         """Cache messages from live tracking."""
         for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
@@ -109,6 +116,9 @@ class Playback(MonitorComponent):
                         self._last_profile_changed = message
                     if self._history_length:
                         self._history.append((self._current_tick, message))
+
+                case ipc.RequestHistoryLength():
+                    self.send_data(ipc.HistoryLength(self.history_length))
 
                 # Record all other events in the history queue
                 case _ if self._history_length:

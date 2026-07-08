@@ -2170,7 +2170,32 @@ This should be used after manually editing it.</string>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_16">
                     <item>
-                     <widget class="QRangeSlider" name="playback_range" native="true"/>
+                     <layout class="QHBoxLayout" name="horizontalLayout_14">
+                      <item>
+                       <widget class="QLabel" name="playback_start">
+                        <property name="text">
+                         <string>1h 23m</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRangeSlider" name="playback_range" native="true">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="playback_end">
+                        <property name="text">
+                         <string>---</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </item>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_12">

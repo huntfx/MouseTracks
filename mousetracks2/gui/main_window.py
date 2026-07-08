@@ -167,6 +167,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._playback_running = False
         self._playback_monitor_size: tuple[int, int] | None = None
         self._profile_change_pending = False
+        self._history_length_ticks = 0
+        self._playback_labels_sticky_width = False
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -290,6 +292,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_rendering = QtCore.QTimer(self)
         self._timer_rendering.setSingleShot(True)
         self._timer_tip = QtCore.QTimer(self)
+        self._timer_playback_labels = QtCore.QTimer(self)
+        self._timer_playback_labels.setSingleShot(True)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -394,6 +398,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_stop.clicked.connect(self.history_stop)
         self.ui.playback_speed.mapped_value_changed.connect(self.playback_speed_changed)
         self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
+        self.ui.playback_range.valueChanged.connect(self._on_playback_range_changed)
         self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
@@ -402,10 +407,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer_activity.timeout.connect(self.update_time_since_applist_reload)
         self.timer_activity.timeout.connect(self.update_queue_size)
         self.timer_activity.timeout.connect(self.update_current_network_stats)
+        self.timer_activity.timeout.connect(self.update_history_length)
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
         self._timer_tip.timeout.connect(self.set_random_tip_text)
+        self._timer_playback_labels.timeout.connect(self._reset_playback_label_widths)
 
         self.ui.debug_state_running.triggered.connect(self.start_tracking)
         self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
@@ -810,6 +817,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.ui.stat_download_current.setText(format_network_speed(self._network_speed.bytes_recv))
         self.ui.stat_upload_current.setText(format_network_speed(self._network_speed.bytes_sent))
+
+    @QtCore.Slot()
+    def update_history_length(self) -> None:
+        """Request an update on the length of history."""
+        self.component.send_data(ipc.RequestHistoryLength())
 
     @property
     def bytes_sent(self) -> int:
@@ -1657,6 +1669,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.notify('Recording saved.')
                 self.ui.recording_start.setEnabled(True)
                 self.ui.recording_stop.setEnabled(False)
+
+            case ipc.HistoryLength():
+                self._history_length_ticks = message.ticks
+                self._update_playback_range_labels()
 
     def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
         """Handle a save completion message."""
@@ -2936,6 +2952,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_range.setValue((0, length))
         if self.ui.record_history.isChecked():
             self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
+
+    @QtCore.Slot()
+    def _update_playback_range_labels(self) -> None:
+        """Update the playback start/end labels to be accurate."""
+        start, end = self.ui.playback_range.value()
+        total = self.ui.history_length.value()
+
+        def label(position: int) -> str:
+            if not total or not self._history_length_ticks:
+                return '--'
+            ticks_ago = round((1 - position / total) * self._history_length_ticks)
+            return '--' if not ticks_ago else format_ticks(ticks_ago, accuracy=0, length=2)
+
+        for widget, text in ((self.ui.playback_start, label(start)), (self.ui.playback_end, label(end))):
+            widget.setText(text)
+
+            # Force minimum width so that they don't keep jumping in size
+            if self._playback_labels_sticky_width:
+                widget.setMinimumWidth(max(widget.minimumWidth(), widget.sizeHint().width()))
+
+    @QtCore.Slot()
+    def _on_playback_range_changed(self) -> None:
+        """Update the width of the playback labels to avoid jumps."""
+        self._playback_labels_sticky_width = True
+        self._update_playback_range_labels()
+        self._timer_playback_labels.start(1000)
+
+    @QtCore.Slot()
+    def _reset_playback_label_widths(self) -> None:
+        """Release the locked playback label widths after inactivity."""
+        self._playback_labels_sticky_width = False
+        for widget in (self.ui.playback_start, self.ui.playback_end):
+            widget.setMinimumWidth(0)
 
     @QtCore.Slot()
     def playback_speed_changed(self, value: float) -> None:

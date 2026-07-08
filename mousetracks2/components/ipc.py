@@ -746,3 +746,19 @@ class RecordingComplete(Message):
     """Notify GUI that recording has been saved successfully."""
 
     target: Target = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class RequestHistoryLength(Message):
+    """Request the current amount of recorded ticks."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class HistoryLength(Message):
+    """Send the current amount of recorded ticks."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    ticks: int
+
