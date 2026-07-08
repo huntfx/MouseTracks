@@ -25,12 +25,9 @@ def from_pynput(key: _KeyCode | _Key) -> int:
             return KeyCode.PYNPUT_MAP[key]
         key = key.value
 
-    # Handle printable character keys (eg. 'a', '1', ';')
-    if key.vk is None:
-        raise ValueError('vk not set')
-
-    # On Linux/macOS, use the character itself.
-    if sys.platform != 'win32' and key.char is not None:
+    # On Linux/macOS, use the character itself
+    # In Windows this happens when typing via RustDesk as there is no `vk`
+    if (sys.platform != 'win32' or key.vk is None) and key.char is not None:
         # Check the new auto-populated character map first
         char = KeyCode.SYMBOL_REMAP.get(key.char, key.char)
         if char in KeyCode.CHAR_MAP:
@@ -41,8 +38,11 @@ def from_pynput(key: _KeyCode | _Key) -> int:
         if 'A' <= char_upper <= 'Z' or '0' <= char_upper <= '9':
             return ord(char_upper)
 
-    # On Windows, key.vk is the most reliable source.
-    return key.vk
+    # On Windows, key.vk is the most reliable source (eg. 'a', '1', ';')
+    if key.vk is not None:
+        return key.vk
+
+    raise TypeError(f'keycode data not set: {key}')
 
 
 def to_key(name: str) -> _Key | None:
