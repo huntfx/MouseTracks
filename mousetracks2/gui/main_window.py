@@ -1465,6 +1465,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.PlaybackStopped():
                 QtWidgets.QApplication.restoreOverrideCursor()
+                self.setEnabled(True)
 
             case ipc.Exit():
                 self.shut_down(force=True)
@@ -3051,6 +3052,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._playback_monitor_size = None
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+        self.setEnabled(False)
         self.ui.recording_start.setEnabled(True)
         self._reset_render_counters(get_cursor_pos())
 
