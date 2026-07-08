@@ -34,7 +34,6 @@ from ..legacy import colours
 from ..runtime import SYS_EXECUTABLE
 from ..types import Application
 from ..utils import keycodes
-from ..utils.input import get_cursor_pos
 from ..utils.math import calculate_distance
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
 from ..utils.update import is_latest_version, background_update
@@ -70,7 +69,7 @@ def _playback_speed_to_ups(percentage: int) -> float:
 
 @dataclass
 class MapData:
-    position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
+    position: tuple[int, int] | None = None
     distance: float = field(default=0.0)
     counter: int = field(default=0)
 
@@ -1869,8 +1868,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_tracking(self) -> None:
         """Start/unpause the tracking."""
         self.notify(f'{self.windowTitle()} has resumed tracking.')
-        if not self.is_playback:
-            self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
+        self.cursor_data.position = None
         self.component.send_data(ipc.StartTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)

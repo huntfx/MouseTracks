@@ -21,7 +21,6 @@ from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
 from ..utils.math import calculate_distance
-from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
 from ..utils.system import hide_child_process
 from ..constants import UPDATES_PER_SECOND, DOUBLE_CLICK_MS, DOUBLE_CLICK_TOL, RADIAL_ARRAY_SIZE, DEBUG
@@ -764,7 +763,7 @@ class Processing(AppComponent, MonitorComponent):
             case ipc.PlaybackFinished(): ...
 
             case ipc.TrackingStarted():
-                self.profile.cursor_map.position = None if self.is_playback else get_cursor_pos()
+                self.profile.cursor_map.position = None
 
             case ipc.StartRecording():
                 # Send a snapshot of the current state so the recording
