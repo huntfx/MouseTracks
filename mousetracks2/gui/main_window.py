@@ -232,7 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.map_type.addItem('[Thumbsticks] Speed', ipc.RenderType.ThumbstickSpeed)
         self.ui.map_type.addItem('[Thumbsticks] Position', ipc.RenderType.ThumbstickPosition)
 
-        self.cursor_data = MapData(get_cursor_pos())
+        self.cursor_data = MapData(None)
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
         self._sampling = 4
