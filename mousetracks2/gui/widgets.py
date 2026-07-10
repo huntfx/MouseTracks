@@ -253,7 +253,19 @@ class ResizableImage(QtWidgets.QLabel):
                                        (self.height() - self.playback_overlay.height()) // 2)
 
 
-class MappedFloatSlider(QtWidgets.QSlider):
+class ClickSlider(QtWidgets.QSlider):
+    """A QSlider that jumps to the clicked position on left click."""
+
+    mapped_value_changed = QtCore.Signal(float)
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            ratio = event.position().x() / self.width()
+            self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
+        super().mousePressEvent(event)
+
+
+class MappedFloatSlider(ClickSlider):
     """A QSlider that allows a custom float mapping."""
 
     mapped_value_changed = QtCore.Signal(float)
@@ -282,22 +294,6 @@ class MappedFloatSlider(QtWidgets.QSlider):
         """Emit the new remapped value."""
         remapped = self._value_map(value)
         self.mapped_value_changed.emit(remapped)
-
-
-class ClickSlider(QtWidgets.QSlider):
-    """A QSlider that jumps to the clicked position on left click."""
-
-    mapped_value_changed = QtCore.Signal(float)
-
-    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            ratio = event.position().x() / self.width()
-            self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
-        super().mousePressEvent(event)
-
-
-class Slider(ClickSlider, MappedFloatSlider):
-    """Joined QSlider combining the other subclasses."""
 
 
 class Splitter(QtWidgets.QSplitter):

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import Iterator
+from typing import Callable, Iterator
 
 from . import ipc
 from .abstract import MonitorComponent
@@ -37,6 +37,8 @@ class Playback(MonitorComponent):
         self._components_loaded = False
         self._last_monitors_changed: ipc.MonitorsChanged | None = None
         self._last_profile_changed: ipc.CurrentProfileChanged | None = None
+        self._seek_tick: int | None = None
+        self._seek_pos = 0
         self._options = ipc.PlaybackOptions(ups=UPDATES_PER_SECOND, skip_empty_ticks=True,
                                             start_percentage=0.0, end_percentage=1.0)
 
@@ -97,10 +99,12 @@ class Playback(MonitorComponent):
                         if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES
                     ]
                     tick_count = (events[-1][0] - events[0][0]) if events else 0
-                    self._replay(iter(events), tick_count)
+
+                    if events:
+                        self._replay(lambda: iter(events), tick_count)
 
                 # Don't record these events to history
-                case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback(): ...
+                case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback() | ipc.SeekPlayback(): ...
 
                 # Prevent this being recorded too, but also update the GUI
                 case ipc.RequestPlaybackProgress():
@@ -172,14 +176,19 @@ class Playback(MonitorComponent):
         if CTX.playback_file is None:
             return
         path = str(CTX.playback_file)
-        self._replay(read_recording(path), get_recording_length(path))
+        total_ticks = get_recording_length(path)
+        self._replay(lambda: read_recording(path), total_ticks)
 
     def _iter_ticks(self) -> Iterator[int]:
-        """Yield a continuously incrementing tick count, restarting ticks() when speed changes."""
+        """Yield a continuously incrementing tick count.
+
+        Seeking forwards will remove the sleep between ticks.
+        Seeking backwards will jump back to 0 and fast forward.
+        """
         offset = 1
         yield 0
         while True:
-            ups = self._options.ups or 5
+            ups = self._options.ups or 5  # Keep iterating even when UPS set to 0
             break_required = False
 
             for tick in ticks(ups):
@@ -188,63 +197,110 @@ class Playback(MonitorComponent):
 
                 yield tick + offset
 
-                # Catch if the user has changed playback speed
-                # To account for the final pause, break on next loop
+                # Break on the next loop if the user has changed playback speed
                 if self._options.ups != ups:
                     offset += tick + 1
                     break_required = True
 
-    def _replay(self, stream: Iterator[tuple[int, ipc.Message]], total_ticks: int) -> None:
-        """Replay events from an iterator of (tick, message) pairs at the live tick rate."""
-        next_event = next(stream, None)
-        if next_event is None:
-            return
-        start_tick = recorded_tick = next_event[0]
+                # Seek to a certain percentage of the total ticks
+                elif self._seek_tick is not None:
+                    try:
+                        while self._seek_pos <= self._seek_tick:
+                            yield self._seek_pos
+                            self._seek_pos += 1
+                        offset = self._seek_tick - tick
+                        self.send_data(ipc.SeekComplete())
+
+                    finally:
+                        self._seek_tick = None
+
+    def _replay(self, get_stream: Callable[[], Iterator[tuple[int, ipc.Message]]],
+                total_ticks: int) -> None:
+        """Replay events from a stream factory at the live tick rate."""
+        stream: Iterator[tuple[int, ipc.Message]] = iter(())
+        next_event = None
+        start_tick = recorded_tick = 0
         start_timestamp = int(time.time())
 
-        pause_manual = stopped = False
+        pause_manual = False
         pause_render: bool | None = False
-        tick_offset = 0
 
-        self.send_data(ipc.PlaybackStarted())
+        for i, _tick in enumerate(self._iter_ticks()):
 
-        # Start with the correct monitor and profile setup
-        self.send_data(self._last_monitors_changed or ipc.MonitorsChanged(data=self._monitor_data))
-        if self._last_profile_changed is not None:
-            self.send_data(self._last_profile_changed)
+            # Initialise the stream on the first tick, or restart it on a backward seek
+            if not _tick:
+                stream = get_stream()
+                next_event = next(stream, None)
+                if next_event is None:
+                    break
+                start_tick = recorded_tick = next_event[0]
+                start_timestamp = int(time.time())
+                tick_offset = 0
 
-        # Use the tracking tick handler for a constant 60 ups
-        for _tick in self._iter_ticks():
+                # Reset render data then set up monitor and profile state
+                if i:
+                    self.send_data(ipc.PlaybackRestarted())
+                else:
+                    self.send_data(ipc.PlaybackStarted())
+
+                self.send_data(self._last_monitors_changed or ipc.MonitorsChanged(data=self._monitor_data))
+                if self._last_profile_changed is not None:
+                    self.send_data(self._last_profile_changed)
 
             # Process any messages sent during the replay
+            continue_required = break_required = False
             for message in self.receive_data():
                 if message.source == ipc.Target.Playback:
                     continue
                 match message:
                     case ipc.PausePlayback():
                         pause_manual = True
+
                     case ipc.ResumePlayback():
                         pause_manual = False
+
                     case ipc.StopTracking() | ipc.Exit():
                         raise ExitRequest
+
                     case ipc.AllComponentsLoaded():
                         self._components_loaded = True
+
                     case ipc.PlaybackOptions():
                         self._options = message
+
                     case ipc.StopPlayback():
-                        stopped = True
+                        break_required = True
+
+                    case ipc.SeekPlayback():
+                        self._seek_tick = round(message.percentage * total_ticks)
+                        actual_tick, tick_offset = _tick + tick_offset, 0
+                        continue_required = True  # Skip the current tick
+
+                        # Backward seek
+                        if self._seek_tick < actual_tick:
+                            self._seek_pos = 0
+
+                        # Forward seek
+                        else:
+                            self._seek_pos = actual_tick + 1
+
                     case ipc.PlaybackResumeRender():
                         pause_render = False
+
                     case ipc.RequestPlaybackProgress():
                         if total_ticks:
-                            self.send_data(ipc.PlaybackProgress((recorded_tick - start_tick) / total_ticks))
+                            self.send_data(ipc.PlaybackProgress(min(1.0, (recorded_tick - start_tick) / total_ticks)))
                         else:
                             self.send_data(ipc.PlaybackProgress(1.0))
 
-            # Handle exit / pause
-            if stopped:
+            if break_required:
                 break
-            if pause_manual or pause_render or not self._components_loaded or not self._options.ups:
+            if continue_required:
+                continue
+
+            # Undo tick increments when not actively playing back
+            paused = pause_manual or pause_render or not self._components_loaded or not self._options.ups
+            if paused and self._seek_tick is None:
                 tick_offset -= 1
                 continue
 
@@ -254,9 +310,11 @@ class Playback(MonitorComponent):
             timestamp = start_timestamp + round(tick // UPDATES_PER_SECOND)
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
-            # Skip over empty ticks
-            ticks_until_action = next_event[0] - recorded_tick - 1
-            tick_offset += max(0, ticks_until_action)
+            # Skip over empty ticks to avoid waiting on them
+            if self._seek_tick is None:
+                assert next_event is not None  # Keep mypy happy
+                ticks_until_action = next_event[0] - recorded_tick - 1
+                tick_offset += max(0, ticks_until_action)
 
             # Process events for the current tick
             while next_event is not None and next_event[0] <= recorded_tick:

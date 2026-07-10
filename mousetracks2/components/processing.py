@@ -748,8 +748,8 @@ class Processing(AppComponent, MonitorComponent):
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
-            # When playback starts, switch to empty tracking profiles
-            case ipc.PlaybackStarted():
+            # When playback starts/restarts, switch to empty tracking profiles
+            case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
                 self.all_profiles = TrackingProfileLoader(profile_dir=None)
                 self.previous_mouse_click = None
                 self.is_playback = True

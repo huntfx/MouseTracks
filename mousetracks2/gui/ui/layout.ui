@@ -2245,10 +2245,7 @@ This should be used after manually editing it.</string>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QSlider" name="playback_progress">
-                        <property name="enabled">
-                         <bool>false</bool>
-                        </property>
+                       <widget class="ClickSlider" name="playback_progress">
                         <property name="maximum">
                          <number>1000</number>
                         </property>
@@ -2272,7 +2269,7 @@ This should be used after manually editing it.</string>
                        </widget>
                       </item>
                       <item>
-                       <widget class="Slider" name="playback_speed">
+                       <widget class="MappedFloatSlider" name="playback_speed">
                         <property name="maximum">
                          <number>100</number>
                         </property>
@@ -2915,7 +2912,12 @@ This should be used after manually editing it.</string>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>Slider</class>
+   <class>ClickSlider</class>
+   <extends>QSlider</extends>
+   <header>mousetracks2.gui.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>MappedFloatSlider</class>
    <extends>QSlider</extends>
    <header>mousetracks2.gui.widgets</header>
   </customwidget>

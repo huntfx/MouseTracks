@@ -202,6 +202,12 @@ class PlaybackStarted(Message):
 
 
 @dataclass
+class PlaybackRestarted(Message):
+    """Sent when the playback component restarts the stream for a backward seek."""
+    target: Target = field(default=Target.GUI | Target.Processing, init=False)
+
+
+@dataclass
 class PlaybackStopping(Message):
     """Sent during the playback stop process."""
     target: Target = field(default=Target.Processing, init=False)
@@ -739,6 +745,21 @@ class PlaybackProgress(Message):
 
     target: Target = field(default=Target.GUI, init=False)
     percentage: float
+
+
+@dataclass
+class SeekPlayback(Message):
+    """Seek to a position within the current playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    percentage: float
+
+
+@dataclass
+class SeekComplete(Message):
+    """Sent by the playback component when a seek has finished."""
+
+    target: Target = field(default=Target.GUI, init=False)
 
 
 @dataclass

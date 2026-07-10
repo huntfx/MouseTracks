@@ -164,6 +164,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state = ipc.TrackingState.Paused
         self.is_playback = CTX.playback_file is not None
         self._playback_running = False
+        self._playback_seeking = False
+        self._seek_in_progress = False
         self._playback_monitor_size: tuple[int, int] | None = None
         self._profile_change_pending = False
         self._history_length_ticks = 0
@@ -397,8 +399,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_stop.clicked.connect(self.history_stop)
         self.ui.playback_speed.mapped_value_changed.connect(self.playback_speed_changed)
         self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
-        self.ui.playback_range.valueChanged.connect(self._on_playback_range_changed)
+        self.ui.playback_range.valueChanged.connect(self._playback_range_changed)
         self.ui.playback_export.clicked.connect(self.history_export)
+        self.ui.playback_progress.sliderPressed.connect(self._playback_slider_pressed)
+        self.ui.playback_progress.sliderReleased.connect(self._playback_slider_released)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
@@ -826,7 +830,19 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def update_playback_progress(self) -> None:
         """Request the current playback position."""
-        self.component.send_data(ipc.RequestPlaybackProgress())
+        if not self._playback_seeking:
+            self.component.send_data(ipc.RequestPlaybackProgress())
+
+    @QtCore.Slot()
+    def _playback_slider_pressed(self) -> None:
+        self._playback_seeking = True
+        self.component.send_data(ipc.PausePlayback())
+
+    @QtCore.Slot()
+    def _playback_slider_released(self) -> None:
+        self._playback_seeking = False
+        self._seek_in_progress = True
+        self.component.send_data(ipc.SeekPlayback(self.ui.playback_progress.value() / 1000))
 
     @property
     def bytes_sent(self) -> int:
@@ -1163,6 +1179,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
+        # Block while seeking during replay (it triggers afterwards)
+        if self._seek_in_progress:
+            return False
+
         # Prevent too many requests from queuing up
         # This ensures there's at most 2
         if self.pause_redraw:
@@ -1463,8 +1483,17 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackStarted():
                 self._enter_playback_mode()
 
+            case ipc.PlaybackRestarted():
+                self.ui.thumbnail.clear_pixmap()
+                self._reset_render_counters()
+
             case ipc.PlaybackProgress():
-                self.ui.playback_progress.setValue(round(message.percentage * 1000))
+                if not self._playback_seeking and not self._seek_in_progress:
+                    self.ui.playback_progress.setValue(round(message.percentage * 1000))
+
+            case ipc.SeekComplete():
+                self._seek_in_progress = False
+                self.request_thumbnail()
 
             case ipc.PlaybackFinished():
                 self._playback_running = False
@@ -2981,7 +3010,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 widget.setMinimumWidth(max(widget.minimumWidth(), widget.sizeHint().width()))
 
     @QtCore.Slot()
-    def _on_playback_range_changed(self) -> None:
+    def _playback_range_changed(self) -> None:
         """Update the width of the playback labels to avoid jumps."""
         self._playback_labels_sticky_width = True
         self._update_playback_range_labels()
@@ -3016,6 +3045,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def history_play(self) -> None:
         """Play back the selected history range."""
+        if self._playback_running:
+            self.component.send_data(ipc.ResumePlayback())
+            return
+
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
         if not total or not self.ui.record_history.isChecked():

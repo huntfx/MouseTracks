@@ -20,11 +20,10 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QSizePolicy, QSlider, QSpacerItem,
-    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
-    QWidget)
+    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.gui.widgets import (ResizableImage, Slider, Splitter)
+from mousetracks2.gui.widgets import (ClickSlider, MappedFloatSlider, ResizableImage, Splitter)
 from superqt import QRangeSlider
 
 class Ui_MainWindow(object):
@@ -1357,9 +1356,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_15.addWidget(self.label_37)
 
-        self.playback_progress = QSlider(self.groupBox)
+        self.playback_progress = ClickSlider(self.groupBox)
         self.playback_progress.setObjectName(u"playback_progress")
-        self.playback_progress.setEnabled(False)
         self.playback_progress.setMaximum(1000)
         self.playback_progress.setOrientation(Qt.Orientation.Horizontal)
 
@@ -1375,7 +1373,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addWidget(self.label_12)
 
-        self.playback_speed = Slider(self.groupBox)
+        self.playback_speed = MappedFloatSlider(self.groupBox)
         self.playback_speed.setObjectName(u"playback_speed")
         self.playback_speed.setMaximum(100)
         self.playback_speed.setValue(50)
