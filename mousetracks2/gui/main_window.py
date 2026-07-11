@@ -830,12 +830,13 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def update_playback_progress(self) -> None:
         """Request the current playback position."""
-        if not self._playback_seeking:
+        if not self._playback_seeking and self._playback_running:
             self.component.send_data(ipc.RequestPlaybackProgress())
 
     @QtCore.Slot()
     def _playback_slider_pressed(self) -> None:
         self._playback_seeking = True
+        self.ui.thumbnail.playback_overlay.playback_state = False
         self.component.send_data(ipc.PausePlayback())
 
     @QtCore.Slot()
@@ -1481,7 +1482,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.set_profile_modified_text()
 
             case ipc.PlaybackStarted():
-                self._enter_playback_mode()
+                self._enter_playback_mode(paused=message.paused)
 
             case ipc.PlaybackRestarted():
                 self.ui.thumbnail.clear_pixmap()
@@ -1498,6 +1499,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackFinished():
                 self._playback_running = False
                 self.ui.thumbnail.playback_overlay.playback_state = False
+                self.ui.playback_progress.setValue(1000)
                 self.request_thumbnail()
 
             case ipc.PlaybackStopped():
@@ -3047,6 +3049,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Play back the selected history range."""
         if self._playback_running:
             self.component.send_data(ipc.ResumePlayback())
+            self.ui.thumbnail.playback_overlay.playback_state = True
             return
 
         start, end = self.ui.playback_range.value()
@@ -3075,12 +3078,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_redraw = 0
         self._thumbnail_redraw_required = False
 
-    def _enter_playback_mode(self) -> None:
+    def _enter_playback_mode(self, paused: bool = False) -> None:
         """Enter history playback mode and configure the UI accordingly."""
         self.is_playback = True
         self._playback_running = True
         self.ui.thumbnail.clear_pixmap()
-        self.ui.thumbnail.playback_overlay.playback_state = True
+        self.ui.thumbnail.playback_overlay.playback_state = not paused
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
         self._reset_render_counters()
