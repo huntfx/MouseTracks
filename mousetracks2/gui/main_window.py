@@ -169,7 +169,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._playback_monitor_size: tuple[int, int] | None = None
         self._profile_change_pending = False
         self._history_length_ticks = 0
-        self._playback_labels_sticky_width = False
+        self._keep_playback_label_min_width = False
+        self._last_playback_range: tuple[int, int] = (0, 0)
+        self._history_length_snapshot: int = 0
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -400,6 +402,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_speed.mapped_value_changed.connect(self.playback_speed_changed)
         self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
         self.ui.playback_range.valueChanged.connect(self._playback_range_changed)
+        self.ui.playback_range.sliderPressed.connect(self._playback_range_pressed)
+        self.ui.playback_range.sliderReleased.connect(self._playback_range_released)
         self.ui.playback_export.clicked.connect(self.history_export)
         self.ui.playback_progress.sliderPressed.connect(self._playback_slider_pressed)
         self.ui.playback_progress.sliderReleased.connect(self._playback_slider_released)
@@ -843,7 +847,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _playback_slider_released(self) -> None:
         self._playback_seeking = False
         self._seek_in_progress = True
-        self.component.send_data(ipc.SeekPlayback(self.ui.playback_progress.value() / 1000))
+        self.component.send_data(ipc.SeekPlayback(self.ui.playback_progress.value() / self.ui.playback_progress.maximum()))
 
     @property
     def bytes_sent(self) -> int:
@@ -1490,7 +1494,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.PlaybackProgress():
                 if not self._playback_seeking and not self._seek_in_progress:
-                    self.ui.playback_progress.setValue(round(message.percentage * 1000))
+                    value = round(message.percentage * self.ui.playback_progress.maximum())
+                    self.ui.playback_progress.setValue(value)
 
             case ipc.SeekComplete():
                 self._seek_in_progress = False
@@ -1499,7 +1504,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackFinished():
                 self._playback_running = False
                 self.ui.thumbnail.playback_overlay.playback_state = False
-                self.ui.playback_progress.setValue(1000)
+                self.ui.playback_progress.setValue(self.ui.playback_progress.maximum())
                 self.request_thumbnail()
 
             case ipc.PlaybackStopped():
@@ -2998,30 +3003,53 @@ class MainWindow(QtWidgets.QMainWindow):
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
 
+        history_ticks = self._history_length_snapshot if self.is_playback else self._history_length_ticks
+
         def label(position: int) -> str:
-            if not total or not self._history_length_ticks:
+            if not total or not history_ticks:
                 return '--'
-            ticks_ago = round((1 - position / total) * self._history_length_ticks)
+
+            ticks_ago = round((1 - position / total) * history_ticks)
             return '--' if not ticks_ago else format_ticks(ticks_ago, accuracy=0, length=2)
 
         for widget, text in ((self.ui.playback_start, label(start)), (self.ui.playback_end, label(end))):
             widget.setText(text)
 
             # Force minimum width so that they don't keep jumping in size
-            if self._playback_labels_sticky_width:
+            if self._keep_playback_label_min_width:
                 widget.setMinimumWidth(max(widget.minimumWidth(), widget.sizeHint().width()))
 
     @QtCore.Slot()
     def _playback_range_changed(self) -> None:
-        """Update the width of the playback labels to avoid jumps."""
-        self._playback_labels_sticky_width = True
+        """Update the playback range labels and send the new options."""
+        self._keep_playback_label_min_width = True
         self._update_playback_range_labels()
-        self._timer_playback_labels.start(1000)
+        self._timer_playback_labels.start(1000)  # Wait a second to lock the widths
+        self.playback_speed_changed(self.ui.playback_speed.value())
+        if not self.is_playback:
+            self._last_playback_range = self.ui.playback_range.value()
+
+    @QtCore.Slot()
+    def _playback_range_pressed(self) -> None:
+        """Capture the range before a drag."""
+        if self.is_playback:
+            self._last_playback_range = self.ui.playback_range.value()
+
+    @QtCore.Slot()
+    def _playback_range_released(self) -> None:
+        """Trigger a seek to the equivalent playback position in the new range on mouse release."""
+        new_start, new_end = self.ui.playback_range.value()
+        old_start, old_end = self._last_playback_range
+        if self.is_playback and new_start < new_end and (new_start, new_end) != (old_start, old_end):
+            _progress_percentage = self.ui.playback_progress.value() / self.ui.playback_progress.maximum()
+            current_pos = old_start +  (old_end - old_start) * _progress_percentage
+            self.component.send_data(ipc.SeekPlayback((current_pos - new_start) / (new_end - new_start)))
+        self._last_playback_range = (new_start, new_end)
 
     @QtCore.Slot()
     def _reset_playback_label_widths(self) -> None:
-        """Release the locked playback label widths after inactivity."""
-        self._playback_labels_sticky_width = False
+        """Reset the playback label min widths."""
+        self._keep_playback_label_min_width = False
         for widget in (self.ui.playback_start, self.ui.playback_end):
             widget.setMinimumWidth(0)
 
@@ -3080,10 +3108,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _enter_playback_mode(self, paused: bool = False) -> None:
         """Enter history playback mode and configure the UI accordingly."""
+        if not self.is_playback:
+            self._history_length_snapshot = self._history_length_ticks
         self.is_playback = True
         self._playback_running = True
-        self.ui.thumbnail.clear_pixmap()
         self.ui.thumbnail.playback_overlay.playback_state = not paused
+        self.ui.thumbnail.clear_pixmap()
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
         self._reset_render_counters()
@@ -3092,6 +3122,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _exit_playback_mode(self) -> None:
         """Exit history playback mode and restore the live UI state."""
         self.is_playback = False
+        self._history_length_snapshot = 0
         self._playback_monitor_size = None
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)

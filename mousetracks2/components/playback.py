@@ -38,9 +38,10 @@ class Playback(MonitorComponent):
         self._last_monitors_changed: ipc.MonitorsChanged | None = None
         self._last_profile_changed: ipc.CurrentProfileChanged | None = None
         self._seek_tick: int | None = None
+        self._seek_tick_percentage: float | None = None
         self._seek_pos = 0
-        self._last_playback_get_stream: Callable[[], Iterator[tuple[int, ipc.Message]]] | None = None
-        self._last_playback_tick_count: int = 0
+        self._stream_range: tuple[float, float] = (0.0, 1.0)
+        self._playback_end_tick: int | None = None
         self._options = ipc.PlaybackOptions(ups=UPDATES_PER_SECOND, skip_empty_ticks=True,
                                             start_percentage=0.0, end_percentage=1.0)
 
@@ -52,35 +53,40 @@ class Playback(MonitorComponent):
     @property
     def history_length(self) -> int:
         """Get the actual history length in ticks."""
-        if not self._history:
-            return 0
-        return self._current_tick - self._history[0][0]
+        if self._history:
+            return self._current_tick - self._history[0][0]
+        return 0
 
-    def _load_history_stream(self, options: ipc.PlaybackOptions | None = None) -> bool:
-        """Snapshot the current history into a replayable stream.
+    def _filter_history(self, start_tick: int, end_tick: int) -> list[tuple[int, ipc.Message]]:
+        """Get history messages from within a range."""
+        return [(tick, msg) for tick, msg in self._history
+                if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
 
-        If a previous snapshot exists it'll be reused.
-        Returns True if events were found.
+    def _get_stream_and_ticks(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int]:
+        """Build a fresh stream and tick count from the current history options."""
+        self._stream_range = (self._options.start_percentage, self._options.end_percentage)
+
+        if self._history:
+            first_tick = self._history[0][0]
+            last_tick = self._playback_end_tick if self._playback_end_tick is not None else self._current_tick
+            history_length = last_tick - first_tick
+            start_tick = first_tick + round(self._options.start_percentage * history_length)
+            end_tick = first_tick + round(self._options.end_percentage * history_length)
+
+            if events := self._filter_history(start_tick, end_tick):
+                return lambda: iter(events), events[-1][0] - events[0][0]
+
+        return lambda: iter(()), 0
+
+    def _load_history_stream(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int] | None:
+        """Build a replayable stream from the current history.
+
+        Returns (get_stream, total_ticks) if events were found, else None.
         """
-        if options is not None:
-            self._options = options
-        elif self._last_playback_get_stream is not None:
-            return True
-
-        oldest_tick = self._current_tick - self._history_length
-        start_tick = oldest_tick + round(self._options.start_percentage * self._history_length)
-        end_tick = oldest_tick + round(self._options.end_percentage * self._history_length)
-
-        events = [
-            (tick, msg) for tick, msg in self._history
-            if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES
-        ]
-        if not events:
-            return False
-
-        self._last_playback_get_stream = lambda: iter(events)
-        self._last_playback_tick_count = events[-1][0] - events[0][0]
-        return True
+        get_stream, total_ticks = self._get_stream_and_ticks()
+        if total_ticks:
+            return get_stream, total_ticks
+        return None
 
     def _cache_live_events(self) -> None:
         """Cache messages from live tracking."""
@@ -116,25 +122,29 @@ class Playback(MonitorComponent):
 
                 case ipc.PlaybackOptions():
                     self._options = message
-                    self._last_playback_get_stream = None
 
                 case ipc.StartPlayback():
-                    self._last_playback_get_stream = None
-                    if self._load_history_stream(message.options):
-                        self._replay(self._last_playback_get_stream, self._last_playback_tick_count)
+                    self._options = message.options
+                    self._playback_end_tick = self._current_tick
+                    if stream_data := self._load_history_stream():
+                        get_stream, total_ticks = stream_data
+                        self._replay(get_stream, total_ticks)
 
                 case ipc.SeekPlayback():
-                    if self._load_history_stream():
-                        self._seek_tick = round(message.percentage * self._last_playback_tick_count)
+                    if self._playback_end_tick is None:
+                        self._playback_end_tick = self._current_tick
+                    if stream_data := self._load_history_stream():
+                        get_stream, total_ticks = stream_data
+                        self._seek_tick = round(message.percentage * total_ticks)
                         self._seek_pos = 0
-                        self._replay(self._last_playback_get_stream, self._last_playback_tick_count, paused=True)
+                        self._replay(get_stream, total_ticks, paused=True)
                     else:
                         self.send_data(ipc.SeekComplete())
 
                 # Don't record these events to history
                 case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback(): ...
 
-                # Prevent this being recorded too, but also update the GUI
+                # If just caching, then progress is always at 100%
                 case ipc.RequestPlaybackProgress():
                     self.send_data(ipc.PlaybackProgress(1.0))
 
@@ -173,8 +183,7 @@ class Playback(MonitorComponent):
         end_tick = oldest_tick + round(end_percentage * self._history_length)
 
         # Filter events within the playback window
-        events = [(tick, msg) for tick, msg in self._history
-                  if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
+        events = self._filter_history(start_tick, end_tick)
 
         # Safety check - this shouldn't ever happen
         if not events:
@@ -255,6 +264,13 @@ class Playback(MonitorComponent):
 
             # Initialise the stream on the first tick, or restart it on a backward seek
             if not _tick:
+                # Rebuild the stream if the range is changed
+                if self._seek_tick_percentage is not None:
+                    get_stream, total_ticks = self._get_stream_and_ticks()
+                    self._seek_tick = round(self._seek_tick_percentage * total_ticks)
+                    self._seek_tick_percentage = None
+
+                # Setup the stream to use in the loop
                 stream = get_stream()
                 next_event = next(stream, None)
                 if next_event is None:
@@ -298,17 +314,22 @@ class Playback(MonitorComponent):
                         break_required = True
 
                     case ipc.SeekPlayback():
-                        self._seek_tick = round(message.percentage * total_ticks)
                         actual_tick, tick_offset = _tick + tick_offset, 0
                         continue_required = True  # Skip the current tick
 
-                        # Backward seek
-                        if self._seek_tick < actual_tick:
-                            self._seek_pos = 0
+                        current_range = (self._options.start_percentage, self._options.end_percentage)
+                        if current_range != self._stream_range:
+                            self._seek_tick_percentage = message.percentage
+                            self._seek_tick = self._seek_pos = 0
 
-                        # Forward seek
                         else:
-                            self._seek_pos = actual_tick + 1
+                            self._seek_tick = round(message.percentage * total_ticks)
+                            # Backward seek
+                            if self._seek_tick < actual_tick:
+                                self._seek_pos = 0
+                            # Forward seek
+                            else:
+                                self._seek_pos = actual_tick + 1
 
                     case ipc.PlaybackResumeRender():
                         is_rendering = False

@@ -756,6 +756,9 @@ class SeekPlayback(Message):
     target: Target = field(default=Target.Playback, init=False)
     percentage: float
 
+    def __post_init__(self) -> None:
+        self.percentage = max(0.0, min(1.0, self.percentage))
+
 
 @dataclass
 class SeekComplete(Message):
