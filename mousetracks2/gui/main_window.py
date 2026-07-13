@@ -2042,13 +2042,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Prompt for a save path and begin recording."""
         path, accepted = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Save Recording',
-            str(CTX.data_dir / 'recording.jsonl.gz'),
-            'JSON Lines (*.jsonl.gz)',
+            str(CTX.data_dir / 'recording.mtr'),
+            'MouseTracks Recording (*.mtr)',
         )
         if not accepted or not path:
             return
-        if not path.endswith('.jsonl.gz'):
-            path += '.jsonl.gz'
+        if not path.endswith('.mtr'):
+            path += '.mtr'
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(True)
         self.component.send_data(ipc.StartRecording(path=path))
@@ -3141,13 +3141,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the selected history range to a recording file."""
         path, accepted = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Export History',
-            str(CTX.data_dir / 'history.jsonl.gz'),
-            'JSON Lines (*.jsonl.gz)',
+            str(CTX.data_dir / 'history.mtr'),
+            'MouseTracks Recording (*.mtr)',
         )
         if not accepted or not path:
             return
-        if not path.endswith('.jsonl.gz'):
-            path += '.jsonl.gz'
+        if not path.endswith('.mtr'):
+            path += '.mtr'
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()

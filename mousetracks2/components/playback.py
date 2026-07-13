@@ -24,7 +24,7 @@ from ..utils.timing import ticks
 
 
 class Playback(MonitorComponent):
-    """Cache live events for history playback, or replay a .jsonl.gz recording."""
+    """Cache live events for history playback, or replay a .mtr recording."""
 
     target = ipc.Target.Playback
 

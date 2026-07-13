@@ -60,7 +60,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--test-recording', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--playback', metavar='FILE', default=None,
-                        help='play back a .jsonl.gz recording instead of live tracking')
+                        help='play back a .mtr recording instead of live tracking')
 
     if strict:
         result = parser.parse_args(args)

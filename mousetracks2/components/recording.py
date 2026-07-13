@@ -1,6 +1,6 @@
 """Serialisation and deserialisation for session recording files.
 
-Recording files use the .jsonl.gz format (gzipped JSON Lines).
+Recording files use the .mtr format (gzipped JSON Lines).
 Each line is a JSON object representing one recorded event.
 
 Reserved fields:
@@ -143,7 +143,7 @@ def _deserialise_line(line: str) -> tuple[int, ipc.Message] | None:
 # --- File I/O ---
 
 def open_recording(path: str) -> IO[str]:
-    """Open a .jsonl.gz file for streaming writes. Caller must close it."""
+    """Open a .mtr file for streaming writes. Caller must close it."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     return gzip.open(path, 'wt', encoding='utf-8')
 
@@ -154,7 +154,7 @@ def write_event(f: IO[str], tick: int, message: ipc.Message) -> None:
 
 
 def read_recording(path: str) -> Iterator[tuple[int, ipc.Message]]:
-    """Read events from a .jsonl.gz file. Skips unknown or malformed lines."""
+    """Read events from a .mtr file. Skips unknown or malformed lines."""
     with gzip.open(path, 'rt', encoding='utf-8') as f:
         stripped_lines = filter(bool, map(str.strip, f))
         deserialised_lines = filter(bool, map(_deserialise_line, stripped_lines))
@@ -201,7 +201,7 @@ def _test() -> None:
     ]
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        path = str(Path(tmp_dir) / 'test.jsonl.gz')
+        path = str(Path(tmp_dir) / 'test.mtr')
         print(f'Writing to {path}...')
 
         # Write

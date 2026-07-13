@@ -686,7 +686,7 @@ class SetHistoryLength(Message):
 
 @dataclass
 class ExportHistory(Message):
-    """Export a slice of the history buffer to a .jsonl.gz file."""
+    """Export a slice of the history buffer to a .mtr file."""
 
     target: Target = field(default=Target.Playback, init=False)
     path: str
