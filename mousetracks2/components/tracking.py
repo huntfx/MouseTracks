@@ -19,11 +19,13 @@ from ..config import GlobalConfig
 from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
 from ..context import CTX
 from ..exceptions import ExitRequest
+from ..types import RectList
 from ..utils import keycodes
 from ..utils.monitor import MonitorData
 from ..utils.input import get_cursor_pos
 from ..utils.interface import Interfaces
-from ..utils.system import MonitorEventListener, ControllerEventListener, ForegroundAppListener, hide_child_process
+from ..utils.system import (MonitorEventListener, ControllerEventListener, ForegroundAppListener,
+                             SessionActivityListener, hide_child_process)
 
 
 if XInput is None:
@@ -121,6 +123,7 @@ class Tracking(Component):
         self.autosave = True
         self.update_apps = True
         self.update_monitors = True
+        self.session_active = True
         self.data = DataState(0)
 
         self.config = GlobalConfig()
@@ -149,6 +152,21 @@ class Tracking(Component):
         self._application_listener = ForegroundAppListener()
         self._application_listener.start()
 
+        self._session_listener = SessionActivityListener()
+        self._session_listener.start()
+
+    def _set_profile(self, name: str, process_id: int | None, rects: RectList,
+                     force: bool = False) -> None:
+        """Switch to a new profile, flushing any pending activity first."""
+        if force or name != self.profile_name:
+            self.data.tick_modified = self.data.tick_current
+            self._calculate_inactivity()
+            self.data.pynput_opcodes.clear()
+            self.data.pynput_quick_press.clear()
+            self.profile_name = name
+
+        self.send_data(ipc.CurrentProfileChanged(name, process_id, rects))
+
     def _receive_data(self) -> None:
         for message in self.receive_data():
             match message:
@@ -169,16 +187,7 @@ class Tracking(Component):
                     raise RuntimeError('[Tracking] Test Exception')
 
                 case ipc.TrackedApplicationDetected():
-
-                    # Profile has changed, so reset the data
-                    if message.name != self.profile_name:
-                        self.data.tick_modified = self.data.tick_current
-                        self._calculate_inactivity()
-                        self.data.pynput_opcodes.clear()
-                        self.data.pynput_quick_press.clear()
-                        self.profile_name = message.name
-
-                    self.send_data(ipc.CurrentProfileChanged(message.name, message.process_id, message.rects))
+                    self._set_profile(message.name, message.process_id, message.rects)
 
                 case ipc.Autosave():
                     self.autosave = message.enabled
@@ -330,7 +339,7 @@ class Tracking(Component):
 
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
-        if self.state != ipc.TrackingState.Running:
+        if self.state != ipc.TrackingState.Running or not self.session_active:
             return
 
         with self._exception_handler():
@@ -351,7 +360,7 @@ class Tracking(Component):
         The scroll vector is mostly -1, 0 or 1, but support has been
         added in case it can go outside this range.
         """
-        if self.state != ipc.TrackingState.Running or not self.track_mouse:
+        if self.state != ipc.TrackingState.Running or not self.session_active or not self.track_mouse:
             return
 
         with self._exception_handler():
@@ -370,7 +379,7 @@ class Tracking(Component):
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
-        if self.state != ipc.TrackingState.Running or key is None:
+        if self.state != ipc.TrackingState.Running or not self.session_active or key is None:
             return
 
         with self._exception_handler():
@@ -393,7 +402,9 @@ class Tracking(Component):
                     self.data.pynput_quick_press.append(vk)
 
     def _key_press(self, keycode: int | keycodes.KeyCode, quick_press: bool = False) -> None:
-        """Handle key presses."""
+        """Handle key presses.
+        This intentionally has no guards against application state.
+        """
         self.data.tick_modified = self.data.tick_current
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
         is_click = keycode in keycodes.CLICK_CODES
@@ -432,16 +443,31 @@ class Tracking(Component):
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
+            # Check if the user's login session is active
+            session_active = self._session_listener.triggered
+            if session_active != self.session_active:
+                self.session_active = session_active
+                # Force a recheck of data if active
+                if session_active:
+                    print('[Tracking] User session is active.')
+                    self.send_data(ipc.RequestRunningAppCheck())
+                    self._refresh_monitor_data()
+
+                # Force the default profile if inactive
+                else:
+                    print('[Tracking] User session is inactive.')
+                    self._set_profile(DEFAULT_PROFILE_NAME, None, RectList(), force=True)
+
             # Check for loaded applications
-            if self.update_apps and self._application_listener.triggered:
+            if self._application_listener.triggered and self.update_apps and session_active:
                 self.send_data(ipc.RequestRunningAppCheck())
 
             # Update monitor data
-            if self.update_monitors and self._monitor_listener.triggered:
+            if self._monitor_listener.triggered and self.update_monitors:
                 self._refresh_monitor_data()
 
             # Update mouse data
-            if self.track_mouse:
+            if self.track_mouse and session_active:
                 mouse_position = self._live_mouse_position
 
                 # Check if mouse position is inactive (such as a screensaver)
@@ -479,7 +505,7 @@ class Tracking(Component):
                         data.gamepads_previous = data.gamepads_current
 
                 for gamepad, active in enumerate(data.gamepads_current):
-                    if not active:
+                    if not active or not session_active:
                         continue
 
                     # Get a snapshot of the current gamepad state
@@ -522,7 +548,7 @@ class Tracking(Component):
                         data.gamepad_stick_r_position[gamepad] = stick_r
                         self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
-            if self.track_network and not tick % UPDATES_PER_SECOND:
+            if self.track_network and session_active and not tick % UPDATES_PER_SECOND:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
                     prev_sent = data.bytes_sent_previous.get(interface_name, 0)
                     prev_recv = data.bytes_recv_previous.get(interface_name, 0)
@@ -553,3 +579,4 @@ class Tracking(Component):
         self._pynput_mouse_listener.stop()
         self._pynput_keyboard_listener.stop()
         self._monitor_listener.stop()
+        self._session_listener.stop()
