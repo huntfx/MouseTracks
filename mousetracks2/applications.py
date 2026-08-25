@@ -1,14 +1,14 @@
 import os
 import re
 from collections import defaultdict
-from contextlib import suppress
 from pathlib import Path
 from typing import Iterable, Iterator
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .config.cli import CLI
-from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .constants import TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .context import CTX
+from .runtime import REPO_DIR
 
 
 DEFAULT_TEXT = (
@@ -29,13 +29,13 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = CLI.data_dir / 'AppList.txt'
+LOCAL_PATH = CTX.data_dir / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
-APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
+APP_PATTERN = re.compile(r'^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
-MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/Appist.txt'
+MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/AppList.txt'
 
 
 def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
@@ -53,7 +53,7 @@ def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
         exe, title, name = match.groups()
         if name is None:
             if title is None:
-                name = exe.replace(TRACKING_WILDCARD, '').strip()
+                name = os.path.splitext(os.path.basename(exe))[0].replace(TRACKING_WILDCARD, '').strip()
             else:
                 name = title.replace(TRACKING_WILDCARD, '').strip()
 
@@ -78,11 +78,11 @@ def _prepare_data(data: dict[str, dict[str | None, str]]) -> Iterator[str]:
                 name = None
 
             if title is None:
-                if name is None:
+                if name is None or name == os.path.splitext(os.path.basename(exe))[0]:
                     yield exe
                 else:
                     yield f'{exe}: {name}'
-            elif name is None:
+            elif name is None or name == title:
                 yield f'{exe}[{title}]'
             else:
                 yield f'{exe}[{title}]: {name}'
@@ -129,11 +129,13 @@ class AppList:
         self.load(REPO_PATH)
 
         # Update with the latest online data
-        if not CLI.offline:
-            with suppress(URLError):
+        if not CTX.offline:
+            try:
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')
-                    self.import_(_parse_data(data))
+                    self.import_(_parse_data(data.split('\n')))
+            except URLError as e:
+                print(f'Error downloading applist: {e}')
 
         # Update with any local changes
         if LOCAL_PATH.exists():
@@ -144,7 +146,7 @@ class AppList:
         with open(path, 'r', encoding='utf-8') as f:
             self.import_(_parse_data(f))
 
-    def import_(self, data: dict[str, dict[str | None, str]]):
+    def import_(self, data: dict[str, dict[str | None, str]]) -> None:
         for exe, titles in data.items():
             self.data[exe].update(titles)
 
@@ -166,19 +168,24 @@ class AppList:
         with open(LOCAL_PATH, 'w', encoding='utf-8') as f:
             f.write('\n'.join(_prepare_data(self.data)))
 
-    def _match_exe(self, exe: str) -> Iterator[tuple[dict[str | None, str], str]]:
-        """Find all matches for an executable."""
+    def _match_exe(self, exe: str, full_paths: bool = False) -> Iterator[tuple[dict[str | None, str], str]]:
+        """Find all matches for an executable.
+        The first item returned is a dict of `{window_title: profile_name}`.
+        The second item returned is the executable.
+        """
+        if not exe:
+            return
         exe = exe.replace('\\', '/')
 
-        if '/' not in exe:
+        if '/' not in exe and '*' not in exe:
             # Direct match
             if exe in self.data:
                 yield self.data[exe], exe
 
         # Path match
         for path in self._path_executables.get(os.path.basename(exe), []):
-            if exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower()):
-                yield self.data[path], exe
+            if exe != path and (exe.lower().endswith(path.lower()) or path.lower().endswith(exe.lower())):
+                yield self.data[path], path if full_paths else exe
                 break
 
         # Wildcard match
@@ -191,8 +198,9 @@ class AppList:
         if '/' in exe:
             if exe in self.data:
                 yield self.data[exe], exe
-            if os.path.basename(exe) in self.data:
-                yield self.data[os.path.basename(exe)], exe
+            exe_basename = os.path.basename(exe)
+            if exe_basename in self.data:
+                yield self.data[exe_basename], exe_basename
 
 
     def match(self, exe: str, title: str | None = None) -> str | None:
@@ -225,6 +233,7 @@ class AppList:
 
 # Some quick tests for debugging
 if __name__ == '__main__':
+    # pylint: disable=protected-access
     applist = AppList()
 
     applist.save()
@@ -255,7 +264,7 @@ if __name__ == '__main__':
     assert applist.match('myapp.exe') == 'Test App'
     assert applist.match('test/myapp.exe') == 'Test App'
     assert applist.match('path/test/myapp.exe') == 'Test App'
-    assert applist.match('other/myapp.exe') == None
+    assert applist.match('other/myapp.exe') is None
     assert applist.match('mspaint.exe') == 'MS Paint'
     assert applist.match('Borderlands.exe') == 'Borderlands'
     assert applist.match('C:/Tales from the Borderlands/Borderlands.exe') == 'Tales from the Borderlands'

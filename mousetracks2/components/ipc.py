@@ -1,10 +1,19 @@
 """Standard format for data to be sent through communication queues."""
 
-from dataclasses import dataclass, field
-from enum import Enum, auto
-import numpy as np
+from __future__ import annotations
 
-from ..config.settings import ProfileConfig
+from dataclasses import dataclass, field
+from enum import Enum, IntFlag, auto
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+
+from ..config import ProfileConfig
+from ..enums import BlendMode, Channel
+from ..types import RectList
+from ..utils.monitor import MonitorData
 
 
 class Target:
@@ -20,16 +29,16 @@ class Target:
 class RenderType(Enum):
     """Possible types of renders."""
 
-    Time = auto()
-    TimeHeatmap = auto()
-    Speed = auto()
+    MouseMovement = auto()
+    MouseSpeed = auto()
+    MousePosition = auto()
     SingleClick = auto()
     DoubleClick = auto()
     HeldClick = auto()
-    Thumbstick_Time = auto()
-    Thumbstick_Speed = auto()
-    Thumbstick_Heatmap = auto()
-    Keyboard = auto()
+    ThumbstickMovement = auto()
+    ThumbstickSpeed = auto()
+    ThumbstickPosition = auto()
+    KeyboardHeatmap = auto()
 
 
 class TrackingState(Enum):
@@ -44,6 +53,15 @@ class TrackingState(Enum):
     Running = auto()
     Paused = auto()
     Stopped = auto()
+
+
+class Device(IntFlag):
+    """Input devices that can be tracked."""
+
+    Mouse = auto()
+    Keyboard = auto()
+    Gamepad = auto()
+    Network = auto()
 
 
 @dataclass
@@ -132,7 +150,7 @@ class ButtonHeld(Message):
 
 @dataclass
 class ThumbstickMove(Message):
-    """Thumbstic location."""
+    """Thumbstick location."""
 
     class Thumbstick(Enum):
         Left = auto()
@@ -152,7 +170,7 @@ class Traceback(Message):
     exception: Exception
     traceback: str
 
-    def reraise(self):
+    def reraise(self) -> None:
         """Re-raise the exception.
         Since the full traceback isn't accessible from a different
         thread, replicate Python's behaviour by showing both exceptions.
@@ -193,7 +211,7 @@ class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
     target: int = field(default=Target.GUI | Target.Processing, init=False)
-    data: list[tuple[int, int, int, int]]
+    data: MonitorData
 
 
 @dataclass
@@ -218,9 +236,13 @@ class RenderRequest(Message):
     lock_aspect: bool = True
     clipping: float = 1.0
     blur: float = 0.0
+    invert: bool = False
     show_left_clicks: bool = True
     show_middle_clicks: bool = True
     show_right_clicks: bool = True
+    show_keyboard_time: bool = False
+    interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
+    layer_visible: bool = True
 
 
 @dataclass
@@ -228,7 +250,7 @@ class Render(Message):
     """A render has been completed."""
 
     target: int = field(default=Target.GUI, init=False)
-    array: np.ndarray
+    array: npt.NDArray[np.uint8]
     request: RenderRequest
 
 
@@ -242,14 +264,33 @@ class RequestRunningAppCheck(Message):
 
 @dataclass
 class TrackedApplicationDetected(Message):
-    """Trigger a profile change.
-    This is sent from the application detection thread.
+    """Detect when a new tracked application is focused.
+
+    This was originally processed by all components, but there was a
+    rare chance of a race condition where the active time was 1 tick
+    higher than the elapsed time. Now it notifies just the tracking
+    component, which then it turn sends a separate message out to the
+    other components, but in sync with the ticks.
     """
 
-    target: int = field(default=Target.Processing | Target.Tracking | Target.GUI, init=False)
+    target: int = field(default=Target.Tracking, init=False)
     name: str
     process_id: int | None
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
+    rects: RectList = field(default_factory=RectList)
+
+
+@dataclass
+class CurrentProfileChanged(Message):
+    """Trigger a profile switch.
+
+    This is a variation of `TrackedApplicationDetected`, but is in
+    sync with the tick counter to prevent race conditions.
+    """
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    name: str
+    process_id: int | None
+    rects: RectList = field(default_factory=RectList)
 
 
 @dataclass
@@ -302,15 +343,10 @@ class SaveComplete(Message):
 
 
 @dataclass
-class Load(Message):
-    target: int = field(default=Target.Processing, init=False)
-    application: str | None = field(default=None)
-
-
-@dataclass
 class ProfileDataRequest(Message):
     target: int = field(default=Target.Processing, init=False)
-    profile_name: str | None = field(default=None)
+    sanitised_name: str
+    profile_name: str
 
 
 @dataclass
@@ -334,7 +370,7 @@ class ProfileData(Message):
     bytes_recv: int
     config: ProfileConfig
     resolutions: dict[tuple[int, int], tuple[int, bool]]
-    single_monitor: bool
+    multi_monitor: bool | None
 
 
 @dataclass
@@ -364,79 +400,37 @@ class Inactive(Message):
 
 
 @dataclass
-class SetProfileMouseTracking(Message):
+class SetProfileTracking(Message):
     target: int = field(default=Target.Processing, init=False)
     profile_name: str
+    device: Device
     enable: bool
 
 
 @dataclass
-class SetProfileKeyboardTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetProfileGamepadTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetProfileNetworkTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-    enable: bool
-
-
-@dataclass
-class SetGlobalMouseTracking(Message):
+class SetGlobalTracking(Message):
     target: int = field(default=Target.Tracking, init=False)
+    device: Device
     enable: bool
 
 
 @dataclass
-class SetGlobalKeyboardTracking(Message):
+class DebugDisableAppDetection(Message):
     target: int = field(default=Target.Tracking, init=False)
-    enable: bool
+    disable: bool
 
 
 @dataclass
-class SetGlobalGamepadTracking(Message):
+class DebugDisableMonitorCheck(Message):
     target: int = field(default=Target.Tracking, init=False)
-    enable: bool
+    disable: bool
 
 
 @dataclass
-class SetGlobalNetworkTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
-    enable: bool
-
-
-@dataclass
-class DeleteMouseData(Message):
+class DeleteData(Message):
     target: int = field(default=Target.Processing, init=False)
     profile_name: str
-
-
-@dataclass
-class DeleteKeyboardData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-
-
-@dataclass
-class DeleteGamepadData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
-
-
-@dataclass
-class DeleteNetworkData(Message):
-    target: int = field(default=Target.Processing, init=False)
-    profile_name: str
+    devices: Device
 
 
 @dataclass
@@ -468,32 +462,43 @@ class QueueSize(Message):
 
 @dataclass
 class ToggleConsole(Message):
-    target: int = field(default=Target.Hub, init=False)
+    """Change the visible state of the console."""
+    target: int = field(default=Target.Hub | Target.GUI, init=False)
     show: bool
 
 
 @dataclass
 class InvalidConsole(Message):
+    """Triggered if the console is determined to be not valid.
+    This may be the built in console in an IDE for example.
+    """
     target: int = field(default=Target.GUI, init=False)
 
 
 @dataclass
-class CloseSplashScreen(Message):
-    """Send a request to close the splash screen.
-    The splash screen is run by the hub, and waits for the GUI to finish
-    loading before closing.
-    """
-
-    target: int = field(default=Target.Hub, init=False)
-
-
-@dataclass
-class LoadLegacyProfile(Message):
-    """Send a request to load an old profile."""
+class ImportProfile(Message):
+    """Send a request to import a profile."""
 
     target: int = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     path: str
+
+
+@dataclass
+class ImportLegacyProfile(Message):
+    """Send a request to import a legacy profile."""
+
+    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    name: str
+    path: str
+
+
+@dataclass
+class FailedProfileImport(Message):
+    """Send a request to import a legacy profile."""
+
+    target: int = field(default=Target.GUI, init=False)
+    source: ImportProfile | ImportLegacyProfile
 
 
 @dataclass
@@ -559,4 +564,63 @@ class ToggleProfileMultiMonitor(Message):
 
     target: int = field(default=Target.Processing, init=False)
     profile: str
-    single_monitor: bool
+    multi_monitor: bool | None
+
+
+@dataclass
+class RequestPID(Message):
+    """Request a components PID."""
+
+
+@dataclass
+class SendPID(Message):
+    """Send a components PID."""
+
+    target: int = field(default=Target.GUI, init=False)
+    source: int
+    pid: int
+
+
+@dataclass
+class RenderLayer:
+    """Hold a render request with layer data."""
+    request: RenderRequest
+    blend_mode: BlendMode
+    channels: Channel = Channel.RGBA
+    opacity: int = 100
+
+
+@dataclass
+class RenderLayerRequest(Message):
+    """Request a render of multiple layers.
+
+    Note that this is only meant to be a wrapper over the rendering, so
+    for example this is why the resolution is stored per render request,
+    rather than once per render layer request.
+    """
+
+    target: int = field(default=Target.Processing, init=False)
+    layers: list[RenderLayer]
+
+
+@dataclass
+class ComponentLoaded(Message):
+    """Notify when a single component has loaded."""
+
+    target: int = field(default=Target.Hub, init=False)
+    component: int
+
+
+@dataclass
+class AllComponentsLoaded(Message):
+    """Notify once every component has been loaded."""
+
+    target: int = field(default=Target.Hub | Target.GUI, init=False)
+
+
+@dataclass
+class ShowPopup(Message):
+    """Trigger a popup message in the GUI."""
+
+    target: int = field(default=Target.GUI, init=False)
+    content: str

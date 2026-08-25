@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..constants import REPO_DIR
+from ..runtime import REPO_DIR
 
 
 COLOUR_FILE = REPO_DIR / 'config' / 'colours.txt'
@@ -43,7 +43,7 @@ DUPLICATES: dict[str, int] = {
 SEPERATORS: list[str] = ['to', 'then']
 
 
-def to_lower(value: str, extra_chars='') -> str:
+def to_lower(value: str, extra_chars: str = '') -> str:
     return re.sub('[^A-Za-z0-9{}]+'.format(extra_chars), '', value).lower()
 
 
@@ -52,9 +52,8 @@ class ColourRange(object):
     All possible colours within the range are cached for quick access.
     """
 
-    def __init__(self, min_amount: int, max_amount: int, colours: list[tuple[int, ...]],
-                 offset: int = 0, colour_steps: int = 256, loop: bool = False, background=None):
-
+    def __init__(self, min_amount: int, max_amount: int, colours: list[tuple[int, ...]], offset: int = 0,
+                 colour_steps: int = 256, loop: bool = False, background: tuple[int, ...] | None = None) -> None:
         if min_amount >= max_amount:
             colours = [colours[0]]
             max_amount = min_amount + 1
@@ -81,7 +80,7 @@ class ColourRange(object):
         if self.background is not None and not n:
             return self.background
 
-        value_index = int(round((n - self.min) / self._step_size))
+        value_index = round((n - self.min) / self._step_size)
 
         if self.loop:
             if value_index != self.steps:
@@ -113,7 +112,7 @@ class ColourRange(object):
                      for i, j in zip(base_colour, mix_colour))
 
 
-def _parse_colour_text(colours: str) -> list[tuple[int, ...]]:
+def parse_colour_text(colours: str) -> list[tuple[int, ...]]:
     """Convert text into a colour map.
     It could probably do with a rewrite to make it more efficient,
     as it was first written to only use capitals.
@@ -255,15 +254,14 @@ def calculate_colour_map(colour_map: str) -> list[tuple[int, ...]]:
     if not colour_map:
         raise ValueError('not enough colours to generate colour map')
     try:
-        return _parse_colour_text(parse_colour_file()['Maps'][to_lower(colour_map)]['Colour'])
-    except KeyError:
-        generated_map = _parse_colour_text(colour_map)
+        return parse_colour_text(parse_colour_file()['Maps'][to_lower(colour_map)]['Colour'])
+    except KeyError as e:
+        generated_map = parse_colour_text(colour_map)
         if generated_map:
             if len(generated_map) < 2:
-                raise ValueError('not enough colours to generate colour map')
+                raise ValueError('not enough colours to generate colour map') from e
             return generated_map
-        else:
-            raise ValueError('unknown colour map')
+        raise ValueError('unknown colour map') from e
 
 
 def get_luminance(r: int, g: int, b: int, a: int | None = None) -> float:
@@ -310,7 +308,7 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
     colour_maps: dict[str, dict[str, Any]] = {}
 
     with open(path, 'r', encoding='utf-8') as f:
-        for line in f:
+        for line in filter(bool, map(str.strip, f)):
             var, value = [i.strip() for i in line.split('=', 1)]
             var_parts = var.split('.')
 
@@ -324,7 +322,7 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
                     continue
                 rgb = tuple(colour[1])
                 if rgb is not None:
-                    colours[to_lower(var_parts[1])] = {'Uppercase': var_parts[1], 'Colour': rgb}
+                    colours[to_lower(var_parts[1])] = {'UpperCase': var_parts[1], 'Colour': rgb}
 
             # Parse colour map part
             elif var_parts[0] == 'map':
@@ -337,7 +335,8 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
 
                 if map_name_l not in colour_maps:
                     colour_maps[map_name_l] = {'Colour': None, 'UpperCase': map_name,
-                                               'Type': {'tracks': False, 'clicks': False, 'keyboard': False}}
+                                               'Type': {'tracks': False, 'clicks': False, 'keyboard': False},
+                                               'Background': {'tracks': None, 'clicks': None, 'keyboard': None}}
 
                 if var_type == 'colour':
 
@@ -351,7 +350,10 @@ def parse_colour_file(path: str | Path = COLOUR_FILE) -> dict[str, Any]:
                         colour_maps[map_name_ext_l]['Colour'] = value
 
                 elif var_type in ('clicks', 'tracks', 'keyboard'):
-                    if value.lower().startswith('t') or value.lower().startswith('y'):
+                    if len(var_parts) > 3 and var_parts[3].lower() == 'background':
+                        colour_maps[map_name_l]['Background'][var_type] = value
+
+                    elif value.lower().startswith('t') or value.lower().startswith('y'):
                         colour_maps[map_name_l]['Type'][var_type] = True
 
     return {'Colours': colours, 'Maps': colour_maps}

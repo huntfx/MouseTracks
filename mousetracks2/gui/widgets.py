@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -44,7 +45,7 @@ class OverlayLabel(QtWidgets.QLabel):
 class PlaybackOverlay(QtWidgets.QWidget):
     """An overlay widget that displays a play or pause icon."""
 
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
@@ -189,7 +190,7 @@ class ResizableImage(QtWidgets.QLabel):
         self._pixmap.convertFromImage(self._image)
         self.setPixmap(self._scaled_pixmap())
 
-    def resizeEvent(self, event: QtGui.QResizeEvent):
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         """Update the pixmap while resizing."""
         self.resized.emit(event.size())
         super().resizeEvent(event)
@@ -254,3 +255,31 @@ class Splitter(QtWidgets.QSplitter):
             if isinstance(child, QtWidgets.QSplitterHandle) and child.isVisible():
                 return True
         return False
+
+
+class AutoCloseMessageBox(QtWidgets.QMessageBox):
+    def exec_with_timeout(self, action: str, timeout: float, accuracy: int = 1) -> int:
+        """Sets a timeout before accepting the message.
+        `setInformativeText` is used to display the remaining time.
+        """
+        parent = self.parent()
+        if parent is None:
+            raise RuntimeError('parent required')
+        target_timeout = time.time() + timeout
+
+        def update_message() -> None:
+            """Updates the countdown message and auto-saves if time runs out."""
+            remaining_timeout = round(target_timeout - time.time(), accuracy)
+            if remaining_timeout > 0:
+                self.setInformativeText(f'{action} in {remaining_timeout} seconds...')
+            else:
+                timer.stop()
+                self.accept()
+        update_message()
+
+        # Use a QTimer to update the countdown
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(update_message)
+        timer.start(10 ** (3 - accuracy))
+
+        return self.exec()

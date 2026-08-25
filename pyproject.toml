@@ -1,3 +1,33 @@
+[tool.mypy]
+files = ["launcher.py", "mousetracks2"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
 [[tool.mypy.overrides]]
 module = "mousetracks.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "mousetracks2.gui.ui.*"
+ignore_errors = true
+
+[tool.pylint.main]
+ignore-paths = [
+    "^mousetracks/.*$",
+    "^mousetracks2/gui/ui/.*$"
+]
+
+[tool.pylint.messages_control]
+disable = [
+    "C",  # Convention (missing docstrings, invalid names, etc)
+    "R",  # Refactoring (too many local variables, too many branches, etc)
+    "unused-argument",
+]
+
+[tool.pylint.typecheck]
+ignored-modules = [
+    "AppKit",
+    "Quartz",
+    "Xlib",
+    "PySide6",
+]

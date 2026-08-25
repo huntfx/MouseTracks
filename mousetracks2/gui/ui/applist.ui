@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>866</width>
+    <height>669</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>AppList Updater</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <widget class="QWidget" name="layoutWidget">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Add or update the tracking information for a profile.
+A profile will activate once the linked application gains focus.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="toolTip">
+          <string>Select an executable name from the loaded applications, or type one.
+It is case sensitive and supports partial paths.
+The &lt;*&gt; marker is treated as a wildcard, and multiple can be used.
+
+Examples:
+- MyGame.exe
+- MyGame_build_&lt;*&gt;.exe
+- steamapps/MyGame/bin/MyGame.exe
+- \mygame\MyGame.exe</string>
+         </property>
+         <property name="title">
+          <string>Executable</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="QComboBox" name="executable">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+              <property name="currentText">
+               <string>Game_Win64.exe</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="browse">
+              <property name="toolTip">
+               <string>Find an executable file.</string>
+              </property>
+              <property name="text">
+               <string>Browse</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>- Case sensitive&lt;br&gt;- The wildcard character sequence &lt;strong&gt;&lt;code&gt;&amp;#60;*&amp;#62;&lt;/code&gt;&lt;/strong&gt; is supported.&lt;br&gt;- Partial paths are supported for a narrower search scope.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="toolTip">
+          <string>Set the name of the profile.
+Multiple rules can write to the same profile.
+
+If this field is left empty, the profile name will be automatically determined. 
+It will first try to use the 'Window Title' (if one is specified for this rule). 
+If no 'Window Title' is specified, it will use the 'Executable' name as the profile name.</string>
+         </property>
+         <property name="title">
+          <string>Profile Name</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QLineEdit" name="profile_name">
+            <property name="placeholderText">
+             <string>Game_Win64</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="minimumSize">
+             <size>
+              <width>70</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>- Multiple rules can point to the same profile.
+- If not set, name defaults to Window Title (if specified), otherwise Executable.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="window_title_enabled">
+         <property name="toolTip">
+          <string>Add a check on the window title.
+These rules take priority over any matching rule without a window title.
+This may be used for example to ignore a splash screen when an application is
+being loaded, assuming the splash screen has a different title.</string>
+         </property>
+         <property name="title">
+          <string>Window Title</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Only trigger the profile when this window title is matched.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="window_title"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>- The wildcard character sequence &lt;strong&gt;&lt;code&gt;&amp;#60;*&amp;#62;&lt;/code&gt;&lt;/strong&gt; is supported.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="toolTip">
+          <string>Set how the profile should work.
+
+- An ignored profile is meant to work in conjunction with the window title option,
+so particular cases such as splash screens can be ignored instead of recording low
+resolution data to the application.
+
+- A disabled profile is for when the tracking data should be discarded. As of right
+now it records to a &quot;Untracked&quot; profile.</string>
+         </property>
+         <property name="title">
+          <string>State</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Set how the profile behaves.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QRadioButton" name="state_enabled">
+              <property name="text">
+               <string>Enabled</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="state_ignored">
+              <property name="text">
+               <string>Ignored</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="state_disabled">
+              <property name="text">
+               <string>Disabled</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>- Enabled: Track this profile.
+- Ignored: Use in conjunction with the window title to prevent the profile changing for certain windows (eg. splash screens).
+- Disabled: Stop recording all data while profile is loaded.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QPushButton" name="create">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Create the new rule or update the matching one.</string>
+           </property>
+           <property name="text">
+            <string>Create / Update Rule</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="advanced">
+           <property name="toolTip">
+            <string>Show advanced options.</string>
+           </property>
+           <property name="text">
+            <string>Advanced</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <layout class="QVBoxLayout" name="verticalLayout_8">
+       <item>
+        <widget class="QPushButton" name="open">
+         <property name="toolTip">
+          <string>Open the AppList.txt file.</string>
+         </property>
+         <property name="text">
+          <string>Open AppList.txt</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Listed below are all matching profile rules for the currently selected executable.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>The format is as follows:
+ - Executable.exe: Profile Name
+ - Executable.exe[Window Title]: Profile Name</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QListWidget" name="rules">
+         <property name="baseSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>List of matching rules.
+
+Possible formats:
+- App.exe
+- App.exe[Title]
+- App.exe: Name
+- App.exe[Title]: Name</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>Game_Win64.exe: My Game</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Game_Win64.exe[Title]: &lt;ignore&gt;</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="remove">
+         <property name="toolTip">
+          <string>Remove the selected rule.</string>
+         </property>
+         <property name="text">
+          <string>Remove Rule</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="save">
+     <property name="toolTip">
+      <string>Save all changes made and close this window.</string>
+     </property>
+     <property name="text">
+      <string>Save Changes and Exit</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>advanced</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>label_6</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>590</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>113</x>
+     <y>86</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>advanced</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>window_title_enabled</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>590</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>245</x>
+     <y>355</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>advanced</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>groupBox_5</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>590</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>111</x>
+     <y>375</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>state_enabled</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>groupBox_6</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>98</x>
+     <y>430</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>169</x>
+     <y>186</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>advanced</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>open</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>541</x>
+     <y>575</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>753</x>
+     <y>31</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

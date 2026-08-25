@@ -7,35 +7,109 @@ Components:
     - cli
 """
 
+from __future__ import annotations
+
+import os
 import sys
 import time
 import traceback
 import multiprocessing
+import multiprocessing.queues
 import queue
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from . import app_detection, gui, ipc, processing, tracking
-from ..gui.splash import SplashScreen
-from ..config.cli import CLI
-from ..constants import CHECK_COMPONENT_FREQUENCY, IS_EXE, UPDATES_PER_SECOND
+from . import ipc
+from ..config import GlobalConfig
+from ..constants import UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
+from ..gui.utils import should_minimise_on_start
+from ..runtime import IS_BUILT_EXE
+
+if TYPE_CHECKING:
+    from multiprocessing.sharedctypes import Synchronized
+    from ..utils.system.windows import WindowHandle
+
+
+T = TypeVar('T')
+
+
+class Queue(multiprocessing.queues.Queue, Generic[T]):
+    """Custom implementation of a queue to ensure `qsize()` works.
+
+    If it is not available, then `multiprocessing.Value` will be used
+    instead as the counter.
+    """
+
+    @dataclass
+    class State:
+        """Store the class state for serialisation."""
+
+        original: Any
+        counter: Synchronized[int]
+        use_counter: bool
+
+    def __init__(self) -> None:
+        self._use_custom_counter = False
+        super().__init__(ctx=multiprocessing.get_context())
+        try:
+            super().qsize()
+        except NotImplementedError:
+            self._use_custom_counter = True
+        self._counter: Synchronized[int] = multiprocessing.Value('i', 0)
+
+    def __getstate__(self) -> State:
+        return self.State(super().__getstate__(), self._counter, self._use_custom_counter)
+
+    def __setstate__(self, state: State) -> None:
+        self._counter = state.counter
+        self._use_custom_counter = state.use_counter
+        super().__setstate__(state.original)  # type: ignore
+
+    def qsize(self) -> int:
+        """Get the queue size."""
+        if self._use_custom_counter:
+            return self._counter.value
+        return super().qsize()
+
+    def put(self, obj: T, block: bool = True, timeout: float | None = None) -> Any:
+        """Add an item to the queue."""
+        super().put(obj, block, timeout)
+        if self._use_custom_counter:
+            with self._counter.get_lock():
+                self._counter.value += 1
+
+    def get(self, block: bool = True, timeout: float | None = None) -> T:
+        """Get an item from the queue."""
+        result = super().get(block, timeout)
+        if self._use_custom_counter:
+            with self._counter.get_lock():
+                self._counter.value -= 1
+        return result
 
 
 class Hub:
     """Set up individual components with queues for communication."""
 
-    def __init__(self, use_gui: bool = True):
+    def __init__(self, use_gui: bool = True) -> None:
         """Initialise the hub with queues and processes."""
         self.state = ipc.TrackingState.Paused
         self.use_gui = use_gui
-        self.splash: SplashScreen | None = None
         self._previous_component_check: float = 0.0
 
-        self._q_main: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
+        self._wait_to_load = {ipc.Target.AppDetection, ipc.Target.Tracking, ipc.Target.Processing}
+        if self.use_gui:
+            self._wait_to_load.add(ipc.Target.GUI)
 
-        self._q_gui: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
-        self._p_gui = multiprocessing.Process(target=gui.GUI.launch, args=(self._q_main, self._q_gui))
-        self._p_gui.daemon = True
-        self._create_tracking_processes()
+        self._q_main: Queue[ipc.Message] = Queue()
+        self.config = GlobalConfig()
+
+        self._create_tracking_processes(first_run=True)
+
+        # Disable show/hide if console is already hidden
+        handle = self._get_console_handle()
+        if handle is None or not handle.visible or not handle.pid or not handle.title:
+            self._q_main.put(ipc.InvalidConsole())
 
     def start_tracking(self) -> None:
         """Start the tracking.
@@ -44,7 +118,7 @@ class Hub:
         print('[Hub] Sending start tracking signal...')
         self._process_message(ipc.StartTracking())
 
-    def stop_tracking(self):
+    def stop_tracking(self) -> None:
         """Stop the tracking processes.
 
         A stop signal is pushed to the queue, so that the processes can
@@ -68,13 +142,16 @@ class Hub:
         app_detection_running = self._p_app_detection.is_alive()
         while tracking_running or processing_running or app_detection_running:
             try:
-                match self._q_main.get(timeout=30):
+                message = self._q_main.get(timeout=30)
+                match message:
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Tracking):
                         tracking_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.Processing):
                         processing_running = False
                     case ipc.ProcessShutDownNotification(source=ipc.Target.AppDetection):
                         app_detection_running = False
+                    case _:
+                        self._process_message(message)
             except queue.Empty:
                 if tracking_running:
                     print('[Hub] No notification received from tracking, terminating...')
@@ -107,27 +184,39 @@ class Hub:
 
         print('[Hub] Processes shut down')
 
-    def _create_tracking_processes(self) -> None:
+    def _create_tracking_processes(self, first_run: bool = False) -> None:
         """Setup the processes required for tracking.
         If these are shut down, then a new process needs to be created.
         """
         print('[Hub] Creating tracking processes...')
-        self._q_tracking: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
-        self._p_tracking = multiprocessing.Process(target=tracking.Tracking.launch, args=(self._q_main, self._q_tracking))
+        from .app_detection import AppDetection
+        from .gui import GUI
+        from .processing import Processing
+        from .tracking import Tracking
+
+        if first_run:
+            self._q_gui: Queue[ipc.Message] = Queue()
+            self._p_gui = multiprocessing.Process(target=GUI.launch, args=(self._q_main, self._q_gui))
+            self._p_gui.daemon = True
+            if self.use_gui:
+                self._p_gui.start()
+
+        self._q_tracking: Queue[ipc.Message] = Queue()
+        self._p_tracking = multiprocessing.Process(target=Tracking.launch, args=(self._q_main, self._q_tracking))
         self._p_tracking.daemon = True
         self._p_tracking.start()
 
-        self._q_processing: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
-        self._p_processing = multiprocessing.Process(target=processing.Processing.launch, args=(self._q_main, self._q_processing))
+        self._q_processing: Queue[ipc.Message] = Queue()
+        self._p_processing = multiprocessing.Process(target=Processing.launch, args=(self._q_main, self._q_processing))
         self._p_processing.daemon = True
         self._p_processing.start()
 
-        self._q_app_detection: multiprocessing.Queue[ipc.Message] = multiprocessing.Queue()
-        self._p_app_detection = multiprocessing.Process(target=app_detection.AppDetection.launch, args=(self._q_main, self._q_app_detection))
+        self._q_app_detection: Queue[ipc.Message] = Queue()
+        self._p_app_detection = multiprocessing.Process(target=AppDetection.launch, args=(self._q_main, self._q_app_detection))
         self._p_app_detection.daemon = True
         self._p_app_detection.start()
 
-    def _startup_tracking_processes(self):
+    def _startup_tracking_processes(self) -> None:
         """Ensure the tracking processes exist.
         This will check that previous ones are shut down before starting
         up new ones.
@@ -185,9 +274,16 @@ class Hub:
                 case ipc.ToggleConsole():
                     self._toggle_console(message.show)
 
-                case ipc.CloseSplashScreen() if self.splash is not None:
-                    self.splash.close()
-                    self.splash = None
+                case ipc.RequestPID():
+                    self._q_main.put(ipc.SendPID(source=ipc.Target.Hub, pid=os.getpid()))
+
+                case ipc.ComponentLoaded():
+                    self._wait_to_load.discard(message.component)
+                    if not self._wait_to_load:
+                        self._q_main.put(ipc.AllComponentsLoaded())
+
+                case ipc.AllComponentsLoaded():
+                    self.start_tracking()
 
         # Forward messages to the tracking process
         if message.target & ipc.Target.Tracking:
@@ -205,25 +301,29 @@ class Hub:
         if message.target & ipc.Target.AppDetection:
             self._q_app_detection.put(message)
 
+    def _get_console_handle(self) -> WindowHandle | None:
+        """Get the handle to the console."""
+        if sys.platform == 'win32':
+            from ..utils.system.windows import WindowHandle, get_window_handle
+            return WindowHandle(get_window_handle(console=True))
+        return None
+
     def _toggle_console(self, show: bool) -> None:
         """Show or hide the console."""
-        if sys.platform != 'win32':
-            return
-
-        from ..utils.system.win32 import WindowHandle, get_window_handle
-        hwnd = get_window_handle(console=True)
-        handle = WindowHandle(hwnd)
-        if handle.pid:
-            handle.show() if show else handle.hide()
-        else:
+        handle = self._get_console_handle()
+        if handle is None or not handle.pid or not handle.title:
             self._q_main.put(ipc.InvalidConsole())
+        elif show:
+            handle.show()
+        else:
+            handle.hide()
 
     def _test_components(self) -> None:
         """Check that all components are running.
         If this fails an error will be raised.
         """
         current_time = time.time()
-        if self._previous_component_check + CHECK_COMPONENT_FREQUENCY > current_time:
+        if self._previous_component_check + self.config.component_check_frequency > current_time:
             return
 
         if self.state == ipc.TrackingState.Running:
@@ -239,24 +339,17 @@ class Hub:
 
     def run(self) -> None:
         """Setup the tracking."""
+        print('[Hub] Launching application...')
         running = True
-        error_occurred = False
+        error_to_raise: Exception | None = None
 
         try:
-            # Start the app
-            print('[Hub] Launching application...')
-            if self.use_gui:
-                if IS_EXE or gui.should_minimise_on_start():
-                    self._toggle_console(False)
-                if not CLI.disable_splash:
-                    self.splash = SplashScreen.standalone()
-                self._p_gui.start()
-
-            self.start_tracking()
+            if self.use_gui and (IS_BUILT_EXE or should_minimise_on_start()):
+                self._process_message(ipc.ToggleConsole(False))
 
             # Listen for events
             print('[Hub] Queue handler started.')
-            while running or not self._q_main.empty():
+            while running:
                 self._test_components()
                 try:
                     self._process_message(self._q_main.get())
@@ -269,11 +362,8 @@ class Hub:
                     # Without this, the save on exit feature won't work
                     time.sleep(1 / UPDATES_PER_SECOND)
 
-        except Exception:
-            traceback.print_exc()
-            # Show console if hidden
-            self._toggle_console(True)
-            error_occurred = True
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error_to_raise = e
 
         finally:
             # Ensure threads are safely shut down
@@ -289,8 +379,9 @@ class Hub:
                     print('[Hub] GUI shut down')
                 self._q_gui.cancel_join_thread()
 
-        if error_occurred:
-            print('The above traceback has caused the application to shut down, please consider reporting it.')
-            input('Press enter to exit...')
 
         print('[Hub] Application exit')
+
+        # Re-raise after everything is safely shut down
+        if error_to_raise is not None:
+            raise error_to_raise

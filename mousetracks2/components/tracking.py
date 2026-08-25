@@ -1,5 +1,7 @@
 import time
+import traceback
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from itertools import count
 from typing import Iterator
@@ -13,13 +15,15 @@ except IOError:
 
 from . import ipc
 from .abstract import Component
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
-from ..constants import UPDATES_PER_SECOND, INACTIVITY_MS, DEFAULT_PROFILE_NAME
+from ..config import GlobalConfig
+from ..constants import UPDATES_PER_SECOND, DEFAULT_PROFILE_NAME
+from ..context import CTX
 from ..exceptions import ExitRequest
-from ..utils import get_cursor_pos, keycodes
-from ..utils.network import Interfaces
-from ..utils.system import monitor_locations
+from ..utils import keycodes
+from ..utils.monitor import MonitorData
+from ..utils.input import get_cursor_pos
+from ..utils.interface import Interfaces
+from ..utils.system import MonitorEventListener, ControllerEventListener, ForegroundAppListener, hide_child_process
 
 
 if XInput is None:
@@ -73,43 +77,61 @@ class DataState:
     mouse_inactive: bool = field(default=False)
     mouse_clicks: dict[int, tuple[int, int]] = field(default_factory=dict)
     mouse_position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
-    monitors: list[tuple[int, int, int, int]] = field(default_factory=monitor_locations)
+    monitors: MonitorData = field(default_factory=MonitorData)
     gamepads_current: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
     gamepads_previous: tuple[bool, bool, bool, bool] = field(default_factory=_getConnectedGamepads)
     gamepad_force_recheck: bool = field(default=False)
     gamepad_stick_l_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     gamepad_stick_r_position: dict[int, tuple[int, int]] = field(default_factory=dict)
     key_presses: dict[int, tuple[int, int]] = field(default_factory=dict)
-    button_presses: dict[int, dict[int, int]] = field(default_factory=lambda: defaultdict(dict))
+    button_presses: dict[tuple[int, int], tuple[int, int]] = field(default_factory=dict)
     bytes_sent_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_recv_previous: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     bytes_sent: dict[str, int] = field(default_factory=dict)
     bytes_recv: dict[str, int] = field(default_factory=dict)
+    pynput_opcodes: dict[int | keycodes.KeyCode, int] = field(default_factory=dict)
+    pynput_quick_press: list[int | keycodes.KeyCode] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.tick_previous = self.tick_current - 1
 
-        for connection_name, data in psutil.net_io_counters(pernic=True).items():
-            self.bytes_sent_previous[connection_name] = data.bytes_sent
-            self.bytes_recv_previous[connection_name] = data.bytes_recv
+    def reset_byte_counter(self) -> None:
+        """Reset the byte counter to its current values."""
+        self.bytes_sent_previous.clear()
+        self.bytes_recv_previous.clear()
+        for connection_name, counters in psutil.net_io_counters(pernic=True).items():
+            self.bytes_sent_previous[connection_name] = counters.bytes_sent
+            self.bytes_recv_previous[connection_name] = counters.bytes_recv
 
 
 class Tracking(Component):
+    """Capture raw input events and forward them for processing.
+
+    Listens for mouse, keyboard, gamepad, and monitor events using
+    pynput and platform-specific listeners.
+    """
+
+    target = ipc.Target.Tracking
+
     def __post_init__(self) -> None:
+        hide_child_process()
+
         self.state = ipc.TrackingState.Paused
         self.profile_name = DEFAULT_PROFILE_NAME
         self.autosave = True
+        self.update_apps = True
+        self.update_monitors = True
+        self.data = DataState(0)
 
-        config = GlobalConfig()
-        self.track_mouse = not CLI.disable_mouse and config.track_mouse
-        self.track_keyboard = not CLI.disable_keyboard and config.track_keyboard
-        self.track_gamepad = not CLI.disable_gamepad and config.track_gamepad
-        self.track_network = not CLI.disable_network and config.track_network
+        self.config = GlobalConfig()
+        self.track_mouse = not CTX.disable_mouse and self.config.track_mouse
+        self.track_keyboard = not CTX.disable_keyboard and self.config.track_keyboard
+        self.track_gamepad = not CTX.disable_gamepad and self.config.track_gamepad
+        self.track_network = not CTX.disable_network and self.config.track_network
 
         # Setup pynput listeners
-        self._pynput_opcodes: dict[int | keycodes.KeyCode, int] = {}
-        self._pynput_quick_press: list[int | keycodes.KeyCode] = []
-        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=None,  # Out of bounds values during movement, don't use
+        self._live_mouse_position = get_cursor_pos()
+        self._pynput_mouse_listener = pynput.mouse.Listener(on_move=self._pynput_mouse_move,
                                                             on_click=self._pynput_mouse_click,
                                                             on_scroll=self._pynput_mouse_scroll)
         self._pynput_keyboard_listener = pynput.keyboard.Listener(on_press=self._pynput_key_press,
@@ -118,7 +140,16 @@ class Tracking(Component):
         self._pynput_mouse_listener.start()
         self._pynput_keyboard_listener.start()
 
-    def _receive_data(self):
+        self._monitor_listener = MonitorEventListener()
+        self._monitor_listener.start()
+
+        self._controller_listener = ControllerEventListener()
+        self._controller_listener.start()
+
+        self._application_listener = ForegroundAppListener()
+        self._application_listener.start()
+
+    def _receive_data(self) -> None:
         for message in self.receive_data():
             match message:
                 case ipc.StartTracking():
@@ -137,35 +168,63 @@ class Tracking(Component):
                 case ipc.DebugRaiseError():
                     raise RuntimeError('[Tracking] Test Exception')
 
-                # Update the current profile
                 case ipc.TrackedApplicationDetected():
+
+                    # Profile has changed, so reset the data
                     if message.name != self.profile_name:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()
-                    self.profile_name = message.name
+                        self.data.pynput_opcodes.clear()
+                        self.data.pynput_quick_press.clear()
+                        self.profile_name = message.name
+
+                    self.send_data(ipc.CurrentProfileChanged(message.name, message.process_id, message.rects))
 
                 case ipc.Autosave():
                     self.autosave = message.enabled
                     print(f'[Tracking] Autosave Enabled: {message.enabled}')
 
-                case ipc.SetGlobalMouseTracking():
-                    print(f'[Tracking] Tracking mouse data: {message.enable}')
-                    self.track_mouse = message.enable
+                case ipc.SetGlobalTracking():
+                    print(f'[Tracking] Tracking {message.device.name} data: {message.enable}')
+                    if message.device & ipc.Device.Mouse:
+                        self.track_mouse = message.enable
+                    if message.device & ipc.Device.Keyboard:
+                        self.track_keyboard = message.enable
+                    if message.device & ipc.Device.Gamepad:
+                        self.track_gamepad = message.enable
+                        if message.enable:
+                            self._controller_listener = ControllerEventListener()
+                            self._controller_listener.start()
+                        else:
+                            self._controller_listener.stop()
+                    if message.device & ipc.Device.Network:
+                        self.track_network = message.enable
+                        if message.enable:
+                            self.data.reset_byte_counter()
 
-                case ipc.SetGlobalKeyboardTracking():
-                    print(f'[Tracking] Tracking keyboard data: {message.enable}')
-                    self.track_keyboard = message.enable
+                case ipc.DebugDisableAppDetection():
+                    print(f'[Tracking] Disabled check for running applications: {message.disable}')
+                    self.update_apps = not message.disable
 
-                case ipc.SetGlobalGamepadTracking():
-                    print(f'[Tracking] Tracking gamepad data: {message.enable}')
-                    self.track_gamepad = message.enable
+                    if message.disable:
+                        self._application_listener.stop()
+                    else:
+                        self._application_listener = ForegroundAppListener()
+                        self._application_listener.start()
 
-                case ipc.SetGlobalNetworkTracking():
-                    print(f'[Tracking] Tracking network data: {message.enable}')
-                    self.track_network = message.enable
+                case ipc.DebugDisableMonitorCheck():
+                    print(f'[Tracking] Disabled check for monitor changes: {message.disable}')
+                    self.update_monitors = not message.disable
+
+                    if message.disable:
+                        self._monitor_listener.stop()
+                    else:
+                        self._monitor_listener = MonitorEventListener()
+                        self._monitor_listener.start()
 
     def _run_with_state(self) -> Iterator[tuple[int, DataState]]:
         previous_state = self.state
+        started = False
         for tick in ticks(UPDATES_PER_SECOND):
             self._receive_data()
 
@@ -178,6 +237,10 @@ class Tracking(Component):
                     if state_changed:
                         print('[Tracking] Started.')
                         self.data = DataState(tick)
+                        started = True
+                        if self.track_network:
+                            self.data.reset_byte_counter()
+
                     self.data.tick_current = tick
 
                     # If pynput gets an event, the it may not be in sync
@@ -194,31 +257,28 @@ class Tracking(Component):
 
                 # When tracking is paused then stop here
                 case ipc.TrackingState.Paused:
-                    if state_changed:
+                    if state_changed and started:
                         self.data.tick_modified = self.data.tick_current
                         self._calculate_inactivity()
                         print('[Tracking] Paused.')
 
                 # Exit the loop when tracking is stopped
                 case ipc.TrackingState.Stopped:
-                    self.data.tick_modified = self.data.tick_current
-                    self._calculate_inactivity()
+                    if started:
+                        self.data.tick_modified = self.data.tick_current
+                        self._calculate_inactivity()
                     print('[Tracking] Shut down.')
                     return
 
     def _calculate_inactivity(self) -> int:
         """Send the activity or inactivity ticks.
-
-        It took a few iterations but this stays completely in sync with
-        the elapsed time if `force_update` is set on saving. This is
-        required or inactivity will cause a desync.
-
-        TODO: Testing needed on tracking pause/stop
+        This is required to keep the active and inactive time in sync
+        with the elapsed time.
         """
         if self.data.tick_modified is None:
             return 0
 
-        inactivity_threshold = UPDATES_PER_SECOND * INACTIVITY_MS / 1000
+        inactivity_threshold = UPDATES_PER_SECOND * self.config.inactivity_time
         diff = self.data.tick_modified - self.data.tick_previous
         if diff > inactivity_threshold:
             self.send_data(ipc.Inactive(self.profile_name, diff))
@@ -230,13 +290,12 @@ class Tracking(Component):
         return diff
 
     def _check_monitor_data(self, pixel: tuple[int, int]) -> None:
-        """Check if the monitor data is valid for the pixel.
-        If not, recalculate it and update the other components.
+        """Refresh the monitor data if the pixel is not valid.
+
+        This should ideally never trigger, it's just a safety layer in
+        case the cursor moves to a monitor before the data reloads.
         """
-        for x1, y1, x2, y2 in self.data.monitors:
-            if x1 <= pixel[0] < x2 and y1 <= pixel[1] < y2:
-                break
-        else:
+        if not any(monitor.calculate_offset(pixel) is not None for monitor in self.data.monitors.physical):
             print('[Tracking] Error with mouse position, refreshing monitor data...')
             self._refresh_monitor_data()
 
@@ -244,27 +303,48 @@ class Tracking(Component):
         """Check the monitor data is up to date.
         If not, then send a signal with the updated data.
         """
-        self.data.monitors, old_data = monitor_locations(), self.data.monitors
+        self.data.monitors, old_data = MonitorData(), self.data.monitors
         if old_data != self.data.monitors:
             print('[Tracking] Monitor change detected')
             self.send_data(ipc.MonitorsChanged(self.data.monitors))
 
+    @contextmanager
+    def _exception_handler(self) -> Iterator[None]:
+        """Custom exception handler to ensure an error is handled.
+
+        This is used for the `pynput` threads, as any errors will
+        otherwise just shut them down without affecting anything else.
+        """
+        try:
+            yield
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            self.send_data(ipc.Traceback(e, traceback.format_exc()))
+
+    def _pynput_mouse_move(self, x: int, y: int) -> None:
+        """Record the exact mouse position when the cursor is moved.
+
+        This sometimes reports out of bounds coordinates, so the actual
+        coordinates are ignored and read from another function.
+        """
+        self._live_mouse_position = get_cursor_pos()
+
     def _pynput_mouse_click(self, x: int, y: int, button: pynput.mouse.Button, pressed: bool) -> None:
         """Triggers on mouse click."""
-        if self.state != ipc.TrackingState.Running or not self.track_mouse:
+        if self.state != ipc.TrackingState.Running:
             return
 
-        try:
-            idx = ('left', 'middle', 'right', 'x1', 'x2').index(button.name)
+        with self._exception_handler():
+            try:
+                idx = ('left', 'middle', 'right', 'x1', 'x2').index(button.name)
 
-        # Ignore anything unknown
-        except ValueError:
-            return
+            # Ignore anything unknown
+            except ValueError:
+                return
 
-        if pressed:
-            self._pynput_opcodes[keycodes.MOUSE_CODES[idx]] = self.data.tick_current
-        elif keycodes.MOUSE_CODES[idx] in self._pynput_opcodes:
-            del self._pynput_opcodes[keycodes.MOUSE_CODES[idx]]
+            if pressed:
+                self.data.pynput_opcodes[keycodes.MOUSE_CODES[idx]] = self.data.tick_current
+            elif keycodes.MOUSE_CODES[idx] in self.data.pynput_opcodes:
+                del self.data.pynput_opcodes[keycodes.MOUSE_CODES[idx]]
 
     def _pynput_mouse_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Triggers on mouse scroll.
@@ -274,129 +354,123 @@ class Tracking(Component):
         if self.state != ipc.TrackingState.Running or not self.track_mouse:
             return
 
-        if dx > 0:
-            for _ in range(dx):
-                self._key_press(keycodes.VK_SCROLL_RIGHT)
-        elif dx < 0:
-            for _ in range(-dx):
-                self._key_press(keycodes.VK_SCROLL_LEFT)
-        if dy > 0:
-            for _ in range(dy):
-                self._key_press(keycodes.VK_SCROLL_UP)
-        elif dy < 0:
-            for _ in range(-dy):
-                self._key_press(keycodes.VK_SCROLL_DOWN)
+        with self._exception_handler():
+            if dx > 0:
+                for _ in range(dx):
+                    self._key_press(keycodes.VK_SCROLL_RIGHT)
+            elif dx < 0:
+                for _ in range(-dx):
+                    self._key_press(keycodes.VK_SCROLL_LEFT)
+            if dy > 0:
+                for _ in range(dy):
+                    self._key_press(keycodes.VK_SCROLL_UP)
+            elif dy < 0:
+                for _ in range(-dy):
+                    self._key_press(keycodes.VK_SCROLL_DOWN)
 
     def _pynput_key_press(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is pressed."""
-        if self.state != ipc.TrackingState.Running or key is None or not self.track_keyboard:
+        if self.state != ipc.TrackingState.Running or key is None:
             return
 
-        if isinstance(key, pynput.keyboard.KeyCode):
-            name = key.char
-            vk = key.vk
-        elif isinstance(key, pynput.keyboard.Key):
-            name = key.name
-            vk = key.value.vk
-
-        if vk is not None:
-            self._pynput_opcodes[vk] = self.data.tick_current
+        with self._exception_handler():
+            vk = keycodes.KeyCode(key)
+            self.data.pynput_opcodes[vk] = self.data.tick_current
 
     def _pynput_key_release(self, key: pynput.keyboard.KeyCode | pynput.keyboard.Key | None) -> None:
         """Handle when a key is released."""
         if self.state != ipc.TrackingState.Running or key is None:
             return
 
-        if isinstance(key, pynput.keyboard.KeyCode):
-            name = key.char
-            vk = key.vk
-        elif isinstance(key, pynput.keyboard.Key):
-            name = key.name
-            vk = key.value.vk
-        else:
-            vk = None
+        with self._exception_handler():
+            vk = keycodes.KeyCode(key)
+            if vk in self.data.pynput_opcodes:
+                recorded_tick = self.data.pynput_opcodes.pop(vk)
 
-        if vk is not None and vk in self._pynput_opcodes:
-            recorded_tick = self._pynput_opcodes.pop(vk)
-
-            # Some keyboard features may emit faster than a tick
-            # If so, queue them in a separate list
-            if recorded_tick == self.data.tick_current:
-                self._pynput_quick_press.append(vk)
+                # Some keyboard features may emit faster than a tick
+                # If so, queue them in a separate list
+                if recorded_tick == self.data.tick_current:
+                    self.data.pynput_quick_press.append(vk)
 
     def _key_press(self, keycode: int | keycodes.KeyCode, quick_press: bool = False) -> None:
         """Handle key presses."""
         self.data.tick_modified = self.data.tick_current
         press_start, press_latest = self.data.key_presses.get(keycode, (self.data.tick_current, 0))
+        is_click = keycode in keycodes.CLICK_CODES
+        is_scroll = keycode in keycodes.SCROLL_CODES
 
         # Handle all standard keypresses
         if keycode <= 0xFF:
-            # First press
-            if quick_press or press_latest != self.data.tick_current - 1:
-                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
-                self.send_data(ipc.KeyPress(int(keycode)))
+            if is_click and self.track_mouse or not is_click and self.track_keyboard:
+                # First press
+                if quick_press or press_latest != self.data.tick_current - 1:
+                    if is_click and self.data.mouse_position is not None:
+                        self.send_data(ipc.MouseClick(int(keycode), self.data.mouse_position))
+                    self.send_data(ipc.KeyPress(int(keycode)))
 
-            # Being held
-            else:
-                if keycode in keycodes.CLICK_CODES and self.data.mouse_position is not None:
-                    self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
-                self.send_data(ipc.KeyHeld(int(keycode)))
+                # Being held
+                else:
+                    if is_click and self.data.mouse_position is not None:
+                        self.send_data(ipc.MouseHeld(int(keycode), self.data.mouse_position))
+                    self.send_data(ipc.KeyHeld(int(keycode)))
 
         # Special case for scroll events
         # It is being sent to the "held" array instead of "pressed"
         # since the events will vastly outnumber individual key presses
         # Also note that multiple events may be sent per tick
-        elif keycode in keycodes.SCROLL_CODES:
-            self.send_data(ipc.KeyHeld(keycode))
+        elif is_scroll:
+            if self.track_mouse:
+                self.send_data(ipc.KeyHeld(keycode))
 
         else:
             raise RuntimeError(f'unexpected keycode: {keycode}')
 
         self.data.key_presses[keycode] = (press_start, self.data.tick_current)
 
-    def run(self):
+    def run(self) -> None:
         """Run the tracking."""
-        print('[Tracking] Loaded.')
-
         for tick, data in self._run_with_state():
             self.send_data(ipc.Tick(tick, int(time.time())))
 
+            # Check for loaded applications
+            if self.update_apps and self._application_listener.triggered:
+                self.send_data(ipc.RequestRunningAppCheck())
+
+            # Update monitor data
+            if self.update_monitors and self._monitor_listener.triggered:
+                self._refresh_monitor_data()
+
+            # Update mouse data
             if self.track_mouse:
-                mouse_position = get_cursor_pos()
+                mouse_position = self._live_mouse_position
 
                 # Check if mouse position is inactive (such as a screensaver)
-                # If so then pause everything
                 if mouse_position is None:
                     if not data.mouse_inactive:
                         print('[Tracking] Mouse Undetected.')
                         data.mouse_inactive = True
-                    continue
-                if data.mouse_inactive:
-                    print('[Tracking] Mouse detected.')
-                    data.mouse_inactive = False
 
-                # Update mouse movement
-                if mouse_position != data.mouse_position:
-                    self.data.tick_modified = self.data.tick_current
-                    self.data.mouse_position = mouse_position
-                    self._check_monitor_data(mouse_position)
-                    self.send_data(ipc.MouseMove(mouse_position))
+                else:
+                    if data.mouse_inactive:
+                        print('[Tracking] Mouse detected.')
+                        data.mouse_inactive = False
 
-            # Check resolution and update if required
-            if tick and not tick % UPDATES_PER_SECOND:
-                self._refresh_monitor_data()
-                self.send_data(ipc.RequestRunningAppCheck())
+                    # Update mouse movement
+                    if mouse_position != data.mouse_position:
+                        self.data.tick_modified = self.data.tick_current
+                        self.data.mouse_position = mouse_position
+                        self._check_monitor_data(mouse_position)
+                        self.send_data(ipc.MouseMove(mouse_position))
 
             # Record key presses / mouse clicks
-            for opcode in tuple(self._pynput_opcodes):
+            for opcode in tuple(self.data.pynput_opcodes):
                 self._key_press(opcode)
-            while self._pynput_quick_press:
-                self._key_press(self._pynput_quick_press.pop(), quick_press=True)
+            while self.data.pynput_quick_press:
+                self._key_press(self.data.pynput_quick_press.pop(0), quick_press=True)
 
             # Determine which gamepads are connected
             if self.track_gamepad and XInput is not None:
-                if not tick % 60 or data.gamepad_force_recheck:
+                if self._controller_listener.triggered or data.gamepad_force_recheck:
                     data.gamepads_current = XInput.get_connected()
                     data.gamepad_force_recheck = False
 
@@ -430,13 +504,13 @@ class Tracking(Component):
                             button = f'BUTTON_{button}'
                         keycode = XINPUT_OPCODES[button]
 
-                        press_start, press_latest = data.button_presses.get(keycode, (0, 0))
+                        press_start, press_latest = data.button_presses.get((gamepad, keycode), (0, 0))
                         if press_latest != tick - 1:
                             self.send_data(ipc.ButtonPress(gamepad, keycode))
-                            data.button_presses[keycode] = (tick, tick)
+                            data.button_presses[(gamepad, keycode)] = (tick, tick)
                         else:
                             self.send_data(ipc.ButtonHeld(gamepad, keycode))
-                            data.button_presses[keycode] = (press_start, tick)
+                            data.button_presses[(gamepad, keycode)] = (press_start, tick)
 
                     if stick_l != data.gamepad_stick_l_position.get(gamepad):
                         self.data.tick_modified = self.data.tick_current
@@ -448,24 +522,34 @@ class Tracking(Component):
                         data.gamepad_stick_r_position[gamepad] = stick_r
                         self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
-            if not tick % 60:
+            if self.track_network and not tick % UPDATES_PER_SECOND:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
-                    bytes_sent = counters.bytes_sent - data.bytes_sent_previous.get(interface_name, 0)
-                    bytes_recv = counters.bytes_recv - data.bytes_recv_previous.get(interface_name, 0)
-                    data.bytes_sent_previous[interface_name] += bytes_sent
-                    data.bytes_recv_previous[interface_name] += bytes_recv
+                    prev_sent = data.bytes_sent_previous.get(interface_name, 0)
+                    prev_recv = data.bytes_recv_previous.get(interface_name, 0)
+
+                    data.bytes_sent_previous[interface_name] = counters.bytes_sent
+                    data.bytes_recv_previous[interface_name] = counters.bytes_recv
+
+                    # If a network disconnects its counters will reset
+                    if counters.bytes_sent < prev_sent or counters.bytes_recv < prev_recv:
+                        prev_sent = prev_recv = 0
+
+                    bytes_sent = counters.bytes_sent - prev_sent
+                    bytes_recv = counters.bytes_recv - prev_recv
 
                     if bytes_sent or bytes_recv:
                         mac_address = Interfaces.get_from_name(interface_name).mac
-                        self.send_data(ipc.DataTransfer(mac_address, bytes_sent, bytes_recv))
+                        if mac_address is not None:
+                            self.send_data(ipc.DataTransfer(mac_address, bytes_sent, bytes_recv))
 
             self._calculate_inactivity()
 
             # Save every 5 mins
-            if self.autosave and tick and not tick % (UPDATES_PER_SECOND * 60 * 5):
+            if self.autosave and tick and not tick % round(UPDATES_PER_SECOND * self.config.save_frequency):
                 self.send_data(ipc.Save())
 
     def on_exit(self) -> None:
         """Close threads on exit."""
         self._pynput_mouse_listener.stop()
         self._pynput_keyboard_listener.stop()
+        self._monitor_listener.stop()

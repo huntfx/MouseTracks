@@ -10,225 +10,307 @@ This will need to be handled in stats/renders.
     - Right alt: VK_MENU + VK_RMENU + VK_CONTROL + VK_LCONTROL
 """
 
-from typing import Self
+from __future__ import annotations
+
+import sys
+
+from pynput.keyboard import Key as _Key, KeyCode as _KeyCode
+
+
+def from_pynput(key: _KeyCode | _Key) -> int:
+    """Get the integer keycode from a pynput object."""
+    # Handle special keys (eg. enter, shift, f1)
+    if isinstance(key, _Key):
+        if key in KeyCode.PYNPUT_MAP:
+            return KeyCode.PYNPUT_MAP[key]
+        key = key.value
+
+    # On Linux/macOS, use the character itself
+    # In Windows this happens when typing via RustDesk as there is no `vk`
+    if (sys.platform != 'win32' or key.vk is None) and key.char is not None:
+        # Check the new auto-populated character map first
+        char = KeyCode.SYMBOL_REMAP.get(key.char, key.char)
+        if char in KeyCode.CHAR_MAP:
+            return KeyCode.CHAR_MAP[char]
+
+        # For A-Z and 0-9, the ASCII/Unicode value often matches the VK code.
+        char_upper = char.upper()
+        if 'A' <= char_upper <= 'Z' or '0' <= char_upper <= '9':
+            return ord(char_upper)
+
+    # On Windows, key.vk is the most reliable source (eg. 'a', '1', ';')
+    if key.vk is not None:
+        return key.vk
+
+    raise TypeError(f'keycode data not set: {key}')
+
+
+def to_key(name: str) -> _Key | None:
+    """Get a key from pynput if it exists.
+
+    This is required as different operating systems have different
+    supported keys.
+    """
+    return getattr(_Key, name, None)
 
 
 class KeyCode(int):
-    """Add a name to a keycode.
-    Each keycode may have one name, and setting a new one will overwrite
-    it.
-    """
+    """Register a keycode with its associated data."""
 
     _REGISTRY: dict[int, str] = {}
+    PYNPUT_MAP: dict[_Key, int] = {}
+    CHAR_MAP: dict[str, int] = {}
+    SYMBOL_REMAP: dict[str, str] = {}
 
-    def __new__(cls, code: int, name: str | None = None) -> Self:
-        return super().__new__(cls, code)
+    def __new__(cls, code: int | _Key | _KeyCode) -> KeyCode:
+        if not isinstance(code, int):
+            code = from_pynput(code)
+        return int.__new__(cls, code)
 
-    def __init__(self, code: int, name: str | None = None) -> None:
-        if name is None:
-            self._name = self._REGISTRY.get(code, '')
-        else:
-            self._name = self._REGISTRY[code] = name
-        super().__init__()
+    @classmethod
+    def register(cls, code: int, name: str | None, *alternative: _Key | str | None, vk: str | None = None) -> KeyCode:
+        """Register a new keycode option."""
+        if name is not None:
+            cls._REGISTRY[code] = name
+
+        for key in set(alternative):
+            if isinstance(key, _Key):
+                if key in cls.PYNPUT_MAP:
+                    raise RuntimeError(f'key "{key}" already remapped')
+                cls.PYNPUT_MAP[key] = code
+            elif key is not None:
+                if key in cls.SYMBOL_REMAP:
+                    raise RuntimeError(f'key "{key}" already remapped')
+                if name is None:
+                    raise ValueError('name must be set when remapping')
+                cls.SYMBOL_REMAP[key] = name
+
+        if vk is None:
+            vk = name
+        if vk in cls.CHAR_MAP:
+            raise RuntimeError(f'key "{vk}" already remapped')
+        if vk is not None and len(vk) == 1:
+            cls.CHAR_MAP[vk] = code
+
+        return cls(code)
 
     def __repr__(self) -> str:
-        return f'{type(self).__name__}({self:#04X}, {self._name!r})'
+        return f'{type(self).__name__}({self:#04X}, {self.name!r})'
 
     def __str__(self) -> str:
-        if self._name:
-            return self._name
-        return f'{self:#04X}'
+        return self.name
 
     @property
     def name(self) -> str:
         """Get the keycode name."""
-        return self._name
+        return self._REGISTRY.get(int(self), f'{self:#04X}')
 
     @name.setter
     def name(self, name: str) -> None:
         """Set a new keycode name."""
-        self._name = self._REGISTRY[int(self)] = name
+        self._REGISTRY[int(self)] = name
 
 
 class GamepadCode(KeyCode):
     _REGISTRY: dict[int, str] = {}
+    PYNPUT_MAP: dict[_Key, int] = {}
+    CHAR_MAP: dict[str, int] = {}
+    SYMBOL_REMAP: dict[str, str] = {}
 
 
 # Mouse buttons
-VK_LBUTTON = KeyCode(0x01, 'Left mouse button')
-VK_RBUTTON = KeyCode(0x02, 'Right mouse button')
-VK_MBUTTON = KeyCode(0x04, 'Middle mouse button')
-VK_XBUTTON1 = KeyCode(0x05, 'Mouse button 4')
-VK_XBUTTON2 = KeyCode(0x06, 'Mouse button 5')
+VK_LBUTTON = KeyCode.register(0x01, 'Left mouse button')
+VK_RBUTTON = KeyCode.register(0x02, 'Right mouse button')
+VK_MBUTTON = KeyCode.register(0x04, 'Middle mouse button')
+VK_XBUTTON1 = KeyCode.register(0x05, 'Mouse button 4')
+VK_XBUTTON2 = KeyCode.register(0x06, 'Mouse button 5')
 
 # Control keys
-VK_BACK = KeyCode(0x08, 'Backspace')
-VK_TAB = KeyCode(0x09, 'Tab')
-VK_CLEAR = KeyCode(0x0C, 'Clear')
-VK_RETURN = KeyCode(0x0D, 'Enter')
-VK_SHIFT = KeyCode(0x10, 'Shift')
-VK_CONTROL = KeyCode(0x11, 'Control')
-VK_MENU = KeyCode(0x12, 'Alt')
-VK_PAUSE = KeyCode(0x13, 'Pause')
-VK_CAPITAL = KeyCode(0x14, 'Caps Lock')
+VK_BACK = KeyCode.register(0x08, 'Backspace', to_key('backspace'))
+VK_TAB = KeyCode.register(0x09, 'Tab', to_key('tab'))
+VK_CLEAR = KeyCode.register(0x0C, 'Clear')
+VK_RETURN = KeyCode.register(0x0D, 'Enter', to_key('enter'))
+VK_SHIFT = KeyCode.register(0x10, 'Shift', to_key('shift') if to_key('shift') not in (to_key('shift_l'), to_key('shift_r')) else None)
+VK_CONTROL = KeyCode.register(0x11, 'Control', to_key('ctrl') if to_key('ctrl') not in (to_key('ctrl_l'), to_key('ctrl_r')) else None)
+VK_MENU = KeyCode.register(0x12, 'Alt', to_key('alt') if to_key('alt') not in (to_key('alt_l'), to_key('alt_r')) else None)
+VK_PAUSE = KeyCode.register(0x13, 'Pause', to_key('pause'))
+VK_CAPITAL = KeyCode.register(0x14, 'Caps Lock', to_key('caps_lock'))
 
-VK_LSHIFT = KeyCode(0xA0, 'Left Shift')
-VK_RSHIFT = KeyCode(0xA1, 'Right Shift')
-VK_LCONTROL = KeyCode(0xA2, 'Left Control')
-VK_RCONTROL = KeyCode(0xA3, 'Right Control')
-VK_LMENU = KeyCode(0xA4, 'Left Alt')
-VK_RMENU = KeyCode(0xA5, 'Right Alt')
+VK_LSHIFT = KeyCode.register(0xA0, 'Left Shift', to_key('shift_l'))
+VK_RSHIFT = KeyCode.register(0xA1, 'Right Shift', to_key('shift_r'))
+VK_LCONTROL = KeyCode.register(0xA2, 'Left Control', to_key('ctrl_l'))
+VK_RCONTROL = KeyCode.register(0xA3, 'Right Control', to_key('ctrl_r'))
+VK_LMENU = KeyCode.register(0xA4, 'Left Alt', to_key('alt_l'))
+VK_RMENU = KeyCode.register(0xA5, 'Right Alt', to_key('alt_r'))
 
 # IME keys (user-triggerable)
-VK_KANA = KeyCode(0x15, 'Kana mode')
-VK_HANGUL = KeyCode(0x15, 'Hangul mode')
-VK_ESCAPE = KeyCode(0x1B, 'Escape')
-VK_CONVERT = KeyCode(0x1C, 'IME convert')
-VK_NONCONVERT = KeyCode(0x1D, 'IME nonconvert')
-VK_MODECHANGE = KeyCode(0x1F, 'IME mode change')
+VK_KANA = KeyCode.register(0x15, 'Kana mode')
+VK_HANGUL = KeyCode.register(0x15, 'Hangul mode')
+VK_ESCAPE = KeyCode.register(0x1B, 'Escape', to_key('esc'))
+VK_CONVERT = KeyCode.register(0x1C, 'IME convert')
+VK_NONCONVERT = KeyCode.register(0x1D, 'IME nonconvert')
+VK_MODECHANGE = KeyCode.register(0x1F, 'IME mode change')
 
 # Navigation keys
-VK_SPACE = KeyCode(0x20, 'Space')
-VK_PRIOR = KeyCode(0x21, 'Page Up')
-VK_NEXT = KeyCode(0x22, 'Page Down')
-VK_END = KeyCode(0x23, 'End')
-VK_HOME = KeyCode(0x24, 'Home')
-VK_LEFT = KeyCode(0x25, 'Left Arrow')
-VK_UP = KeyCode(0x26, 'Up Arrow')
-VK_RIGHT = KeyCode(0x27, 'Right Arrow')
-VK_DOWN = KeyCode(0x28, 'Down Arrow')
+VK_SPACE = KeyCode.register(0x20, 'Space', to_key('space'))
+VK_PRIOR = KeyCode.register(0x21, 'Page Up', to_key('page_up'))
+VK_NEXT = KeyCode.register(0x22, 'Page Down', to_key('page_down'))
+VK_END = KeyCode.register(0x23, 'End', to_key('end'))
+VK_HOME = KeyCode.register(0x24, 'Home', to_key('home'))
+VK_LEFT = KeyCode.register(0x25, 'Left Arrow', to_key('left'))
+VK_UP = KeyCode.register(0x26, 'Up Arrow', to_key('up'))
+VK_RIGHT = KeyCode.register(0x27, 'Right Arrow', to_key('right'))
+VK_DOWN = KeyCode.register(0x28, 'Down Arrow', to_key('down'))
 
 # System keys
-VK_SELECT = KeyCode(0x29, 'Select')
-VK_PRINT = KeyCode(0x2A, 'Print')
-VK_EXECUTE = KeyCode(0x2B, 'Execute')
-VK_SNAPSHOT = KeyCode(0x2C, 'Print Screen')
-VK_INSERT = KeyCode(0x2D, 'Insert')
-VK_DELETE = KeyCode(0x2E, 'Delete')
-VK_HELP = KeyCode(0x2F, 'Help')
+VK_SELECT = KeyCode.register(0x29, 'Select')
+VK_PRINT = KeyCode.register(0x2A, 'Print')
+VK_EXECUTE = KeyCode.register(0x2B, 'Execute')
+VK_SNAPSHOT = KeyCode.register(0x2C, 'Print Screen', to_key('print_screen'))
+VK_INSERT = KeyCode.register(0x2D, 'Insert', to_key('insert'))
+VK_DELETE = KeyCode.register(0x2E, 'Delete', to_key('delete'))
+VK_HELP = KeyCode.register(0x2F, 'Help')
 
 # Number keys
-VK_0 = KeyCode(0x30, '0')
-VK_1 = KeyCode(0x31, '1')
-VK_2 = KeyCode(0x32, '2')
-VK_3 = KeyCode(0x33, '3')
-VK_4 = KeyCode(0x34, '4')
-VK_5 = KeyCode(0x35, '5')
-VK_6 = KeyCode(0x36, '6')
-VK_7 = KeyCode(0x37, '7')
-VK_8 = KeyCode(0x38, '8')
-VK_9 = KeyCode(0x39, '9')
+VK_0 = KeyCode.register(0x30, '0', ')')
+VK_1 = KeyCode.register(0x31, '1', '!')
+VK_2 = KeyCode.register(0x32, '2', '@')
+VK_3 = KeyCode.register(0x33, '3', '#')
+VK_4 = KeyCode.register(0x34, '4', '$')
+VK_5 = KeyCode.register(0x35, '5', '%')
+VK_6 = KeyCode.register(0x36, '6', '^')
+VK_7 = KeyCode.register(0x37, '7', '&')
+VK_8 = KeyCode.register(0x38, '8', '*')
+VK_9 = KeyCode.register(0x39, '9', '(')
 
 # Letter keys
-VK_A = KeyCode(0x41, 'A')
-VK_B = KeyCode(0x42, 'B')
-VK_C = KeyCode(0x43, 'C')
-VK_D = KeyCode(0x44, 'D')
-VK_E = KeyCode(0x45, 'E')
-VK_F = KeyCode(0x46, 'F')
-VK_G = KeyCode(0x47, 'G')
-VK_H = KeyCode(0x48, 'H')
-VK_I = KeyCode(0x49, 'I')
-VK_J = KeyCode(0x4A, 'J')
-VK_K = KeyCode(0x4B, 'K')
-VK_L = KeyCode(0x4C, 'L')
-VK_M = KeyCode(0x4D, 'M')
-VK_N = KeyCode(0x4E, 'N')
-VK_O = KeyCode(0x4F, 'O')
-VK_P = KeyCode(0x50, 'P')
-VK_Q = KeyCode(0x51, 'Q')
-VK_R = KeyCode(0x52, 'R')
-VK_S = KeyCode(0x53, 'S')
-VK_T = KeyCode(0x54, 'T')
-VK_U = KeyCode(0x55, 'U')
-VK_V = KeyCode(0x56, 'V')
-VK_W = KeyCode(0x57, 'W')
-VK_X = KeyCode(0x58, 'X')
-VK_Y = KeyCode(0x59, 'Y')
-VK_Z = KeyCode(0x5A, 'Z')
+VK_A = KeyCode.register(0x41, 'A', 'a')
+VK_B = KeyCode.register(0x42, 'B', 'b')
+VK_C = KeyCode.register(0x43, 'C', 'c')
+VK_D = KeyCode.register(0x44, 'D', 'd')
+VK_E = KeyCode.register(0x45, 'E', 'e')
+VK_F = KeyCode.register(0x46, 'F', 'f')
+VK_G = KeyCode.register(0x47, 'G', 'g')
+VK_H = KeyCode.register(0x48, 'H', 'h')
+VK_I = KeyCode.register(0x49, 'I', 'i')
+VK_J = KeyCode.register(0x4A, 'J', 'j')
+VK_K = KeyCode.register(0x4B, 'K', 'k')
+VK_L = KeyCode.register(0x4C, 'L', 'l')
+VK_M = KeyCode.register(0x4D, 'M', 'm')
+VK_N = KeyCode.register(0x4E, 'N', 'n')
+VK_O = KeyCode.register(0x4F, 'O', 'o')
+VK_P = KeyCode.register(0x50, 'P', 'p')
+VK_Q = KeyCode.register(0x51, 'Q', 'q')
+VK_R = KeyCode.register(0x52, 'R', 'r')
+VK_S = KeyCode.register(0x53, 'S', 's')
+VK_T = KeyCode.register(0x54, 'T', 't')
+VK_U = KeyCode.register(0x55, 'U', 'u')
+VK_V = KeyCode.register(0x56, 'V', 'v')
+VK_W = KeyCode.register(0x57, 'W', 'w')
+VK_X = KeyCode.register(0x58, 'X', 'x')
+VK_Y = KeyCode.register(0x59, 'Y', 'y')
+VK_Z = KeyCode.register(0x5A, 'Z', 'z')
 
 # Windows keys
-VK_LWIN = KeyCode(0x5B, 'Left Windows key')
-VK_RWIN = KeyCode(0x5C, 'Right Windows key')
-VK_APPS = KeyCode(0x5D, 'Applications key')
+VK_LWIN = KeyCode.register(0x5B, 'Left Super', to_key('cmd'), to_key('cmd_l'))
+VK_RWIN = KeyCode.register(0x5C, 'Right Super', to_key('cmd_r'))
+VK_APPS = KeyCode.register(0x5D, 'Applications', to_key('menu'))
 
 # Numpad keys
-VK_NUMPAD0 = KeyCode(0x60, 'Numpad 0')
-VK_NUMPAD1 = KeyCode(0x61, 'Numpad 1')
-VK_NUMPAD2 = KeyCode(0x62, 'Numpad 2')
-VK_NUMPAD3 = KeyCode(0x63, 'Numpad 3')
-VK_NUMPAD4 = KeyCode(0x64, 'Numpad 4')
-VK_NUMPAD5 = KeyCode(0x65, 'Numpad 5')
-VK_NUMPAD6 = KeyCode(0x66, 'Numpad 6')
-VK_NUMPAD7 = KeyCode(0x67, 'Numpad 7')
-VK_NUMPAD8 = KeyCode(0x68, 'Numpad 8')
-VK_NUMPAD9 = KeyCode(0x69, 'Numpad 9')
+VK_NUMPAD0 = KeyCode.register(0x60, 'Numpad 0')
+VK_NUMPAD1 = KeyCode.register(0x61, 'Numpad 1')
+VK_NUMPAD2 = KeyCode.register(0x62, 'Numpad 2')
+VK_NUMPAD3 = KeyCode.register(0x63, 'Numpad 3')
+VK_NUMPAD4 = KeyCode.register(0x64, 'Numpad 4')
+VK_NUMPAD5 = KeyCode.register(0x65, 'Numpad 5')
+VK_NUMPAD6 = KeyCode.register(0x66, 'Numpad 6')
+VK_NUMPAD7 = KeyCode.register(0x67, 'Numpad 7')
+VK_NUMPAD8 = KeyCode.register(0x68, 'Numpad 8')
+VK_NUMPAD9 = KeyCode.register(0x69, 'Numpad 9')
 
-VK_MULTIPLY = KeyCode(0x6A, 'Numpad Multiply')
-VK_ADD = KeyCode(0x6B, 'Numpad Add')
-VK_SUBTRACT = KeyCode(0x6D, 'Numpad Subtract')
-VK_DECIMAL = KeyCode(0x6E, 'Numpad Decimal')
-VK_DIVIDE = KeyCode(0x6F, 'Numpad Divide')
+VK_MULTIPLY = KeyCode.register(0x6A, 'Numpad Multiply')
+VK_ADD = KeyCode.register(0x6B, 'Numpad Add')
+VK_SUBTRACT = KeyCode.register(0x6D, 'Numpad Subtract')
+VK_DECIMAL = KeyCode.register(0x6E, 'Numpad Decimal')
+VK_DIVIDE = KeyCode.register(0x6F, 'Numpad Divide')
 
 # Function keys
-VK_F1 = KeyCode(0x70, 'F1')
-VK_F2 = KeyCode(0x71, 'F2')
-VK_F3 = KeyCode(0x72, 'F3')
-VK_F4 = KeyCode(0x73, 'F4')
-VK_F5 = KeyCode(0x74, 'F5')
-VK_F6 = KeyCode(0x75, 'F6')
-VK_F7 = KeyCode(0x76, 'F7')
-VK_F8 = KeyCode(0x77, 'F8')
-VK_F9 = KeyCode(0x78, 'F9')
-VK_F10 = KeyCode(0x79, 'F10')
-VK_F11 = KeyCode(0x7A, 'F11')
-VK_F12 = KeyCode(0x7B, 'F12')
+VK_F1 = KeyCode.register(0x70, 'F1', to_key('f1'))
+VK_F2 = KeyCode.register(0x71, 'F2', to_key('f2'))
+VK_F3 = KeyCode.register(0x72, 'F3', to_key('f3'))
+VK_F4 = KeyCode.register(0x73, 'F4', to_key('f4'))
+VK_F5 = KeyCode.register(0x74, 'F5', to_key('f5'))
+VK_F6 = KeyCode.register(0x75, 'F6', to_key('f6'))
+VK_F7 = KeyCode.register(0x76, 'F7', to_key('f7'))
+VK_F8 = KeyCode.register(0x77, 'F8', to_key('f8'))
+VK_F9 = KeyCode.register(0x78, 'F9', to_key('f9'))
+VK_F10 = KeyCode.register(0x79, 'F10', to_key('f10'))
+VK_F11 = KeyCode.register(0x7A, 'F11', to_key('f11'))
+VK_F12 = KeyCode.register(0x7B, 'F12', to_key('f12'))
+VK_F13 = KeyCode.register(0x7C, 'F13', to_key('f13'))
+VK_F14 = KeyCode.register(0x7D, 'F14', to_key('f14'))
+VK_F15 = KeyCode.register(0x7E, 'F15', to_key('f15'))
+VK_F16 = KeyCode.register(0x7F, 'F16', to_key('f16'))
+VK_F17 = KeyCode.register(0x80, 'F17', to_key('f17'))
+VK_F18 = KeyCode.register(0x81, 'F18', to_key('f18'))
+VK_F19 = KeyCode.register(0x82, 'F19', to_key('f19'))
+VK_F20 = KeyCode.register(0x83, 'F20', to_key('f20'))
 
 # Lock keys
-VK_NUMLOCK = KeyCode(0x90, 'Num Lock')
-VK_SCROLL = KeyCode(0x91, 'Scroll Lock')
+VK_NUMLOCK = KeyCode.register(0x90, 'Num Lock', to_key('num_lock'))
+VK_SCROLL = KeyCode.register(0x91, 'Scroll Lock', to_key('scroll_lock'))
+
+# Volume keys (not standardised, but common)
+VK_VOLUME_MUTE = KeyCode.register(0xAD, 'Volume Mute', to_key('media_volume_mute'))
+VK_VOLUME_DOWN = KeyCode.register(0xAE, 'Volume Down', to_key('media_volume_down'))
+VK_VOLUME_UP = KeyCode.register(0xAF, 'Volume Up', to_key('media_volume_up'))
+VK_MEDIA_NEXT_TRACK = KeyCode.register(0xB0, 'Next Track', to_key('media_next'))
+VK_MEDIA_PREV_TRACK = KeyCode.register(0xB1, 'Previous Track', to_key('media_previous'))
+VK_MEDIA_PLAY_PAUSE = KeyCode.register(0xB3, 'Play/Pause', to_key('media_play_pause'))
 
 # OEM keys (these may vary by region)
-VK_OEM_1 = KeyCode(0xBA, ';')
-VK_OEM_PLUS = KeyCode(0xBB, '+')
-VK_OEM_COMMA = KeyCode(0xBC, ',')
-VK_OEM_MINUS = KeyCode(0xBD, '-')
-VK_OEM_PERIOD = KeyCode(0xBE, '.')
-VK_OEM_2 = KeyCode(0xBF, '/')
-VK_OEM_3 = KeyCode(0xC0, '\'')
-VK_OEM_4 = KeyCode(0xDB, '[')
-VK_OEM_5 = KeyCode(0xDC, '|')
-VK_OEM_6 = KeyCode(0xDD, ']')
-VK_OEM_7 = KeyCode(0xDE, '#')
+VK_OEM_1 = KeyCode.register(0xBA, ';', ':')
+VK_OEM_PLUS = KeyCode.register(0xBB, '+', '=')
+VK_OEM_COMMA = KeyCode.register(0xBC, ',', '<')
+VK_OEM_MINUS = KeyCode.register(0xBD, '-', '_')
+VK_OEM_PERIOD = KeyCode.register(0xBE, '.', '>')
+VK_OEM_2 = KeyCode.register(0xBF, '/', '?')
+VK_OEM_3 = KeyCode.register(0xC0, "'", '"')
+VK_OEM_4 = KeyCode.register(0xDB, '[', '{')
+VK_OEM_5 = KeyCode.register(0xDC, '\\', '|')
+VK_OEM_6 = KeyCode.register(0xDD, ']', '}')
+VK_OEM_7 = KeyCode.register(0xDE, '#')
+VK_OEM_8 = KeyCode.register(0xDF, '`', '~')
 
 # Custom events
-VK_SCROLL_UP = KeyCode(0xFF + 1, 'Scroll up')
-VK_SCROLL_DOWN = KeyCode(0xFF + 2, 'Scroll down')
-VK_SCROLL_LEFT = KeyCode(0xFF + 3, 'Scroll left')
-VK_SCROLL_RIGHT = KeyCode(0xFF + 4, 'Scroll right')
+VK_SCROLL_UP = KeyCode.register(0xFF + 1, 'Scroll up')
+VK_SCROLL_DOWN = KeyCode.register(0xFF + 2, 'Scroll down')
+VK_SCROLL_LEFT = KeyCode.register(0xFF + 3, 'Scroll left')
+VK_SCROLL_RIGHT = KeyCode.register(0xFF + 4, 'Scroll right')
 
 # Gamepad buttons
-BUTTON_DPAD_UP = GamepadCode(0x000001, '↑')
-BUTTON_DPAD_DOWN = GamepadCode(0x000002, '↓')
-BUTTON_DPAD_LEFT = GamepadCode(0x000004, '←')
-BUTTON_DPAD_RIGHT = GamepadCode(0x000008, '→')
-BUTTON_START = GamepadCode(0x000010, 'Start')
-BUTTON_BACK = GamepadCode(0x000020, 'Select')
-BUTTON_LEFT_THUMB = GamepadCode(0x000040, 'LS')
-BUTTON_RIGHT_THUMB = GamepadCode(0x000080, 'RS')
-BUTTON_LEFT_SHOULDER = GamepadCode(0x000100, 'LB')
-BUTTON_RIGHT_SHOULDER = GamepadCode(0x000200, 'RB')
-BUTTON_A = GamepadCode(0x001000, 'A')
-BUTTON_B = GamepadCode(0x002000, 'B')
-BUTTON_X = GamepadCode(0x004000, 'X')
-BUTTON_Y = GamepadCode(0x008000, 'Y')
-TRIGGER_LEFT = GamepadCode(0x040000, 'LT')
-TRIGGER_RIGHT =  GamepadCode(0x080000, 'RT')
+BUTTON_DPAD_UP = GamepadCode.register(0x000001, '↑')
+BUTTON_DPAD_DOWN = GamepadCode.register(0x000002, '↓')
+BUTTON_DPAD_LEFT = GamepadCode.register(0x000004, '←')
+BUTTON_DPAD_RIGHT = GamepadCode.register(0x000008, '→')
+BUTTON_START = GamepadCode.register(0x000010, 'Start')
+BUTTON_BACK = GamepadCode.register(0x000020, 'Select')
+BUTTON_LEFT_THUMB = GamepadCode.register(0x000040, 'LS')
+BUTTON_RIGHT_THUMB = GamepadCode.register(0x000080, 'RS')
+BUTTON_LEFT_SHOULDER = GamepadCode.register(0x000100, 'LB')
+BUTTON_RIGHT_SHOULDER = GamepadCode.register(0x000200, 'RB')
+BUTTON_A = GamepadCode.register(0x001000, 'A')
+BUTTON_B = GamepadCode.register(0x002000, 'B')
+BUTTON_X = GamepadCode.register(0x004000, 'X')
+BUTTON_Y = GamepadCode.register(0x008000, 'Y')
+TRIGGER_LEFT = GamepadCode.register(0x040000, 'LT')
+TRIGGER_RIGHT = GamepadCode.register(0x080000, 'RT')
 
 # Group codes
 CLICK_CODES = (VK_LBUTTON, VK_MBUTTON, VK_RBUTTON)
 MOUSE_CODES = CLICK_CODES + (VK_XBUTTON1, VK_XBUTTON2)
 SCROLL_CODES = (VK_SCROLL_UP, VK_SCROLL_DOWN, VK_SCROLL_LEFT, VK_SCROLL_RIGHT)
+VOLUME_CODES = (VK_VOLUME_DOWN, VK_VOLUME_UP)
 KEYBOARD_CODES = tuple(KeyCode(i) for i in range(256) if i not in MOUSE_CODES)
 GAMEPAD_CODES = (BUTTON_DPAD_UP, BUTTON_DPAD_DOWN, BUTTON_DPAD_LEFT, BUTTON_DPAD_RIGHT,
                  BUTTON_START, BUTTON_BACK,

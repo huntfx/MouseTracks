@@ -24,7 +24,9 @@ if errorlevel 1 (
 )
 
 :: Run mypy on the entry point
-python -m mypy mousetracks2
+python -m mousetracks2 --write-public-key
+python -m mypy
+python -m pylint mousetracks2 launcher.py
 
 :: Exit the virtual environment
 call deactivate

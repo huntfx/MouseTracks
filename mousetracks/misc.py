@@ -11,7 +11,7 @@ import sys
 import zipfile
 from re import sub
 
-from .utils.compatibility import PYTHON_VERSION, BytesIO
+from .utils.compatibility import PYTHON_VERSION, BytesIO, unicode
 from .utils.os import get_documents_path, read_env_var
 
 

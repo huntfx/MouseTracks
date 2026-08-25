@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>MouseTracks</string>
   </property>
-  <property name="toolTip">
-   <string>Save a full quality render to disk.
-This may take a few seconds to complete.</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="main_layout">
     <item>
@@ -50,7 +46,7 @@ This may take a few seconds to complete.</string>
 Click to pause or resume the tracking.
 
 Note that the full quality render will look slightly different due to
-how the downscaling works, as each line needs to be made ticker to
+how the downscaling works, as each line needs to be made thicker to
 combat aliasing.</string>
            </property>
            <property name="text">
@@ -73,9 +69,6 @@ combat aliasing.</string>
           <height>0</height>
          </size>
         </property>
-        <property name="toolTip">
-         <string>How many seconds since AppList.txt was read from disk.</string>
-        </property>
         <property name="currentIndex">
          <number>0</number>
         </property>
@@ -86,11 +79,6 @@ combat aliasing.</string>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <widget class="QScrollArea" name="scrollArea">
-            <property name="toolTip">
-             <string>Set the strength of the gaussian blur.
-
-This is primarily designed for use with heatmaps.</string>
-            </property>
             <property name="widgetResizable">
              <bool>true</bool>
             </property>
@@ -99,8 +87,8 @@ This is primarily designed for use with heatmaps.</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>899</height>
+               <width>311</width>
+               <height>1327</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -120,7 +108,7 @@ This is primarily designed for use with heatmaps.</string>
                    </property>
                    <property name="toolTip">
                     <string>Select which profile to show.
-An asterix indicates that a profile has unsaved changes and will be saved.
+An asterisk indicates that a profile has unsaved changes and will be saved.
 Changing this does not affect what profile is currently being tracked.</string>
                    </property>
                    <item>
@@ -158,71 +146,33 @@ When a new profile is recorded to, the GUI will immediately update.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_3">
-                <property name="title">
-                 <string>Data Type</string>
-                </property>
-                <layout class="QGridLayout" name="gridLayout_6">
-                 <item row="1" column="0">
-                  <layout class="QHBoxLayout" name="horizontalLayout_4">
-                   <item>
-                    <widget class="QCheckBox" name="show_left_clicks">
-                     <property name="toolTip">
-                      <string>Show left mouse clicks / left thumbstick.</string>
-                     </property>
-                     <property name="text">
-                      <string>Left</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="show_middle_clicks">
-                     <property name="toolTip">
-                      <string>Show middle mouse clicks.</string>
-                     </property>
-                     <property name="text">
-                      <string>Middle</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="show_right_clicks">
-                     <property name="toolTip">
-                      <string>Show left mouse clicks / right thumbstick.</string>
-                     </property>
-                     <property name="text">
-                      <string>Right</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QComboBox" name="map_type">
-                   <property name="toolTip">
-                    <string>Select which dataset to render.
-If no data exists, then a blank image will be shown.</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
                <widget class="QGroupBox" name="resolution_group">
                 <property name="title">
                  <string>Resolution</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_7">
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="custom_height_label">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="toolTip">
+                    <string>!inherit custom_height</string>
+                   </property>
+                   <property name="text">
+                    <string>Height Override:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                   <property name="buddy">
+                    <cstring>custom_height</cstring>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="2" column="1">
                   <widget class="QCheckBox" name="lock_aspect">
                    <property name="toolTip">
@@ -233,99 +183,6 @@ If no data exists, then a blank image will be shown.</string>
                    </property>
                    <property name="checked">
                     <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="custom_width_label">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="toolTip">
-                    <string>!inherits custom_width</string>
-                   </property>
-                   <property name="text">
-                    <string>Width Override:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                   <property name="buddy">
-                    <cstring>custom_width</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <layout class="QHBoxLayout" name="horizontalLayout_5">
-                   <item>
-                    <widget class="QSpinBox" name="custom_width">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Set an override to render at a specific width.
-
-If the aspect ratio is locked and a height override is set,
-then the render may end up smaller than this override.</string>
-                     </property>
-                     <property name="suffix">
-                      <string notr="true">px</string>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>999999</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>16</number>
-                     </property>
-                     <property name="value">
-                      <number>1920</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="enable_custom_width">
-                     <property name="toolTip">
-                      <string>Enable the width override.
-If this is disabled, the width will be set based on the available data.</string>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="custom_height_label">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="toolTip">
-                    <string>!inherits custom_height</string>
-                   </property>
-                   <property name="text">
-                    <string>Height Override:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                   <property name="buddy">
-                    <cstring>custom_height</cstring>
                    </property>
                   </widget>
                  </item>
@@ -378,6 +235,158 @@ If this is disabled, the height will be set based on the available data.</string
                    </item>
                   </layout>
                  </item>
+                 <item row="0" column="1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_5">
+                   <item>
+                    <widget class="QSpinBox" name="custom_width">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set an override to render at a specific width.
+
+If the aspect ratio is locked and a height override is set,
+then the render may end up smaller than this override.</string>
+                     </property>
+                     <property name="suffix">
+                      <string notr="true">px</string>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>999999</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>16</number>
+                     </property>
+                     <property name="value">
+                      <number>1920</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="enable_custom_width">
+                     <property name="toolTip">
+                      <string>Enable the width override.
+If this is disabled, the width will be set based on the available data.</string>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="custom_width_label">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="toolTip">
+                    <string>!inherit custom_width</string>
+                   </property>
+                   <property name="text">
+                    <string>Width Override:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                   <property name="buddy">
+                    <cstring>custom_width</cstring>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_3">
+                <property name="title">
+                 <string>Data Type</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_6">
+                 <item row="1" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <item>
+                    <widget class="QCheckBox" name="show_left_clicks">
+                     <property name="toolTip">
+                      <string>Show left mouse clicks / left thumbstick.</string>
+                     </property>
+                     <property name="text">
+                      <string>Left</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_middle_clicks">
+                     <property name="toolTip">
+                      <string>Show middle mouse clicks.</string>
+                     </property>
+                     <property name="text">
+                      <string>Middle</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_right_clicks">
+                     <property name="toolTip">
+                      <string>Show right mouse clicks / right thumbstick.</string>
+                     </property>
+                     <property name="text">
+                      <string>Right</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QComboBox" name="map_type">
+                   <property name="toolTip">
+                    <string>Select which dataset to render.
+If no data exists, then a blank image will be shown.</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_2">
+                   <item>
+                    <widget class="QRadioButton" name="show_count">
+                     <property name="text">
+                      <string>Count</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="show_time">
+                     <property name="text">
+                      <string>Time</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
                 </layout>
                </widget>
               </item>
@@ -389,95 +398,30 @@ If this is disabled, the height will be set based on the available data.</string
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <item>
                   <layout class="QGridLayout" name="gridLayout_12">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_24">
-                     <property name="text">
-                      <string>Colour Map:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="11" column="1">
-                    <widget class="QDoubleSpinBox" name="blur">
+                   <item row="14" column="1">
+                    <widget class="QSpinBox" name="thumbnail_sampling">
                      <property name="toolTip">
-                      <string>Set the strength of the gaussian blur.
+                      <string>Set the level of sampling used for the preview render.
 
-This is primarily designed for use with heatmaps.</string>
+The default behaviour is a sample level of 0, which is optimised for
+low resolution previews, but is not representative of the final render.
+
+A sample level of 1 or higher will match the output render. Lower
+sample levels will be aliased however, and higher sample levels
+require more processing.</string>
                      </property>
-                     <property name="decimals">
-                      <number>8</number>
+                     <property name="minimum">
+                      <number>0</number>
                      </property>
                      <property name="maximum">
-                      <double>1.000000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.000500000000000</double>
+                      <number>8</number>
                      </property>
                      <property name="value">
-                      <double>0.012500000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="8" column="0">
-                    <widget class="QLabel" name="sampling_label">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>!inherit render_samples</string>
-                     </property>
-                     <property name="text">
-                      <string>Sampling:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>sampling</cstring>
+                      <number>0</number>
                      </property>
                     </widget>
                    </item>
                    <item row="8" column="1">
-                    <widget class="QSpinBox" name="sampling">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Set the render sampling level.
-
-Higher sampling improves accuracy when combining data from 
-different resolutions, especially for lower-resolution recordings.</string>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>4</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QCheckBox" name="linear">
-                     <property name="toolTip">
-                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
-                     </property>
-                     <property name="text">
-                      <string>Linear Mapping</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="7" column="1">
                     <widget class="QDoubleSpinBox" name="contrast">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -507,50 +451,45 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                      </property>
                     </widget>
                    </item>
-                   <item row="9" column="1">
-                    <widget class="QSpinBox" name="padding">
+                   <item row="13" column="0">
+                    <widget class="QLabel" name="sampling_label">
                      <property name="sizePolicy">
-                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                        <horstretch>0</horstretch>
                        <verstretch>0</verstretch>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>Adjust the padding around the render.
-
-Note that this may affect the intensity of heatmap edges.</string>
+                      <string>!inherit sampling</string>
                      </property>
-                     <property name="suffix">
-                      <string>px</string>
+                     <property name="text">
+                      <string>Sampling (Render):</string>
                      </property>
-                     <property name="maximum">
-                      <number>4096</number>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
-                     <property name="singleStep">
-                      <number>8</number>
+                     <property name="buddy">
+                      <cstring>sampling</cstring>
                      </property>
                     </widget>
                    </item>
-                   <item row="10" column="1">
-                    <widget class="QDoubleSpinBox" name="clipping">
+                   <item row="11" column="0">
+                    <widget class="QLabel" name="label_14">
                      <property name="toolTip">
-                      <string>Define a clipping threshold.
-
-Values in the highest percentage range will be clipped to
-prevent overly bright spots from dominating the image.</string>
+                      <string>!inherit clipping</string>
                      </property>
-                     <property name="decimals">
-                      <number>8</number>
+                     <property name="text">
+                      <string>Clipping:</string>
                      </property>
-                     <property name="maximum">
-                      <double>100.000000000000000</double>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
-                     <property name="singleStep">
-                      <double>0.000100000000000</double>
+                     <property name="buddy">
+                      <cstring>clipping</cstring>
                      </property>
                     </widget>
                    </item>
-                   <item row="9" column="0">
+                   <item row="10" column="0">
                     <widget class="QLabel" name="label_16">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -559,7 +498,7 @@ prevent overly bright spots from dominating the image.</string>
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>!inherit render_padding</string>
+                      <string>!inherit padding</string>
                      </property>
                      <property name="text">
                       <string>Padding:</string>
@@ -569,48 +508,6 @@ prevent overly bright spots from dominating the image.</string>
                      </property>
                      <property name="buddy">
                       <cstring>padding</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="7" column="0">
-                    <widget class="QLabel" name="contrast_label">
-                     <property name="toolTip">
-                      <string>!inherits contrast</string>
-                     </property>
-                     <property name="text">
-                      <string>Contrast:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>contrast</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="11" column="0">
-                    <widget class="QLabel" name="label_18">
-                     <property name="text">
-                      <string>Blur:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>blur</cstring>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="10" column="0">
-                    <widget class="QLabel" name="label_14">
-                     <property name="text">
-                      <string>Clipping:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                     </property>
-                     <property name="buddy">
-                      <cstring>clipping</cstring>
                      </property>
                     </widget>
                    </item>
@@ -645,6 +542,482 @@ prevent overly bright spots from dominating the image.</string>
                      </item>
                     </widget>
                    </item>
+                   <item row="13" column="1">
+                    <widget class="QSpinBox" name="sampling">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set the render sampling level.
+
+Higher sampling improves accuracy when combining data from
+different resolutions, especially for lower-resolution recordings.
+
+A value of 0 will turn off all upscaling, and will instead run the
+resampling that's in use by the preview image, where lines will
+get thicker at lower resolutions.</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>4</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="12" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="toolTip">
+                      <string>!inherit blur</string>
+                     </property>
+                     <property name="text">
+                      <string>Blur:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>blur</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="15" column="0">
+                    <widget class="QLabel" name="label_31">
+                     <property name="toolTip">
+                      <string>!inherit interpolation_order</string>
+                     </property>
+                     <property name="text">
+                      <string>Interpolation:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>interpolation_order</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="8" column="0">
+                    <widget class="QLabel" name="contrast_label">
+                     <property name="toolTip">
+                      <string>!inherit contrast</string>
+                     </property>
+                     <property name="text">
+                      <string>Contrast:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>contrast</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="10" column="1">
+                    <widget class="QSpinBox" name="padding">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Adjust the padding around the render.
+
+Note that this may affect the intensity of heatmap edges.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>px</string>
+                     </property>
+                     <property name="maximum">
+                      <number>4096</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QCheckBox" name="linear">
+                     <property name="toolTip">
+                      <string>Use a linear mapping of the data, ensuring a smooth colour range.</string>
+                     </property>
+                     <property name="text">
+                      <string>Linear Mapping</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="15" column="1">
+                    <widget class="QSpinBox" name="interpolation_order">
+                     <property name="toolTip">
+                      <string>Set the order of the spline interpolation to use when upscaling arrays.
+Any values other than 0 will cause inaccurate colour mappings.
+
+Preview Sampling must be greater than 0 to see the changes.</string>
+                     </property>
+                     <property name="maximum">
+                      <number>5</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="11" column="1">
+                    <widget class="QDoubleSpinBox" name="clipping">
+                     <property name="toolTip">
+                      <string>Define a clipping threshold.
+
+Values in the highest percentage range will be clipped to
+prevent overly bright spots from dominating the image.</string>
+                     </property>
+                     <property name="decimals">
+                      <number>8</number>
+                     </property>
+                     <property name="maximum">
+                      <double>100.000000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.000100000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="14" column="0">
+                    <widget class="QLabel" name="label_28">
+                     <property name="toolTip">
+                      <string>!inherit thumbnail_sampling</string>
+                     </property>
+                     <property name="text">
+                      <string>Sampling (Preview):</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>thumbnail_sampling</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="12" column="1">
+                    <widget class="QDoubleSpinBox" name="blur">
+                     <property name="toolTip">
+                      <string>Set the strength of the gaussian blur.
+
+This is primarily designed for use with heatmaps.</string>
+                     </property>
+                     <property name="decimals">
+                      <number>8</number>
+                     </property>
+                     <property name="maximum">
+                      <double>1.000000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.000500000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>0.012500000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_24">
+                     <property name="toolTip">
+                      <string>!inherit colour_option</string>
+                     </property>
+                     <property name="text">
+                      <string>Colour Map:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>colour_option</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QCheckBox" name="invert">
+                     <property name="toolTip">
+                      <string>Invert the colour map.</string>
+                     </property>
+                     <property name="text">
+                      <string>Invert</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="layer_group">
+                <property name="toolTip">
+                 <string>Use render layers to combine multiple renders together, making use of opacity and blending modes.
+The &quot;Render Settings&quot; and &quot;Data Type&quot; options above are set per layer.</string>
+                </property>
+                <property name="title">
+                 <string>Render Layers</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <item>
+                  <widget class="QComboBox" name="layer_presets">
+                   <property name="focusPolicy">
+                    <enum>Qt::FocusPolicy::StrongFocus</enum>
+                   </property>
+                   <property name="toolTip">
+                    <string>Choose a layer setup from a few defined presets.
+This will overwrite your current setup.</string>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Presets</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
+                   <item>
+                    <widget class="QListWidget" name="layer_list">
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>114</height>
+                      </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>List of all the current layers, which can be reordered by dragging.
+Use the checkbox to enable / disable layers.</string>
+                     </property>
+                     <property name="dragDropMode">
+                      <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+                     </property>
+                     <property name="currentRow">
+                      <number>1</number>
+                     </property>
+                     <item>
+                      <property name="text">
+                       <string>Layer 1</string>
+                      </property>
+                      <property name="checkState">
+                       <enum>Unchecked</enum>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Layer 0</string>
+                      </property>
+                      <property name="checkState">
+                       <enum>Checked</enum>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_17">
+                     <item>
+                      <widget class="QPushButton" name="layer_add">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Add a new layer.
+The new layer will be unchecked by default, so will not be initially shown.</string>
+                       </property>
+                       <property name="text">
+                        <string>+</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_remove">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Remove the selected layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>-</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_up">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer up.</string>
+                       </property>
+                       <property name="text">
+                        <string>↑</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="layer_down">
+                       <property name="maximumSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Move the selected layer down.</string>
+                       </property>
+                       <property name="text">
+                        <string>↓</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_9">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_33">
+                     <property name="toolTip">
+                      <string>!inherit layer_blending</string>
+                     </property>
+                     <property name="text">
+                      <string>Blending Mode:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_blending</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <layout class="QHBoxLayout" name="horizontalLayout_10">
+                     <item>
+                      <widget class="QCheckBox" name="layer_r">
+                       <property name="toolTip">
+                        <string>Enable the red channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>R</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_g">
+                       <property name="toolTip">
+                        <string>Enable the green channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>G</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_b">
+                       <property name="toolTip">
+                        <string>Enable the blue channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>B</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="layer_a">
+                       <property name="toolTip">
+                        <string>Enable the alpha channel for the current layer.</string>
+                       </property>
+                       <property name="text">
+                        <string>A</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="layer_blending">
+                     <property name="toolTip">
+                      <string>Set the blending mode of the current layer.</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QSpinBox" name="layer_opacity">
+                     <property name="toolTip">
+                      <string>Set the opacity of the selected layer.</string>
+                     </property>
+                     <property name="suffix">
+                      <string>%</string>
+                     </property>
+                     <property name="maximum">
+                      <number>100</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>10</number>
+                     </property>
+                     <property name="value">
+                      <number>100</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_34">
+                     <property name="toolTip">
+                      <string>Set which channels to use from the current layer.
+For example, it can be limited to Alpha to copy the transparency.</string>
+                     </property>
+                     <property name="text">
+                      <string>Channels:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_32">
+                     <property name="toolTip">
+                      <string>!inherit layer_opacity</string>
+                     </property>
+                     <property name="text">
+                      <string>Opacity:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                     <property name="buddy">
+                      <cstring>layer_opacity</cstring>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                 </layout>
@@ -656,6 +1029,33 @@ prevent overly bright spots from dominating the image.</string>
                  <string>Stats</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_3">
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_9">
+                   <property name="text">
+                    <string>Mouse Scrolls:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_11">
+                   <property name="text">
+                    <string>Elapsed Time:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLabel" name="stat_active">
+                   <property name="text">
+                    <string>45.0 hours</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="9" column="0">
                   <widget class="QLabel" name="label_8">
                    <property name="text">
@@ -666,13 +1066,6 @@ prevent overly bright spots from dominating the image.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="8" column="1">
-                  <widget class="QLabel" name="stat_download_total">
-                   <property name="text">
-                    <string>1.32 TB</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item row="0" column="1">
                   <widget class="QLabel" name="stat_clicks">
                    <property name="text">
@@ -680,10 +1073,17 @@ prevent overly bright spots from dominating the image.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_21">
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="stat_scroll">
                    <property name="text">
-                    <string>Mouse Clicks:</string>
+                    <string>316177</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="label_20">
+                   <property name="text">
+                    <string>Keys Pressed:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -700,13 +1100,55 @@ prevent overly bright spots from dominating the image.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="7" column="0">
-                  <widget class="QLabel" name="label_23">
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="stat_elapsed">
                    <property name="text">
-                    <string>Inactive Time:</string>
+                    <string>50.30 hours</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_21">
+                   <property name="text">
+                    <string>Mouse Clicks:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="stat_keys">
+                   <property name="text">
+                    <string>42544</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="9" column="1">
+                  <widget class="QLabel" name="stat_upload_total">
+                   <property name="text">
+                    <string>643.16 MB</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="7" column="1">
+                  <widget class="QLabel" name="stat_inactive">
+                   <property name="text">
+                    <string>5.30 hours</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="8" column="1">
+                  <widget class="QLabel" name="stat_download_total">
+                   <property name="text">
+                    <string>1.32 TB</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLabel" name="stat_buttons">
+                   <property name="text">
+                    <string>264</string>
                    </property>
                   </widget>
                  </item>
@@ -714,6 +1156,43 @@ prevent overly bright spots from dominating the image.</string>
                   <widget class="QLabel" name="label_19">
                    <property name="text">
                     <string>Cursor Distance:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="stat_distance">
+                   <property name="text">
+                    <string>32.54km</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="8" column="0">
+                  <widget class="QLabel" name="label_4">
+                   <property name="text">
+                    <string>Total Download:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="10" column="0">
+                  <widget class="QLabel" name="label_29">
+                   <property name="text">
+                    <string>Current Download:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="7" column="0">
+                  <widget class="QLabel" name="label_23">
+                   <property name="text">
+                    <string>Inactive Time:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -730,99 +1209,27 @@ prevent overly bright spots from dominating the image.</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="6" column="1">
-                  <widget class="QLabel" name="stat_active">
+                 <item row="11" column="0">
+                  <widget class="QLabel" name="label_30">
                    <property name="text">
-                    <string>45.0 hours</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_keys">
-                   <property name="text">
-                    <string>42544</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_20">
-                   <property name="text">
-                    <string>Keys Pressed:</string>
+                    <string>Current Upload:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_9">
+                 <item row="10" column="1">
+                  <widget class="QLabel" name="stat_download_current">
                    <property name="text">
-                    <string>Mouse Scrolls:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    <string>3.5 Mb/s (0.3 MB/s)</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="1">
-                  <widget class="QLabel" name="stat_buttons">
+                 <item row="11" column="1">
+                  <widget class="QLabel" name="stat_upload_current">
                    <property name="text">
-                    <string>264</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="7" column="1">
-                  <widget class="QLabel" name="stat_inactive">
-                   <property name="text">
-                    <string>5.30 hours</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="8" column="0">
-                  <widget class="QLabel" name="label_4">
-                   <property name="text">
-                    <string>Total Download:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_scroll">
-                   <property name="text">
-                    <string>316177</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_distance">
-                   <property name="text">
-                    <string>32.54km</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="9" column="1">
-                  <widget class="QLabel" name="stat_upload_total">
-                   <property name="text">
-                    <string>643.16 MB</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="0">
-                  <widget class="QLabel" name="label_11">
-                   <property name="text">
-                    <string>Elapsed Time:</string>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="1">
-                  <widget class="QLabel" name="stat_elapsed">
-                   <property name="text">
-                    <string>50.30 hours</string>
+                    <string>80 Mb/s (8.2 MB/s)</string>
                    </property>
                   </widget>
                  </item>
@@ -896,6 +1303,28 @@ prevent overly bright spots from dominating the image.</string>
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="tip">
+            <property name="text">
+             <string>Tip: Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="tip_tracking" stdset="0">
+             <string>Not tracking your new game? Create a rule by clicking &lt;strong&gt;Add Tracked Application&lt;/strong&gt; in the &lt;strong&gt;Status&lt;/strong&gt; tab.</string>
+            </property>
+            <property name="tip_update" stdset="0">
+             <string>A new update is available. &lt;a href=&quot;https://github.com/huntfx/MouseTracks/releases/latest&quot;&gt;Click here&lt;/a&gt; to visit the download page.</string>
+            </property>
+            <property name="tip_tooltip" stdset="0">
+             <string>Don't understand an option? Hover over to show its tooltip, or &lt;a href=&quot;https://github.com/huntfx/MouseTracks/issues&quot;&gt;raise an issue&lt;/a&gt; if it needs improvement.</string>
+            </property>
+            <property name="tip_install" stdset="0">
+             <string>A new version is ready to launch. Restart MouseTracks to complete the installation.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
             <item>
              <widget class="QPushButton" name="save_render">
@@ -922,6 +1351,9 @@ This may take a few seconds to complete.</string>
               <property name="text">
                <string>Advanced</string>
               </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
            </layout>
@@ -942,14 +1374,14 @@ This may take a few seconds to complete.</string>
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-121</y>
-               <width>261</width>
-               <height>638</height>
+               <y>0</y>
+               <width>311</width>
+               <height>654</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_13">
               <item>
-               <widget class="QGroupBox" name="groupBox_7">
+               <widget class="QGroupBox" name="opts_status">
                 <property name="title">
                  <string>Status</string>
                 </property>
@@ -958,6 +1390,9 @@ This may take a few seconds to complete.</string>
                   <layout class="QHBoxLayout" name="horizontalLayout_6">
                    <item>
                     <widget class="QLabel" name="profile_modified">
+                     <property name="toolTip">
+                      <string>Indicates if the selected profile has unsaved changes.</string>
+                     </property>
                      <property name="text">
                       <string>Yes</string>
                      </property>
@@ -965,6 +1400,9 @@ This may take a few seconds to complete.</string>
                    </item>
                    <item>
                     <widget class="QPushButton" name="profile_save">
+                     <property name="toolTip">
+                      <string>Save the selected profile.</string>
+                     </property>
                      <property name="text">
                       <string>Save</string>
                      </property>
@@ -989,7 +1427,7 @@ This may take a few seconds to complete.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_8">
+               <widget class="QGroupBox" name="opts_resolution">
                 <property name="title">
                  <string>Resolutions</string>
                 </property>
@@ -1063,18 +1501,24 @@ This may take a few seconds to complete.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox">
+               <widget class="QGroupBox" name="opts_monitor">
                 <property name="toolTip">
                  <string>Set how multiple monitors are handled.</string>
                 </property>
                 <property name="title">
-                 <string>Multiple Monitors</string>
+                 <string>Override Multiple Monitors Mode</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_7">
                  <item>
                   <widget class="QLabel" name="label_26">
                    <property name="text">
-                    <string>Choose how to handle multiple monitors.</string>
+                    <string>Choose how to handle multiple monitors for this profile.</string>
                    </property>
                    <property name="wordWrap">
                     <bool>true</bool>
@@ -1119,7 +1563,7 @@ This is the default behaviour.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_6">
+               <widget class="QGroupBox" name="opts_tracking">
                 <property name="title">
                  <string>Tracking</string>
                 </property>
@@ -1154,7 +1598,7 @@ This is the default behaviour.</string>
                      <property name="toolTip">
                       <string>Delete all mouse data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 mouse tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1180,7 +1624,7 @@ mouse tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all keyboard data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 keyboard tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1206,7 +1650,7 @@ keyboard tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all gamepad data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 gamepad tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1232,7 +1676,7 @@ gamepad tracking is enabled.</string>
                      <property name="toolTip">
                       <string>Delete all network data for the current profile.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 network tracking is enabled.</string>
                      </property>
                      <property name="text">
@@ -1247,7 +1691,7 @@ network tracking is enabled.</string>
                    <property name="toolTip">
                     <string>Delete the entire profile from disk.
 
-As a safety precaution,this option is disabled while
+As a safety precaution, this option is disabled while
 any tracking is enabled.
 </string>
                    </property>
@@ -1293,8 +1737,8 @@ any tracking is enabled.
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>261</width>
-               <height>556</height>
+               <width>311</width>
+               <height>486</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
@@ -1302,54 +1746,71 @@ any tracking is enabled.
                <widget class="QGroupBox" name="groupBox_11">
                 <property name="toolTip">
                  <string>Shows the details of the currently focused application.
-This is useful if adding to AppList.txt.</string>
+This can be useful if adding a profile for a new application.</string>
                 </property>
                 <property name="title">
                  <string>Current Application</string>
                 </property>
-                <layout class="QGridLayout" name="gridLayout_5">
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_6">
-                   <property name="text">
-                    <string>Tracked</string>
-                   </property>
-                  </widget>
+                <layout class="QVBoxLayout" name="verticalLayout_8">
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_5">
+                   <item row="1" column="1">
+                    <widget class="QLabel" name="stat_app_title">
+                     <property name="text">
+                      <string>Qt Widgets Designer</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="stat_app_exe">
+                     <property name="text">
+                      <string>designer.exe</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_10">
+                     <property name="text">
+                      <string>Window Name</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>Executable</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Tracked</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLabel" name="stat_app_tracked">
+                     <property name="text">
+                      <string>No</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_10">
-                   <property name="text">
-                    <string>Window Name</string>
+                 <item>
+                  <widget class="QPushButton" name="stat_app_add">
+                   <property name="toolTip">
+                    <string>Add a new tracked application.</string>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_5">
                    <property name="text">
-                    <string>Executable</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_app_exe">
-                   <property name="text">
-                    <string>designer.exe</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_app_title">
-                   <property name="text">
-                    <string>Qt Widgets Designer</string>
-                   </property>
-                   <property name="wordWrap">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_app_tracked">
-                   <property name="text">
-                    <string>No</string>
+                    <string>Add Tracked Application</string>
                    </property>
                   </widget>
                  </item>
@@ -1448,143 +1909,197 @@ This should be used after manually editing it.</string>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_13">
+               <widget class="QGroupBox" name="status_components">
+                <property name="toolTip">
+                 <string>Show the state of each component.</string>
+                </property>
                 <property name="title">
                  <string>Components</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_8">
+                 <item row="1" column="2">
+                  <widget class="QLabel" name="status_hub_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="2">
+                  <widget class="QLabel" name="status_app_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="1" column="1">
-                  <widget class="QLabel" name="stat_tracking_state">
+                  <widget class="QLabel" name="status_hub_pid">
                    <property name="text">
-                    <string>Running</string>
+                    <string/>
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_39">
-                   <property name="text">
-                    <string>Processing</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_processing_state">
-                   <property name="text">
-                    <string>Running</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_34">
-                   <property name="text">
-                    <string>Tracking</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="label_40">
-                   <property name="text">
-                    <string>Application Detection</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_app_state">
+                 <item row="2" column="2">
+                  <widget class="QLabel" name="status_tracking_state">
                    <property name="text">
                     <string>Running</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QLabel" name="label_36">
+                  <widget class="QLabel" name="status_header_name">
                    <property name="text">
-                    <string>Hub</string>
+                    <string>**Name**</string>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_hub_state">
-                   <property name="text">
-                    <string>Running</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="groupBox_14">
-                <property name="title">
-                 <string>Command Backlog</string>
-                </property>
-                <layout class="QGridLayout" name="gridLayout_9">
-                 <item row="1" column="1">
-                  <widget class="QLabel" name="stat_tracking_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="stat_processing_queue">
-                   <property name="text">
-                    <string>12</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_43">
-                   <property name="text">
-                    <string>Tracking</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="label_45">
-                   <property name="text">
-                    <string>Processing</string>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
                    </property>
                   </widget>
                  </item>
                  <item row="4" column="0">
-                  <widget class="QLabel" name="label_49">
-                   <property name="text">
-                    <string>Application Detection</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="stat_app_detection_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_44">
-                   <property name="text">
-                    <string>Hub</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="stat_hub_queue">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="label_12">
+                  <widget class="QLabel" name="status_gui_name">
                    <property name="text">
                     <string>GUI</string>
                    </property>
                   </widget>
                  </item>
                  <item row="3" column="1">
-                  <widget class="QLabel" name="stat_gui_queue">
+                  <widget class="QLabel" name="status_processing_pid">
                    <property name="text">
-                    <string>1</string>
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="status_header_state">
+                   <property name="text">
+                    <string>**State**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="status_app_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="status_hub_name">
+                   <property name="text">
+                    <string>Hub</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="status_header_pid">
+                   <property name="text">
+                    <string>**PID**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="status_app_name">
+                   <property name="text">
+                    <string>App Detection</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="status_tracking_name">
+                   <property name="text">
+                    <string>Tracking</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="2">
+                  <widget class="QLabel" name="status_processing_state">
+                   <property name="text">
+                    <string>Busy</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="2">
+                  <widget class="QLabel" name="status_gui_state">
+                   <property name="text">
+                    <string>Running</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="status_processing_name">
+                   <property name="text">
+                    <string>Processing</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="status_tracking_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="status_gui_pid">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLabel" name="status_header_queue">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>**Queue**</string>
+                   </property>
+                   <property name="textFormat">
+                    <enum>Qt::TextFormat::MarkdownText</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="status_hub_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLabel" name="status_tracking_queue">
+                   <property name="text">
+                    <string>3</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="3">
+                  <widget class="QLabel" name="status_processing_queue">
+                   <property name="text">
+                    <string>642</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="3">
+                  <widget class="QLabel" name="status_gui_queue">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QLabel" name="status_app_queue">
+                   <property name="text">
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -1771,19 +2286,19 @@ This should be used after manually editing it.</string>
     <addaction name="file_import"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
-    <addaction name="actionRestart"/>
     <addaction name="menu_exit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionDocumentation"/>
-    <addaction name="actionAbout"/>
+    <addaction name="link_github"/>
+    <addaction name="link_reddit"/>
+    <addaction name="link_facebook"/>
     <addaction name="separator"/>
-    <addaction name="actionWebsite"/>
-    <addaction name="actionReddit"/>
-    <addaction name="actionFacebook"/>
+    <addaction name="link_donate"/>
+    <addaction name="separator"/>
+    <addaction name="about"/>
    </widget>
    <widget class="QMenu" name="menuPreferences">
     <property name="title">
@@ -1796,12 +2311,10 @@ This should be used after manually editing it.</string>
      <addaction name="prefs_autostart"/>
      <addaction name="prefs_automin"/>
     </widget>
-    <addaction name="prefs_console"/>
-    <addaction name="separator"/>
     <addaction name="menuStartup"/>
     <addaction name="separator"/>
+    <addaction name="prefs_console"/>
     <addaction name="menu_allow_minimise"/>
-    <addaction name="actionShow_Log"/>
     <addaction name="separator"/>
     <addaction name="always_on_top"/>
     <addaction name="full_screen"/>
@@ -1810,35 +2323,51 @@ This should be used after manually editing it.</string>
     <property name="title">
      <string>_Tray_</string>
     </property>
-    <widget class="QMenu" name="menu_debug">
+    <widget class="QMenu" name="menu_advanced">
      <property name="title">
-      <string>Debug</string>
+      <string>Advanced</string>
      </property>
-     <widget class="QMenu" name="menu_debug_state">
+     <widget class="QMenu" name="menu_debug">
       <property name="title">
-       <string>Set Tracking State</string>
+       <string>Debug</string>
       </property>
-      <addaction name="debug_state_running"/>
-      <addaction name="debug_state_paused"/>
-      <addaction name="debug_state_stopped"/>
+      <widget class="QMenu" name="menu_debug_state">
+       <property name="title">
+        <string>Set Tracking State</string>
+       </property>
+       <addaction name="debug_state_running"/>
+       <addaction name="debug_state_paused"/>
+       <addaction name="debug_state_stopped"/>
+      </widget>
+      <widget class="QMenu" name="menu_debug_raise">
+       <property name="title">
+        <string>Raise Exception</string>
+       </property>
+       <addaction name="debug_raise_hub"/>
+       <addaction name="debug_raise_tracking"/>
+       <addaction name="debug_raise_processing"/>
+       <addaction name="debug_raise_gui"/>
+       <addaction name="debug_raise_app"/>
+      </widget>
+      <addaction name="menu_debug_state"/>
+      <addaction name="menu_debug_raise"/>
+      <addaction name="debug_pause_app"/>
+      <addaction name="debug_pause_monitor"/>
      </widget>
-     <widget class="QMenu" name="menu_debug_raise">
-      <property name="title">
-       <string>Raise Exception</string>
-      </property>
-      <addaction name="debug_raise_hub"/>
-      <addaction name="debug_raise_tracking"/>
-      <addaction name="debug_raise_processing"/>
-      <addaction name="debug_raise_gui"/>
-      <addaction name="debug_raise_app"/>
-     </widget>
-     <addaction name="menu_debug_state"/>
-     <addaction name="menu_debug_raise"/>
+     <addaction name="tray_open_exe_dir"/>
+     <addaction name="tray_open_data_dir"/>
+     <addaction name="separator"/>
+     <addaction name="menu_debug"/>
     </widget>
     <addaction name="tray_show"/>
     <addaction name="tray_hide"/>
     <addaction name="separator"/>
-    <addaction name="menu_debug"/>
+    <addaction name="tray_app_add"/>
+    <addaction name="separator"/>
+    <addaction name="tray_donate"/>
+    <addaction name="separator"/>
+    <addaction name="menu_advanced"/>
+    <addaction name="tray_about"/>
     <addaction name="separator"/>
     <addaction name="tray_exit"/>
    </widget>
@@ -1858,20 +2387,6 @@ This should be used after manually editing it.</string>
    <addaction name="tray_context_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionShow_Log">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Display Output Log</string>
-   </property>
-  </action>
   <action name="file_save">
    <property name="text">
     <string>Save</string>
@@ -1883,22 +2398,6 @@ This should be used after manually editing it.</string>
   <action name="file_import">
    <property name="text">
     <string>Import</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
-  <action name="actionDocumentation">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Documentation</string>
    </property>
   </action>
   <action name="menu_exit">
@@ -1927,41 +2426,58 @@ This should be used after manually editing it.</string>
     <string>Pause</string>
    </property>
   </action>
-  <action name="actionRestart">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="link_github">
    <property name="text">
-    <string>Restart</string>
+    <string>Github</string>
+   </property>
+   <property name="toolTip">
+    <string>Navigate to the Github repository.</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://github.com/huntfx/MouseTracks</string>
+    </url>
    </property>
   </action>
-  <action name="actionWebsite">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Website</string>
-   </property>
-  </action>
-  <action name="actionReddit">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="link_reddit">
    <property name="text">
     <string>Reddit</string>
    </property>
-  </action>
-  <action name="actionFacebook">
-   <property name="enabled">
-    <bool>false</bool>
+   <property name="toolTip">
+    <string>Navigate to the r/MouseTracks subreddit.</string>
    </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://www.reddit.com/r/MouseTracks</string>
+    </url>
+   </property>
+  </action>
+  <action name="link_facebook">
    <property name="text">
     <string>Facebook</string>
+   </property>
+   <property name="toolTip">
+    <string>Navigate to the Facebook page.</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://www.facebook.com/MouseTracksApp</string>
+    </url>
    </property>
   </action>
   <action name="tray_exit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="tray_open_exe_dir">
+   <property name="text">
+    <string>Open Executable Folder</string>
+   </property>
+  </action>
+  <action name="tray_open_data_dir">
+   <property name="text">
+    <string>Open Data Folder</string>
    </property>
   </action>
   <action name="tray_show">
@@ -2129,6 +2645,52 @@ This should be used after manually editing it.</string>
     <string>Daily Stats</string>
    </property>
   </action>
+  <action name="about">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="tray_about">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="tray_app_add">
+   <property name="text">
+    <string>Add Tracked Application</string>
+   </property>
+  </action>
+  <action name="tray_donate">
+   <property name="text">
+    <string>Donate</string>
+   </property>
+  </action>
+  <action name="link_donate">
+   <property name="text">
+    <string>Donate</string>
+   </property>
+   <property name="website" stdset="0">
+    <url>
+     <string>https://github.com/huntfx/MouseTracks/wiki/Donate</string>
+    </url>
+   </property>
+  </action>
+  <action name="debug_pause_app">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pause Application Detection</string>
+   </property>
+  </action>
+  <action name="debug_pause_monitor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pause Monitor Check</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2146,14 +2708,46 @@ This should be used after manually editing it.</string>
  <resources/>
  <connections>
   <connection>
+   <sender>tray_about</sender>
+   <signal>triggered()</signal>
+   <receiver>about</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_donate</sender>
+   <signal>triggered()</signal>
+   <receiver>link_donate</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>save</sender>
    <signal>clicked()</signal>
    <receiver>file_save</receiver>
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>885</x>
-     <y>226</y>
+     <x>886</x>
+     <y>-24</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -2168,12 +2762,12 @@ This should be used after manually editing it.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>991</x>
-     <y>177</y>
+     <x>999</x>
+     <y>316</y>
     </hint>
     <hint type="destinationlabel">
-     <x>942</x>
-     <y>174</y>
+     <x>980</x>
+     <y>312</y>
     </hint>
    </hints>
   </connection>
@@ -2184,12 +2778,28 @@ This should be used after manually editing it.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>997</x>
-     <y>206</y>
+     <x>999</x>
+     <y>346</y>
     </hint>
     <hint type="destinationlabel">
-     <x>944</x>
-     <y>208</y>
+     <x>980</x>
+     <y>342</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tray_app_add</sender>
+   <signal>triggered()</signal>
+   <receiver>stat_app_add</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1000</x>
+     <y>-90</y>
     </hint>
    </hints>
   </connection>
