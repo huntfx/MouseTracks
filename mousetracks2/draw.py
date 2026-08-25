@@ -1,7 +1,5 @@
-import os
-
 import numpy as np
-from scipy.ndimage import binary_dilation, binary_fill_holes, center_of_mass
+from scipy.ndimage import binary_dilation, binary_fill_holes
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -152,7 +150,7 @@ class Polygon:
         if thickness < 1:
             raise ValueError('thickness too low')
 
-        self.array = np.zeros((height, width, 4), dtype=np.uint8)
+        self.array: np.ndarray = np.zeros((height, width, 4), dtype=np.uint8)
 
         # Precalculate the masks
         self._outline_mask = np.zeros((height, width), dtype=bool)
@@ -365,7 +363,8 @@ def calculate_circle(width: int, height: int, centre: tuple[int, int], radius: f
     return vertices, control_points
 
 
-if __name__ == '__main__':
+def test() -> None:
+    """Create and draw objects."""
     vertices, control_points = create_rounded_rect(x=50, y=40, width=200, height=150, radius=30)
     vertices, control_points = create_controller_body(2560, 1080)
     #vertices, control_points = calculate_circle(2560, 1080, (500, 500), 40)
@@ -377,3 +376,7 @@ if __name__ == '__main__':
 
     final_image = Image.fromarray(poly.array)
     final_image.show()
+
+
+if __name__ == '__main__':
+    test()
