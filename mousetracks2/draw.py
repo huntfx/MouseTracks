@@ -8,8 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 KAPPA = 4 * (2 ** 0.5 - 1) / 3  # Cubic Bezier approximation of a circle quadrant
 
 
-def calculate_bezier(width: int, height: int, start_pos: tuple[int, int], start_cp: tuple[int, int],
-    end_pos: tuple[int, int], end_cp: tuple[int, int], thickness: int, num_steps: int = 1000) -> np.ndarray:
+def calculate_bezier(width: int, height: int, start_pos: tuple[float, float], start_cp: tuple[float, float],
+    end_pos: tuple[float, float], end_cp: tuple[float, float], thickness: int, num_steps: int = 1000) -> np.ndarray:
     """Calculates a boolean mask for a cubic Bezier curve.
 
     Parameters:
@@ -44,7 +44,7 @@ def calculate_bezier(width: int, height: int, start_pos: tuple[int, int], start_
         t_col ** 3 * p3
     )
     curve_points_int = np.round(curve_points).astype(int)
-    canvas = np.zeros((height, width), dtype=bool)
+    canvas: np.ndarray = np.zeros((height, width), dtype=bool)
     x_coords = np.clip(curve_points_int[:, 0], 0, width - 1)
     y_coords = np.clip(curve_points_int[:, 1], 0, height - 1)
     canvas[y_coords, x_coords] = True
@@ -81,11 +81,11 @@ def shift_2d(arr: np.ndarray, dx: int, dy: int) -> np.ndarray:
     return shifted
 
 
-def create_rounded_rect(x: int, y: int, width: int, height: int, radius: int,
-                        ) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+def create_rounded_rect(x: int, y: int, width: int, height: int, radius: float,
+                        ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
     """Generates vertices and control points for a rounded rectangle."""
-    if radius < 0:
-        radius = 0
+    if radius < 0.0:
+        radius = 0.0
     max_radius = min(width / 2, height / 2)
     if radius > max_radius:
         radius = max_radius
@@ -126,8 +126,8 @@ class Polygon:
     AlignBottom = 32
     AlignCentre = AlignCentreH | AlignCentreV
 
-    def __init__(self, width: int, height: int, vertices: list[tuple[int, int]],
-                 control_points: list[tuple[int, int]], thickness: int = 1) -> None:
+    def __init__(self, width: int, height: int, vertices: list[tuple[float, float]],
+                 control_points: list[tuple[float, float]], thickness: int = 1) -> None:
         """Creates a Polygon object and calculates internal masks.
 
         Parameters:
@@ -217,10 +217,10 @@ class Polygon:
 
         # Calculate bounding box of the filled polygon
         rows, cols = np.where(self._fill_mask)
-        min_x = np.min(cols)
-        max_x = np.max(cols)
-        min_y = np.min(rows)
-        max_y = np.max(rows)
+        min_x = float(np.min(cols))
+        max_x = float(np.max(cols))
+        min_y = float(np.min(rows))
+        max_y = float(np.max(rows))
         center_y = (min_y + max_y) / 2.0
         center_x = (min_x + max_x) / 2.0
 
@@ -256,7 +256,8 @@ class Polygon:
         self.array = np.asarray(img_pil)
 
 
-def create_controller_body(width: int, height: int):
+def create_controller_body(width: int, height: int,
+                           ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
     """Create the body of a controller.
 
     Note:
@@ -283,7 +284,7 @@ def create_controller_body(width: int, height: int):
         START: midpoint (1.25, 5.25), radius: 0.75
         SELECT: midpoint (-1.25, 5.25)
     """
-    vertices = [
+    vertices: list[tuple[float, float]] = [
         (0, 8),
         (6, 7),
         (7, -3.5),
@@ -291,7 +292,7 @@ def create_controller_body(width: int, height: int):
         (-7, -3.5),
         (-6, 7),
     ]
-    control_points = [
+    control_points: list[tuple[float, float]] = [
         (3, 8), (5, 8),
         (6.5, 6.5), (11, -2.5),
         (3.5, 0.5), (4, -0.05),
@@ -313,8 +314,8 @@ def create_controller_body(width: int, height: int):
     # ]
 
     # Split to x/y lists for easier editing
-    vx, vy = zip(*vertices)
-    cx, cy = zip(*control_points)
+    vx, vy = map(list, zip(*vertices))
+    cx, cy = map(list, zip(*control_points))
 
     # Flip the Y axis
     vy = [-y for y in vy]
@@ -342,7 +343,8 @@ def create_controller_body(width: int, height: int):
     return vertices, control_points
 
 
-def calculate_circle(width: int, height: int, centre: tuple[int, int], radius: int):
+def calculate_circle(width: int, height: int, centre: tuple[int, int], radius: float,
+                     ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
     r = radius
     k = KAPPA
     rk = r * k
@@ -366,7 +368,7 @@ def calculate_circle(width: int, height: int, centre: tuple[int, int], radius: i
 if __name__ == '__main__':
     vertices, control_points = create_rounded_rect(x=50, y=40, width=200, height=150, radius=30)
     vertices, control_points = create_controller_body(2560, 1080)
-    vertices, control_points = calculate_circle(2560, 1080, (500, 500), 40)
+    #vertices, control_points = calculate_circle(2560, 1080, (500, 500), 40)
     poly = Polygon(width=2560, height=1080, vertices=vertices, control_points=control_points, thickness=3)
     poly.fill((105, 105, 105, 255), (5, 5))
     poly.fill((211, 211, 211, 255))
