@@ -1,14 +1,14 @@
 import os
 import re
 from collections import defaultdict
-from contextlib import suppress
 from pathlib import Path
 from typing import Iterable, Iterator
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .config.cli import CLI
-from .constants import REPO_DIR, TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .constants import TRACKING_DISABLE, TRACKING_IGNORE, TRACKING_WILDCARD
+from .context import CTX
+from .runtime import REPO_DIR
 
 
 DEFAULT_TEXT = (
@@ -29,13 +29,13 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = CLI.data_dir / 'AppList.txt'
+LOCAL_PATH = CTX.data_dir / 'AppList.txt'
 
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
-APP_PATTERN = re.compile('^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
+APP_PATTERN = re.compile(r'^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
 
-MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/Appist.txt'
+MASTER_URL = 'https://raw.githubusercontent.com/huntfx/MouseTracks/refs/heads/master/config/AppList.txt'
 
 
 def _parse_data(f: Iterable[str]) -> dict[str, dict[str | None, str]]:
@@ -129,11 +129,13 @@ class AppList:
         self.load(REPO_PATH)
 
         # Update with the latest online data
-        if not CLI.offline:
-            with suppress(URLError):
+        if not CTX.offline:
+            try:
                 with urlopen(MASTER_URL) as response:
                     data = response.read().decode('utf-8')
-                    self.import_(_parse_data(data))
+                    self.import_(_parse_data(data.split('\n')))
+            except URLError as e:
+                print(f'Error downloading applist: {e}')
 
         # Update with any local changes
         if LOCAL_PATH.exists():
@@ -144,7 +146,7 @@ class AppList:
         with open(path, 'r', encoding='utf-8') as f:
             self.import_(_parse_data(f))
 
-    def import_(self, data: dict[str, dict[str | None, str]]):
+    def import_(self, data: dict[str, dict[str | None, str]]) -> None:
         for exe, titles in data.items():
             self.data[exe].update(titles)
 
@@ -171,6 +173,8 @@ class AppList:
         The first item returned is a dict of `{window_title: profile_name}`.
         The second item returned is the executable.
         """
+        if not exe:
+            return
         exe = exe.replace('\\', '/')
 
         if '/' not in exe and '*' not in exe:
@@ -229,6 +233,7 @@ class AppList:
 
 # Some quick tests for debugging
 if __name__ == '__main__':
+    # pylint: disable=protected-access
     applist = AppList()
 
     applist.save()
@@ -259,7 +264,7 @@ if __name__ == '__main__':
     assert applist.match('myapp.exe') == 'Test App'
     assert applist.match('test/myapp.exe') == 'Test App'
     assert applist.match('path/test/myapp.exe') == 'Test App'
-    assert applist.match('other/myapp.exe') == None
+    assert applist.match('other/myapp.exe') is None
     assert applist.match('mspaint.exe') == 'MS Paint'
     assert applist.match('Borderlands.exe') == 'Borderlands'
     assert applist.match('C:/Tales from the Borderlands/Borderlands.exe') == 'Tales from the Borderlands'

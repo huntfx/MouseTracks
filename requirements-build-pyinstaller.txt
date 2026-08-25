@@ -1,2 +1,3 @@
 pyinstaller==6.11.1
 pyinstaller-versionfile==3.0.0
+certifi>=2025.7.14

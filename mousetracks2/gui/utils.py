@@ -1,11 +1,12 @@
 """General functions being used by the GUI."""
 
 import math
-import time
+from collections.abc import Iterable
 
-from PySide6 import QtCore, QtWidgets
-
-from ..constants import UPDATES_PER_SECOND, REPO_DIR
+from ..config import GlobalConfig
+from ..constants import UPDATES_PER_SECOND
+from ..context import CTX
+from ..runtime import REPO_DIR
 
 
 ICON_PATH = str(REPO_DIR / 'resources' / 'images' / 'icon.png')
@@ -24,20 +25,39 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
     return f'{round(cm, 3)} cm'
 
 
-def format_ticks(ticks: float, ups: int = UPDATES_PER_SECOND, accuracy: int = 1) -> str:
+def format_ticks(ticks: float, ups: int = UPDATES_PER_SECOND, accuracy: int = 1, length: int = 5) -> str:
     """Convert ticks to a formatted time string."""
     seconds = ticks / ups
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
+    years, days = divmod(days, 365)
 
-    parts = [f'{seconds:03.{accuracy}f}s']
-    if minutes or hours or days:
-        parts.append(f'{int(minutes)}m')
-        if hours or days:
-            parts.append(f'{int(hours)}h')
-            if days:
-                parts.append(f'{int(days)}d')
+    # If a length is set, calculate which items to show
+    diff = (5 if years else 4 if days else 3 if hours else 2 if minutes else 1) - length
+
+    # Merge the smaller data into the minimum value
+    if diff > 0:
+        minutes += seconds / 60
+    if diff > 1:
+        hours += minutes / 60
+    if diff > 2:
+        days += hours / 24
+    if diff > 3:
+        years += days / 365
+
+    # Build up the string
+    parts = []
+    if diff < 1:
+        parts.append(f'{seconds:.{accuracy * (diff <= 0)}f}s')
+    if diff < 2 and (diff == 1 or minutes or hours or days or years):
+        parts.append(f'{minutes:.{accuracy * (diff == 1)}f}m')
+    if diff < 3 and (diff == 2 or hours or days or years):
+        parts.append(f'{hours:.{accuracy * (diff == 2)}f}h')
+    if diff < 4 and (diff == 3 or days or years):
+        parts.append(f'{days:.{accuracy * (diff == 3)}f}d')
+    if diff < 5 and (diff == 4 or years):
+        parts.append(f'{years:.{accuracy * (diff == 4)}f}y')
     return ' '.join(reversed(parts))
 
 
@@ -54,3 +74,20 @@ def format_bytes(b: int) -> str:
 def format_network_speed(b: int) -> str:
     """Convert bytes to network speed."""
     return f'{format_bytes(b * 8)[:-1]}bps'
+
+
+def should_minimise_on_start() -> bool:
+    """Determine if the app should minimise on startup."""
+    if CTX.post_install:
+        return False
+    return CTX.start_hidden or CTX.autostart and GlobalConfig().minimise_on_start
+
+
+def join_and(lines: Iterable[str]) -> str:
+    """Join together multiple strings into a comma separated sentence."""
+    items = list(lines)
+    if not items:
+        return ''
+    if len(items) == 1:
+        return items[0]
+    return f'{", ".join(items[:-1])} and {items[-1]}'

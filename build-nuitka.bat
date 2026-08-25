@@ -29,12 +29,13 @@ if not defined VERSION (
 )
 
 :: Build the executable
+echo --- Building Application (MouseTracks-%VERSION%-windows-x64.exe) ---
 python -m nuitka ^
   --standalone ^
   --onefile ^
   --prefer-source-code ^
   --output-dir=dist ^
-  --output-filename=MouseTracks.exe ^
+  --output-filename=MouseTracks-%VERSION%-windows-x64.exe ^
   --plugin-enable=pyside6 ^
   --include-data-file=config/colours.txt=config/colours.txt ^
   --include-data-file=config/AppList.txt=config/AppList.txt ^
@@ -42,6 +43,7 @@ python -m nuitka ^
   --include-data-file=config/language/keyboard/keys/en_GB.ini=config/language/keyboard/keys/en_GB.ini ^
   --include-data-file=config/language/keyboard/layout/en_US.txt=config/language/keyboard/layout/en_US.txt ^
   --include-data-file=resources/images/icon.png=resources/images/icon.png ^
+  --include-data-file=resources/fonts/liberation-sans.regular.ttf=resources/fonts/liberation-sans.regular.ttf ^
   --windows-icon-from-ico=resources/images/icon.ico ^
   --product-name="Mouse Tracks %VERSION%" ^
   --file-description="Mouse Tracks %VERSION%" ^
@@ -49,6 +51,34 @@ python -m nuitka ^
   --file-version=%VERSION% ^
   --copyright="Peter Hunt" ^
   launch.py
+
+if errorlevel 1 (
+    echo Main application build failed.
+    call deactivate
+    exit /b 1
+)
+
+:: Build the launcher
+echo --- Building Launcher (MouseTracks.exe) ---
+python -m nuitka ^
+  --standalone ^
+  --onefile ^
+  --prefer-source-code ^
+  --output-dir=dist ^
+  --output-filename=MouseTracks.exe ^
+  --windows-icon-from-ico=resources/images/icon.ico ^
+  launcher.py
+
+if errorlevel 1 (
+    echo Launcher build failed.
+    call deactivate
+    exit /b 1
+)
+
+:: Sign the executables
+python -m mousetracks2 --write-public-key
+python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
+python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
 
 :: Exit the virtual environment
 call deactivate

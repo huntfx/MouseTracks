@@ -1,22 +1,47 @@
+from __future__ import annotations
+
 import multiprocessing
 import os
+import queue
 import time
 import traceback
-from typing import Iterator
+from typing import TYPE_CHECKING, Callable, ClassVar, Iterator
 
 import psutil
 
 from . import ipc
+from ..constants import DEFAULT_PROFILE_NAME
+from ..context import CTX
 from ..exceptions import ExitRequest
+from ..types import RectList, Application
+from ..utils.math import calculate_line
+from ..utils.monitor import MonitorData
+from ..utils.system import UserResizeAppListener
+from ..utils.system.base import EventListener
+
+if TYPE_CHECKING:
+    import multiprocessing.queues
 
 
 class Component:
-    def __init__(self, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue) -> None:
+    """Base class for all independently running components.
+
+    Manages IPC queue communication and provides lifecycle hooks
+    for initialisation, running, and clean shutdown.
+    """
+
+    target: ClassVar[int]
+
+    def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         self._q_send = q_send
         self._q_recv = q_receive
         self.name = type(self).__name__
+        self._register_mixin()
         self.__post_init__()
-        self._parent_pid = os.getppid()
+        self._parent_process = psutil.Process(os.getppid())
+
+    def _register_mixin(self) -> None:
+        """Subclass to implement custom mixin code."""
 
     def __post_init__(self) -> None:
         """Call this after running `__init__`."""
@@ -27,32 +52,19 @@ class Component:
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name: str) -> None:
         """Set the component name."""
         self._name = name
 
-    @property
-    def target(self) -> int:
-        """Get the component target enum."""
-        # TODO: Define this in subclasses
-        match self.name:
-            case 'Tracking':
-                return ipc.Target.Tracking
-            case 'Processing':
-                return ipc.Target.Processing
-            case 'AppDetection':
-                return ipc.Target.AppDetection
-            case 'GUI':
-                return ipc.Target.GUI
-            case _:
-                raise NotImplementedError(self.name)
-
-    def is_hub_running(self):
+    def is_hub_running(self) -> bool:
         """Determine if the Hub is still running.
         If it is not running, then attempting to read from a queue will
         lock the entire process.
         """
-        return psutil.pid_exists(self._parent_pid)
+        try:
+            return self._parent_process.is_running()
+        except psutil.NoSuchProcess:
+            return False
 
     def send_data(self, message: ipc.Message) -> None:
         self._q_send.put(message)
@@ -83,15 +95,21 @@ class Component:
                 yield ipc.Exit()
                 return
 
-            # Check if the queue is empty
-            if self._q_recv.empty():
+            # Read from the queue
+            try:
+                message = self._q_recv.get(block=False)
+            except queue.Empty:
                 if not polling_rate:
                     return
                 time.sleep(polling_rate)
                 continue
 
-            # Read from the queue
-            yield self._q_recv.get()
+            # Intercept message if required, otherwise yield
+            match message:
+                case ipc.RequestPID():
+                    self.send_data(ipc.SendPID(source=self.target, pid=os.getpid()))
+                case _:
+                    yield message
 
     def run(self) -> None:
         """Run the component."""
@@ -102,14 +120,16 @@ class Component:
         """
 
     @classmethod
-    def launch(cls, q_send: multiprocessing.Queue, q_receive: multiprocessing.Queue):
+    def launch(cls, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
+        target = cls.target
+
         # Attempt to initialise the class
         try:
             self = cls(q_send, q_receive)
 
         # If an error happens on load, then stop here
         # A shutdown is triggered for all other components
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             q_send.put(ipc.Traceback(e, traceback.format_exc()))
             self = Component(q_send, q_receive)
             self.name = cls.__name__
@@ -118,6 +138,7 @@ class Component:
         # Run the component with extra error handling
         else:
             print(f'[{self.name}] Loaded.')
+            self.send_data(ipc.ComponentLoaded(self.target))
 
             try:
                 self.run()
@@ -130,7 +151,7 @@ class Component:
                 print(f'[{self.name}] Force shut down.')
                 return
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f'[{self.name}] Error shut down: {e}')
                 q_send.put(ipc.Traceback(e, traceback.format_exc()))
 
@@ -138,7 +159,121 @@ class Component:
                 self.on_exit()
 
         if self.is_hub_running():
-            q_send.put(ipc.ProcessShutDownNotification(self.target))
+            q_send.put(ipc.ProcessShutDownNotification(target))
             print(f'[{self.name}] Sent process closed notification.')
         else:
             print(f'[{self.name}] Process closed due to Hub not running.')
+
+
+class AppComponent(Component):
+    """Implement methods for tracking focused application."""
+
+    _app_change_hooks: list[Callable[[Application], None]]
+    _focused_app: Application
+    _resize_listener: EventListener
+
+    def _register_mixin(self) -> None:
+        # Setup the hook list
+        self._app_change_hooks = []
+
+        # Setup the focused app tracking
+        self._focused_app = Application('', RectList())
+        self.focused_app = Application(DEFAULT_PROFILE_NAME, RectList())
+
+        # Setup the resize listener
+        self._resize_listener = UserResizeAppListener()
+        self._resize_listener.start()
+
+        super()._register_mixin()
+
+    def register_app_change_hook(self, fn: Callable[[Application], None]) -> None:
+        """Register a function to run when the focused application changes.
+        It takes one input parameter of the `Application` instance.
+        """
+        self._app_change_hooks.append(fn)
+        fn(self.focused_app)
+
+    @property
+    def focused_app(self) -> Application:
+        """Get the currently focused application."""
+        return self._focused_app
+
+    @focused_app.setter
+    def focused_app(self, application: Application) -> None:
+        """Update the currently focused application."""
+        if application == self._focused_app:
+            return
+        self._focused_app = application
+
+        for func in self._app_change_hooks:
+            func(application)
+
+    @property
+    def app_resizing(self) -> bool:
+        """Determine if the focused application is being resized."""
+        if self.focused_app.name == DEFAULT_PROFILE_NAME:
+            return False
+        return self._resize_listener.triggered
+
+
+class MonitorComponent(Component):
+    """Add additional methods for handling drawing with single/multi monitor modes."""
+
+    _monitor_data: MonitorData
+
+    def _register_mixin(self) -> None:
+        self._monitor_data = MonitorData()
+        super()._register_mixin()
+
+    def __focused_app_rects(self) -> RectList:
+        """Get the focused application bounds if available.
+        This will be ignored if AppComponent isn't being used.
+        """
+        if isinstance(self, AppComponent):
+            return self.focused_app.rects
+        return RectList()
+
+    def set_monitor_data(self, data: MonitorData) -> None:
+        """Update the monitor data."""
+        self._monitor_data = data
+
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single monitor mode.
+        Override recommended.
+        """
+        return bool(CTX.single_monitor)
+
+    def get_render_space_offset(self, pixel: tuple[int, int],
+                                 ) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        """Detect which monitor the pixel is on.
+
+        If a focused application is detected, then that takes priority.
+        If in single monitor mode with multiple monitors, then ensure
+        DPI scaling is ignored to ensure they perfectly match up with
+        each other. Otherwise, use logical scaling, and remap the pixel
+        from physical into logical space.
+        """
+        single_monitor = self.is_single_monitor_mode() and len(self._monitor_data.physical) > 1
+
+        monitors = self.__focused_app_rects()
+        if not monitors:
+            if single_monitor:
+                monitors = self._monitor_data.physical
+            else:
+                monitors = self._monitor_data.logical
+                pixel = self._monitor_data.physical_to_logical(pixel)
+
+        return monitors.calculate_offset(pixel, combined=single_monitor)
+
+    def iter_pixel_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
+                        force_monitor: tuple[int, int] | None) -> Iterator[tuple[tuple[int, int], tuple[int, int]]]:
+        """Calculate the pixels in a line."""
+        last_yield: tuple[tuple[int, int], tuple[int, int]] | None = None
+        for pixel in calculate_line(old_position, new_position):
+            if force_monitor is None:
+                result = self.get_render_space_offset(pixel)
+                if result is not None and result != last_yield:
+                    yield result
+                    last_yield = result
+            else:
+                yield force_monitor, pixel

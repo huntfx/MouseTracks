@@ -112,3 +112,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Security Keys
+keys/private.key
+*.key
+!keys/public.key
+mousetracks2/_sign.py

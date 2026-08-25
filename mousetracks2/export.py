@@ -23,7 +23,7 @@ class Export:
         yield ('Date', 'Time (seconds)', 'Active (seconds)', 'Inactive (seconds)',
                'Cursor Distance (pixels)', 'Mouse Clicks', 'Mouse Scrolls',
                'Keyboard Presses', 'Gamepad Presses', 'Download (bytes)', 'Upload (bytes)')
-        for i in reversed(range(2 + modified_day - creation_day)):
+        for i in reversed(range(1 + modified_day - creation_day)):
             # Skip if no data
             if not self.profile.daily_ticks[i, 0]:
                 continue
@@ -44,16 +44,29 @@ class Export:
                    self.profile.daily_download[i],
                    self.profile.daily_upload[i])
 
-    def daily_stats(self, path: str | os.PathLike) -> None:
-        """Save a CSV file of the daily stats."""
+    def _write_csv(self, path: str | os.PathLike, rows: Iterator[tuple[Any, ...]]) -> None:
+        """Write rows to a CSV file.
+
+        Fields containing a comma or double quote are escaped.
+        """
         with open(path, 'w', encoding='utf-8') as f:
-            for i, data in enumerate(self._daily_stats()):
+            for i, row in enumerate(rows):
                 if i:
                     f.write('\n')
-                f.write(','.join(map(str, data)))
+                fields = []
+                for value in row:
+                    s = str(value)
+                    if ',' in s or '"' in s:  # quote fields with special characters
+                        s = '"' + s.replace('"', '""') + '"'
+                    fields.append(s)
+                f.write(','.join(fields))
+
+    def daily_stats(self, path: str | os.PathLike) -> None:
+        """Save a CSV file of the daily stats."""
+        self._write_csv(path, self._daily_stats())
 
     def _mouse_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Button', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Name', 'Press Count', 'Press Time (seconds)'
         for keycode in MOUSE_CODES:
             presses = self.profile.key_presses[keycode]
             held = round(self.profile.key_held[keycode] / UPDATES_PER_SECOND, 2)
@@ -63,14 +76,10 @@ class Export:
 
     def mouse_stats(self, path: str | os.PathLike) -> None:
         """Save a CSV file of the mouse stats."""
-        with open(path, 'w', encoding='utf-8') as f:
-            for i, data in enumerate(self._mouse_stats()):
-                if i:
-                    f.write('\n')
-                f.write(','.join(map(str, data)))
+        self._write_csv(path, self._mouse_stats())
 
     def _keyboard_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Key', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Key', 'Press Count', 'Press Time (seconds)'
         for keycode in KEYBOARD_CODES:
             presses = self.profile.key_presses[keycode]
             held = round(self.profile.key_held[keycode] / UPDATES_PER_SECOND, 2)
@@ -79,15 +88,11 @@ class Export:
 
     def keyboard_stats(self, path: str | os.PathLike) -> None:
         """Save a CSV file of the keyboard stats."""
-        with open(path, 'w', encoding='utf-8') as f:
-            for i, data in enumerate(self._keyboard_stats()):
-                if i:
-                    f.write('\n')
-                f.write(','.join(map(str, data)))
+        self._write_csv(path, self._keyboard_stats())
 
     def _network_stats(self) -> Iterator[tuple[Any, ...]]:
         """Iterate over the data for the network stats."""
-        yield 'Name', 'MAC', 'Download (bytes)', 'Upload (bytes)', 'Total (bytes)'
+        yield 'Name', 'MAC Address', 'Download (bytes)', 'Upload (bytes)', 'Total (bytes)'
         totals = {mac_address: self.profile.data_download[mac_address]
                                + self.profile.data_upload[mac_address]
                   for mac_address in self.profile.data_interfaces}
@@ -98,32 +103,26 @@ class Export:
 
     def network_stats(self, path: str | os.PathLike) -> None:
         """Save a CSV file of the network stats."""
-        with open(path, 'w', encoding='utf-8') as f:
-            for i, data in enumerate(self._network_stats()):
-                if i:
-                    f.write('\n')
-                f.write(','.join(map(str, data)))
+        self._write_csv(path, self._network_stats())
 
     def _gamepad_stats(self) -> Iterator[tuple[Any, ...]]:
-        yield 'Code', 'Name', 'Presses', 'Time (seconds)'
+        yield 'Code', 'Name', 'Press Count', 'Press Time (seconds)'
         presses: dict[int, int] = defaultdict(int)
         held: dict[int, int] = defaultdict(int)
+        gamepad_codes = {int(math.log2(int(keycode))): str(keycode)
+                         for keycode in GAMEPAD_CODES}
 
-        for keycode in GAMEPAD_CODES:
+        for keycode in gamepad_codes:
             for data in self.profile.button_presses.values():
-                presses[int(keycode)] += data[int(math.log2(int(keycode)))]
+                presses[keycode] += data[keycode]
             for data in self.profile.button_held.values():
-                held[int(keycode)] += data[int(math.log2(int(keycode)))]
+                held[keycode] += data[keycode]
 
-        for keycode in GAMEPAD_CODES:
+        for keycode, name in sorted(gamepad_codes.items()):
             if presses[keycode] or held[keycode]:
-                yield (int(keycode), str(keycode), presses[keycode],
+                yield (keycode, name, presses[keycode],
                        round(held[keycode] / UPDATES_PER_SECOND, 2))
 
     def gamepad_stats(self, path: str | os.PathLike) -> None:
         """Save a CSV file of the gamepad stats."""
-        with open(path, 'w', encoding='utf-8') as f:
-            for i, data in enumerate(self._gamepad_stats()):
-                if i:
-                    f.write('\n')
-                f.write(','.join(map(str, data)))
+        self._write_csv(path, self._gamepad_stats())

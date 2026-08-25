@@ -1,21 +1,23 @@
-import os
 import sys
 import time
+from typing import cast
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from . import ipc
-from .abstract import Component
+from .abstract import Component, AppComponent, MonitorComponent
+from ..context import CTX
 from ..gui.utils import ICON_PATH
 from ..gui.main_window import MainWindow
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
+from ..gui.splash import SplashScreen
+from ..utils.system import prepare_application_icon
 
 
 class QueueWorker(QtCore.QObject):
     """Worker for polling the queue in a background thread."""
 
     message_received = QtCore.Signal(ipc.Message)
+    ready = QtCore.Signal()
 
     def __init__(self, component: Component) -> None:
         super().__init__()
@@ -27,8 +29,12 @@ class QueueWorker(QtCore.QObject):
         while True:
             for message in self.component.receive_data():
                 self.message_received.emit(message)
-                if isinstance(message, ipc.Exit):
-                    return
+                match message:
+                    case ipc.Exit():
+                        return
+                    case ipc.AllComponentsLoaded():
+                        self.ready.emit()
+
             time.sleep(0.01)
 
             if not self.running:
@@ -39,15 +45,25 @@ class QueueWorker(QtCore.QObject):
         self.running = False
 
 
-def should_minimise_on_start() -> bool:
-    """Determine if the app should minimise on startup."""
-    return CLI.start_hidden or CLI.autostart and GlobalConfig().minimise_on_start
+class GUI(AppComponent, MonitorComponent):
+    """Run the Qt GUI and relay IPC messages to the main window.
 
+    Dispatches incoming messages via a dedicated receiver thread, and shows
+    a splash screen while the other components finish loading.
+    """
 
-class GUI(Component):
+    target = ipc.Target.GUI
+
     def __post_init__(self) -> None:
         """Setup the threads."""
         self.error: Exception | None = None
+
+        # Setup the QApplication
+        app = QtWidgets.QApplication(sys.argv)
+        app.setStyle('Fusion')
+
+        prepare_application_icon(ICON_PATH)
+        app.setWindowIcon(QtGui.QIcon(ICON_PATH))
 
         self.receiver_thread = QtCore.QThread()
         self.receiver_worker = QueueWorker(self)
@@ -55,11 +71,26 @@ class GUI(Component):
         self.receiver_thread.started.connect(self.receiver_worker.run)
         self.receiver_thread.finished.connect(self.receiver_worker.deleteLater)
 
+        # Show a splash screen while loading
+        if not CTX.disable_splash:
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+            self._splash = SplashScreen()
+            self.receiver_worker.ready.connect(self._splash.close)
+            self.receiver_worker.ready.connect(QtWidgets.QApplication.restoreOverrideCursor)
+
+        self._window: MainWindow | None = None
+
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single monitor mode."""
+        if self._window is not None:
+            return self._window.is_single_monitor_mode()
+        return super().is_single_monitor_mode()
+
     def on_exit(self) -> None:
         """Safely exit the threads."""
+        self.receiver_worker.stop()
         self.receiver_thread.quit()
         self.receiver_thread.wait()
-        self.receiver_worker.stop()
 
     def exception_raised(self, exc: Exception) -> None:
         """Force the application to shut down when an error is raised.
@@ -70,25 +101,18 @@ class GUI(Component):
 
     def run(self) -> None:
         """Launch the application."""
-        app = QtWidgets.QApplication(sys.argv)
-        app.setStyle('Fusion')
-
-        # Register app so that setting an icon is possible
-        if os.name == 'nt':
-            import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('uk.huntfx.mousetracks')
-        app.setWindowIcon(QtGui.QIcon(ICON_PATH))
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            app = QtWidgets.QApplication(sys.argv)
+        app = cast(QtWidgets.QApplication, app)
 
         # Setup the window
-        win = MainWindow(self)
-        if not should_minimise_on_start():
-            win.show()
-        self.receiver_worker.message_received.connect(win.process_message)
-        win.exception_raised.connect(self.exception_raised)
+        self._window = MainWindow(self)
+        app.setActiveWindow(self._window)
+        app.commitDataRequest.connect(self._window.handle_session_shutdown)
+        self.receiver_worker.message_received.connect(self._window.process_message)
+        self._window.exception_raised.connect(self.exception_raised)
         self.receiver_thread.start()
-
-        # Trigger the splash screen to close
-        self.send_data(ipc.CloseSplashScreen())
 
         # Run the application
         retcode = app.exec()

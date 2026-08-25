@@ -1,26 +1,51 @@
-name: Build Executable on Release
+name: Build Executable (on Release)
 
 on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      attach_to_release:
+        description: 'Attach built files to the latest release'
+        required: true
+        type: boolean
+        default: false
 
 env:
   PYINSTALLER_VERSION: v6.11.1  # Match 'requirements-build-pyinstaller.txt'
 
 jobs:
   build:
-    runs-on: ${{ matrix.os_runner }}
+    runs-on: ${{ matrix.os }}
     permissions: write-all
+    env:
+      MACOSX_DEPLOYMENT_TARGET: 11.0  # Lowest version compatible with PySide 6.7
 
     strategy:
       fail-fast: false
       matrix:
-        # 32 bit python not included as PySide6 not compatible
+        # 32 bit python is not included as PySide6 is not compatible
         include:
-          - os_runner: windows-latest
-            bits: 64
+          - platform: windows
+            os: windows-latest
             architecture: x64
+            upx_suffix: win64
+            exe_suffix: .exe
+          - platform: linux
+            os: ubuntu-latest
+            architecture: x64
+            upx_suffix: amd64_linux
+            exe_suffix: ''
+          - platform: macos
+            os: macos-15-intel
+            architecture: x64
+            upx_suffix: ''  # UPX is problematic with macOS
+            exe_suffix: '.app'
+          - platform: macos
+            os: macos-latest
+            architecture: arm64
+            upx_suffix: ''
+            exe_suffix: .app
 
     steps:
       - name: Checkout partial repository
@@ -40,62 +65,98 @@ jobs:
           architecture: ${{ matrix.architecture }}
 
       - name: Create virtual environment
-        shell: cmd
-        run: |
-          python -m venv .venv
-          if errorlevel 1 exit /b 1
+        shell: bash
+        run: python -m venv .venv
 
       - name: Create build folder
-        shell: cmd
+        shell: bash
         run: |
-          if exist build rmdir build /s /q
+          rm -rf build
           mkdir build
 
       - name: Update components
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           python -m pip install --upgrade pip wheel
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Build PyInstaller Bootloader
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
 
-          echo --- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---
+          echo "--- Cloning PyInstaller ${{ env.PYINSTALLER_VERSION }} ---"
           git clone --branch ${{ env.PYINSTALLER_VERSION }} --depth 1 https://github.com/pyinstaller/pyinstaller.git build/pyinstaller
-          if errorlevel 1 exit /b 1
 
-          echo --- Building Bootloader ---
-          cd build\pyinstaller\bootloader
-          python ./waf distclean all --target-arch=${{ matrix.bits }}bit
-          if errorlevel 1 exit /b 1
-          cd ..
+          echo "--- Building Bootloader ---"
+          cd build/pyinstaller/bootloader
+          python ./waf distclean all
+          cd ../.. # Back to build directory
+          cd .. # Back to root
 
-          echo --- Installing Custom PyInstaller from build directory ---
-          pip install .
-          if errorlevel 1 exit /b 1
-
-          call deactivate
+          echo "--- Installing Custom PyInstaller from build directory ---"
+          pip install ./build/pyinstaller
+          deactivate
 
       - name: Install dependencies
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
 
-          echo --- Installing main requirements ---
+          echo "--- Installing main requirements ---"
           python -m pip install --upgrade -r requirements.txt
-          if errorlevel 1 exit /b 1
 
-          echo --- Installing build requirements ---
+          echo "--- Installing build requirements ---"
           python -m pip install --upgrade -r requirements-build-pyinstaller.txt
-          if errorlevel 1 exit /b 1
 
-          call .venv\Scripts\deactivate
+          deactivate
+
+      - name: Install Legacy macOS Dependencies
+        if: matrix.platform == 'macos' && matrix.architecture == 'x64'
+        shell: bash
+        run: |
+          source .venv/bin/activate
+
+          echo "Attempting to manually fetch macOS 10.9+ compatible wheels for dependencies..."
+          mkdir -p manual_wheels
+
+          # Iterate over each requirement
+          grep -vE '^\s*#|^\s*$' requirements.txt | while read -r line; do
+            req_line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            if [[ -z "$req_line" ]]; then continue; fi
+
+            echo "Checking compatibility for: $req_line"
+            python -m pip download \
+              --dest manual_wheels \
+              --platform macosx_10_9_x86_64 \
+              --only-binary=:all: \
+              --no-deps \
+              "$req_line" || echo "  > Could not force 10.9 binary for '$req_line'."
+          done
+
+          # Install all found wheels
+          if ls manual_wheels/*.whl 1> /dev/null 2>&1; then
+            echo "Installing downloaded wheels:"
+            ls -l manual_wheels
+            python -m pip install manual_wheels/*.whl --force-reinstall
+          else
+            echo "No force-compatible wheels found."
+          fi
+
+          deactivate
 
       - name: Get version details from tag
         if: github.ref_type == 'tag'
@@ -114,15 +175,15 @@ jobs:
 
       - name: Get version details from file
         if: github.ref_type != 'tag'
-        id: extract_version
-        shell: cmd
+        shell: bash
         run: |
-          call .venv\Scripts\activate
-
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           python .github/scripts/get-version.py
-          if errorlevel 1 exit /b 1
-
-          call .venv\Scripts\deactivate
+          deactivate
 
       - name: Set dynamic executable name
         id: set_names
@@ -134,75 +195,160 @@ jobs:
             exit 1
           fi
 
-          EXE_BASENAME="MouseTracks-${VERSION}-windows-${{ matrix.architecture }}"
-          FULL_EXE_NAME="${EXE_BASENAME}.exe"
+          EXE_BASENAME="MouseTracks-${VERSION}-${{ matrix.platform }}-${{ matrix.architecture }}"
+          FULL_EXE_NAME="${EXE_BASENAME}${{ matrix.exe_suffix }}"
+          PORTABLE_EXE_NAME="${EXE_BASENAME}-portable${{ matrix.exe_suffix }}"
+          INSTALLER_BASENAME="${EXE_BASENAME}-setup"
+          FULL_INSTALLER_NAME="${INSTALLER_BASENAME}${{ matrix.exe_suffix }}"
 
           # Set environment variables for use in later steps of this job
           echo "EXE_BASENAME=${EXE_BASENAME}" >> $GITHUB_ENV
           echo "FULL_EXE_NAME=${FULL_EXE_NAME}" >> $GITHUB_ENV
+          echo "PORTABLE_EXE_NAME=${PORTABLE_EXE_NAME}" >> $GITHUB_ENV
+          echo "INSTALLER_BASENAME=${INSTALLER_BASENAME}" >> $GITHUB_ENV
+          echo "FULL_INSTALLER_NAME=${FULL_INSTALLER_NAME}" >> $GITHUB_ENV
 
           echo "exe_basename=${EXE_BASENAME}" >> $GITHUB_OUTPUT
           echo "full_exe_name=${FULL_EXE_NAME}" >> $GITHUB_OUTPUT
 
           echo "Executable basename: ${EXE_BASENAME}"
           echo "Full executable name: ${FULL_EXE_NAME}"
-
-      - name: Create version.rc
-        shell: cmd
-        run: |
-          call .venv\Scripts\activate
-
-          pyivf-make_version --outfile "build\version.rc" --version "${{ env.VERSION }}" --file-description "${{ env.EXE_BASENAME }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "${{ env.EXE_BASENAME }}"
-          call .venv\Scripts\deactivate
-          if not exist build\version.rc (
-            echo ERROR: version.rc not created!
-            exit /b 1
-          )
-
-          call .venv\Scripts\deactivate
+          echo "Portable executable name: ${PORTABLE_EXE_NAME}"
+          echo "Installer basename: ${INSTALLER_BASENAME}"
+          echo "Full installer name: ${FULL_INSTALLER_NAME}"
 
       - name: Install UPX
-        shell: powershell
+        if: matrix.upx_suffix != ''
+        shell: bash
         run: |
-          Invoke-WebRequest `
-            -Uri https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-win${{ matrix.bits }}.zip `
-            -OutFile upx.zip
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            UPX_URL="https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-${{ matrix.upx_suffix }}.zip"
+            curl -L -o upx.zip "$UPX_URL"
+            unzip -o upx.zip -d upx_extracted
+            echo "PATH=$(pwd)/upx_extracted/upx-5.0.1-${{ matrix.upx_suffix }};$PATH" >> $GITHUB_ENV
+          else # Linux
+            UPX_URL="https://github.com/upx/upx/releases/download/v5.0.1/upx-5.0.1-${{ matrix.upx_suffix }}.tar.xz"
+            curl -L -o upx.tar.xz "$UPX_URL"
+            tar -xf upx.tar.xz
+            echo "PATH=$(pwd)/upx-5.0.1-${{ matrix.upx_suffix }}:$PATH" >> $GITHUB_ENV
+          fi
 
-          Expand-Archive -Path upx.zip -DestinationPath upx -Force
-
-          $upxDir = "$(Resolve-Path upx\upx-5.0.1-win${{ matrix.bits }})"
-          Write-Host "UPX location: $upxDir"
-          echo "PATH=$upxDir;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
-
-      - name: Modify PyInstaller Spec File
-        shell: python
+      - name: Create version.rc
+        if: runner.os == 'Windows'
+        shell: bash
         run: |
-          import os
-          with open('MouseTracks.spec', 'r') as f:
-            content = f.read()
-          with open('MouseTracks.spec', 'w') as f:
-            f.write(content.replace('MouseTracks', os.environ['EXE_BASENAME']))
+          source .venv/Scripts/activate
+          pyivf-make_version --outfile "build/version.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_EXE_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          pyivf-make_version --outfile "build/version-installer.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.FULL_INSTALLER_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          pyivf-make_version --outfile "build/version-portable.rc" --version "${{ env.VERSION }}" --file-description "MouseTracks ${{ env.VERSION }}" --internal-name "MouseTracks" --legal-copyright "Peter Hunt" --original-filename "${{ env.PORTABLE_EXE_NAME }}" --product-name "MouseTracks ${{ env.VERSION }}"
+          deactivate
+
+      - name: Write public key
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          source .venv/Scripts/activate
+          python -m mousetracks2 --write-public-key
+          deactivate
 
       - name: Build executable
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
+          pyinstaller MouseTracks.spec
+          deactivate
+
+      - name: Sign executable
+        env:
+          PRIVATE_SIGNING_KEY: ${{ secrets.PRIVATE_SIGNING_KEY }}
+        if: runner.os == 'Windows' && env.PRIVATE_SIGNING_KEY != ''
+        shell: bash
+        run: |
+          source .venv/Scripts/activate
+          echo -n "$PRIVATE_SIGNING_KEY" > keys/private.key
+          python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
+          python -m mousetracks2 --sign-executable "dist/${FULL_EXE_NAME}"
+          python -m mousetracks2 --sign-executable "dist/${PORTABLE_EXE_NAME}"
+          rm keys/private.key
+          deactivate
+
+      - name: Build Installer for Windows
+        if: runner.os == 'Windows'
         shell: cmd
         run: |
-          call .venv\Scripts\activate
+          :: Add Inno Setup to PATH (GitHub runners have it installed by default)
+          set "PATH=%PATH%;C:\Program Files (x86)\Inno Setup 6"
 
-          pyinstaller MouseTracks.spec
-          if errorlevel 1 exit /b 1
+          set "SOURCE_BASE_NAME=dist\%EXE_BASENAME%"
+          set "DEST_BASE_NAME=dist\%INSTALLER_BASENAME%"
 
-          call .venv\Scripts\deactivate
+          echo --- Building Installer ---
+          echo Source Base: %SOURCE_BASE_NAME%
+          echo Dest Base: %DEST_BASE_NAME%
 
-      - name: Attach executable to release
-        if: github.event_name == 'release'
+          :: Run ISCC
+          ISCC.exe /DMyAppVersion="${{ env.VERSION }}" /DMySourceBaseName="%SOURCE_BASE_NAME%" /DMyDestinationBaseName="%DEST_BASE_NAME%" "MouseTracks.iss"
+
+          :: Verify it was created
+          if exist "%DEST_BASE_NAME%.exe" (
+              echo Installer created successfully.
+              echo INSTALLER_FILENAME=%DEST_BASE_NAME%.exe >> %GITHUB_ENV%
+          ) else (
+              echo ::error::Installer creation failed!
+              exit /b 1
+          )
+
+      - name: Package macOS App
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          cd dist
+          MAIN_ZIP_NAME="${FULL_EXE_NAME%.*}.zip"
+          echo "Zipping $FULL_EXE_NAME into $MAIN_ZIP_NAME..."
+          ditto -c -k --keepParent "$FULL_EXE_NAME" "$MAIN_ZIP_NAME"
+          echo "FULL_EXE_NAME=$MAIN_ZIP_NAME" >> $GITHUB_ENV
+          PORTABLE_ZIP_NAME="${PORTABLE_EXE_NAME%.*}.zip"
+          echo "Zipping $PORTABLE_EXE_NAME into $PORTABLE_ZIP_NAME..."
+          ditto -c -k --keepParent "$PORTABLE_EXE_NAME" "$PORTABLE_ZIP_NAME"
+          echo "PORTABLE_EXE_NAME=$PORTABLE_ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Attach Main Executables to Release
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true)
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/${{ env.FULL_EXE_NAME }}
+          files: |
+            dist/${{ env.FULL_EXE_NAME }}
+            dist/${{ env.PORTABLE_EXE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Upload executable as artifact
+      - name: Attach Installer to Release
+        if: runner.os == 'Windows' && (github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.attach_to_release == true))
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/${{ env.FULL_INSTALLER_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+
+      - name: Upload Main Executable as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MouseTracks-${{ env.VERSION }}-windows-${{ matrix.architecture }}
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}
           path: dist/${{ env.FULL_EXE_NAME }}
+
+      - name: Upload Portable Executable as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}-portable
+          path: dist/${{ env.PORTABLE_EXE_NAME }}
+
+      - name: Upload Installer as Artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseTracks-${{ env.VERSION }}-${{ matrix.platform }}-${{ matrix.architecture }}-setup
+          path: dist/${{ env.FULL_INSTALLER_NAME }}

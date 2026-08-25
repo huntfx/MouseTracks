@@ -4,10 +4,28 @@ MouseTracks is an application designed to track and visualize mouse movements, c
 
 <img src="media/gui.jpg">
 
+Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki#faq), or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can't find an answer.
+
+MouseTracks is and will always remain free, but if you enjoy using it and would like to [buy me a pint](https://ko-fi.com/huntfx) in appreciation (as I don't like coffee), then that would be very kind.
+
+---
+
+## Featured On
+
+> _"Peter Hunt has taken r/dataisbeautiful by storm by dropping some incredible heatmaps tracking his mouse movements."._
+>
+> — **[Motherboard - VICE](https://www.vice.com/en/article/these-trippy-heatmaps-show-the-differences-between-fps-and-rts-games/)**, May 2017
+
+> _"MouseTracks turns your everyday clicks, moves, and key presses into a kind of digital diary. You can watch heatmaps of where your mouse spends the most time, see just how much you actually type, or even compare your gaming sessions over weeks or years. It’s like getting a quirky little behind-the-scenes replay of how you really use your PC.<br>Oddly addictive."_
+>
+> — **[MajorGeeks Newsletter](https://mailchi.mp/majorgeeks/majorgeeks-newsletter-september-2025)**, September 2025
+
+---
+
 ## Features
 
 - ### Live Tracking
-  Continuously monitors mouse movements and clicks. Older movements gracefully fade, keeping the view focused on recent activity.
+  Continuously monitors mouse movements and clicks. Older movements gradually fade, keeping the view focused on recent activity.
 
   Keyboard heatmaps and gamepad inputs are also supported.
 
@@ -45,127 +63,285 @@ MouseTracks is an application designed to track and visualize mouse movements, c
 - ### Stability
   A lot of effort has been put into making this as error free as possible, so it will happily keep running for years without any issues.
 
-MouseTracks is and will always remain free, but if you enjoy using it and would like to [buy me a pint](https://www.paypal.me/PeterHunt999) in appreciation (as I don't like coffee), then that would be very kind.
-
-Questions? Check out the [FAQ](https://github.com/huntfx/MouseTracks/wiki#faq), or [raise an issue](https://github.com/huntfx/MouseTracks/issues) if you can't find an answer.
+- ### Advanced Rendering
+  All internal rendering settings can be edited and previewed live in the GUI.
+  Go one step further and use the layer blending modes to combine multiple renders together.
 
 ---
 
 ## Installation (v2.0)
 
-_Currently, only Windows is supported. Contributions for Linux or macOS support are welcome._
+- Fully compatible with Windows, and backwards compatible with 1.0 files.
+- Mostly compatible with Linux _(tested with Ubuntu + Arch Linux)_ and macOS _(tested with 11.6.1)_.
 
-### Prebuilt Executable
-
-Launch `MouseTracks.exe` from anywhere. Recommended for ease of use.
-
-Build it using [`build-pyinstaller.bat`](build-pyinstaller.bat), or download it from the releases.
-
-It's also possible to run [`build-nuitka.bat`](build-nuitka.bat), but this is not recommended unless you have a commercial license, as it will be flagged by a lot of AV programs.
+_On Linux, MouseTracks requires an __X11 (Xorg)__ session to work. On modern distributions like Ubuntu, you may need to select "Ubuntu on Xorg" from the gear icon on the login screen._
 
 
-### Virtual Environment
+### Download the Installer (Windows Only)
 
-Recommended if running the code locally.
+Install MouseTracks for the current user, with automatic updates whenever a new version is released.
+Each release is digitally signed and verified to prevent tampering.
 
-1. Run `python -m venv .venv` to create the virtual environment with Python 3.11 or above.
-2. Run `launch.bat`.
+1. Go to the [latest release](https://github.com/huntfx/MouseTracks/releases/latest) page.
+2. Download the installer (e.g. `MouseTracks-2.0.0-windows-x64-setup.exe`).
+3. Install and launch the application.
 
 
-### Without a Virtual Environment
+### Download the Portable Executable
 
-Run `launch.py`.
+This is the simplest way to get started. No installation is required.
 
-Ensure all modules in [requirements.txt](requirements.txt) are installed.
+1. Go to the [latest release](https://github.com/huntfx/MouseTracks/releases/latest) page.
+2. Download the appropriate file for your system (e.g. `MouseTracks-2.0.0-windows-x64.exe`).
+3. If on Linux, make the file executable: `chmod +x MouseTracks-2.0.0-linux-x64`
+4. Run the executable to launch the application.
 
----
+
+These files will still save to a common location no matter where they are moved. To save to the same directory as the executable, grab the files with the "-portable" suffix instead.
+
+Note that the releases may not be compatible with _every_ Linux / macOS system. If this is the case, you'll have to check the instructions below to either build or run from source.
+
+#### Linux Users
+
+MouseTracks requires the XCB cursor library to be installed.
+
+- Ubuntu/Debian:
+    ```bash
+    sudo apt install libxcb-cursor-dev
+    ```
+- Arch Linux:
+    ```bash
+    sudo pacman -Syu xcb-util-cursor
+    ```
+
+#### macOS Users
+
+Because this app is not signed with an Apple Developer ID, you may see a warning that it "cannot be checked for malicious software".
+
+1. Right-click the app and select Open.
+2. Click Open in the dialog box.
+
+This only needs to be done once.
+
+#### Mirrors
+_These are not guaranteed to be the latest version._
+- MouseTracks has been tested, reviewed and hosted by the amazing team over at [MajorGeeks](https://www.majorgeeks.com/files/details/mousetracks.html).
+
+### Running from Source
+
+This is recommended if you want to view or contribute to the code.
+Python 3.11 or higher is required.
+
+1. Clone the repository and create the virtual environment:
+    ```cmd
+    git clone https://github.com/huntfx/MouseTracks.git
+    cd MouseTracks
+    python -m venv .venv
+    ```
+
+2. Run the launch script. It will automatically install dependencies and start the app:
+    - Windows:
+      ```cmd
+      launch.bat
+      ```
+    - Linux / macOS:
+      ```bash
+      ./launch.sh
+      ```
+
+### Building from Source
+
+`PyInstaller` is used for the build process. There is also support for `Nuitka` if preferred.
+
+#### Windows:
+  1. **Build bootloader (optional):** Helps reduce Antivirus false positives by compiling a clean version of the PyInstaller bootloader locally.
+     ```cmd
+     build-pyinstaller-bootloader.bat
+     ```
+
+  2. **Generate cryptographic keys (optional):** Only required if you want to sign your own builds.
+     - **If keys are generated:** The launcher will only run executables signed with your unique private key. Note that official updates from GitHub will be rejected as they are signed with a different key.
+     - **If keys are not generated:**: The launcher skips signature checks, allowing you to run any build.
+
+     ```cmd
+     launch.bat --generate-keys
+     ```
+
+  3. **Build application:** Creates the launcher (`MouseTracks.exe`) and application (`MouseTracks-VERSION-windows-x64.exe`) in the `dist` folder.
+     ```cmd
+     build-pyinstaller.bat
+     ```
+
+  4. **Build installer (optional)**: Packages the built files into a setup file for easy installation.
+     ```cmd
+     build-installer.bat
+     ```
+
+#### Linux / macOS:
+```bash
+./build-pyinstaller-bootloader.sh
+./build-pyinstaller.sh
+```
+
 
 ## Installation (v1.0 - Deprecated)
 
 _The v1.0 version is no longer supported, but the launch process has been updated to bring it in line with v2.0._
 
+- Fully compatible with Windows.
+
 You will be prompted with a choice to start tracking or generate images. This can be skipped by passing the `--start-tracking` or `--generate-images` flags.
 
-### Virtual Environment
+### Running from Source
 
-Recommended if running the code locally.
+Any version of Python may be used.
 
-1. Run `python -m venv .venv-legacy` to create the virtual environment with any version of Python.
-2. Run `launch-legacy.bat`.
+1. Clone the repository and create the virtual environment:
+    ```cmd
+    git clone https://github.com/huntfx/MouseTracks.git
+    cd MouseTracks
+    python -m venv .venv-legacy
+    ```
 
-
-### Without a Virtual Environment
-
-Run `launch-legacy.py`.
-
-Ensure all modules in [requirements-legacy.txt](requirements-legacy.txt) are installed.
+2. Run the launch script. It will automatically install dependencies and start the app:
+    ```cmd
+    launch-legacy.bat
+    ```
 
 ---
 
-## Example Output
-<img src="http://i.imgur.com/UJgf0up.jpg">
-<img src="http://i.imgur.com/HL023Cr.jpg">
+## Render Types
+Multiple data types can be rendered.<br>
+There are additional options, but the main ones are highlighted below.
 
-### Colour Maps
-#### Chalk
-<img src="http://i.imgur.com/ReRbDnF.jpg">
+The majority of these renders are from 500 hours of general PC use, excluding coding and gaming.<br>
+The gamepad renders are from a game that was played for 30 hours.
 
-#### Citrus
-<img src="http://i.imgur.com/wRRsFhn.jpg">
+### Mouse Movement
+<img src="media/render-types/mouse-movement.jpg">
 
-#### Demon
-<img src="http://i.imgur.com/IDLRgGn.jpg">
+### Mouse Speed
+<img src="media/render-types/mouse-speed.jpg">
 
-#### Sunburst
-<img src="http://i.imgur.com/HtVF8In.jpg">
+### Mouse Position
+<img src="media/render-types/mouse-position.jpg">
 
-#### Ice
-<img src="http://i.imgur.com/KniZy9q.jpg">
+### Mouse Clicks
+<img src="media/render-types/mouse-clicks.jpg">
 
-#### Hazard
-<img src="http://i.imgur.com/zy9v3in.jpg">
+## Keyboard Heatmap
+<img src="media/render-types/keyboard-heatmap.jpg">
 
-#### Spiderman
-<img src="http://i.imgur.com/CwGlzfa.jpg">
+### Gamepad Thumbstick Movement
+<img src="media/render-types/gamepad-thumbstick-movement.jpg">
 
-#### Graffiti
-<img src="http://i.imgur.com/z1s0iTg.jpg">
+### Gamepad Thumbstick Position
+<img src="media/render-types/gamepad-thumbstick-position.jpg">
 
-#### Lightning
-<img src="http://i.imgur.com/yB5udPO.jpg">
+## Colour Maps
+Each render is given a colour map.<br>
+There are additional options, but the main ones are highlighted below.<br>
+It's also possible to [define your own](https://github.com/huntfx/MouseTracks/wiki/Colour-Maps).
 
-#### Razer
-<img src="http://i.imgur.com/Xfu0i8E.jpg">
+### Ice
+<img src="media/render-types/mouse-movement.jpg">
 
-#### BlackWidow
-<img src="http://i.imgur.com/1AqOHxC.jpg">
+### Citrus
+<img src="media/render-colours/tracks/citrus.jpg">
 
-#### Grape
-<img src="http://i.imgur.com/fcOji6t.jpg">
+### Demon
+<img src="media/render-colours/tracks/demon.jpg">
 
-#### Neon
-<img src="http://i.imgur.com/hd8oshz.jpg">
+### Sunburst
+<img src="media/render-colours/tracks/sunburst.jpg">
 
-#### Shroud
-<img src="http://i.imgur.com/HmP4kSJ.jpg">
+### Jet
+<img src="media/render-types/mouse-clicks.jpg">
 
-## Game Genres
-#### Twin Stick
-<img src="http://i.imgur.com/mjxqbg0.png">
-<img src="http://i.imgur.com/ZxBoz0i.jpg">
-<img src="http://i.imgur.com/rikwsUa.jpg">
+### Explosion
+<img src="media/render-colours/heatmaps/explosion.jpg">
 
-#### FPS
-<img src="http://i.imgur.com/Iocmy3N.jpg">
-<img src="http://i.imgur.com/ii3mhBA.jpg">
+### Submerged
+<img src="media/render-colours/heatmaps/submerged.jpg">
 
-#### RTS
-<img src="http://i.imgur.com/FSeAHYK.jpg">
-<img src="http://i.imgur.com/Ct8A3tK.jpg">
+### Aqua
+<img src="media/render-types/keyboard-heatmap.jpg">
 
-#### MOBA
-<img src="http://i.imgur.com/X34ZrwQ.jpg">
-<img src="http://i.imgur.com/Y5tttVN.jpg">
+### Nature
+<img src="media/render-colours/keyboard/nature.jpg">
+
+### Fire
+<img src="media/render-colours/keyboard/fire.jpg">
+
+### Chalk
+<img src="media/render-colours/keyboard/chalk.jpg">
+
+## Layer Blending
+This option is hidden under the "Advanced" settings, and was more of a fun side project rather than serious feature. Multiple layers can be rendered live together, with a few presets to get started.
+
+#### Plasma
+Uses the "Hard Light" blend mode to create high contrast and deep colours.
+<img src="media/layer-presets/plasma.jpg">
+
+#### Heatmap Overlay
+Basic example of drawing the click heatmap over the tracks, using "Luminance Mask" to make the black parts transparent.
+<img src="media/layer-presets/heatmap-overlay.jpg">
+
+#### RGB Clicks
+Three identical black and white click renders, each with only with a single colour channel enabled.
+The left mouse button is red, middle is green and right is blue.
+<img src="media/layer-presets/rgb-clicks.jpg">
+
+#### Urban Moss
+Combines both movement and speed data for an effect that's like moss growing on concrete.
+<img src="media/layer-presets/urban-moss.jpg">
+
+#### Eraser
+Subtracts the clicks from the movement, resulting in what looks like a pencil drawing that's been rubbed out.
+<img src="media/layer-presets/eraser.jpg">
+
+## Example Renders
+#### Desktop
+<img src="media/render-types/mouse-movement.jpg">
+<img src="media/render-types/mouse-clicks.jpg">
+
+## Path of Exile
+<img src="media/examples/pathofexile-movement.jpg">
+<img src="media/examples/pathofexile-clicks.jpg">
+
+#### Factorio
+<img src="media/examples/factorio-movement.jpg">
+<img src="media/examples/factorio-clicks.jpg">
+
+#### Overwatch
+<img src="media/examples/overwatch-movement.jpg">
+
+#### Torchlight 2
+<img src="media/examples/torchlight2-movement.jpg">
+
+#### Heroes of the Storm
+<img src="media/examples/heroesofthestorm-movement.jpg">
+<img src="media/examples/heroesofthestorm-clicks.jpg">
+
+#### Hogwarts Legacy
+<img src="media/examples/hogwartslegacy-movement.jpg">
+
+#### Livelock
+<img src="media/examples/livelock-movement.jpg">
+<img src="media/examples/livelock-clicks.jpg">
+
+#### Alien Swarm
+<img src="media/examples/alienswarm-movement.jpg">
+<img src="media/examples/alienswarm-clicks.jpg">
+
+#### Age of Empires IV
+<img src="media/examples/ageofempiresiv-movement.jpg">
+<img src="media/examples/ageofempiresiv-clicks.jpg">
+
+#### Adobe Lightroom
+<img src="media/examples/adobelightroom-movement.jpg">
+
+---
 
 ## Data Privacy
 All data recorded or generated by MouseTracks is stored entirely locally on your computer. You have full control over this data, including the ability to change the storage location, export your data, and delete it.

@@ -1,18 +1,21 @@
+# pylint: disable=protected-access
 import os
-import pickle
 import re
+import shutil
 import time
 import zipfile
 from collections import defaultdict
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Self
+from typing import Any, Generic, Iterator, Self, Sequence, Type, TypeVar
 from uuid import uuid4
 
 import numpy as np
+import numpy.typing as npt
 
-from .config.cli import CLI
-from .config.settings import ProfileConfig
-from .constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .config import ProfileConfig
+from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .context import CTX
 from .utils.keycodes import CLICK_CODES
 
 
@@ -21,15 +24,25 @@ CURRENT_FILE_VERSION = 1
 EXTENSION = 'mtk'
 """Extension to use for the profile data."""
 
-PROFILE_DIR = CLI.data_dir / 'Profiles'
+PROFILE_DIR = CTX.data_dir / 'Profiles'
+
+_DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
+
+_ScalarType_co = TypeVar('_ScalarType_co', covariant=True)
 
 
-class UnsupportedVersionError(Exception):
-    """When a file can't be loaded due to an unsupported version"""
+class TrackingArray(Generic[_DType_co, _ScalarType_co]):
+    """Create a savable array with support for auto padding.
 
+    Ideally this would inherit `np.ndarray`, but changing the dtype of
+    an array in-place isn't supported.
+    """
 
-class TrackingArray:
-    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, dtype, auto_pad: bool | list[bool] = False) -> None:
+    auto_pad: list[bool]
+
+    def __init__(self, shape: int | Sequence[int] | npt.NDArray[Any],
+                 dtype: Type[_DType_co] | np.dtype[_DType_co],
+                 auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -37,25 +50,70 @@ class TrackingArray:
                 An existing array may be passed in here.
             auto_pad: If the array can increase in size.
         """
-        # Create the array
+        self._loaded = True
+        self._lazy_zip: tuple[str, str] | None = None
+        self._pending: tuple[tuple[int, ...], Any] | None = None
+        self._accessed_since_save: bool = True
+
         if isinstance(shape, np.ndarray):
             self.array = shape.astype(dtype)
+            ndim = shape.ndim
         else:
-            self.array = np.zeros(shape, dtype=dtype)
+            shape_tuple: tuple[int, ...] = (shape,) if isinstance(shape, int) else tuple(shape)
+            ndim = len(shape_tuple)
+            self._pending = (shape_tuple, dtype)
+            self._loaded = False
 
         # Set auto padding settings
         if isinstance(auto_pad, bool):
-            self.auto_pad = [auto_pad] * self.array.ndim
-        elif len(auto_pad) != self.array.ndim:
+            self.auto_pad = [auto_pad] * ndim
+        elif len(auto_pad) != ndim:
             raise ValueError('length of auto_pad must match number of array dimensions')
         else:
             self.auto_pad = auto_pad
 
+    @property
+    def array(self) -> npt.NDArray[_DType_co]:
+        if not self._loaded:
+            self.load()
+        self._accessed_since_save = True
+        return self._array
+
+    @array.setter
+    def array(self, value: npt.NDArray[_DType_co]) -> None:
+        self._loaded = True
+        self._array = value
+
+    def load(self) -> None:
+        """Load or reload the array from its source."""
+        # Load from zip file
+        if self._lazy_zip is not None:
+            zip_path, zip_name = self._lazy_zip
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                with zf.open(zip_name, 'r') as f:
+                    self._array = np.load(f, allow_pickle=False)
+
+        # Generate empty array
+        elif self._pending is not None:
+            shape, dtype = self._pending
+            self._array = np.zeros(shape, dtype=dtype)
+            self._pending = None
+
+        self._loaded = True
+
+    def unload(self) -> None:
+        """Unload the array from memory if it has been saved to disk.
+        Unsaved changes will be discarded.
+        """
+        if self._lazy_zip is not None and self._loaded:
+            del self._array
+            self._loaded = False
+
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
-        return type(self)(self.array.shape, self.array.dtype, self.auto_pad)
+        return type(self)(self.shape, self.dtype, self.auto_pad)
 
-    def __array__(self) -> np.ndarray:
+    def __array__(self) -> npt.NDArray[_DType_co]:
         """For internal numpy usage."""
         return self.array
 
@@ -65,22 +123,37 @@ class TrackingArray:
     def __repr__(self) -> str:
         return repr(self.array)
 
+    @property
+    def dtype(self) -> np.dtype[_DType_co]:
+        """Get the array dtype."""
+        return self.array.dtype
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Get the array shape."""
+        return self.array.shape
+
+    @property
+    def ndim(self) -> int:
+        """Get the array dimensions."""
+        return self.array.ndim
+
     def _check_padding(self, index: int | list[int]) -> bool:
         """Check if padding needs to be added.
         The index must be of the same dimensions of the array.
         """
         if isinstance(index, int):
-            if self.array.ndim == 1 and self.auto_pad[0]:
-                self.array = np.pad(self.array, (0, max(0, 1 + index - self.array.shape[0])))
+            if self.ndim == 1 and self.auto_pad[0]:
+                self.array = np.pad(self.array, (0, max(0, 1 + index - self.shape[0])))
                 return True
             return False
 
-        if len(index) != self.array.ndim:
+        if len(index) != self.ndim:
             return False
 
         diff = []
         padding_required = False
-        for idx, size, pad in zip(index, self.array.shape, self.auto_pad):
+        for idx, size, pad in zip(index, self.shape, self.auto_pad):
             if pad and idx >= size:
                 diff.append((0, idx - size + 1))
                 padding_required = True
@@ -93,7 +166,7 @@ class TrackingArray:
         self.array = np.pad(self.array, diff)
         return True
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Any) -> _ScalarType_co | npt.NDArray[_DType_co]:
         try:
             return self.array[item]
         except IndexError:
@@ -101,7 +174,7 @@ class TrackingArray:
                 raise
             return self.array[item]
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: Any, value: Any) -> None:
         try:
             self.array[item] = value
         except IndexError:
@@ -110,27 +183,50 @@ class TrackingArray:
             self.array[item] = value
 
     def _write_to_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'w') as f:
-            np.save(f, self, allow_pickle=False)
+        # Directly copy the file from the source if not already loaded
+        if not self._loaded and self._lazy_zip is not None:
+            zip_path, zip_name = self._lazy_zip
+            with zipfile.ZipFile(zip_path, 'r') as src:
+                with src.open(zip_name, 'r') as src_f, zf.open(path, 'w') as dst_f:
+                    shutil.copyfileobj(src_f, dst_f)
+
+        # Write out the array to disk
+        else:
+            if not self._loaded:
+                self.load()
+            with zf.open(path, 'w') as f:
+                np.save(f, self._array, allow_pickle=False)
+
+            if self._lazy_zip is None and zf.filename is not None:
+                self._lazy_zip = zf.filename, path
 
     def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        with zf.open(path, 'r') as f:
-            self.array = np.load(f, allow_pickle=False)
+        if zf.filename is None:
+            raise RuntimeError('ZipFile must be opened from a path, not a file object')
+        self._lazy_zip = zf.filename, path
+        self._pending = None
+        self._loaded = False
+        if CTX.eager_load:
+            self.load()
+
+    def _on_save(self) -> None:
+        """Unload if not accessed since the last save, then reset the access flag."""
+        if not self._accessed_since_save:
+            self.unload()
+        self._accessed_since_save = False
 
 
-class TrackingIntArray(TrackingArray):
+class TrackingIntArray(TrackingArray[np.unsignedinteger, int]):
     """Create an integer array and update the dtype when required.
     This is for memory optimisation as the arrays are large.
-
-    Ideally this would inherit `np.ndarray`, but changing the dtype of
-    an array in-place isn't supported.
     """
 
     DTYPES: list[type[np.unsignedinteger]] = [np.uint8, np.uint16, np.uint32, np.uint64]
 
     MAX_VALUES: list[int] = [np.iinfo(dtype).max for dtype in DTYPES]
 
-    def __init__(self, shape: int | tuple[int, ...] | np.ndarray, auto_pad: bool | list[bool] = False) -> None:
+    def __init__(self, shape: int | Sequence[int] | npt.NDArray[Any],
+                 auto_pad: bool | list[bool] = False) -> None:
         """Set up the tracking array..
 
         Parameters:
@@ -153,27 +249,30 @@ class TrackingIntArray(TrackingArray):
 
     def as_zero(self) -> Self:
         """Return a copy of the same array with all values as 0."""
-        return type(self)(self.array.shape, self.auto_pad)
+        return type(self)(self.shape, self.auto_pad)
 
     def __getitem__(self, item: Any) -> int:
         """Get an array item."""
         return int(super().__getitem__(item))
 
+    def load(self) -> None:
+        super().load()
+        self.max_value = np.iinfo(self._array.dtype).max
+
     def __setitem__(self, item: int | tuple[int, ...], value: int) -> None:
         """Set an array item, changing dtype if required."""
-        if value >= self.max_value:
+        _ = self.array  # ensure loaded and max_value updated before dtype check
+        self._check_dtype(value)
+        super().__setitem__(item, value)
+
+    def _check_dtype(self, value: int) -> None:
+        """Check that the dtype is valid for the given value."""
+        if value > self.max_value:
             for dtype, max_value in zip(self.DTYPES, self.MAX_VALUES):
                 if value < max_value:
                     self.max_value = max_value
                     self.array = self.array.astype(dtype)
                     break
-
-        super().__setitem__(item, value)
-
-    def _load_from_zip(self, zf: zipfile.ZipFile, path: str) -> None:
-        """Load data and update the internal max value."""
-        super()._load_from_zip(zf, path)
-        self.max_value = np.iinfo(self.array.dtype).max
 
 
 class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
@@ -185,7 +284,7 @@ class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
         self[key] = TrackingIntArray((key[1], key[0]))
         return self[key]
 
-    def __setitem__(self, key: tuple[int, int], array: np.ndarray | TrackingIntArray) -> None:
+    def __setitem__(self, key: tuple[int, int], array: npt.NDArray[np.unsignedinteger] | TrackingIntArray) -> None:
         if isinstance(array, np.ndarray):
             self[key].array = array
         else:
@@ -205,6 +304,10 @@ class ArrayResolutionMap(dict[tuple[int, int], TrackingIntArray]):
             width, height = map(int, match.groups())
             self[(width, height)]._load_from_zip(zf, f'{subfolder}/{relative_path}')
 
+    def _on_save(self) -> None:
+        for array in self.values():
+            array._on_save()
+
 
 @dataclass
 class MovementMaps:
@@ -212,22 +315,23 @@ class MovementMaps:
 
     _MAX_VALUE = 2 ** 64 - 1
 
-    position: tuple[int, int] | None = field(default=None)  # TODO: Don't store here
     sequential_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     density_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     speed_arrays: ArrayResolutionMap = field(default_factory=ArrayResolutionMap)
     distance: float = field(default=0.0)
     counter: int = field(default=0)
     ticks: int = field(default=0)
-    tick: int = field(default=0)  # TODO: Don't store here
 
+    # Runtime states, intentionally not saved
+    position: tuple[int, int] | None = field(default=None)
+    tick: int = field(default=0)
 
-    def requires_compression(self, threshold: int = COMPRESSION_THRESHOLD) -> bool:
-        """Check if compression is required."""
+    def requires_decay(self, threshold: int = DECAY_THRESHOLD) -> bool:
+        """Check if array decay is required."""
         return self.counter > min(threshold, self._MAX_VALUE)
 
-    def run_compression(self, factor: float = COMPRESSION_FACTOR) -> None:
-        """Compress down the values.
+    def run_decay(self, factor: float = DECAY_FACTOR) -> None:
+        """Decay the array values by dividing by a factor.
         This is important for the time arrays, but helps flatten out
         speed values that are too large.
         """
@@ -235,14 +339,17 @@ class MovementMaps:
             # Compress all arrays
             for res, tracking_array in tuple(maps.items()):
                 array = np.asarray(tracking_array)
-                maps[res] = (array.astype(np.float64) / factor).astype(array.dtype)
+                reduced_array = (array.astype(np.float64) / factor).astype(array.dtype)
+
+                if np.any(reduced_array):
+                    tracking_array.array = reduced_array
 
                 # Remove array if it no longer contains data
-                if not np.any(maps[res]):
+                else:
                     del maps[res]
 
-            # Compress the counter by the same amount
-            self.counter = int(self.counter // factor)
+        # Compress the counter by the same amount
+        self.counter = round(self.counter / factor)
 
     def _iter_array_types(self) -> Iterator[tuple[str, ArrayResolutionMap]]:
         yield 'sequential', self.sequential_arrays
@@ -254,7 +361,7 @@ class MovementMaps:
             array_resolution_map._write_to_zip(zf, f'{subfolder}/{array_type}')
         zf.writestr(f'{subfolder}/distance', str(self.distance))
         zf.writestr(f'{subfolder}/counter', str(self.counter))
-        zf.writestr(f'{subfolder}/ticks', str(self.counter))
+        zf.writestr(f'{subfolder}/ticks', str(self.ticks))
 
     def _load_from_zip(self, zf: zipfile.ZipFile, subfolder: str) -> None:
         folders = {path[len(subfolder):].lstrip('/').split('/', 1)[0]
@@ -274,6 +381,10 @@ class MovementMaps:
                 self.density_arrays._load_from_zip(zf, path)
             elif folder == 'speed':
                 self.speed_arrays._load_from_zip(zf, path)
+
+    def _on_save(self) -> None:
+        for _, arm in self._iter_array_types():
+            arm._on_save()
 
 
 @dataclass
@@ -320,11 +431,11 @@ class TrackingProfile:
     daily_upload: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
     daily_download: TrackingIntArray = field(default_factory=lambda: TrackingIntArray(1, auto_pad=True), init=False)
 
-    def _write_to_zip(self, zf: zipfile.ZipFile, modified: float | None = None) -> None:
+    last_accessed: float = field(default_factory=time.time, init=False)
+
+    def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
-        if modified is None:
-            modified = time.time()
 
         with zf.open('config.yaml', 'w') as f:
             self.config.save(f)
@@ -332,7 +443,7 @@ class TrackingProfile:
         zf.writestr('version', str(CURRENT_FILE_VERSION))
         zf.writestr('metadata/name', self.name)
         zf.writestr('metadata/time/created', str(self.created))
-        zf.writestr('metadata/time/modified', str(int(modified)))
+        zf.writestr('metadata/time/modified', str(self.modified))
         zf.writestr('metadata/ticks/elapsed', str(self.elapsed))
         zf.writestr('metadata/ticks/active', str(self.active))
         zf.writestr('metadata/ticks/inactive', str(self.inactive))
@@ -373,7 +484,9 @@ class TrackingProfile:
         self.daily_upload._write_to_zip(zf, 'stats/network/upload.npy')
         self.daily_download._write_to_zip(zf, 'stats/network/download.npy')
 
-    def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
+        self.last_accessed = time.time()
+
+    def _load_from_zip(self, zf: zipfile.ZipFile, metadata_only: bool = False) -> None:
         all_paths = zf.namelist()
 
         self.name = zf.read('metadata/name').decode('utf-8')
@@ -387,6 +500,9 @@ class TrackingProfile:
         self.active = int(zf.read('metadata/ticks/active'))
         self.inactive = int(zf.read('metadata/ticks/inactive'))
 
+        if metadata_only:
+            return
+
         self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
         mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks/')}
         for i in mouse_buttons:
@@ -394,8 +510,8 @@ class TrackingProfile:
             self.mouse_double_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/double')
             self.mouse_held_clicks[i]._load_from_zip(zf, f'data/mouse/clicks/{i}/held')
 
-        self.key_presses._load_from_zip(zf, f'data/keyboard/pressed.npy')
-        self.key_held._load_from_zip(zf, f'data/keyboard/held.npy')
+        self.key_presses._load_from_zip(zf, 'data/keyboard/pressed.npy')
+        self.key_held._load_from_zip(zf, 'data/keyboard/held.npy')
 
         gamepad_indexes = {int(path.split('/')[2]) for path in all_paths if path.startswith('data/gamepad/')}
         for path in all_paths:
@@ -433,16 +549,12 @@ class TrackingProfile:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
 
-    def save(self, path: str | None = None, _is_fix: bool = False) -> bool:
-        """Save the profile.
-        The `_is_fix` parameter can be used when manually making edits
-        to profiles to avoid updating the modified date.
-        """
+        self.last_accessed = time.time()
+
+    def _save_main(self, path: str | None = None) -> bool:
+        """Save the profile."""
         if path is None:
             path = get_filename(self.name)
-        if _is_fix and self.is_modified:
-            raise RuntimeError('fixes can only be done on unmodified profiles')
-        self.is_modified = False
 
         # Ensure the folder exists
         base_dir = os.path.dirname(path)
@@ -456,7 +568,7 @@ class TrackingProfile:
 
         try:
             with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-                self._write_to_zip(zf, modified=self.modified)
+                self._write_to_zip(zf)
 
             # Quickly swap over the files to reduce chances of a race condition
             if os.path.exists(path):
@@ -474,34 +586,88 @@ class TrackingProfile:
                         break
                 else:
                     print(f'[File] Unable to overwrite {path}, saving failed!')
-                    if not _is_fix:
-                        self.is_modified = True
                     return False
 
-            # Copy modified date if required
-            if _is_fix:
-                os.utime(temp_file, (self.modified, self.modified))
+            # Copy modified date
+            os.utime(temp_file, (self.modified, self.modified))
 
             # Replace file
             os.rename(temp_file, path)
+            self._update_lazy_paths(temp_file, path)
+
+        except Exception:  # pylint: disable=broad-exception-caught
+            return False
 
         finally:
             # Clean up files
             if os.path.exists(temp_file):
                 os.remove(temp_file)
             if os.path.exists(del_file):
-                os.remove(del_file)
+                if not os.path.exists(path):
+                    os.rename(del_file, path)
+                else:
+                    os.remove(del_file)
 
         return True
 
+    def _iter_arrays(self) -> Iterator[TrackingArray[Any, Any]]:
+        """Iterate over every TrackingArray in this profile."""
+        for mm in (self.cursor_map, *self.thumbstick_l_map.values(), *self.thumbstick_r_map.values()):
+            for _, arm in mm._iter_array_types():
+                yield from arm.values()
+        for arm_dict in (self.mouse_single_clicks, self.mouse_double_clicks, self.mouse_held_clicks):
+            for arm in arm_dict.values():
+                yield from arm.values()
+        for array_dict in (self.button_presses, self.button_held):
+            yield from array_dict.values()
+        yield from (self.key_presses, self.key_held,
+                    self.daily_ticks, self.daily_distance, self.daily_clicks,
+                    self.daily_scrolls, self.daily_keys, self.daily_buttons,
+                    self.daily_upload, self.daily_download)
+
+    def _update_lazy_paths(self, temp_file: str, final_path: str) -> None:
+        """Update any _lazy_zip paths that still point to the temp file."""
+        for array in self._iter_arrays():
+            if array._lazy_zip is not None and array._lazy_zip[0] == temp_file:
+                array._lazy_zip = (final_path, array._lazy_zip[1])
+
+    def _on_save(self) -> None:
+        """Unload arrays not accessed since the last save."""
+        for array in self._iter_arrays():
+            array._on_save()
+
+    def save(self) -> bool:
+        """Save the profile and handle the modified state."""
+        previous = self.modified
+        if self.is_modified:
+            self.modified = int(time.time())
+        if self._save_main():
+            self.is_modified = False
+            self._on_save()
+            return True
+        self.modified = previous
+        return False
+
     @classmethod
-    def load(cls, path: str) -> Self:
+    def load(cls, path: str, metadata_only: bool = False) -> Self:
+        """Load a profile."""
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
-            profile._load_from_zip(zf)
+            profile._load_from_zip(zf, metadata_only)
         return profile
 
-    def import_legacy(self, path: str) -> None:
+    @classmethod
+    def get_name(cls, path: str) -> str | None:
+        """Get the profile name if possible.
+        If not possible, it's likely a legacy profile.
+        """
+        try:
+            with zipfile.ZipFile(path, mode='r') as zf:
+                return zf.read('metadata/name').decode('utf-8')
+        except (KeyError, zipfile.BadZipFile):
+            return None
+
+    def import_legacy(self, path: str) -> bool:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -519,91 +685,52 @@ class TrackingProfile:
             Thumbstick data is discarded as X and Y were recorded separately
             and cannot be recombined.
         """
-        # Attempt to import the legacy libraries
-        try:
-            from mousetracks.files import CustomOpen, decode_file, upgrade_version
+        # Load the data using the legacy libraries
+        from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
 
-        # Manually load the data
-        except ImportError:
-
-            with zipfile.ZipFile(path, mode='r') as zf:
-                # Check the version
-                # Manual parsing is only supported for version 34
-                try:
-                    version = int(zf.read('metadata/file.txt'))
-                except KeyError:
-                    version = None
-                if version != 34:
-                    raise UnsupportedVersionError(f'legacy profile cannot be imported as it does not have the most recent update')
-
-                # Load in the data
-                with zf.open('data.pkl') as f:
-                    data: dict[str, Any] = pickle.load(f)
-
-                    # Load in the arrays
-                    for resolution, values in data['Resolution'].items():
-                        with zf.open(f'maps/{values["Tracks"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.cursor_map.sequential_arrays[resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Speed"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.cursor_map.speed_arrays[resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Left"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[0]][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Middle"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[1]][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Single"]["Right"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_single_clicks[CLICK_CODES[2]][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Left"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[0]][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Middle"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[1]][resolution] = TrackingIntArray(array)
-                        with zf.open(f'maps/{values["Clicks"]["Double"]["Right"]}.npy') as f:
-                            if np.any(array := np.load(f) > 0):
-                                self.mouse_double_clicks[CLICK_CODES[2]][resolution] = TrackingIntArray(array)
-
-        # Load the data using the legacy library
-        else:
-            with CustomOpen(path, 'rb') as f:
+        with CustomOpen(path, 'rb') as f:
+            try:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                print(f'Error importing {path}: {e}')
+                return False
 
-            # Process main tracking data
-            for resolution, values in data['Resolution'].items():
-                tracks = values['Tracks']
-                if np.any(tracks > 0):
-                    self.cursor_map.sequential_arrays[resolution] = TrackingIntArray(tracks)
+        # Process main tracking data
+        # Use the array shape as it does not always match the correct resolution
+        for values in data['Resolution'].values():
+            tracks = values['Tracks']
+            if np.any(tracks > 0):
+                self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
 
-                speed = values['Speed']
-                if np.any(speed > 0):
-                    self.cursor_map.speed_arrays[resolution] = TrackingIntArray(speed)
+            speed = values['Speed']
+            if np.any(speed > 0):
+                self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
 
-                single_clicks = values['Clicks']['Single']
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    array = single_clicks[mb]
-                    if np.any(array > 0):
-                        self.mouse_single_clicks[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
+            single_clicks = values['Clicks']['Single']
+            for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                array = single_clicks[mb]
+                if np.any(array > 0):
+                    self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
-                double_clicks = values['Clicks']['Double']
-                for i, mb in enumerate(('Left', 'Middle', 'Right')):
-                    array = double_clicks[mb]
-                    if np.any(array > 0):
-                        self.mouse_double_clicks[CLICK_CODES[i]][resolution] = TrackingIntArray(array)
+            double_clicks = values['Clicks']['Double']
+            for i, mb in enumerate(('Left', 'Middle', 'Right')):
+                array = double_clicks[mb]
+                if np.any(array > 0):
+                    self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
         self.created = int(data['Time']['Created'])
-        self.cursor_map.distance = int(data['Distance']['Tracks'])
+        self.cursor_map.distance = float(data['Distance']['Tracks'])
         self.cursor_map.counter = int(data['Ticks']['Tracks'])
 
         # Calculate the active / inactive time
         # This was not recorded properly in the legacy code, so a very
         # rough formula is used to estimate based on the data available
         self.elapsed = data['Ticks']['Total']
-        self.active = int(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+        try:
+            self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+        except ZeroDivisionError:
+            self.active = data['Ticks']['Recorded']
         self.inactive = data['Ticks']['Total'] - self.active
 
         # Process key/button data
@@ -617,30 +744,67 @@ class TrackingProfile:
         for keycode, count in data['Gamepad']['All']['Buttons']['Held'].items():
             self.button_held[0][keycode] = count
 
+        # Simple way to get the density array populated
+        for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
+            self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
 
-class TrackingProfileLoader(dict[str, TrackingProfile]):
+        return True
+
+
+class TrackingProfileLoader(MutableMapping):
     """Act like a defaultdict to load data if available."""
 
+    def __init__(self, max_profiles: int = 5):
+        self.max_profiles = max_profiles
+        self._profiles: dict[str, TrackingProfile] = {}
+
+    def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
+        sanitised = sanitise_profile_name(profile_name)
+        self._profiles[sanitised] = profile
+
     def __getitem__(self, profile_name: str) -> TrackingProfile:
-        """Load the profile and update the current name.
+        """Load or get a profile."""
+        sanitised = sanitise_profile_name(profile_name)
+        try:
+            return self._profiles[sanitised]
+        except KeyError:
+            self._profiles[sanitised] = self._load_or_create_profile(profile_name)
+        return self._profiles[sanitised]
 
-        This is due to the name being stored internally and will not
-        update even if the profile is manually renamed.
+    def __delitem__(self, profile_name: str) -> None:
+        sanitised = sanitise_profile_name(profile_name)
+        del self._profiles[sanitised]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._profiles)
+
+    def __len__(self) -> int:
+        return len(self._profiles)
+
+    def __contains__(self, key: Any) -> bool:
+        if not isinstance(key, str):
+            return False
+        sanitised = sanitise_profile_name(key)
+        return sanitised in self._profiles
+
+    def _load_or_create_profile(self, profile_name: str) -> TrackingProfile:
+        """Load in any missing data or create a new profile.
+        This is in the place of `__missing__`, as the profile name gets
+        sanitised before it reaches that point.
         """
-        profile: TrackingProfile = super().__getitem__(profile_name)
-        profile.name = profile_name
-        return profile
-
-    def __missing__(self, profile_name: str) -> TrackingProfile:
-        """Load in any missing data or create a new profile."""
         filename = get_filename(profile_name)
+        sanitised = sanitise_profile_name(profile_name)
         if os.path.exists(filename):
-            profile = self[profile_name] = TrackingProfile.load(filename)
+            profile = TrackingProfile.load(filename)
         else:
-            profile = self[profile_name] = TrackingProfile()
+            profile = TrackingProfile()
+        self._profiles[sanitised] = profile
+        self._evict(keep_loaded=sanitised)
 
-        # Update the name
-        profile.name = profile_name
+        # Update the data
+        if not profile.name or profile_name != sanitised:
+            profile.name = profile_name
+        profile.last_accessed = time.time()
 
         # Force disabled profile config
         if profile_name == TRACKING_DISABLE:
@@ -651,22 +815,40 @@ class TrackingProfileLoader(dict[str, TrackingProfile]):
 
         return profile
 
+    def _evict(self, keep_loaded: str) -> None:
+        """Unload if too many profiles are loaded into memory at once.
+        The argument to `keep_loaded` must be sanitised already.
+        """
+        data = ((profile.is_modified,  # Sort modified profiles first
+                 profile.last_accessed,  # Sort by recently accessed
+                 name, profile)
+                for name, profile in self._profiles.items())
 
-def get_filename(application: str) -> str:
-    """Get the filename for an application."""
-    sanitised = re.sub(r'[^a-zA-Z0-9]', '', application.lower())
-    return os.path.join(PROFILE_DIR, f'{sanitised}.{EXTENSION}')
+        for i, (is_modified, _load_time, name, _profile) in enumerate(sorted(data, reverse=True)):
+            if i < self.max_profiles or is_modified or name == keep_loaded:
+                continue
+            del self._profiles[name]
 
 
-def get_profile_names() -> list[str]:
+def sanitise_profile_name(profile_name: str) -> str:
+    """Get the sanitised version of a profile name."""
+    return re.sub(r'[^a-zA-Z0-9]', '', profile_name.lower())
+
+
+def get_filename(profile_name: str) -> str:
+    """Get the filename for a profile."""
+    return os.path.join(PROFILE_DIR, f'{sanitise_profile_name(profile_name)}.{EXTENSION}')
+
+
+def get_profile_names() -> dict[str, str]:
     """Get all the profile_names, ordered by modified time."""
     if not os.path.exists(PROFILE_DIR):
-        return []
+        return {}
     files = []
     for file in os.scandir(PROFILE_DIR):
         if os.path.splitext(file.name)[1] != f'.{EXTENSION}':
             continue
-        with zipfile.ZipFile(file, 'r') as zf:
-            name = zf.read('metadata/name').decode('utf-8')
-        files.append((file.stat().st_mtime, name))
-    return [name for modified, name in sorted(files, reverse=True)]
+        profile_name = TrackingProfile.get_name(file.path)
+        if profile_name is not None:
+            files.append((file.stat().st_mtime, profile_name, os.path.splitext(file.name)[0]))
+    return {filename: profile_name for modified, profile_name, filename in sorted(files, reverse=True)}

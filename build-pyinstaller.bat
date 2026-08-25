@@ -16,6 +16,7 @@ python -m pip install --upgrade -r requirements.txt
 python -m pip install --upgrade -r requirements-build-pyinstaller.txt
 if errorlevel 1 (
     echo Failed to install or update modules. Exiting.
+    call deactivate
     exit /b 1
 )
 
@@ -25,15 +26,26 @@ for /f "delims=" %%V in ('python -c %PYTHON_COMMAND_TO_GET_VERSION% 2^>nul') do 
 
 if not defined VERSION (
     echo Failed to detect version. Exiting.
+    call deactivate
     exit /b 1
 )
 
 :: Write out the executable version info
 mkdir build
-pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
+pyivf-make_version --outfile "build/version.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks-%VERSION%-windows-x64.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
+pyivf-make_version --outfile "build/version-installer.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
+pyivf-make_version --outfile "build/version-portable.rc" --version %VERSION% --file-description "MouseTracks %VERSION%" --internal-name "MouseTracks"  --original-filename "MouseTracks-%VERSION%-windows-x64-portable.exe" --product-name "MouseTracks %VERSION%" --legal-copyright "Peter Hunt" --company-name "Peter Hunt"
 
-:: Build the executable
+:: Write out the public key
+python -m mousetracks2 --write-public-key
+
+:: Build the executable and launcher
 pyinstaller MouseTracks.spec
+
+:: Sign the executables
+python -m mousetracks2 --sign-executable "dist/MouseTracks.exe"
+python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64.exe"
+python -m mousetracks2 --sign-executable "dist/MouseTracks-%VERSION%-windows-x64-portable.exe"
 
 :: Exit the virtual environment
 call deactivate

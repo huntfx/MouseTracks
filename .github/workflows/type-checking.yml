@@ -1,0 +1,41 @@
+name: Type Check (on Commit)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mypy:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-typecheck.txt
+
+      - name: Write Public Key
+        run: python -m mousetracks2 --write-public-key
+
+      - name: Run Mypy
+        run: |
+          python -m mypy
+
+      - name: Run Pylint
+        run: |
+          python -m pylint mousetracks2 launcher.py --disable=fixme

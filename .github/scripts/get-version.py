@@ -9,10 +9,13 @@ from mousetracks2 import __version__ as version
 
 tag_name = f'v{version}'
 release_name = f'MouseTracks {version}'
+is_local_build = len(version.split('.')) > 3
 
 print(f'Extracted Version: {version}')
 print(f'Generated Tag Name: {tag_name}')
 print(f'Generated Release Name: {release_name}')
+if is_local_build:
+    print(f'::notice::Skipping release for local build version: {version}')
 
 # Write to GITHUB_OUTPUT for step outputs
 if 'GITHUB_OUTPUT' in os.environ:
@@ -20,6 +23,7 @@ if 'GITHUB_OUTPUT' in os.environ:
         print(f'version={version}', file=fh_output)
         print(f'tag_name={tag_name}', file=fh_output)
         print(f'release_name={release_name}', file=fh_output)
+        print(f'skip={str(is_local_build).lower()}', file=fh_output)
 
 # Write to GITHUB_ENV for environment variables
 if 'GITHUB_ENV' in os.environ:

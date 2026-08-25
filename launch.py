@@ -1,35 +1,24 @@
 """Entry point for MouseTracks 2."""
 
-import os
 import sys
-from multiprocessing import freeze_support, set_start_method
-
-# Source DLL files when running as an executable
-from mousetracks2.constants import REPO_DIR
-sys.path.append(str(REPO_DIR / 'resources' / 'build'))
-
-from mousetracks2.components import Hub
-from mousetracks2.constants import REPO_DIR
-from mousetracks2.config.cli import CLI, parse_args
-from mousetracks2.utils.system import is_elevated, relaunch_as_elevated, check_autostart
+from multiprocessing import freeze_support
 
 
 if __name__ == '__main__':
     freeze_support()
 
-    # Update startup path if if running a built executable
-    check_autostart()
+    while True:
+        try:
+            # We import inside the loop so the module namespace is re-evaluated if possible
+            from mousetracks2.__main__ import main
+            main()
 
-    # Check there aren't any invalid arguments
-    # This is the only place where this check is safe to do
-    parse_args(strict=True)
+        except Exception:  # pylint: disable=broad-exception-caught
+            exc_type, exc_val, exc_tb = sys.exc_info()
 
-    # On Windows, this is default behaviour
-    # On Linux, starting via fork causes issues with the QApplication
-    set_start_method('spawn')
+            from mousetracks2.popups import show_error_dialog
+            if not show_error_dialog(exc_type, exc_val, exc_tb):
+                sys.exit(1)
 
-    # Relaunch as elevated
-    if CLI.elevate and not is_elevated():
-        relaunch_as_elevated()
-
-    Hub(use_gui=True).run()
+        else:
+            break

@@ -3,11 +3,49 @@ import subprocess
 import sys
 
 import psutil
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from .ui import applist
 from ..applications import LOCAL_PATH, AppList
 from ..constants import TRACKING_IGNORE, TRACKING_DISABLE
+
+
+PROCESS_LOAD_TEXT = 'Loading processes list...'
+
+
+class ProcessWorker(QtCore.QThread):
+    """Load a list of running processes in a thread."""
+
+    process_found = QtCore.Signal(str)
+    loading_finished = QtCore.Signal()
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._running = True
+
+    def run(self) -> None:
+        seen: set[str] = set()
+        for proc in sorted(psutil.process_iter(attrs=['exe', 'create_time']),
+                            key=lambda proc: proc.info['create_time'] or 0.0, reverse=True):
+            if not self._running:
+                return
+
+            path = proc.info['exe']
+            if path is None:
+                continue
+
+            exe = os.path.basename(path)
+            if exe in seen:
+                continue
+            seen.add(exe)
+
+            self.process_found.emit(exe)
+
+        self.loading_finished.emit()
+
+    def cancel(self) -> None:
+        """Called by the main thread to tell this thread to stop."""
+        self._running = False
 
 
 class AppListWindow(QtWidgets.QDialog):
@@ -22,9 +60,12 @@ class AppListWindow(QtWidgets.QDialog):
         self.ui.setupUi(self)
         self.ui.advanced.setChecked(False)
 
+        self.worker = ProcessWorker(self)
+
         self.ui.save.clicked.connect(self.save)
         self.ui.executable.currentTextChanged.connect(self.update_profile_suggestion)
         self.ui.executable.currentTextChanged.connect(self.update_matching_apps)
+        self.ui.executable.currentTextChanged.connect(self.update_button_state)
         self.ui.executable.currentIndexChanged.connect(self.executable_changed)
         self.ui.window_title.textChanged.connect(self.update_profile_suggestion)
         self.ui.window_title_enabled.toggled.connect(self.update_profile_suggestion)
@@ -32,24 +73,34 @@ class AppListWindow(QtWidgets.QDialog):
         self.ui.create.clicked.connect(self.create_new_rule)
         self.ui.remove.clicked.connect(self.remove_selected_rule)
         self.ui.open.clicked.connect(self.open_applist)
+        self.ui.browse.clicked.connect(self.browse_executable)
 
         self._populate_process_list()
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Safely shut down background threads before closing."""
+        if self.worker.isRunning():
+            self.worker.cancel()
+            self.worker.wait()
+
+        super().closeEvent(event)
 
     def _populate_process_list(self) -> None:
         """Load in the list of all processes."""
         self.ui.executable.clear()
+        self.ui.executable.addItem(PROCESS_LOAD_TEXT)
 
-        seen = set()
-        for proc in sorted(psutil.process_iter(attrs=['exe', 'create_time']),
-                           key=lambda proc: proc.info['create_time'], reverse=True):
-            path = proc.info['exe']
-            if path is None:
-                continue
-            exe = os.path.basename(path)
-            if exe in seen:
-                continue
-            seen.add(exe)
-            self.ui.executable.addItem(exe)
+        self.worker.process_found.connect(self.process_found)
+        self.worker.loading_finished.connect(self.processes_loaded)
+        self.worker.start()
+
+    @QtCore.Slot(str)
+    def process_found(self, exe: str) -> None:
+        self.ui.executable.addItem(exe)
+
+    @QtCore.Slot()
+    def processes_loaded(self) -> None:
+        self.ui.executable.removeItem(0)
 
     @QtCore.Slot(int)
     def executable_changed(self, index: int) -> None:
@@ -64,6 +115,8 @@ class AppListWindow(QtWidgets.QDialog):
         """Update the default profile name."""
         if self.ui.window_title_enabled.isChecked() and self.ui.window_title.text():
             self.ui.profile_name.setPlaceholderText(self.ui.window_title.text())
+        elif self.ui.executable.currentText() == PROCESS_LOAD_TEXT:
+            self.ui.profile_name.setPlaceholderText('')
         else:
             self.ui.profile_name.setPlaceholderText(os.path.splitext(self.ui.executable.currentText())[0])
 
@@ -93,6 +146,13 @@ class AppListWindow(QtWidgets.QDialog):
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, (executable, window_title, profile_name))
                 self.ui.rules.addItem(item)
         self.ui.rules.sortItems()
+
+    @QtCore.Slot()
+    def update_button_state(self) -> None:
+        """Update the state of the create and remove buttons while loading."""
+        loading = self.ui.executable.currentText() == PROCESS_LOAD_TEXT
+        self.ui.create.setEnabled(not loading)
+        self.ui.remove.setEnabled(not loading)
 
     @QtCore.Slot()
     def create_new_rule(self) -> None:
@@ -194,3 +254,26 @@ class AppListWindow(QtWidgets.QDialog):
         """Save the data and exit."""
         self.applist.save()
         self.accept()
+
+    @QtCore.Slot()
+    def browse_executable(self) -> None:
+        """Select an executable file."""
+        match sys.platform:
+            case 'win32':
+                file_filter = 'Executable Files (*.exe);;All Files (*)'
+            case 'darwin':
+                file_filter = 'Applications (*.app);;All Files (*)'
+            case _:
+                file_filter = 'All Files (*)'
+
+        file_path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Executable File',
+                                                                  '', file_filter)
+        if not file_path:
+            return
+
+        executable = os.path.basename(file_path)
+        idx = self.ui.executable.findText(executable)
+        if idx > 0:
+            self.ui.executable.setCurrentIndex(idx)
+        else:
+            self.ui.executable.setCurrentText(os.path.basename(file_path))

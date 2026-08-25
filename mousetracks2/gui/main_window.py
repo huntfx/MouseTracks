@@ -7,31 +7,36 @@ import re
 import sys
 import time
 import webbrowser
-from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Generic, Iterable, TypeVar, TYPE_CHECKING
+from typing import cast, Any, Iterable, Iterator, TypeVar, TYPE_CHECKING
 
+import numpy as np
 from PIL import Image
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from .about import AboutWindow
 from .applist import AppListWindow
+from .layers import LayerManager, LayerOption, LayerView, Preset
 from .ui import layout
-from .utils import format_distance, format_ticks, format_bytes, format_network_speed, ICON_PATH
+from .utils import format_distance, format_ticks, format_bytes, format_network_speed, join_and, ICON_PATH
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
-from ..constants import SYS_EXECUTABLE
-from ..config.cli import CLI
-from ..config.settings import GlobalConfig
-from ..constants import COMPRESSION_FACTOR, COMPRESSION_THRESHOLD, DEFAULT_PROFILE_NAME, RADIAL_ARRAY_SIZE
-from ..constants import UPDATES_PER_SECOND, IS_EXE, TRACKING_DISABLE
-from ..file import PROFILE_DIR, get_profile_names, get_filename
+from ..cli import CLI
+from ..config import GlobalConfig
+from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE
+from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
+from ..context import CTX
+from ..enums import BlendMode, Channel
+from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
+from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
-from ..update import is_latest_version
-from ..utils import keycodes, get_cursor_pos
-from ..utils.math import calculate_line, calculate_distance, calculate_pixel_offset
-from ..utils.system import monitor_locations, check_autostart, set_autostart, remove_autostart
+from ..runtime import SYS_EXECUTABLE
+from ..types import Application
+from ..utils import keycodes
+from ..utils.math import calculate_distance
+from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
+from ..utils.update import is_latest_version, background_update
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
@@ -47,62 +52,45 @@ def _get_docs_folder() -> Path:
 
 @dataclass
 class MapData:
-    position: tuple[int, int] | None = field(default_factory=get_cursor_pos)
+    position: tuple[int, int] | None = None
     distance: float = field(default=0.0)
     counter: int = field(default=0)
 
 
 @dataclass
-class Profile:
-    """Hold data related to the currently running profile."""
+class NetworkSpeedStats:
+    """Store data for the "Current Upload/Download" stats."""
 
-    name: str
-    rects: list[tuple[int, int, int, int]] = field(default_factory=list)
-    track_mouse: bool = True
-    track_keyboard: bool = True
-    track_gamepad: bool = True
-    track_network: bool = True
+    _message: ipc.DataTransfer | None = None
+    _last_changed: float = field(default_factory=time.time)
+    _counter: int = 0
+    _EMPTY = ipc.DataTransfer('', 0, 0)
 
+    def set(self, message: ipc.DataTransfer) -> None:
+        """Set the current `DataTransfer` message."""
+        self._message = message
+        self._last_changed = time.time()
 
-@dataclass
-class RenderOption(Generic[T]):
-    """Store different values per render type."""
+    def get(self) -> ipc.DataTransfer:
+        """Get the current `DataTransfer` message."""
+        # Check if the data is too out of date (with extra leeway)
+        if time.time() > self._last_changed + 1.05:
+            return self._EMPTY
 
-    movement: T
-    speed: T
-    heatmap: T
-    keyboard: T
+        # Get the saved message
+        if self._message is not None:
+            return self._message
+        return self._EMPTY
 
-    def get(self, render_type: ipc.RenderType) -> T:
-        """Get the value for a render type."""
-        match render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
-                return self.movement
-            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
-                return self.speed
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                return self.heatmap
-            case ipc.RenderType.Keyboard:
-                return self.keyboard
-            case _:
-                raise NotImplementedError(f'Unsupported render type: {render_type}')
+    @property
+    def bytes_recv(self) -> int:
+        """Get the number of bytes received."""
+        return self.get().bytes_recv
 
-    def set(self, render_type: ipc.RenderType, value: T) -> None:
-        """Set the value for a render type."""
-        match render_type:
-            case (ipc.RenderType.Time | ipc.RenderType.Thumbstick_Time):
-                self.movement = value
-            case ipc.RenderType.Speed | ipc.RenderType.Thumbstick_Speed:
-                self.speed = value
-            case (ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick | ipc.RenderType.HeldClick
-                  | ipc.RenderType.Thumbstick_Heatmap | ipc.RenderType.TimeHeatmap):
-                self.heatmap = value
-            case ipc.RenderType.Keyboard:
-                self.keyboard = value
-            case _:
-                raise NotImplementedError(f'Unsupported render type: {render_type}')
-
+    @property
+    def bytes_sent(self) -> int:
+        """Get the number of bytes sent."""
+        return self.get().bytes_sent
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -127,44 +115,36 @@ class MainWindow(QtWidgets.QMainWindow):
 
     exception_raised = QtCore.Signal(Exception)
 
-    close_splash_screen = QtCore.Signal()
-
     def __init__(self, component: GUI) -> None:
         super().__init__()
         self.setWindowIcon(QtGui.QIcon(ICON_PATH))
         self.component = component
         self.config = GlobalConfig()
 
+        # Set initial states
         self.pause_redraw = 0
         self.pause_colour_change = False
-        self.redraw_queue: list[Pixel] = []
+        self._pixel_redraw_queue: list[tuple[tuple[int, int] | None, tuple[int, int] | None, tuple[int, int] | None]] = []
         self._last_save_time = self._last_thumbnail_time = self._last_app_reload_time = int(time.time() * 10)
-        self._delete_mouse_pressed = False
-        self._delete_keyboard_pressed = False
-        self._delete_gamepad_pressed = False
-        self._delete_network_pressed = False
+        self._delete_pressed = ipc.Device(0)
         self._profile_names = get_profile_names()
         self._unsaved_profiles: set[str] = set()
         self._redrawing_profiles = False
         self._is_loading_profile = 0
         self._is_closing = False
         self._is_changing_state = False
-        self._pixel_colour_cache: dict[str, QtGui.QColor | None] = {}
+        self._pixel_colour_cache: dict[str, tuple[QtGui.QColor, QtGui.QColor] | None] = {}
         self._is_setting_click_state = False
         self._force_close = False
         self._waiting_on_save = False
         self._last_save_message: ipc.SaveComplete | None
+        self._thumbnail_redraw_required = False
+        self._resolution_options: dict[tuple[int, int], bool] = {}
+        self._is_updating_layer_options = False
+        self._window_ready = False
+        self._startup_notify_queue: list[tuple[str, str]] = []
+        self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
-
-        # Set default render values
-        self._render_colour = RenderOption('Ice', 'Ice', 'Jet', 'Aqua')
-        self._contrast = RenderOption(1.0, 1.0, 1.0, 1.0)
-        self._sampling = RenderOption(4, 4, 4, 4)
-        self._sampling_preview = RenderOption(0, 0, 1, 1)
-        self._padding = RenderOption(0, 0, 0, 0)
-        self._clipping = RenderOption(0.0, 0.0, 0.001, 0.0)
-        self._blur = RenderOption(0.0, 0.0, 0.0125, 0.0)
-        self._linear = RenderOption(False, True, True, False)
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -175,14 +155,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
-        self.ui.prefs_autostart.setChecked(check_autostart())
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
-        self.ui.prefs_console.setChecked(not IS_EXE)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
         self.ui.contrast.setMaximum(float('inf'))
+        self.update_focused_application('', '', False)
+
+        # Special logic for the autostart option, depending on if
+        # installed or portable. If installed, then give full control,
+        # but show it as not using autostart if it was set on the
+        # portable version. If portable, then show the correct state,
+        # but block the user from changing it if it was set on the
+        # installed version.
+        _exe, _args = split_autostart()
+        self.ui.prefs_autostart.setChecked(_exe is not None
+                                           and not CTX.installed
+                                           or (CTX.installed and '--installed' in _args))
+        self.ui.prefs_autostart.setEnabled(_exe is None
+                                           or '--installed' not in _args
+                                           or CTX.installed)
+        self.ui.prefs_automin.setEnabled(self.ui.prefs_autostart.isEnabled())
+
+        self.ui.layer_presets.installEventFilter(self)
+
+        # Hide social links for now
+        self.ui.link_reddit.setVisible(False)
+        self.ui.link_facebook.setVisible(False)
 
         # Cache buddies
         self._buddies: dict[QtWidgets.QWidget, QtWidgets.QLabel] = {}
@@ -206,44 +206,49 @@ class MainWindow(QtWidgets.QMainWindow):
         # The `addAction` is required for a hidden menubar
         self.addAction(self.ui.full_screen)
         self._margins_main = self.ui.main_layout.contentsMargins()
-        self._margins_render = self.ui.main_layout.contentsMargins()
+        self._margins_render = self.ui.render_layout.contentsMargins()
 
         # Set up the tray icon
         self.tray: QtWidgets.QSystemTrayIcon | None
-        if QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+        if SUPPORTS_TRAY and QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QtWidgets.QSystemTrayIcon(self)
             self.tray.setIcon(QtGui.QIcon(ICON_PATH))
+            self.tray.setContextMenu(self.ui.tray_context_menu)
             self.tray.activated.connect(self.tray_activated)
-            self.tray.show()
         else:
             self.tray = None
             self.ui.menu_allow_minimise.setChecked(False)
             self.ui.menu_allow_minimise.setEnabled(False)
 
-        self.current_profile = Profile(DEFAULT_PROFILE_NAME)
-        #self.update_profile_combobox(DEFAULT_PROFILE_NAME)
-
-        # self.ui.map_type = QtWidgets.QComboBox()
-        self.ui.map_type.addItem('[Mouse] Movement', ipc.RenderType.Time)
-        self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.Speed)
-        self.ui.map_type.addItem('[Mouse] Position', ipc.RenderType.TimeHeatmap)
+        self.ui.map_type.addItem('[Mouse] Movement', ipc.RenderType.MouseMovement)
+        self.ui.map_type.addItem('[Mouse] Speed', ipc.RenderType.MouseSpeed)
+        self.ui.map_type.addItem('[Mouse] Position', ipc.RenderType.MousePosition)
         self.ui.map_type.addItem('[Mouse] Clicks', ipc.RenderType.SingleClick)
         self.ui.map_type.addItem('[Mouse] Double Clicks', ipc.RenderType.DoubleClick)
         self.ui.map_type.addItem('[Mouse] Held Clicks', ipc.RenderType.HeldClick)
-        self.ui.map_type.addItem('[Keyboard] Key Presses', ipc.RenderType.Keyboard)
-        self.ui.map_type.addItem('[Thumbsticks] Movement', ipc.RenderType.Thumbstick_Time)
-        self.ui.map_type.addItem('[Thumbsticks] Speed', ipc.RenderType.Thumbstick_Speed)
-        self.ui.map_type.addItem('[Thumbsticks] Position', ipc.RenderType.Thumbstick_Heatmap)
+        self.ui.map_type.addItem('[Keyboard] Key Presses', ipc.RenderType.KeyboardHeatmap)
+        self.ui.map_type.addItem('[Thumbsticks] Movement', ipc.RenderType.ThumbstickMovement)
+        self.ui.map_type.addItem('[Thumbsticks] Speed', ipc.RenderType.ThumbstickSpeed)
+        self.ui.map_type.addItem('[Thumbsticks] Position', ipc.RenderType.ThumbstickPosition)
 
-        self.cursor_data = MapData(get_cursor_pos())
+        self.cursor_data = MapData(None)
         self.thumbstick_l_data = MapData((0, 0))
         self.thumbstick_r_data = MapData((0, 0))
+        self._sampling = 4
+        self._sampling_preview = 0
+
+        self.layer_manager = LayerManager()
+        self.ui.layer_list.clear()
+        for enum in BlendMode:
+            self.ui.layer_blending.addItem(enum.name, enum)
+        background_layer = self.add_render_layer()
+        background_layer.setCheckState(QtCore.Qt.CheckState.Checked)
+        background_layer.setSelected(True)
 
         self.mouse_click_count = self.mouse_held_count = self.mouse_scroll_count = 0
         self.button_press_count = self.key_press_count = 0
         self.elapsed_time = self.active_time = self.inactive_time = 0
-        self.monitor_data = monitor_locations()
-        self.render_type = ipc.RenderType.Time
+        self.render_type = ipc.RenderType.MouseMovement
         self.tick_current = 0
         self.last_render: tuple[ipc.RenderType, int] = (self.render_type, -1)
         self.save_all_request_sent = self.save_profile_request_sent = False
@@ -257,6 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._timer_resize.setSingleShot(True)
         self._timer_rendering = QtCore.QTimer(self)
         self._timer_rendering.setSingleShot(True)
+        self._timer_tip = QtCore.QTimer(self)
 
         # Connect signals and slots
         self.ui.menu_exit.triggered.connect(self.shut_down)
@@ -268,6 +274,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.show_left_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_middle_clicks.toggled.connect(self.show_clicks_changed)
         self.ui.show_right_clicks.toggled.connect(self.show_clicks_changed)
+        self.ui.show_count.toggled.connect(self.show_count_changed)
+        self.ui.show_time.toggled.connect(self.show_time_changed)
         self.ui.sampling.valueChanged.connect(self.sampling_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
@@ -279,12 +287,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.clipping.valueChanged.connect(self.clipping_changed)
         self.ui.blur.valueChanged.connect(self.blur_changed)
         self.ui.linear.toggled.connect(self.linear_changed)
+        self.ui.invert.toggled.connect(self.invert_changed)
         self.ui.lock_aspect.stateChanged.connect(self.lock_aspect_changed)
         self.ui.custom_width.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.custom_height.valueChanged.connect(self.render_resolution_value_changed)
         self.ui.enable_custom_width.stateChanged.connect(self.custom_width_toggle)
         self.ui.enable_custom_height.stateChanged.connect(self.custom_height_toggle)
         self.ui.thumbnail_sampling.valueChanged.connect(self.sampling_preview_changed)
+        self.ui.interpolation_order.valueChanged.connect(self.interpolation_order_changed)
         self.ui.applist_reload.clicked.connect(self.reload_applist)
         self.ui.track_mouse.stateChanged.connect(self.handle_delete_button_visibility)
         self.ui.track_keyboard.stateChanged.connect(self.handle_delete_button_visibility)
@@ -305,7 +315,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_show.triggered.connect(self.load_from_tray)
         self.ui.tray_hide.triggered.connect(self.hide_to_tray)
         self.ui.tray_exit.triggered.connect(self.shut_down)
-        self.ui.prefs_autostart.triggered.connect(self.set_autostart)
+        self.ui.tray_open_exe_dir.triggered.connect(self.open_executable_dir)
+        self.ui.tray_open_data_dir.triggered.connect(self.open_data_dir)
+        self.ui.prefs_autostart.triggered.connect(self.toggle_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
         self.ui.always_on_top.triggered.connect(self.set_always_on_top)
@@ -314,15 +326,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_keyboard.triggered.connect(self.set_keyboard_tracking_enabled)
         self.ui.prefs_track_gamepad.triggered.connect(self.set_gamepad_tracking_enabled)
         self.ui.prefs_track_network.triggered.connect(self.set_network_tracking_enabled)
+        self.ui.debug_pause_app.triggered.connect(self.set_app_detection_disabled)
+        self.ui.debug_pause_monitor.triggered.connect(self.set_monitor_check_disabled)
         self.ui.full_screen.triggered.connect(self.toggle_full_screen)
-        self.ui.file_import.triggered.connect(self.import_legacy_profile)
+        self.ui.file_import.triggered.connect(self.import_profile)
         self.ui.export_mouse_stats.triggered.connect(self.export_mouse_stats)
         self.ui.export_keyboard_stats.triggered.connect(self.export_keyboard_stats)
         self.ui.export_gamepad_stats.triggered.connect(self.export_gamepad_stats)
         self.ui.export_network_stats.triggered.connect(self.export_network_stats)
         self.ui.export_daily_stats.triggered.connect(self.export_daily_stats)
         self.ui.multi_monitor.toggled.connect(self.multi_monitor_change)
-        self.ui.override_monitor.toggled.connect(self.multi_monitor_override_toggle)
+        self.ui.opts_monitor.toggled.connect(self.multi_monitor_override_toggle)
         self.ui.stat_app_add.clicked.connect(self.add_application)
         self.ui.link_facebook.triggered.connect(self.open_url)
         self.ui.link_github.triggered.connect(self.open_url)
@@ -330,14 +344,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.link_donate.triggered.connect(self.open_url)
         self.ui.about.triggered.connect(self.about)
         self.ui.tip.linkActivated.connect(webbrowser.open)
+        self.ui.layer_list.currentItemChanged.connect(self.layer_item_changed)
+        self.ui.layer_list.itemChanged.connect(self.selected_layer_toggled)
+        self.ui.layer_list.model().rowsMoved.connect(self.selected_layer_moved)
+        self.ui.layer_blending.currentIndexChanged.connect(self.layer_blend_mode_changed)
+        self.ui.layer_opacity.valueChanged.connect(self.layer_opacity_changed)
+        self.ui.layer_r.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_g.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_b.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_a.toggled.connect(self.layer_channel_changed)
+        self.ui.layer_add.clicked.connect(self.add_render_layer)
+        self.ui.layer_remove.clicked.connect(self.delete_render_layer)
+        self.ui.layer_up.clicked.connect(self.move_layer_up)
+        self.ui.layer_down.clicked.connect(self.move_layer_down)
+        self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
+        self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
         self.timer_activity.timeout.connect(self.update_time_since_thumbnail)
         self.timer_activity.timeout.connect(self.update_time_since_applist_reload)
         self.timer_activity.timeout.connect(self.update_queue_size)
+        self.timer_activity.timeout.connect(self.update_current_network_stats)
         self._timer_thumbnail_update.timeout.connect(self._request_thumbnail)
         self._timer_resize.timeout.connect(self.update_thumbnail_size)
         self._timer_rendering.timeout.connect(self.ui.thumbnail.show_rendering_text)
+        self._timer_tip.timeout.connect(self.set_random_tip_text)
 
         self.ui.debug_state_running.triggered.connect(self.start_tracking)
         self.ui.debug_state_paused.triggered.connect(self.pause_tracking)
@@ -348,14 +379,70 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.debug_raise_gui.triggered.connect(self.raise_gui)
         self.ui.debug_raise_hub.triggered.connect(self.raise_hub)
 
+        # Update the profile order on focused application change
+        def update_profile_order(app: Application) -> None:
+            sanitised = sanitise_profile_name(app.name)
+            if sanitised in self._profile_names:
+                del self._profile_names[sanitised]
+            self._profile_names = {sanitised: app.name} | self._profile_names
+            self.mark_profiles_unsaved(app.name)
+            self._redraw_profile_combobox()
+        self.component.register_app_change_hook(update_profile_order)
+
         # Trigger initial setup
         self.profile_changed(0)
         self.ui.show_advanced.setChecked(False)
+        if background_layer is not None:
+            self.set_selected_layer(background_layer)
+        if not self.ui.layer_blending.currentIndex():
+            self.layer_blend_mode_changed(0)
 
-        # Set tip
-        tips = ['tip_tracking']
+        self.component.send_data(ipc.RequestPID(ipc.Target.Hub))
+        self.component.send_data(ipc.RequestPID(ipc.Target.Tracking))
+        self.component.send_data(ipc.RequestPID(ipc.Target.Processing))
+        self.component.send_data(ipc.RequestPID(ipc.Target.GUI))
+        self.component.send_data(ipc.RequestPID(ipc.Target.AppDetection))
+
+        self.ui.layer_presets.addItems(Preset.names())
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        # Ignore scroll events on the layer presets combobox
+        if obj is self.ui.layer_presets and event.type() == QtCore.QEvent.Type.Wheel:
+            event.ignore()
+            return True
+        return super().eventFilter(obj, event)
+
+    def on_app_ready(self) -> None:
+        """Run code when the application is ready to start."""
+        self._window_ready = True
+        if not should_minimise_on_start():
+            self.show()
+        if self.tray is not None:
+            self.tray.show()
+
+        while self._startup_notify_queue:
+            self.notify(*self._startup_notify_queue.pop(0))
+
+    def set_tip_timer_state(self, enabled: bool) -> None:
+        """Set the state of the tip update timer.
+        The text update function is triggered every 10 minutes.
+        """
+        if enabled:
+            self.set_random_tip_text()
+            self._timer_tip.start(600000)
+        else:
+            self._timer_tip.stop()
+
+    @QtCore.Slot()
+    def set_random_tip_text(self) -> None:
+        """Text a random tip."""
+        tips = ['tip_tracking', 'tip_tooltip']
         if not is_latest_version():
-            tips.append('tip_update')
+            if CTX.installed:
+                background_update(download=not CTX.offline)
+                tips = ['tip_install']
+            else:
+                tips.append('tip_update')
         self.ui.tip.setText(f'Tip: {self.ui.tip.property(random.choice(tips))}')
 
     @QtCore.Slot()
@@ -376,10 +463,11 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def pixel_colour(self) -> QtGui.QColor:
         """Get the pixel colour to draw with."""
-        colour_map = self.render_colour
+        layer = self.current_layer
+        colour_map = layer.render_colour
         if colour_map not in self._pixel_colour_cache:
             try:
-                generated_map = colours.calculate_colour_map(self.render_colour)
+                generated_map = colours.calculate_colour_map(colour_map)
 
             # This is legacy code with bad error handling
             # If any error occurs, just show a transparent image
@@ -387,24 +475,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._pixel_colour_cache[colour_map] = None
 
             else:
-                self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1])
+                self._pixel_colour_cache[colour_map] = QtGui.QColor(*generated_map[-1]), QtGui.QColor(*generated_map[0])
 
         colour = self._pixel_colour_cache[colour_map]
         if colour is None:
             return QtGui.QColor(QtCore.Qt.GlobalColor.transparent)
-        return colour
+        return colour[layer.invert]
 
     @property
     def render_type(self) -> ipc.RenderType:
         """Get the render type."""
-        return self._render_type
+        return self.selected_layer.render_type
 
     @render_type.setter
-    def render_type(self, render_type: ipc.RenderType):
+    def render_type(self, render_type: ipc.RenderType) -> None:
         """Set the render type.
         This populates the available colour maps.
         """
-        self._render_type = render_type
+        self.selected_layer.render_type = render_type
 
         # Add items to render colour input
         self.pause_colour_change = True
@@ -412,113 +500,61 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.colour_option.clear()
 
         colour_maps = colours.get_map_matches(
-            tracks=render_type in (ipc.RenderType.Time, ipc.RenderType.Speed,
-                                   ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed),
+            tracks=render_type in (ipc.RenderType.MouseMovement, ipc.RenderType.MouseSpeed,
+                                   ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickSpeed),
             clicks=render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick,
-                                   ipc.RenderType.Thumbstick_Heatmap, ipc.RenderType.TimeHeatmap),
-            keyboard=render_type == ipc.RenderType.Keyboard,
+                                   ipc.RenderType.ThumbstickPosition, ipc.RenderType.MousePosition),
+            keyboard=render_type == ipc.RenderType.KeyboardHeatmap,
         )
         self.ui.colour_option.addItems(sorted(colour_maps))
 
         # Set it back to the previous colour selection
-        if (idx := self.ui.colour_option.findText(self.render_colour)) == -1:
-            self.ui.colour_option.setCurrentText(self.render_colour)
+        layer = self.current_layer
+        if (idx := self.ui.colour_option.findText(layer.render_colour)) == -1:
+            self.ui.colour_option.setCurrentText(layer.render_colour)
         else:
             self.ui.colour_option.setCurrentIndex(idx)
 
         # Load in other settings
-        self.ui.contrast.setValue(self.contrast)
+        self.ui.contrast.setValue(layer.contrast)
         self.ui.sampling.setValue(self.sampling)
         self.ui.thumbnail_sampling.setValue(self.sampling_preview)
-        self.ui.padding.setValue(self.padding)
-        self.ui.clipping.setValue(self.clipping)
-        self.ui.blur.setValue(self.blur)
-        self.ui.linear.setChecked(self.linear)
+        self.ui.padding.setValue(layer.padding)
+        self.ui.clipping.setValue(layer.clipping)
+        self.ui.blur.setValue(layer.blur)
+        self.ui.linear.setChecked(layer.linear)
+        self.ui.invert.setChecked(layer.invert)
+        self.ui.show_left_clicks.setChecked(layer.show_left_clicks)
+        self.ui.show_middle_clicks.setChecked(layer.show_middle_clicks)
+        self.ui.show_right_clicks.setChecked(layer.show_right_clicks)
         self.toggle_advanced_options(self.ui.show_advanced.isChecked())
 
         self.pause_colour_change = False
 
     @property
-    def render_colour(self) -> str:
-        """Get the render colour for the current render type."""
-        return self._render_colour.get(self.render_type)
-
-    @render_colour.setter
-    def render_colour(self, colour: str) -> None:
-        """Set the render colour for the current render type.
-        This will update the current pixel colour too.
-        """
-        self._render_colour.set(self.render_type, colour)
-
-    @property
-    def contrast(self) -> float:
-        """Get the contrast for the current render type."""
-        return self._contrast.get(self.render_type)
-
-    @contrast.setter
-    def contrast(self, value: float) -> None:
-        """Set a new constrast value for the current render type."""
-        self._contrast.set(self.render_type, value)
+    def current_layer(self) -> LayerView:
+        """Return a render-type-bound view of the selected layer."""
+        return self.selected_layer.view(self.render_type)
 
     @property
     def sampling(self) -> int:
         """Get the sampling for the current render type."""
-        return self._sampling.get(self.render_type)
+        return self._sampling
 
     @sampling.setter
     def sampling(self, value: int) -> None:
         """Set a new sampling value for the current render type."""
-        self._sampling.set(self.render_type, value)
+        self._sampling = value
 
     @property
     def sampling_preview(self) -> int:
         """Get the thumbnail sampling for the current render type."""
-        return self._sampling_preview.get(self.render_type)
+        return self._sampling_preview
 
     @sampling_preview.setter
     def sampling_preview(self, value: int) -> None:
         """Set a new thumbnail sampling value for the current render type."""
-        self._sampling_preview.set(self.render_type, value)
-
-    @property
-    def padding(self) -> int:
-        """Get the padding for the current render type."""
-        return self._padding.get(self.render_type)
-
-    @padding.setter
-    def padding(self, value: int) -> None:
-        """Set a new padding value for the current render type."""
-        self._padding.set(self.render_type, value)
-
-    @property
-    def clipping(self) -> float:
-        """Get the clipping for the current render type."""
-        return self._clipping.get(self.render_type)
-
-    @clipping.setter
-    def clipping(self, value: float) -> None:
-        """Set a new clipping value for the current render type."""
-        self._clipping.set(self.render_type, value)
-
-    @property
-    def blur(self) -> float:
-        """Get the blur for the current render type."""
-        return self._blur.get(self.render_type)
-
-    @blur.setter
-    def blur(self, value: float) -> None:
-        """Set a new blur value for the current render type."""
-        self._blur.set(self.render_type, value)
-
-    @property
-    def linear(self) -> bool:
-        """Get if linear mapping is enabled for the current render type."""
-        return self._linear.get(self.render_type)
-
-    @linear.setter
-    def linear(self, value: bool) -> None:
-        """Set if linear mapping is enabled for the current render type."""
-        self._linear.set(self.render_type, value)
+        self._sampling_preview = value
 
     @property
     def mouse_click_count(self) -> int:
@@ -622,9 +658,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._resolutions = resolutions
 
         # Delete all existing items in the layout
-        layout = self.ui.profile_resolutions.layout()
+        layout = self.ui.profile_resolutions
         while layout.count():
-            item = self.ui.profile_resolutions.layout().takeAt(0)
+            item = layout.takeAt(0)
             item.widget().deleteLater()
 
         # Populate with new widgets
@@ -641,32 +677,48 @@ class MainWindow(QtWidgets.QMainWindow):
                              f'Raw value: {count}')
             layout.addWidget(checkbox, row, 0)
             layout.addWidget(label, row, 1)
+        self._save_resolution_options()
 
     @QtCore.Slot(bool)
     def resolution_toggled(self, value: bool) -> None:
         """Toggle rendering of a particular resolution in a profile."""
         checkbox = cast(QtWidgets.QCheckBox, self.sender())
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
         width, height = map(int, checkbox.text().split('x'))
-        self.component.send_data(ipc.ToggleProfileResolution(profile, (width, height), value))
-        self.mark_profiles_unsaved(profile)
+        self.component.send_data(ipc.ToggleProfileResolution(sanitised_profile_name, (width, height), value))
+        self.mark_profiles_unsaved(profile_name)
         self.request_thumbnail()
+        self._save_resolution_options()
+
+    def _save_resolution_options(self) -> None:
+        """Save the currently chosen resolution options."""
+        self._resolution_options.clear()
+        for item in map(self.ui.profile_resolutions.itemAt, range(self.ui.profile_resolutions.count())):
+            if isinstance(checkbox := item.widget(), QtWidgets.QCheckBox):
+                width, height = map(int, checkbox.text().split('x'))
+                self._resolution_options[(width, height)] = checkbox.isChecked()
 
     @QtCore.Slot()
     def multi_monitor_change(self) -> None:
         """Change the multiple monitor option."""
-        if not self.ui.override_monitor.isChecked():
+        if not self.ui.opts_monitor.isChecked():
             return
-        profile = self.ui.current_profile.currentData()
-        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked()))
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked()))
 
     @QtCore.Slot(bool)
     def multi_monitor_override_toggle(self, checked: bool) -> None:
         """Enable or disable the multi monitor override."""
-        if not self.ui.override_monitor.isEnabled():
+        if not self.ui.opts_monitor.isEnabled():
             return
-        profile = self.ui.current_profile.currentData()
-        self.component.send_data(ipc.ToggleProfileMultiMonitor(profile, self.ui.multi_monitor.isChecked() if checked else None))
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return
+        self.component.send_data(ipc.ToggleProfileMultiMonitor(sanitised_profile_name, self.ui.multi_monitor.isChecked() if checked else None))
 
     @QtCore.Slot()
     def update_activity_preview(self) -> None:
@@ -678,7 +730,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # The active and inactive time don't update every tick
         # Add the difference to keep the GUI in sync
-        inactivity_threshold = UPDATES_PER_SECOND * GlobalConfig.inactivity_time
+        inactivity_threshold = UPDATES_PER_SECOND * self.config.inactivity_time
         tick_diff = self.elapsed_time - (self.active_time + self.inactive_time)
         if tick_diff > inactivity_threshold:
             inactive_time += tick_diff
@@ -707,9 +759,18 @@ class MainWindow(QtWidgets.QMainWindow):
         text = format_ticks(time.time() * 10 - self._last_app_reload_time, 10, 1)
         self.ui.time_since_applist_reload.setText(text)
 
+    @QtCore.Slot()
     def update_queue_size(self) -> None:
         """Request an update of the queue size."""
         self.component.send_data(ipc.RequestQueueSize())
+
+    @QtCore.Slot()
+    def update_current_network_stats(self) -> None:
+        """Update the data transfer statistics once per second.
+        This relies on the data
+        """
+        self.ui.stat_download_current.setText(format_network_speed(self._network_speed.bytes_recv))
+        self.ui.stat_upload_current.setText(format_network_speed(self._network_speed.bytes_sent))
 
     @property
     def bytes_sent(self) -> int:
@@ -733,27 +794,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._bytes_recv = amount
         self.ui.stat_download_total.setText(format_bytes(amount))
 
-    @property
-    def current_profile(self) -> Profile:
-        """Get the currently running profile."""
-        return self._current_profile
-
-    @current_profile.setter
-    def current_profile(self, profile: Profile) -> None:
-        """Set the currently running profile.
-
-        This will automatically update the combobox, but will not
-        trigger a thumbnail update.
-        """
-        self._current_profile = profile
-
-        # Update the profile order
-        with suppress(ValueError):
-            del self._profile_names[self._profile_names.index(profile.name)]
-        self._profile_names.insert(0, profile.name)
-        self.mark_profiles_unsaved(profile.name)
-        self._redraw_profile_combobox()
-
     def _redraw_profile_combobox(self) -> None:
         """Redraw the profile combobox.
         Any "modified" profiles will have an asterix in front.
@@ -762,21 +802,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._redrawing_profiles = True
 
         # Grab the currently selected profile
-        current = self.ui.current_profile.currentData()
+        current_profile = self.ui.current_profile.currentData()
 
         # Add the profiles
         self.ui.current_profile.clear()
-        for profile in self._profile_names:
-            if profile in self._unsaved_profiles:
-                self.ui.current_profile.addItem(f'*{profile}', profile)
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if sanitised_profile_name in self._unsaved_profiles:
+                self.ui.current_profile.addItem(f'*{profile_name}', sanitised_profile_name)
             else:
-                self.ui.current_profile.addItem(profile, profile)
+                self.ui.current_profile.addItem(profile_name, sanitised_profile_name)
 
         # Change back to the previously selected profile
         if self.ui.auto_switch_profile.isChecked():
             self.ui.current_profile.setCurrentIndex(0)
         else:
-            idx = self.ui.current_profile.findData(current)
+            idx = self.ui.current_profile.findData(current_profile)
             if idx != -1:
                 self.ui.current_profile.setCurrentIndex(idx)
 
@@ -797,7 +837,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.save_profile_request_sent:
             return
         self.save_profile_request_sent = True
-        self.component.send_data(ipc.Save(self.ui.current_profile.currentData()))
+
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is not None:
+            self.component.send_data(ipc.Save(sanitised_profile_name))
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_autosave(self, state: QtCore.Qt.CheckState) -> None:
@@ -807,31 +850,56 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(int)
     def profile_changed(self, idx: int) -> None:
         """Change the profile and trigger a redraw."""
-        profile_name = self.ui.current_profile.itemData(idx)
-        self.ui.tab_options.setTabText(1, f'{profile_name} Options')
+        sanitised_profile_name, profile_name = self._selected_profile_data(idx)
 
-        if not self._redrawing_profiles:
-            self.request_profile_data(profile_name)
+        if sanitised_profile_name is not None and not self._redrawing_profiles:
+            self.request_profile_data(sanitised_profile_name)
             if idx:
                 self.ui.auto_switch_profile.setChecked(False)
             self.set_profile_modified_text()
 
-        self.ui.tracking_group.setEnabled(profile_name != TRACKING_DISABLE)
+    def request_profile_data(self, sanitised_profile_name: str) -> None:
+        """Request loading profile data from the background process."""
+        self.component.send_data(ipc.ProfileDataRequest(sanitised_profile_name,
+                                                        self._profile_names[sanitised_profile_name]))
 
-    def request_profile_data(self, profile_name: str) -> None:
-        """Request loading profile data."""
-        self.component.send_data(ipc.ProfileDataRequest(profile_name))
+        # Pause the signals on the track options
+        if not self._is_loading_profile:
+            self.ui.track_mouse.setEnabled(False)
+            self.ui.track_keyboard.setEnabled(False)
+            self.ui.track_gamepad.setEnabled(False)
+            self.ui.track_network.setEnabled(False)
+            self.ui.opts_status.setEnabled(False)
+            self.ui.opts_resolution.setEnabled(False)
+            self.ui.opts_monitor.setEnabled(False)
+            self.ui.opts_tracking.setEnabled(False)
+
         self._is_loading_profile += 1
         self.start_rendering_timer()
+
+    def _selected_profile_data(self, idx: int | None = None) -> tuple[str, str] | tuple[None, None]:
+        """Get the selected profile name from the combobox.
+
+        Returns the sanitised profile name and actual name.
+        """
+        if idx is None:
+            sanitised_profile_name = self.ui.current_profile.currentData()
+        else:
+            sanitised_profile_name = self.ui.current_profile.itemData(idx)
+        if sanitised_profile_name is not None:
+            return sanitised_profile_name, self._profile_names[sanitised_profile_name]
+        return None, None
 
     @QtCore.Slot(int)
     def render_type_changed(self, idx: int) -> None:
         """Change the render type and trigger a redraw."""
         self.render_type = self.ui.map_type.itemData(idx)
-        self.request_thumbnail()
+        if not self._is_updating_layer_options:
+            self.request_thumbnail()
+            self.update_layer_item_name()
 
     @QtCore.Slot(bool)
-    def show_clicks_changed(self, enabled: bool):
+    def show_clicks_changed(self, enabled: bool) -> None:
         """Update the render when the click visibility options change.
 
         Using a shift click is a quick way to check/uncheck all options.
@@ -839,7 +907,7 @@ class MainWindow(QtWidgets.QMainWindow):
         unchecked. If shift clicking on an unchecked option, then all
         options will be checked.
         """
-        if self._is_setting_click_state:
+        if self._is_setting_click_state or self.pause_colour_change:
             return
         self._is_setting_click_state = True
 
@@ -863,8 +931,24 @@ class MainWindow(QtWidgets.QMainWindow):
                     checkbox.setChecked(False)
                 sender.setChecked(True)
 
+        layer = self.current_layer
+        layer.show_left_clicks = self.ui.show_left_clicks.isChecked()
+        layer.show_middle_clicks = self.ui.show_middle_clicks.isChecked()
+        layer.show_right_clicks = self.ui.show_right_clicks.isChecked()
+
         self.request_thumbnail()
+        self.update_layer_item_name()
         self._is_setting_click_state = False
+
+    @QtCore.Slot(bool)
+    def show_count_changed(self, checked: bool) -> None:
+        """Trigger when the count radio button changes."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(bool)
+    def show_time_changed(self, checked: bool) -> None:
+        """Trigger when the time radio button changes."""
+        self.request_thumbnail()
 
     @QtCore.Slot(int)
     def sampling_changed(self, value: int) -> None:
@@ -886,7 +970,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the colour is changed."""
         if self.pause_colour_change:
             return
-        self.render_colour = colour
+        self.current_layer.render_colour = colour
         self.request_thumbnail()
 
     @QtCore.Slot(int)
@@ -894,7 +978,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the padding is changed."""
         if self.pause_colour_change:
             return
-        self.padding = value
+        self.current_layer.padding = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -902,7 +986,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the contrast is changed."""
         if self.pause_colour_change:
             return
-        self.contrast = value
+        self.current_layer.contrast = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -910,7 +994,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the clipping is changed."""
         if self.pause_colour_change:
             return
-        self.clipping = value
+        self.current_layer.clipping = value
         self.request_thumbnail()
 
     @QtCore.Slot(float)
@@ -918,7 +1002,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the blur is changed."""
         if self.pause_colour_change:
             return
-        self.blur = value
+        self.current_layer.blur = value
         self.request_thumbnail()
 
     @QtCore.Slot(bool)
@@ -926,7 +1010,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """Update the render when the linear mapping is changed."""
         if self.pause_colour_change:
             return
-        self.linear = value
+        self.current_layer.linear = value
+        self.request_thumbnail()
+
+    @QtCore.Slot(bool)
+    def invert_changed(self, value: bool) -> None:
+        """Update the render when the invert option is changed."""
+        if self.pause_colour_change:
+            return
+        self.current_layer.invert = value
         self.request_thumbnail()
 
     @QtCore.Slot(QtCore.Qt.CheckState)
@@ -958,39 +1050,24 @@ class MainWindow(QtWidgets.QMainWindow):
         if state == QtCore.Qt.CheckState.Unchecked.value:
             self.ui.custom_height.setValue(self.ui.thumbnail.size().height())
 
+    @QtCore.Slot(int)
+    def interpolation_order_changed(self, value: int) -> None:
+        """Update the render when the interpolation order changes."""
+        self.request_thumbnail()
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_auto_switch_profile(self, state: QtCore.Qt.CheckState) -> None:
         """Switch to the current profile when auto switch is checked."""
         if state == QtCore.Qt.CheckState.Checked.value:
             self.ui.current_profile.setCurrentIndex(0)
 
-    def _monitor_offset(self, pixel: tuple[int, int]) -> tuple[tuple[int, int], tuple[int, int]] | None:
-        """Detect which monitor the pixel is on."""
-        monitor_data = self.monitor_data
-        if self.current_profile.rects:
-            monitor_data = self.current_profile.rects
+    def is_single_monitor_mode(self) -> bool:
+        """Determine if running in single or multi monitor mode."""
+        if self.ui.opts_monitor.isChecked():
+            return self.ui.single_monitor.isChecked()
+        return bool(CTX.single_monitor)
 
-        single_monitor = self.ui.single_monitor.isChecked() if self.ui.override_monitor.isChecked() else CLI.single_monitor
-        if single_monitor:
-            x_min, y_min, x_max, y_max = monitor_data[0]
-            for x1, y1, x2, y2 in monitor_data[1:]:
-                x_min = min(x_min, x1)
-                y_min = min(y_min, y1)
-                x_max = max(x_max, x2)
-                y_max = max(y_max, y2)
-            result = calculate_pixel_offset(pixel[0], pixel[1], x_min, y_min, x_max, y_max)
-            if result is not None:
-                return result
-
-        else:
-            for x1, y1, x2, y2 in monitor_data:
-                result = calculate_pixel_offset(pixel[0], pixel[1], x1, y1, x2, y2)
-                if result is not None:
-                    return result
-
-        return None
-
-    def start_rendering_timer(self):
+    def start_rendering_timer(self) -> None:
         """Start the timer to display rendering text.
 
         If a render is not completed within 1 second, then text will be
@@ -1006,7 +1083,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reload_applist()
 
     @QtCore.Slot()
-    def reload_applist(self):
+    def reload_applist(self) -> None:
         """Send a request to reload AppList.txt."""
         self.component.send_data(ipc.ReloadAppList())
 
@@ -1030,53 +1107,93 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
+        # Prevent too many requests from queuing up
+        # This ensures there's at most 2
+        if self.pause_redraw:
+            self._thumbnail_redraw_required = True
+            return True
+
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return False
+
+        layers = list(self.get_render_layer_data())
+        if not layers:
+            return False
+
         # Flag if drawing to prevent building up duplicate commands
         self.pause_redraw += 1
-
-        width = self.ui.thumbnail.width()
-        height = self.ui.thumbnail.height()
-        profile = self.ui.current_profile.currentData()
-
-        # Account for collapsed splitters
-        if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
-            width += self.ui.horizontal_splitter.handleWidth()
-        if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
-            height += self.ui.vertical_splitter.handleWidth()
-
         self.start_rendering_timer()
-
-        # Handle custom resolution
-        custom_width = self.ui.custom_width.value()
-        custom_height = self.ui.custom_height.value()
-        use_custom_width = self.ui.custom_width.isEnabled()
-        use_custom_height = self.ui.custom_height.isEnabled()
-        lock_aspect = self.ui.lock_aspect.isChecked()
-        if not lock_aspect and (use_custom_width or use_custom_height):
-
-            # Set the aspect ratio to requested
-            aspect_ratio = custom_width / custom_height
-            if aspect_ratio > width / height:
-                height = round(width / aspect_ratio)
-            else:
-                width = round(height * aspect_ratio)
-
-        # Ensure resolutions aren't greater than requested
-        if use_custom_width:
-            width = min(width, custom_width)
-        if use_custom_height:
-            height = min(height, custom_height)
-
-        self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                   width=width, height=height, lock_aspect=lock_aspect,
-                                                   profile=profile, file_path=None,
-                                                   colour_map=self.render_colour, padding=self.padding,
-                                                   sampling=self.ui.thumbnail_sampling.value(),
-                                                   contrast=self.contrast, clipping=self.clipping,
-                                                   blur=self.blur, linear=self.linear,
-                                                   show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                   show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                   show_right_clicks=self.ui.show_right_clicks.isChecked()))
+        self.component.send_data(ipc.RenderLayerRequest(layers))
         return True
+
+    def _resolve_render_dimensions(self, file_path: str | None) -> tuple[int | None, int | None, int, bool]:
+        """Resolve the render width, height, sampling and lock_aspect from the current UI state.
+
+        When `file_path` is None (thumbnail preview), dimensions are derived from
+        the thumbnail widget and constrained by any custom width/height settings.
+        When `file_path` is provided (export), the custom dimensions are used directly.
+        """
+        custom_width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
+        custom_height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
+        lock_aspect = self.ui.lock_aspect.isChecked()
+
+        if file_path is None:
+            sampling = self.ui.thumbnail_sampling.value()
+            width = self.ui.thumbnail.width()
+            height = self.ui.thumbnail.height()
+
+            # Account for collapsed splitters
+            if not self.ui.horizontal_splitter.sizes()[1] and self.ui.horizontal_splitter.is_handle_visible():
+                width += self.ui.horizontal_splitter.handleWidth()
+            if not self.ui.vertical_splitter.sizes()[1] and self.ui.vertical_splitter.is_handle_visible():
+                height += self.ui.vertical_splitter.handleWidth()
+
+            if not lock_aspect and custom_width and custom_height:
+                # Set the aspect ratio to requested
+                aspect_ratio = custom_width / custom_height
+                if aspect_ratio > width / height:
+                    height = round(width / aspect_ratio)
+                else:
+                    width = round(height * aspect_ratio)
+
+            # Ensure resolutions aren't greater than requested
+            if custom_width:
+                width = min(width, custom_width)
+            if custom_height:
+                height = min(height, custom_height)
+
+        else:
+            sampling = self.ui.sampling.value()
+            width = custom_width
+            height = custom_height
+
+        return width, height, sampling, lock_aspect
+
+    def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
+        """Yield all render layer data, starting with the bottom layer."""
+        sanitised_profile_name, _profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return
+
+        width, height, sampling, lock_aspect = self._resolve_render_dimensions(file_path)
+
+        layer_items = (
+            (self.ui.layer_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole),
+             self.ui.layer_list.item(i).checkState() == QtCore.Qt.CheckState.Checked)
+            for i in range(self.ui.layer_list.count() - 1, -1, -1)
+        )
+        yield from self.layer_manager.render_layers(
+            layer_items,
+            profile=sanitised_profile_name,
+            file_path=file_path,
+            width=width,
+            height=height,
+            sampling=sampling,
+            lock_aspect=lock_aspect,
+            show_keyboard_time=self.ui.show_time.isChecked(),
+            interpolation_order=self.ui.interpolation_order.value(),
+        )
 
     @QtCore.Slot(QtCore.QSize)
     def thumbnail_resize(self, size: QtCore.QSize) -> None:
@@ -1095,10 +1212,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def thumbnail_click(self, state: bool) -> None:
         """Handle what to do when the thumbnail is clicked."""
         if state:
-            self.notify(f'{self.windowTitle()} has resumed tracking.')
             self.start_tracking()
         else:
-            self.notify(f'{self.windowTitle()} has paused tracking.')
             self.pause_tracking()
 
     def request_render(self) -> None:
@@ -1110,11 +1225,11 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setDefaultSuffix('png')
 
         match self.render_type:
-            case ipc.RenderType.Time:
-                name = 'Mouse Tracks'
-            case ipc.RenderType.TimeHeatmap:
-                name = 'Mouse Heatmap'
-            case ipc.RenderType.Speed:
+            case ipc.RenderType.MouseMovement:
+                name = 'Mouse Movement'
+            case ipc.RenderType.MousePosition:
+                name = 'Mouse Position'
+            case ipc.RenderType.MouseSpeed:
                 name = 'Mouse Speed'
             case ipc.RenderType.SingleClick:
                 name = 'Mouse Clicks'
@@ -1122,47 +1237,61 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = 'Mouse Double Clicks'
             case ipc.RenderType.HeldClick:
                 name = 'Mouse Held Clicks'
-            case ipc.RenderType.Thumbstick_Time:
-                name = 'Gamepad Thumbstick Tracks'
-            case ipc.RenderType.Thumbstick_Heatmap:
-                name = 'Gamepad Thumbstick Heatmap'
-            case ipc.RenderType.Thumbstick_Speed:
+            case ipc.RenderType.ThumbstickMovement:
+                name = 'Gamepad Thumbstick Movement'
+            case ipc.RenderType.ThumbstickPosition:
+                name = 'Gamepad Thumbstick Position'
+            case ipc.RenderType.ThumbstickSpeed:
                 name = 'Gamepad Thumbstick Speed'
+            case ipc.RenderType.KeyboardHeatmap:
+                name = 'Keyboard Heatmap'
             case _:
-                name = 'Tracks'
+                name = 'Data'
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
+
+        # Get the default save folder
         image_dir = Path.home() / 'Pictures'
         if image_dir.exists():
             image_dir /= 'MouseTracks'
             if not image_dir.exists():
                 image_dir.mkdir()
-        image_dir /= f'[{format_ticks(self.elapsed_time)}][{self.render_colour}] {profile_safe} - {name}.png'
+
+        # Get the correct profile elapsed time
+        # It's only stored for the current profile, so load the data
+        # from disk if the requested profile isn't current
+        if self._is_loading_profile:
+            try:
+                _profile = TrackingProfile.load(get_filename(profile_name), metadata_only=True)
+            except FileNotFoundError:
+                elapsed_time = 0
+            else:
+                elapsed_time = _profile.elapsed
+        else:
+            elapsed_time = self.elapsed_time
+
+        # Generate the default image name
+        sort_key = f'{math.isqrt(round(elapsed_time / UPDATES_PER_SECOND)):05}'
+        ticks_str = format_ticks(elapsed_time, UPDATES_PER_SECOND)
+        image_dir /= f'{profile_safe} - {name} - {sort_key} - {ticks_str} ({self.current_layer.render_colour})'
+
         file_path, accept = dialog.getSaveFileName(None, 'Save Image', str(image_dir), 'Image Files (*.png)')
 
         if accept:
-            width = self.ui.custom_width.value() if self.ui.custom_width.isEnabled() else None
-            height = self.ui.custom_height.value() if self.ui.custom_height.isEnabled() else None
-            self.component.send_data(ipc.RenderRequest(self.render_type,
-                                                       width=width, height=height, lock_aspect=False,
-                                                       profile=profile, file_path=file_path,
-                                                       colour_map=self.render_colour, sampling=self.sampling,
-                                                       padding=self.padding, contrast=self.contrast,
-                                                       clipping=self.clipping, blur=self.blur, linear=self.linear,
-                                                       show_left_clicks=self.ui.show_left_clicks.isChecked(),
-                                                       show_middle_clicks=self.ui.show_middle_clicks.isChecked(),
-                                                       show_right_clicks=self.ui.show_right_clicks.isChecked()))
+            self.component.send_data(ipc.RenderLayerRequest(list(self.get_render_layer_data(file_path))))
 
     def thumbnail_render_check(self) -> None:
         """Check if the thumbnail should be re-rendered."""
         match self.render_type:
             # This does it every 10, 20, ..., 90, 100, 200, ..., 900, 1000, 2000, etc
-            case ipc.RenderType.Time:
+            case ipc.RenderType.MouseMovement:
                 count = self.cursor_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
             # With speed it must be constant, doesn't work as well live
-            case ipc.RenderType.Speed | ipc.RenderType.TimeHeatmap:
+            case ipc.RenderType.MouseSpeed | ipc.RenderType.MousePosition:
                 update_frequency = 50
                 count = self.cursor_data.counter
             case ipc.RenderType.SingleClick | ipc.RenderType.DoubleClick:
@@ -1171,13 +1300,13 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.RenderType.HeldClick:
                 update_frequency = 50
                 count = self.mouse_held_count
-            case ipc.RenderType.Thumbstick_Time:
+            case ipc.RenderType.ThumbstickMovement:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = min(20000, 10 ** int(math.log10(max(10, count))))
-            case ipc.RenderType.Thumbstick_Speed | ipc.RenderType.Thumbstick_Heatmap:
+            case ipc.RenderType.ThumbstickSpeed | ipc.RenderType.ThumbstickPosition:
                 count = self.thumbstick_l_data.counter + self.thumbstick_r_data.counter
                 update_frequency = 50
-            case ipc.RenderType.Keyboard:
+            case ipc.RenderType.KeyboardHeatmap:
                 update_frequency = 1
                 count = self.key_press_count
             case _:
@@ -1188,7 +1317,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         # Only render every `update_frequency` ticks
-        if count % math.ceil(update_frequency / GlobalConfig.preview_frequency_multiplier):
+        if count % math.ceil(update_frequency / self.config.preview_frequency_multiplier):
             return
 
         # Skip repeat renders
@@ -1256,64 +1385,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # When monitors change, store the new data
             case ipc.MonitorsChanged():
-                self.monitor_data = message.data
+                self.component.set_monitor_data(message.data)
 
             case ipc.Render():
-                height, width, channels = message.array.shape
-                failed = width == height == 0
+                self._handle_render(message)
 
-                target_height = int(height / (message.request.sampling or 1))
-                target_width = int(width / (message.request.sampling or 1))
-
-                # Draw the new pixmap
-                if message.request.file_path is None:
-                    self._timer_rendering.stop()
-                    self.ui.thumbnail.hide_rendering_text()
-
-                    self._last_thumbnail_time = int(time.time() * 10)
-                    match channels:
-                        case 1:
-                            image_format = QtGui.QImage.Format.Format_Grayscale8
-                        case 3:
-                            image_format = QtGui.QImage.Format.Format_RGB888
-                        case 4:
-                            image_format = QtGui.QImage.Format.Format_RGBA8888
-                        case _:
-                            raise NotImplementedError(channels)
-
-                    if failed:
-                        self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
-
-                    else:
-                        stride = channels * width
-                        image = QtGui.QImage(message.array.data, width, height, stride, image_format)
-
-                        # Scale the QImage to fit the pixmap size
-                        scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
-                        self.ui.thumbnail.set_pixmap(scaled_image)
-
-                    self.pause_redraw -= 1
-
-                # Save a render
-                elif failed:
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setWindowTitle('Render Failed')
-                    msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-                    msg.setText('No data is available for this render.')
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-                    msg.exec()
-
-                else:
-                    im = Image.fromarray(message.array)
-                    im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
-                    im.save(message.request.file_path)
-                    os.startfile(message.request.file_path)
-
-            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled:
+            case ipc.MouseHeld() if self.is_live and self.mouse_tracking_enabled and not self.component.app_resizing:
                 self.mouse_held_count += 1
 
             case ipc.MouseMove() if self.is_live and self.mouse_tracking_enabled:
-                if self.render_type == ipc.RenderType.Time:
+                if self.render_type == ipc.RenderType.MouseMovement and not self.component.app_resizing:
                     self.draw_pixmap_line(message.position, self.cursor_data.position)
                 self.update_track_data(self.cursor_data, message.position)
                 self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
@@ -1332,8 +1413,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 x, y = message.position
                 x = x * 0.5 + offset  # Required for the side by side display
 
-                remapped = (int(x * 1024 + 1024), int(-y * 1024 + 1024))
-                if self.render_type == ipc.RenderType.Thumbstick_Time:
+                remapped = round(x * 1024 + 1024), round(-y * 1024 + 1024)
+                if self.render_type == ipc.RenderType.ThumbstickMovement:
                     self.draw_pixmap_line(remapped, data.position, (RADIAL_ARRAY_SIZE, RADIAL_ARRAY_SIZE))
                 self.update_track_data(data, remapped)
 
@@ -1365,196 +1446,307 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Update the selected profile
             case ipc.CurrentProfileChanged():
-                self.current_profile = Profile(message.name, message.rects)
+                self.component.focused_app = Application(message.name, message.rects)
 
                 if self.is_live:
-                    self.request_profile_data(message.name)
+                    for sanitised_profile_name, profile_name in self._profile_names.items():
+                        if profile_name == message.name:
+                            self.request_profile_data(sanitised_profile_name)
+                            break
 
             case ipc.ApplicationFocusChanged():
-                self.ui.stat_app_exe.setText(os.path.basename(message.exe))
-                self.ui.stat_app_title.setText(message.title)
-                self.ui.stat_app_tracked.setText('Yes' if message.tracked else 'No')
+                self.update_focused_application(message.exe, message.title, message.tracked)
 
             # Show the correct distance
             case ipc.ProfileData():
-                self._is_loading_profile -= 1
-                finished_loading = not self._is_loading_profile
-
-                # Pause the signals on the track options
-                self.ui.track_mouse.setEnabled(False)
-                self.ui.track_keyboard.setEnabled(False)
-                self.ui.track_gamepad.setEnabled(False)
-                self.ui.track_network.setEnabled(False)
-                self.ui.override_monitor.setEnabled(False)
-
-                self.cursor_data.distance = message.distance
-                self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
-                self.cursor_data.counter = message.cursor_counter
-                self.thumbstick_l_data.counter = message.thumb_l_counter
-                self.thumbstick_r_data.counter = message.thumb_r_counter
-
-                self.mouse_click_count = message.clicks
-                self.mouse_scroll_count = message.scrolls
-                self.key_press_count = message.keys_pressed
-                self.button_press_count = message.buttons_pressed
-                self.elapsed_time = message.elapsed_ticks
-                self.active_time = message.active_ticks
-                self.inactive_time = message.inactive_ticks
-                self.bytes_sent = message.bytes_sent
-                self.bytes_recv = message.bytes_recv
-                self.resolutions = message.resolutions
-                if message.multi_monitor is None:
-                    single_monitor = CLI.single_monitor
-                    multi_monitor = CLI.multi_monitor
-                else:
-                    single_monitor = not message.multi_monitor
-                    multi_monitor = message.multi_monitor
-                self.ui.single_monitor.setChecked(single_monitor)
-                self.ui.multi_monitor.setChecked(multi_monitor)
-                self.ui.override_monitor.setChecked(message.multi_monitor is not None)
-                self.ui.override_monitor.setEnabled(True)
-
-                if finished_loading:
-                    self.request_thumbnail()
-
-                self.ui.track_mouse.setChecked(message.config.track_mouse)
-                self.ui.track_keyboard.setChecked(message.config.track_keyboard)
-                self.ui.track_gamepad.setChecked(message.config.track_gamepad)
-                self.ui.track_network.setChecked(message.config.track_network)
-
-                # Update the visibility of the delete options
-                self._delete_mouse_pressed = False
-                self._delete_keyboard_pressed = False
-                self._delete_gamepad_pressed = False
-                self._delete_network_pressed = False
-                self.handle_delete_button_visibility()
-
-                # Resume signals on the track options
-                # If disabled, ensure they are unchecked
-                if CLI.disable_mouse:
-                    self.ui.track_mouse.setChecked(False)
-                else:
-                    self.ui.track_mouse.setEnabled(finished_loading)
-                if CLI.disable_keyboard:
-                    self.ui.track_keyboard.setChecked(False)
-                else:
-                    self.ui.track_keyboard.setEnabled(finished_loading)
-                if CLI.disable_gamepad:
-                    self.ui.track_gamepad.setChecked(False)
-                else:
-                    self.ui.track_gamepad.setEnabled(finished_loading)
-                if CLI.disable_network:
-                    self.ui.track_network.setChecked(False)
-                else:
-                    self.ui.track_network.setEnabled(finished_loading)
+                self._handle_profile_data(message)
 
             case ipc.DataTransfer():
                 if self.is_live and self.ui.track_network.isChecked():
                     self.bytes_sent += message.bytes_sent
                     self.bytes_recv += message.bytes_recv
-
-                    self.ui.stat_download_current.setText(format_network_speed(message.bytes_recv))
-                    self.ui.stat_upload_current.setText(format_network_speed(message.bytes_sent))
-
-                else:
-                    self.ui.stat_download_current.setText(format_network_speed(0))
-                    self.ui.stat_upload_current.setText(format_network_speed(0))
+                    self._network_speed.set(message)
 
             case ipc.SaveComplete():
-                self._last_save_message = message
-                self._last_save_time = int(time.time() * 10)
-                self.mark_profiles_saved(*message.succeeded)
-                self.mark_profiles_unsaved(self.current_profile.name)
-                self._redraw_profile_combobox()
-
-                # Notify when complete
-                if self.save_all_request_sent:
-                    self.save_all_request_sent = False
-
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-
-                    if message.failed:
-                        msg.setWindowTitle('Save Failed')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-                        msg.setText('Not all profiles were saved.\n'
-                                    f'  Successful: {", ".join(message.succeeded)}\n'
-                                    f'  Failed: {", ".join(message.failed)}\n')
-                    else:
-                        msg.setWindowTitle('Successful')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                        msg.setText('All profiles have been saved.')
-
-                if self.save_profile_request_sent:
-                    self.save_profile_request_sent = False
-
-                    msg = QtWidgets.QMessageBox(self)
-                    msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-
-                    if message.failed:
-                        msg.setWindowTitle('Save Failed')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-                        msg.setText(f'Profile "{message.failed[0]}" failed to save.')
-                    elif message.succeeded:
-                        msg.setWindowTitle('Successful')
-                        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                        msg.setText(f'Profile "{message.succeeded[0]}" has been saved.')
-                    else:
-                        raise RuntimeError('incorrect message format')
-
-                    msg.exec()
-
-                # Continue shutdown now save message has been received
-                if self._is_closing:
-                    self.shut_down(force=True)
+                self._handle_save_complete(message)
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
 
             # Update the GUI with the component statuses
             case ipc.QueueSize():
-                self.ui.stat_hub_queue.setText(str(message.hub))
-                self.ui.stat_tracking_queue.setText(str(message.tracking))
-                self.ui.stat_processing_queue.setText(str(message.processing))
-                self.ui.stat_gui_queue.setText(str(message.gui))
-                self.ui.stat_app_detection_queue.setText(str(message.app_detection))
+                widget_values = {
+                    (self.ui.status_hub_state, self.ui.status_hub_queue): message.hub,
+                    (self.ui.status_tracking_state, self.ui.status_tracking_queue): message.tracking,
+                    (self.ui.status_processing_state, self.ui.status_processing_queue): message.processing,
+                    (self.ui.status_gui_state, self.ui.status_gui_queue): message.gui,
+                    (self.ui.status_app_state, self.ui.status_app_queue): message.app_detection,
+                }
 
-                if self.state == ipc.TrackingState.Running:
-                    self.ui.stat_tracking_state.setText('Running' if message.tracking <= 5 else 'Busy')
-                    self.ui.stat_processing_state.setText('Running' if message.processing <= 5 else 'Busy')
-                    self.ui.stat_hub_state.setText('Running' if message.hub <= 5 else 'Busy')
-                    self.ui.stat_app_state.setText('Running' if message.app_detection <= 5 else 'Busy')
-                else:
-                    for widget in (self.ui.stat_tracking_state, self.ui.stat_processing_state,
-                                   self.ui.stat_hub_state, self.ui.stat_app_state):
-                        widget.setText('Paused' if self.state == ipc.TrackingState.Paused else 'Stopped')
+                for (status_widget, queue_widget), value in widget_values.items():
+                    match self.state:
+                        case ipc.TrackingState.Running:
+                            if value < 5:
+                                state = 'Running'
+                            else:
+                                state = 'Busy'
+                        case ipc.TrackingState.Paused:
+                            state = 'Paused'
+                        case ipc.TrackingState.Stopped:
+                            state = 'Stopped'
+                        case _:
+                            state = 'Unknown'
+                    status_widget.setText(state)
+                    queue_widget.setText(str(value))
 
             case ipc.InvalidConsole():
                 self.ui.prefs_console.setEnabled(False)
+                self.ui.prefs_console.setChecked(False)
 
-            case ipc.CloseSplashScreen():
-                self.close_splash_screen.emit()
+            case ipc.ToggleConsole() if self.ui.prefs_console.isEnabled():
+                self.ui.prefs_console.setChecked(message.show)
 
             # Load a legacy profile and switch to it
-            case ipc.LoadLegacyProfile():
-                self._profile_names.append(message.name)
+            case ipc.ImportProfile() | ipc.ImportLegacyProfile():
+                sanitised_profile_name = sanitise_profile_name(message.name)
+                self._profile_names[sanitised_profile_name] = message.name
+                self._unsaved_profiles.add(sanitised_profile_name)
                 self._redraw_profile_combobox()
-                self.ui.current_profile.setCurrentIndex(self._profile_names.index(message.name))
+                self.ui.current_profile.setCurrentIndex(tuple(self._profile_names).index(sanitised_profile_name))
+
+            case ipc.FailedProfileImport():
+                # Undo adding the profile
+                sanitised_profile_name = sanitise_profile_name(message.source.name)
+                del self._profile_names[sanitised_profile_name]
+                self._unsaved_profiles.discard(sanitised_profile_name)
+                self._redraw_profile_combobox()
+                self.ui.auto_switch_profile.setChecked(True)
+                self.profile_changed(self.ui.current_profile.currentIndex())
+
+                # Show error message
+                msg = QtWidgets.QMessageBox()
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+                msg.setWindowTitle('Failed Import')
+                msg.setText(f'Failed to import "{message.source.path}" as a profile.')
+                msg.exec()
 
             case ipc.ExportStatsSuccessful():
                 msg = AutoCloseMessageBox(self)
                 msg.setWindowTitle(f'Export Successful')
                 msg.setText(f'"{message.source.path}" was successfully saved.')
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                msg.exec_with_timeout('Closing notification', GlobalConfig.export_notification_timeout)
+                msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
 
+            case ipc.SendPID():
+                match message.source:
+                    case ipc.Target.Hub:
+                        self.ui.status_hub_pid.setText(str(message.pid))
+                    case ipc.Target.Tracking:
+                        self.ui.status_tracking_pid.setText(str(message.pid))
+                    case ipc.Target.Processing:
+                        self.ui.status_processing_pid.setText(str(message.pid))
+                    case ipc.Target.GUI:
+                        self.ui.status_gui_pid.setText(str(message.pid))
+                    case ipc.Target.AppDetection:
+                        self.ui.status_app_pid.setText(str(message.pid))
+
+            case ipc.AllComponentsLoaded():
+                self.on_app_ready()
+
+            case ipc.ShowPopup():
+                self.notify(message.content)
+
+    def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
+        """Handle a save completion message."""
+        self._last_save_message = message
+        self._last_save_time = int(time.time() * 10)
+        self.mark_profiles_saved(*message.succeeded)
+        self.mark_profiles_unsaved(self.component.focused_app.name)
+        self._redraw_profile_combobox()
+
+        # Notify when complete
+        if self.save_all_request_sent:
+            self.save_all_request_sent = False
+
+            msg = QtWidgets.QMessageBox(self)
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+            if message.failed:
+                msg.setWindowTitle('Save Failed')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText('Not all profiles were saved.\n'
+                            f'  Successful: {", ".join(message.succeeded)}\n'
+                            f'  Failed: {", ".join(message.failed)}\n')
+                msg.exec()
+            else:
+                self.notify('All profiles have been saved.')
+
+        if self.save_profile_request_sent:
+            self.save_profile_request_sent = False
+
+            msg = QtWidgets.QMessageBox(self)
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+
+            if message.failed:
+                msg.setWindowTitle('Save Failed')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText(f'Profile "{message.failed[0]}" failed to save.')
+                msg.exec()
+            elif message.succeeded:
+                self.notify(f'Profile "{message.succeeded[0]}" has been saved.')
+
+        # Continue shutdown now save message has been received
+        if self._is_closing:
+            self.shut_down(force=True)
+
+    def _handle_profile_data(self, message: ipc.ProfileData) -> None:
+        """Handle an incoming profile data message."""
+        self._is_loading_profile -= 1
+        self.ui.tab_options.setTabText(1, f'{message.profile_name} Options')
+
+        self.cursor_data.distance = message.distance
+        self.ui.stat_distance.setText(format_distance(self.cursor_data.distance))
+        self.cursor_data.counter = message.cursor_counter
+        self.thumbstick_l_data.counter = message.thumb_l_counter
+        self.thumbstick_r_data.counter = message.thumb_r_counter
+
+        self.mouse_click_count = message.clicks
+        self.mouse_scroll_count = message.scrolls
+        self.key_press_count = message.keys_pressed
+        self.button_press_count = message.buttons_pressed
+        self.elapsed_time = message.elapsed_ticks
+        self.active_time = message.active_ticks
+        self.inactive_time = message.inactive_ticks
+        self.bytes_sent = message.bytes_sent
+        self.bytes_recv = message.bytes_recv
+        self.resolutions = message.resolutions
+        if message.multi_monitor is None:
+            single_monitor = CTX.single_monitor
+            multi_monitor = CTX.multi_monitor
+        else:
+            single_monitor = not message.multi_monitor
+            multi_monitor = message.multi_monitor
+        self.ui.single_monitor.setChecked(single_monitor)
+        self.ui.multi_monitor.setChecked(multi_monitor)
+        self.ui.opts_monitor.setChecked(message.multi_monitor is not None)
+
+        self.ui.track_mouse.setChecked(message.config.track_mouse)
+        self.ui.track_keyboard.setChecked(message.config.track_keyboard)
+        self.ui.track_gamepad.setChecked(message.config.track_gamepad)
+        self.ui.track_network.setChecked(message.config.track_network)
+
+        # Update the visibility of the delete options
+        self._delete_pressed = ipc.Device(0)
+        self.handle_delete_button_visibility()
+
+        # Resume signals on the track options
+        # If disabled, ensure they are unchecked
+        if CTX.disable_mouse:
+            self.ui.track_mouse.setChecked(False)
+        else:
+            self.ui.track_mouse.setEnabled(not self._is_loading_profile)
+        if CTX.disable_keyboard:
+            self.ui.track_keyboard.setChecked(False)
+        else:
+            self.ui.track_keyboard.setEnabled(not self._is_loading_profile)
+        if CTX.disable_gamepad:
+            self.ui.track_gamepad.setChecked(False)
+        else:
+            self.ui.track_gamepad.setEnabled(not self._is_loading_profile)
+        if CTX.disable_network:
+            self.ui.track_network.setChecked(False)
+        else:
+            self.ui.track_network.setEnabled(not self._is_loading_profile)
+
+        # Enable widgets and redraw when loading has finished
+        if not self._is_loading_profile:
+            self.request_thumbnail()
+            self.ui.opts_status.setEnabled(True)
+            self.ui.opts_resolution.setEnabled(True)
+            self.ui.opts_monitor.setEnabled(True)
+            self.ui.opts_tracking.setEnabled(message.profile_name != TRACKING_DISABLE)
+
+    def _handle_render(self, message: ipc.Render) -> None:
+        """Handle a completed render message."""
+        if message.array.any():
+            height, width, channels = message.array.shape
+        else:
+            height = width = channels = 0
+        failed = width == height == 0
+
+        target_height = round(height / (message.request.sampling or 1))
+        target_width = round(width / (message.request.sampling or 1))
+
+        # Draw the new pixmap
+        if message.request.file_path is None:
+            self._timer_rendering.stop()
+            self.ui.thumbnail.hide_rendering_text()
+            self._last_thumbnail_time = int(time.time() * 10)
+
+            if failed:
+                self.ui.thumbnail.set_pixmap(QtGui.QPixmap())
+
+            else:
+                stride = channels * width
+                array = message.array
+
+                # Normalise down to 8 bit arrays
+                if array.dtype != np.uint8:
+                    match message.array.dtype:
+                        case np.uint16:
+                            array = message.array / 257
+                        case np.uint32:
+                            array = message.array / (65537 * 257)
+                        case np.uint64:
+                            array = message.array / (4294967297 * 65537 * 257)
+                        case _:
+                            raise NotImplementedError(array.dtype)
+                    array = array.round().astype(np.uint8)
+
+                match channels:
+                    case 1:
+                        image_format = QtGui.QImage.Format.Format_Grayscale8
+                    case 3:
+                        image_format = QtGui.QImage.Format.Format_RGB888
+                    case 4:
+                        image_format = QtGui.QImage.Format.Format_RGBA8888
+                    case _:
+                        raise NotImplementedError(channels)
+
+                image = QtGui.QImage(array.data, width, height, stride, image_format)
+                scaled_image = image.scaled(target_width, target_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+                self.ui.thumbnail.set_pixmap(scaled_image)
+
+            self.pause_redraw -= 1
+
+            # Check if the flag was set that a new thumbnail was requested
+            if not self.pause_redraw and self._thumbnail_redraw_required:
+                self._request_thumbnail()
+                self._thumbnail_redraw_required = False
+
+        # Save a render
+        elif failed:
+            msg = QtWidgets.QMessageBox(self)
+            msg.setWindowTitle('Render Failed')
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+            msg.setText('No data is available for this render.')
+            msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+            msg.exec()
+
+        else:
+            im = Image.fromarray(message.array)
+            im = im.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            im.save(message.request.file_path)
+            os.startfile(message.request.file_path)
+
     @QtCore.Slot()
     def start_tracking(self) -> None:
         """Start/unpause the tracking."""
-        self.cursor_data.position = get_cursor_pos()  # Prevent erroneous line jumps
+        self.notify(f'{self.windowTitle()} has resumed tracking.')
+        self.cursor_data.position = None
         self.component.send_data(ipc.StartTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)
@@ -1563,6 +1755,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def pause_tracking(self) -> None:
         """Pause/unpause the tracking."""
+        self.notify(f'{self.windowTitle()} has paused tracking.')
         self.component.send_data(ipc.PauseTracking())
         self.ui.save.setEnabled(True)
         self.ui.thumbnail_refresh.setEnabled(True)
@@ -1620,22 +1813,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(QtWidgets.QSystemTrayIcon.ActivationReason)
     def tray_activated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
-        """What to do when the tray icon is activated."""
+        """What to do when the tray icon is activated.
+
+        Note that each OS handles this differently. On Windows, a double
+        click is a `DoubleClick` where as on Linux it's `Trigger`. A
+        right click on windows is `Context`, and it's not supported for
+        Linux. The context menu handling has been moved to the menus
+        `aboutToShow` method instead which is cross platform.
+        """
         match reason:
-            case QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+            case (QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick  # Windows
+                  | QtWidgets.QSystemTrayIcon.ActivationReason.Trigger):  # Linux
                 self.load_from_tray()
-
-            case QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-                self.ui.tray_show.setVisible(not self.isVisible())
-                self.ui.tray_hide.setVisible(self.isVisible())
-
-                # Determine if the debug menu should be visible
-                modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
-                shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
-                self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
-
-                # Show the menu
-                self.ui.tray_context_menu.exec(QtGui.QCursor.pos())
 
     def hide_to_tray(self) -> None:
         """Minimise the window to the tray."""
@@ -1663,6 +1852,25 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.full_screen.isChecked():
                 self.showFullScreen()
 
+    @QtCore.Slot()
+    def update_tray_menu(self) -> None:
+        """Update the visible items in the tray context menu."""
+        self.ui.tray_show.setVisible(not self.isVisible())
+        self.ui.tray_hide.setVisible(self.isVisible())
+
+        # Debug is only shown when shift is held
+        modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
+        shift_held = modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier
+        self.ui.menu_debug.menuAction().setVisible(bool(shift_held))
+
+    def open_executable_dir(self) -> None:
+        """Open the path to the program executables."""
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(CTX.executable_dir)))
+
+    def open_data_dir(self) -> None:
+        """Open the path to the program data."""
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(CTX.data_dir)))
+
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         """What to do when showing the window.
         The thumbnail is updated and the update timer is resumed.
@@ -1688,6 +1896,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer_activity.start(100)
             self.request_thumbnail()
             self.setWindowState(QtCore.Qt.WindowState.WindowActive)
+            self._timer_tip.start(600000)
+
+        self.set_tip_timer_state(True)
 
         event.accept()
 
@@ -1722,6 +1933,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.thumbnail.clear_pixmap()
             self.notify(f'{self.windowTitle()} is now running in the background.')
 
+        self.set_tip_timer_state(False)
+
         event.accept()
 
     def ask_to_save(self) -> bool:
@@ -1740,7 +1953,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.Cancel)
 
-        match msg.exec_with_timeout('Saving automatically', GlobalConfig.shutdown_timeout):
+        match msg.exec_with_timeout('Saving automatically', self.config.shutdown_timeout):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
                 if self.state != ipc.TrackingState.Stopped:
                     self.component.send_data(ipc.StartTracking())
@@ -1759,6 +1972,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Close now if no tracking is running
         if self.state == ipc.TrackingState.Stopped:
+            return True
+
+        # If the window is not yet ready then just close
+        if not self._window_ready:
             return True
 
         # Allow the user to cancel
@@ -1818,6 +2035,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
+    def handle_session_shutdown(self, manager: QtGui.QSessionManager) -> None:
+        """Force the app to close when the system is shutting down.
+        At this point, the queues are closed, so nothing more can be
+        done.
+        """
+        self.shut_down(force=True)
+        manager.release()
+
     def update_track_data(self, data: MapData, position: tuple[int, int]) -> None:
         data.distance += calculate_distance(position, data.position)
 
@@ -1825,14 +2050,17 @@ class MainWindow(QtWidgets.QMainWindow):
         data.counter += 1
         data.position = position
 
-        # Check if array compression has been done
-        if data.counter > COMPRESSION_THRESHOLD:
-            data.counter = int(data.counter / COMPRESSION_FACTOR)
+        # Check if array decay has been done
+        if data.counter > DECAY_THRESHOLD:
+            data.counter = round(data.counter / DECAY_FACTOR)
 
     @property
     def is_live(self) -> bool:
         """Determine if the visible data is live."""
-        return self.ui.current_profile.currentData() == self.current_profile.name
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return False
+        return sanitised_profile_name == sanitise_profile_name(self.component.focused_app.name)
 
     @property
     def mouse_tracking_enabled(self) -> bool:
@@ -1840,7 +2068,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return self.ui.track_mouse.isChecked() and self.ui.prefs_track_mouse.isChecked()
 
     def draw_pixmap_line(self, old_position: tuple[int, int] | None, new_position: tuple[int, int] | None,
-                         force_monitor: tuple[int, int] | None = None):
+                         force_monitor: tuple[int, int] | None = None) -> None:
         """When an object moves, draw it.
         The drawing is an approximation and not a render, and will be
         periodically replaced with an actual render.
@@ -1848,244 +2076,194 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible() or not self.is_live or self._is_closing or self.ui.thumbnail.pixmap().isNull():
             return
 
+        # If in the middle of switching profiles, queue the coordinates to redraw after
+        if self.pause_redraw:
+            self._pixel_redraw_queue.append((old_position, new_position, force_monitor))
+
         unique_pixels = set()
         size = self.ui.thumbnail.pixmap_size()
-        for pixel in calculate_line(old_position, new_position):
-            # Refresh data per pixel
-            if force_monitor:
-                current_monitor = force_monitor
-            else:
-                result = self._monitor_offset(pixel)
-                if result is None:
-                    continue
-                current_monitor, pixel = result
+        for current_monitor, pixel in self.component.iter_pixel_line(old_position, new_position, force_monitor):
+            # Avoid drawing if resolution option isn't ticked
+            if not self._resolution_options.get(current_monitor, True):
+                continue
+
             width_multiplier = (size.width() - 1) / current_monitor[0]
             height_multiplier = (size.height() - 1) / current_monitor[1]
 
             # Downscale the pixel to match the pixmap
-            x = int(pixel[0] * width_multiplier)
-            y = int(pixel[1] * height_multiplier)
+            x = round(pixel[0] * width_multiplier)
+            y = round(pixel[1] * height_multiplier)
             unique_pixels.add((x, y))
 
         # Send unique pixels to be drawn
-        self.update_pixmap_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
+        self.ui.thumbnail.update_pixels(*(Pixel(QtCore.QPoint(x, y), self.pixel_colour) for x, y in unique_pixels))
 
-    def update_pixmap_pixels(self, *pixels: Pixel) -> None:
-        """Update a specific pixel in the QImage and refresh the display."""
-        self.ui.thumbnail.update_pixels(*pixels)
+        # Redraw any queued coordinates after profile switch
+        if not self.pause_redraw and self._pixel_redraw_queue:
+            redraw, self._pixel_redraw_queue = self._pixel_redraw_queue, []
+            for _old_position, _new_position, _force_monitor in redraw:
+                self.draw_pixmap_line(_old_position, _new_position, _force_monitor)
 
-        # Queue commands if redrawing is paused
-        # This allows them to be resubmitted after an update
-        if self.pause_redraw:
-            self.redraw_queue.extend(pixels)
-        elif self.redraw_queue:
-            redraw_queue, self.redraw_queue = self.redraw_queue, []
-            self.ui.thumbnail.update_pixels(*redraw_queue)
-
+    @QtCore.Slot()
     def update_thumbnail_size(self) -> None:
         """Set a new thumbnail size after the window has finished resizing."""
-        width = self.ui.thumbnail.width()
-        height = self.ui.thumbnail.height()
-        custom_width = self.ui.custom_width.isEnabled()
-        custom_height = self.ui.custom_height.isEnabled()
-        lock_aspect = self.ui.lock_aspect.isChecked()
-
-        # If the aspect is locked, or both width and height are set
-        if lock_aspect or (custom_width and custom_height):
-            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
-
-        # If the custom width or height is too low
-        elif custom_width < width or custom_height < height:
-            aspect_mode = QtCore.Qt.AspectRatioMode.KeepAspectRatio
-
-        # Allow the render to fill the widget
-        else:
-            aspect_mode = QtCore.Qt.AspectRatioMode.IgnoreAspectRatio
-
-        if self.ui.thumbnail.freeze_scale(aspect_mode):
+        if self.ui.thumbnail.freeze_scale():
             self.request_thumbnail()
 
-    def delete_mouse(self) -> None:
-        """Request deletion of mouse data for the current profile."""
-        profile = self.ui.current_profile.currentData()
+    def _delete_device_data(self, devices: ipc.Device) -> None:
+        """Request deletion of device data for the current profile."""
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+
+        detail: list[str] = []
+        if devices & ipc.Device.Mouse:
+            detail.append('Mouse movement, clicks and scroll data')
+        if devices & ipc.Device.Keyboard:
+            detail.append('Keyboard keypress data')
+        if devices & ipc.Device.Gamepad:
+            detail.append('Gamepad button and thumbstick data')
+        if devices & ipc.Device.Network:
+            detail.append('Network upload and download data')
+
+        name_str = join_and(device.name for device in ipc.Device
+                            if device.name is not None and devices & device)
+        title = f'Delete {name_str.title()} Data'
+        lines = [f'Are you sure you want to delete all {name_str.lower()} data for {profile_name}?']
+        if len(detail) > 1:
+            lines.append('This will remove:')
+            lines.extend(f'    {line}' for line in detail)
+        lines.append('It will not trigger an autosave, but it cannot be undone.')
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all mouse data for {profile}?\n'
-                    'This involves the movement, click and scroll data.\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
+        msg.setWindowTitle(title)
+        msg.setText('\n'.join(lines))
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_mouse_pressed = True
+            self._delete_pressed |= devices
             self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteMouseData(profile))
-            self.mark_profiles_unsaved(profile)
+            self.component.send_data(ipc.DeleteData(sanitised_profile_name, devices))
+            self.mark_profiles_unsaved(profile_name)
             self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+            self.request_profile_data(sanitised_profile_name)
+
+    def delete_mouse(self) -> None:
+        self._delete_device_data(ipc.Device.Mouse)
 
     def delete_keyboard(self) -> None:
-        """Request deletion of keyboard data for the current profile."""
-        profile = self.ui.current_profile.currentData()
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all keyboard data for {profile}?\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_keyboard_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteKeyboardData(profile))
-            self.mark_profiles_unsaved(profile)
-            self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+        self._delete_device_data(ipc.Device.Keyboard)
 
     def delete_gamepad(self) -> None:
-        """Request deletion of gamepad data for the current profile."""
-        profile = self.ui.current_profile.currentData()
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Keyboard Data')
-        msg.setText(f'Are you sure you want to delete all gamepad data for {profile}?\n'
-                    'This involves both the buttons and the thumbstick maps.\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_gamepad_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteGamepadData(profile))
-            self.mark_profiles_unsaved(profile)
-            self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+        self._delete_device_data(ipc.Device.Gamepad)
 
     def delete_network(self) -> None:
-        """Request deletion of network data for the current profile."""
-        profile = self.ui.current_profile.currentData()
-
-        msg = QtWidgets.QMessageBox(self)
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
-        msg.setWindowTitle('Delete Network Data')
-        msg.setText(f'Are you sure you want to delete all upload and download data for {profile}?\n'
-                    'It will not trigger an autosave, but it cannot be undone.')
-        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
-        msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
-
-        if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self._delete_network_pressed = True
-            self.handle_delete_button_visibility()
-            self.component.send_data(ipc.DeleteNetworkData(profile))
-            self.mark_profiles_unsaved(profile)
-            self._redraw_profile_combobox()
-            self.request_profile_data(profile)
+        self._delete_device_data(ipc.Device.Network)
 
     def delete_profile(self) -> None:
         """Delete the selected profile."""
-        profile = self.ui.current_profile.currentData()
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return None
 
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         msg.setWindowTitle('Delete Profile')
-        msg.setText(f'Are you sure you want to delete all data for {profile}?\n'
+        msg.setText(f'Are you sure you want to delete all data for {profile_name}?\n'
                     'This action cannot be undone.')
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         msg.setEscapeButton(QtWidgets.QMessageBox.StandardButton.No)
 
         if msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes:
-            self.component.send_data(ipc.DeleteProfile(profile))
-            self.mark_profiles_saved(profile)
-            del self._profile_names[self._profile_names.index(profile)]
-            self._unsaved_profiles.discard(profile)
+            self.component.send_data(ipc.DeleteProfile(sanitised_profile_name))
+
+            # Only remove from list if it's not the currently selected profile
+            if sanitised_profile_name != sanitise_profile_name(self.component.focused_app.name):
+                self.mark_profiles_saved(profile_name)
+                del self._profile_names[sanitised_profile_name]
+                self._unsaved_profiles.discard(sanitised_profile_name)
 
             self._redraw_profile_combobox()
             self.profile_changed(0)
 
+    def _toggle_profile_tracking(self, device: ipc.Device, widget: QtWidgets.QCheckBox, state: QtCore.Qt.CheckState) -> None:
+        """Enable or disable tracking of a device for the current profile."""
+        if not widget.isEnabled():
+            return
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None:
+            return
+        self.component.send_data(ipc.SetProfileTracking(sanitised_profile_name, device, state == QtCore.Qt.CheckState.Checked.value))
+
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_mouse_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_mouse.isEnabled():
-            return
-
-        selected_profile = self.ui.current_profile.currentData()
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileMouseTracking(selected_profile, enable))
+        self._toggle_profile_tracking(ipc.Device.Mouse, self.ui.track_mouse, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_keyboard_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_keyboard.isEnabled():
-            return
-
-        selected_profile = self.ui.current_profile.currentData()
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileKeyboardTracking(selected_profile, enable))
+        self._toggle_profile_tracking(ipc.Device.Keyboard, self.ui.track_keyboard, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_gamepad_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_gamepad.isEnabled():
-            return
-
-        selected_profile = self.ui.current_profile.currentData()
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileGamepadTracking(selected_profile, enable))
+        self._toggle_profile_tracking(ipc.Device.Gamepad, self.ui.track_gamepad, state)
 
     @QtCore.Slot(QtCore.Qt.CheckState)
     def toggle_profile_network_tracking(self, state: QtCore.Qt.CheckState) -> None:
-        if not self.ui.track_network.isEnabled():
-            return
+        self._toggle_profile_tracking(ipc.Device.Network, self.ui.track_network, state)
 
-        selected_profile = self.ui.current_profile.currentData()
-        enable = state == QtCore.Qt.CheckState.Checked.value
-        self.component.send_data(ipc.SetProfileNetworkTracking(selected_profile, enable))
+    def _set_global_tracking_enabled(self, device: ipc.Device, value: bool) -> None:
+        """Enable or disable global tracking of a device."""
+        if device.name is not None:
+            setattr(self.config, f'track_{device.name.lower()}', value)
+            self.config.save()
+        self.component.send_data(ipc.SetGlobalTracking(device, value))
 
     @QtCore.Slot(bool)
     def set_mouse_tracking_enabled(self, value: bool) -> None:
-        self.config.track_mouse = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalMouseTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Mouse, value)
 
     @QtCore.Slot(bool)
     def set_keyboard_tracking_enabled(self, value: bool) -> None:
-        self.config.track_keyboard = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalKeyboardTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Keyboard, value)
 
     @QtCore.Slot(bool)
     def set_gamepad_tracking_enabled(self, value: bool) -> None:
-        self.config.track_gamepad = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalGamepadTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Gamepad, value)
 
     @QtCore.Slot(bool)
     def set_network_tracking_enabled(self, value: bool) -> None:
-        self.config.track_network = value
-        self.config.save()
-        self.component.send_data(ipc.SetGlobalNetworkTracking(value))
+        self._set_global_tracking_enabled(ipc.Device.Network, value)
+
+    @QtCore.Slot(bool)
+    def set_app_detection_disabled(self, value: bool) -> None:
+        self.component.send_data(ipc.DebugDisableAppDetection(value))
+
+    @QtCore.Slot(bool)
+    def set_monitor_check_disabled(self, value: bool) -> None:
+        self.component.send_data(ipc.DebugDisableMonitorCheck(value))
 
     def mark_profiles_saved(self, *profile_names: str) -> None:
         """Mark profiles as saved."""
-        self._unsaved_profiles -= set(profile_names)
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if profile_name in profile_names:
+                self._unsaved_profiles.discard(sanitised_profile_name)
         self.set_profile_modified_text()
 
     def mark_profiles_unsaved(self, *profile_names: str) -> None:
         """Mark profiles as unsaved."""
-        self._unsaved_profiles |= set(profile_names)
+        for sanitised_profile_name, profile_name in self._profile_names.items():
+            if profile_name in profile_names:
+                self._unsaved_profiles.add(sanitised_profile_name)
         self.set_profile_modified_text()
 
-    def set_profile_modified_text(self):
+    def set_profile_modified_text(self) -> None:
         """Set the text if the profile has been modified."""
-        if self.ui.current_profile.currentData() in self._unsaved_profiles:
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is not None and sanitised_profile_name in self._unsaved_profiles:
             self.ui.profile_modified.setText('Yes')
             self.ui.profile_save.setEnabled(self.state != ipc.TrackingState.Stopped)
         else:
@@ -2099,10 +2277,10 @@ class MainWindow(QtWidgets.QMainWindow):
         processing is not waiting to delete. Deleting a profile is only
         allowed once all tracking is disabled as a safety measure.
         """
-        delete_mouse = not self.ui.track_mouse.isChecked() and not self._delete_mouse_pressed
-        delete_keyboard = not self.ui.track_keyboard.isChecked() and not self._delete_keyboard_pressed
-        delete_gamepad = not self.ui.track_gamepad.isChecked() and not self._delete_gamepad_pressed
-        delete_network = not self.ui.track_network.isChecked() and not self._delete_network_pressed
+        delete_mouse = not self.ui.track_mouse.isChecked() and not (self._delete_pressed & ipc.Device.Mouse)
+        delete_keyboard = not self.ui.track_keyboard.isChecked() and not (self._delete_pressed & ipc.Device.Keyboard)
+        delete_gamepad = not self.ui.track_gamepad.isChecked() and not (self._delete_pressed & ipc.Device.Gamepad)
+        delete_network = not self.ui.track_network.isChecked() and not (self._delete_pressed & ipc.Device.Network)
 
         self.ui.delete_mouse.setEnabled(delete_mouse)
         self.ui.delete_keyboard.setEnabled(delete_keyboard)
@@ -2110,22 +2288,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delete_network.setEnabled(delete_network)
         self.ui.delete_profile.setEnabled(delete_mouse and delete_keyboard and delete_gamepad and delete_network)
 
+    def set_autostart(self) -> None:
+        args = list(sys.argv)
+        exists = set(args)
+        if '--autostart' not in exists:
+            args.append('--autostart')
+        if CTX.installed and '--installed' not in exists:
+            args.append('--installed')
+        if CTX.portable and '--portable' not in exists:
+            args.append('--portable')
+        while args and Path(args[0]).resolve() in (SYS_EXECUTABLE.resolve(), CTX.launch_executable.resolve()):
+            args = args[1:]
+        set_autostart(*args, ignore_args=('--start-hidden', '--start-visible'))
+
     @QtCore.Slot(bool)
-    def set_autostart(self, value: bool) -> None:
+    def toggle_autostart(self, value: bool) -> None:
         """Set if the application runs on startup.
         This only works on the built executable as it adds it to the
         registry. If the executable is moved then it will need to be
         re-added.
         """
-        if not self.ui.prefs_autostart.isEnabled():
-            return
-
         if value:
-            args = sys.argv
-            if args and os.path.normpath(args[0]) == os.path.normpath(SYS_EXECUTABLE):
-                args = args[1:]
-            set_autostart(*args, '--autostart')
-
+            self.set_autostart()
         else:
             remove_autostart()
 
@@ -2138,6 +2322,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.config.minimise_on_start = value
         self.config.save()
+
+        # Rewrite autostart to remove the minimise on start flag
+        if CTX.start_hidden is not None and self.ui.prefs_autostart.isChecked():
+            self.set_autostart()
 
     @QtCore.Slot(bool)
     def set_always_on_top(self, value: bool) -> None:
@@ -2176,12 +2364,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_advanced_options(self, show_advanced: bool) -> None:
         """Set the visibility of render option widgets."""
         is_click = self.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick)
-        is_thumbstick = self.render_type in (ipc.RenderType.Thumbstick_Time, ipc.RenderType.Thumbstick_Speed, ipc.RenderType.Thumbstick_Heatmap)
-        is_keyboard = self.render_type == ipc.RenderType.Keyboard
+        is_thumbstick = self.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickSpeed, ipc.RenderType.ThumbstickPosition)
+        is_keyboard = self.render_type == ipc.RenderType.KeyboardHeatmap
 
         self.ui.show_left_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
         self.ui.show_middle_clicks.setVisible(show_advanced and is_click)
         self.ui.show_right_clicks.setVisible(show_advanced and (is_click or is_thumbstick))
+
+        self.ui.show_count.setVisible(show_advanced and is_keyboard)
+        self.ui.show_time.setVisible(show_advanced and is_keyboard)
 
         self.ui.contrast.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.contrast].setVisible(show_advanced and not is_keyboard)
@@ -2196,142 +2387,408 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.blur.setVisible(show_advanced and not is_keyboard)
         self._buddies[self.ui.blur].setVisible(show_advanced and not is_keyboard)
         self.ui.linear.setVisible(show_advanced and not is_keyboard)
+        self.ui.interpolation_order.setVisible(show_advanced and not is_keyboard)
+        self._buddies[self.ui.interpolation_order].setVisible(show_advanced and not is_keyboard)
+        self.ui.invert.setVisible(show_advanced and not is_keyboard)
 
         self.ui.resolution_group.setVisible(show_advanced and not is_keyboard)
+        self.ui.layer_group.setVisible(show_advanced and not is_keyboard)
 
-    def notify(self, message: str) -> None:
+    def notify(self, message: str, title: str | None = None) -> None:
         """Show a notification.
-        If the tray messages are not available, a popup will be shown.
+        If the tray messages are not available, a popup will be shown
+        instead. If called on startup, then the message will be queue
+        until the window is ready.
         """
-        if self.tray is None or not self.tray.supportsMessages():
+        if title is None:
+            title = self.windowTitle()
+
+        if not self._window_ready:
+            self._startup_notify_queue.append((message, title))
+        elif self.tray is None or not self.tray.supportsMessages():
             if self.isVisible():
                 msg = QtWidgets.QMessageBox(self)
-                msg.setWindowTitle(self.windowTitle())
+                msg.setWindowTitle(title)
                 msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
                 msg.setText(message)
                 msg.exec()
         else:
-            self.tray.showMessage(self.windowTitle(), message, self.tray.icon(), 2000)
+            self.tray.showMessage(title, message, self.tray.icon(), 2000)
 
     @QtCore.Slot()
-    def import_legacy_profile(self):
-        """Prompt the user to import a legacy profile.
+    def import_profile(self) -> None:
+        """Prompt the user to import a profile.
+        Legacy profiles are supported, but will need to be given a name.
         A check is done to avoid name clashes.
         """
-         # Get the default legacy location if available
+        # Get the default legacy location if available
         documents_path = _get_docs_folder()
         default_dir = documents_path / 'Mouse Tracks' / 'Data'
         if not default_dir.exists():
-            default_dir = documents_path
+            if PROFILE_DIR.exists():
+                default_dir = PROFILE_DIR
+            else:
+                default_dir = documents_path
 
         # Select the profile
-        path, accept = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Legacy Profile',
+        path, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Profile',
                                                              str(default_dir),
                                                              'MouseTracks Profile (*.mtk)')
-        if not accept:
+        if not path:
             return
 
-        # Ask for the profile name
-        filename = QtCore.QFileInfo(path).baseName()
+        is_legacy = False
+        profile_name = TrackingProfile.get_name(path)
+        if profile_name is None:
+            profile_name = QtCore.QFileInfo(path).baseName()
+            is_legacy = True
+
         while True:
-            name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
-                                                          QtWidgets.QLineEdit.EchoMode.Normal, filename)
+            profile_name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
+                                                                  QtWidgets.QLineEdit.EchoMode.Normal, profile_name)
             if not accept:
                 return
+            if not profile_name.strip():
+                continue
+            elif TYPE_CHECKING:
+                assert isinstance(profile_name, str)
 
-            # Check if the profile exists
-            name = name.strip() or filename
-            if os.path.basename(get_filename(name)) not in os.listdir(PROFILE_DIR):
+            # Check if the profile already exists
+            if not PROFILE_DIR.exists():
                 break
+            if os.path.basename(get_filename(profile_name)) not in os.listdir(PROFILE_DIR):
+                if sanitise_profile_name(profile_name) not in self._profile_names:
+                    break
 
             # Show a warning
             msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-            msg.setWindowTitle('Error')
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+            msg.setWindowTitle('Warning')
             msg.setText('This profile already exists.\n\n'
-                        'To avoid accidental overwrites, please delete the existing profile or choose a new name.')
+                        'To avoid accidental overwrites, '
+                        'please delete the existing profile or choose a new name.')
             msg.exec()
 
         # Send the request
-        self.component.send_data(ipc.LoadLegacyProfile(name.strip() or filename, path))
+        if is_legacy:
+            self.component.send_data(ipc.ImportLegacyProfile(profile_name, path))
+        else:
+            self.component.send_data(ipc.ImportProfile(profile_name, path))
 
     @QtCore.Slot()
-    def export_mouse_stats(self):
+    def export_mouse_stats(self) -> None:
         """Export the mouse statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Mouse Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Mouse Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportMouseStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportMouseStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
-    def export_keyboard_stats(self):
+    def export_keyboard_stats(self) -> None:
         """Export the keyboard statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Keyboard Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Keyboard Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportKeyboardStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportKeyboardStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
-    def export_gamepad_stats(self):
+    def export_gamepad_stats(self) -> None:
         """Export the gamepad statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Gamepad Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Gamepad Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportGamepadStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportGamepadStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
-    def export_network_stats(self):
+    def export_network_stats(self) -> None:
         """Export the network statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Network Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Network Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportNetworkStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportNetworkStats(sanitised_profile_name, file_path))
 
     @QtCore.Slot()
-    def export_daily_stats(self):
+    def export_daily_stats(self) -> None:
         """Export the daily statistics."""
         dialog = QtWidgets.QFileDialog()
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setNameFilters(['CSV Files (*.csv)"'])
+        dialog.setNameFilters(['CSV Files (*.csv)'])
         dialog.setDefaultSuffix('csv')
 
-        profile = self.ui.current_profile.currentData()
-        profile_safe = re.sub(r'[^\w_.)( -]', '', profile)
+        sanitised_profile_name, profile_name = self._selected_profile_data()
+        if sanitised_profile_name is None or profile_name is None:
+            return
+        profile_safe = re.sub(r'[^\w_.)( -]', '', profile_name)
         export_dir = _get_docs_folder() / f'[{format_ticks(self.elapsed_time)}] {profile_safe} - Daily Stats.csv'
 
         file_path, accept = dialog.getSaveFileName(self, 'Save Daily Stats', str(export_dir), 'CSV Files (*.csv)')
         if accept:
-            self.component.send_data(ipc.ExportDailyStats(self.ui.current_profile.currentData(), file_path))
+            self.component.send_data(ipc.ExportDailyStats(sanitised_profile_name, file_path))
 
+    @property
+    def selected_layer(self) -> LayerOption:
+        """Get the selected layer data."""
+        return self.layer_manager.selected_layer
+
+    def add_render_layer(self, option: LayerOption | None = None, reselect: bool = True) -> QtWidgets.QListWidgetItem:
+        """Add a new disabled render layer."""
+        if option is None:
+            option = LayerOption(ipc.RenderType.MouseMovement, BlendMode.Normal, Channel.RGBA)
+
+        item = QtWidgets.QListWidgetItem()
+        item.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        layer_id = self.layer_manager.add(option)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, layer_id)
+
+        selected_items = self.ui.layer_list.selectedItems()
+        self.ui.layer_list.insertItem(0, item)
+        if reselect and selected_items:
+            if selected_items:
+                for previous in selected_items:
+                    previous.setSelected(True)
+        else:
+            item.setSelected(True)
+        self.update_layer_item_name(item)
+        return item
+
+    @QtCore.Slot()
+    def delete_render_layer(self) -> None:
+        """Delete the selected render layer."""
+        for item in self.ui.layer_list.selectedItems():
+            if self.ui.layer_list.count() <= 1:
+                msg = QtWidgets.QMessageBox(self)
+                msg.setWindowTitle('Error')
+                msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+                msg.setText('Failed to remove layer, no other layers exit.')
+                msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+                msg.exec()
+
+            else:
+                self.ui.layer_list.takeItem(self.ui.layer_list.row(item))
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem, QtWidgets.QListWidgetItem)
+    def layer_item_changed(self, current: QtWidgets.QListWidgetItem,
+                                  previous: QtWidgets.QListWidgetItem) -> None:
+        """Update widgets when the selected layer changes."""
+        if current is not None and current != previous:
+            self.set_selected_layer(current)
+
+    def set_selected_layer(self, item: QtWidgets.QListWidgetItem) -> None:
+        """Change the selected render layer."""
+        self._is_updating_layer_options = True
+        try:
+            layer_id = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            layer = self.layer_manager.select(layer_id)
+
+            # Set the render type which will update the other widgets
+            idx = self.ui.map_type.findData(layer.render_type)
+            if idx == self.ui.map_type.currentIndex():
+                self.render_type_changed(idx)
+            else:
+                self.ui.map_type.setCurrentIndex(idx)
+
+            # Set the layer blending
+            idx = self.ui.layer_blending.findData(layer.blend_mode)
+            self.ui.layer_blending.setCurrentIndex(idx)
+
+            # Set the channels
+            self.ui.layer_r.setChecked(layer.channels & Channel.R)
+            self.ui.layer_g.setChecked(layer.channels & Channel.G)
+            self.ui.layer_b.setChecked(layer.channels & Channel.B)
+            self.ui.layer_a.setChecked(layer.channels & Channel.A)
+
+            # Set the opacity
+            self.ui.layer_opacity.setValue(layer.opacity)
+
+        finally:
+            self._is_updating_layer_options = False
+
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtWidgets.QListWidgetItem)
+    def selected_layer_toggled(self, item: QtWidgets.QListWidgetItem) -> None:
+        """Update when a layer is enabled or disabled."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(QtCore.QModelIndex, int, int, QtCore.QModelIndex, int)
+    def selected_layer_moved(self, srcParent: QtCore.QModelIndex, start: int, end: int,
+                             dstParent: QtCore.QModelIndex, dstRow: int) -> None:
+        """Update when a layer is removed."""
+        self.request_thumbnail()
+
+    @QtCore.Slot(int)
+    def layer_blend_mode_changed(self, idx: int) -> None:
+        """Update when the blend mode is changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.blend_mode = self.ui.layer_blending.itemData(idx)
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot()
+    def layer_channel_changed(self) -> None:
+        """Update when the channels are changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        channels = 0
+        if self.ui.layer_r.isChecked():
+            channels |= Channel.R
+        if self.ui.layer_g.isChecked():
+            channels |= Channel.G
+        if self.ui.layer_b.isChecked():
+            channels |= Channel.B
+        if self.ui.layer_a.isChecked():
+            channels |= Channel.A
+        self.selected_layer.channels = Channel(channels)
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot(int)
+    def layer_opacity_changed(self, value: int) -> None:
+        """Update when the opacity is changed for the current layer."""
+        if self._is_updating_layer_options:
+            return
+        self.selected_layer.opacity = value
+        self.request_thumbnail()
+        self.update_layer_item_name()
+
+    @QtCore.Slot()
+    def move_layer_up(self) -> None:
+        """Move the selected layer up if possible."""
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row <= 0:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row - 1, item)
+            self.ui.layer_list.setCurrentItem(item)
+
+    @QtCore.Slot()
+    def move_layer_down(self) -> None:
+        """Move the selected layer down if possible."""
+        for item in self.ui.layer_list.selectedItems():
+            row = self.ui.layer_list.row(item)
+            if row < 0 or row >= self.ui.layer_list.count() - 1:
+                continue
+
+            self.ui.layer_list.takeItem(row)
+            self.ui.layer_list.insertItem(row + 1, item)
+            self.ui.layer_list.setCurrentItem(item)
+
+    @QtCore.Slot(int)
+    def layer_preset_chosen(self, idx: int) -> None:
+        """Load in a layer preset."""
+        if not idx:
+            return
+
+        # Clear out any existing settings
+        self.ui.layer_list.clear()
+        self.layer_manager.clear()
+
+        # Load in the preset options
+        for option in Preset.get(self.ui.layer_presets.currentText()).build():
+            item = self.add_render_layer(option)
+            item.setCheckState(QtCore.Qt.CheckState.Checked)
+        self.layer_manager.select(0)
+
+        # Reset the preset input
+        self.ui.layer_presets.setCurrentIndex(0)
+
+        # Update names
+        count = self.ui.layer_list.count()
+        for item in map(self.ui.layer_list.item, range(count)):
+            self.update_layer_item_name(item)
+
+        # Select the top layer
+        if count:
+            self.ui.layer_list.setCurrentItem(item)
+
+    def update_layer_item_name(self, item: QtWidgets.QListWidgetItem | None = None) -> None:
+        """Generate the name of each layer."""
+        if item is None:
+            item = self.ui.layer_list.selectedItems()[0]
+
+        # Read the layer from the given item
+        layer = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        data = self.layer_manager[layer]
+
+        type_name = self.ui.map_type.itemText(self.ui.map_type.findData(data.render_type)).split(']', 1)[1][1:]
+
+        # Override the type name if any click options are disabled
+        if data.render_type in (ipc.RenderType.SingleClick, ipc.RenderType.DoubleClick, ipc.RenderType.HeldClick):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('LMB')
+            if data.show_middle_clicks:
+                enabled.append('MMB')
+            if data.show_right_clicks:
+                enabled.append('RMB')
+            if enabled and len(enabled) < 3:
+                type_name = '|'.join(enabled)
+
+        # Override the type name if any thumbstick options are disabled
+        if data.render_type in (ipc.RenderType.ThumbstickMovement, ipc.RenderType.ThumbstickPosition, ipc.RenderType.ThumbstickSpeed):
+            enabled = []
+            if data.show_left_clicks:
+                enabled.append('Left')
+            if data.show_right_clicks:
+                enabled.append('Right')
+            if enabled and len(enabled) < 2:
+                type_name = f'{enabled[0]} {type_name}'
+
+        # Generate the name
+        name_parts: list[Any] = [
+            f'Layer {layer}',
+            type_name,
+            data.blend_mode.name,
+            f'{data.opacity}%',
+            Channel(data.channels).name,
+        ]
+        item.setText(' | '.join(map(str, name_parts)))
+
+    def update_focused_application(self, exe: str, title: str, tracked: bool) -> None:
+        """Update the focused application text."""
+        self.ui.stat_app_exe.setText(os.path.basename(exe))
+        self.ui.stat_app_title.setText(title)
+        self.ui.stat_app_tracked.setText('Yes' if tracked else 'No')
