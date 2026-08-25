@@ -548,7 +548,7 @@ class Tracking(Component):
                         data.gamepad_stick_r_position[gamepad] = stick_r
                         self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, stick_r))
 
-            if self.track_network and session_active and not tick % UPDATES_PER_SECOND:
+            if self.track_network and not tick % UPDATES_PER_SECOND:
                 for interface_name, counters in psutil.net_io_counters(pernic=True).items():
                     prev_sent = data.bytes_sent_previous.get(interface_name, 0)
                     prev_recv = data.bytes_recv_previous.get(interface_name, 0)
