@@ -198,7 +198,7 @@ class CLI:
             self.portable = False
             self.disable_temp_warning = False
             self.eager_load = False
-            self.log_level = 'INFO'
+            self.log_level = logging.INFO
 
         finally:
             self._soft_load = False
