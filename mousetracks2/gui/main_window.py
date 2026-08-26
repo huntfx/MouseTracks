@@ -1184,7 +1184,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             return False
 
-        # Block while seeking during replay (it triggers afterwards)
+        # Block while seeking during replay
+        # It needs to skip through ASAP then trigger after completing
         if self._seek_in_progress:
             return False
 
@@ -1491,6 +1492,11 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackRestarted():
                 self.ui.thumbnail.clear_pixmap()
                 self._reset_render_counters()
+
+                # Send off the initial render request for a canvas to draw on
+                self._seek_in_progress = False
+                self._request_thumbnail()
+                self._seek_in_progress = True
 
             case ipc.PlaybackProgress():
                 if not self._playback_seeking and not self._seek_in_progress:
