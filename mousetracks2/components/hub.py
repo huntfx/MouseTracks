@@ -415,7 +415,8 @@ class Hub:
 
         # Buffer tracking messages meant for processing while the playback component is active
         if self._playback_active and message.source & ipc.Target.Tracking and message.target & ipc.Target.Processing:
-            self._playback_buffer.append(message)
+            if not isinstance(message, ipc.Save):
+                self._playback_buffer.append(message)
             return
 
         # Keep track of important states that need to be set when playback ends
