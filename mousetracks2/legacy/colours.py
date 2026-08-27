@@ -239,7 +239,7 @@ def parse_colour_text(colours: str) -> list[tuple[int, ...]]:
 
     #Merge colours together
     final_mix = []
-    for mix_colours in current_mix:
+    for mix_colours in filter(bool, current_mix):
 
         result = list(mix_colours[0])
         for mix_colour in mix_colours[1:]:
