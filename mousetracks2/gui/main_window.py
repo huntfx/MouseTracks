@@ -1852,8 +1852,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self._is_loading_profile:
             self.request_thumbnail()
             self.ui.opts_status.setEnabled(True)
-            self.ui.opts_resolution.setEnabled(True)
-            self.ui.opts_monitor.setEnabled(True)
+            self.ui.opts_resolution.setEnabled(not self.is_playback)
+            self.ui.opts_monitor.setEnabled(not self.is_playback)
             self.ui.opts_tracking.setEnabled(message.profile_name != TRACKING_DISABLE)
 
     def _handle_render(self, message: ipc.Render) -> None:
@@ -3138,7 +3138,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._thumbnail_redraw_required = False
 
     def _enter_playback_mode(self, paused: bool = False) -> None:
-        """Enter history playback mode and configure the UI accordingly."""
+        """Enter history playback mode and configure the UI accordingly.
+
+        The resolution and multi monitor override options are disabled
+        as they are directly tied to live profiles, so would require
+        refactoring to integrate with playback mode.
+        """
         if not self.is_playback:
             self._history_length_snapshot = self._history_length_ticks
         self.is_playback = True
@@ -3147,6 +3152,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.clear_pixmap()
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
+        self.ui.opts_resolution.setEnabled(False)
+        self.ui.opts_monitor.setEnabled(False)
         self._reset_render_counters()
         self._playback_monitor_resync_pending = True
         self.request_thumbnail()
@@ -3161,6 +3168,8 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.setEnabled(False)
         self.ui.recording_start.setEnabled(True)
+        self.ui.opts_resolution.setEnabled(True)
+        self.ui.opts_monitor.setEnabled(True)
         self._reset_render_counters()
 
     @QtCore.Slot()
