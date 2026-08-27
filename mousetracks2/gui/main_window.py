@@ -1524,7 +1524,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.PlaybackFinished():
                 self._playback_running = False
-                self.ui.thumbnail.playback_overlay.playback_state = False
+
+                # The replay has naturally reached the end and has paused
+                if self.is_playback:
+                    self.ui.thumbnail.playback_overlay.playback_state = False
+
+                # The user has switched back to live tracking
+                else:
+                    self.ui.thumbnail.playback_overlay.playback_state = self.state == ipc.TrackingState.Running
+
                 self.ui.playback_progress.setValue(self.ui.playback_progress.maximum())
                 self.request_thumbnail()
 
