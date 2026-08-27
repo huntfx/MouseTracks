@@ -2125,7 +2125,7 @@ This should be used after manually editing it.</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_19">
               <item>
-               <widget class="QGroupBox" name="record_history">
+               <widget class="QGroupBox" name="history_enabled">
                 <property name="title">
                  <string>History</string>
                 </property>

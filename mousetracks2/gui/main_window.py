@@ -395,7 +395,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_up.clicked.connect(self.move_layer_up)
         self.ui.layer_down.clicked.connect(self.move_layer_down)
         self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
-        self.ui.record_history.toggled.connect(self.history_toggled)
+        self.ui.history_enabled.toggled.connect(self.history_toggled)
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
         self.ui.playback_play.clicked.connect(self.history_play)
         self.ui.playback_stop.clicked.connect(self.history_stop)
@@ -3000,7 +3000,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Set the recorded history length."""
         self.ui.playback_range.setRange(0, length)
         self.ui.playback_range.setValue((0, length))
-        if self.ui.record_history.isChecked():
+        if self.ui.history_enabled.isChecked():
             self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
 
     @QtCore.Slot()
@@ -3088,7 +3088,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
-        if not total or not self.ui.record_history.isChecked():
+        if not total or not self.ui.history_enabled.isChecked():
             return
 
         start_percentage = start / total
@@ -3157,7 +3157,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
-        if not total or not self.ui.record_history.isChecked():
+        if not total or not self.ui.history_enabled.isChecked():
             return
 
         start_percentage = start / total if total else 0.0

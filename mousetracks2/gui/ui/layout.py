@@ -1273,20 +1273,20 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
-        self.record_history = QGroupBox(self.scrollAreaWidgetContents_4)
-        self.record_history.setObjectName(u"record_history")
-        self.record_history.setCheckable(True)
-        self.record_history.setChecked(False)
-        self.verticalLayout_12 = QVBoxLayout(self.record_history)
+        self.history_enabled = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.history_enabled.setObjectName(u"history_enabled")
+        self.history_enabled.setCheckable(True)
+        self.history_enabled.setChecked(False)
+        self.verticalLayout_12 = QVBoxLayout(self.history_enabled)
         self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.record_history)
+        self.label_7 = QLabel(self.history_enabled)
         self.label_7.setObjectName(u"label_7")
 
         self.horizontalLayout.addWidget(self.label_7)
 
-        self.history_length = QSpinBox(self.record_history)
+        self.history_length = QSpinBox(self.history_enabled)
         self.history_length.setObjectName(u"history_length")
         self.history_length.setMinimum(1)
         self.history_length.setMaximum(9999)
@@ -1297,7 +1297,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_12.addLayout(self.horizontalLayout)
 
-        self.groupBox = QGroupBox(self.record_history)
+        self.groupBox = QGroupBox(self.history_enabled)
         self.groupBox.setObjectName(u"groupBox")
         self.verticalLayout_16 = QVBoxLayout(self.groupBox)
         self.verticalLayout_16.setObjectName(u"verticalLayout_16")
@@ -1396,7 +1396,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.addWidget(self.groupBox)
 
 
-        self.verticalLayout_19.addWidget(self.record_history)
+        self.verticalLayout_19.addWidget(self.history_enabled)
 
         self.verticalSpacer_3 = QSpacerItem(20, 150, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -2110,7 +2110,7 @@ class Ui_MainWindow(object):
         self.status_playback_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_playback_pid.setText("")
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
-        self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
+        self.history_enabled.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Playback Controls", None))
         self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
