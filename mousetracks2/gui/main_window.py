@@ -192,6 +192,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
+        self.ui.history_enabled.setChecked(self.config.history_enabled)
+        self.ui.history_length.setValue(self.config.history_length)
         self.ui.contrast.setMaximum(float('inf'))
         self.update_focused_application('', '', False)
 
@@ -2994,6 +2996,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """Enable or disable recording history."""
         ticks = round(self.ui.history_length.value() * 60 * UPDATES_PER_SECOND if enabled else 0)
         self.component.send_data(ipc.SetHistoryLength(ticks))
+        self.config.history_enabled = enabled
+        self.config.save()
 
     @QtCore.Slot(int)
     def history_length_changed(self, length: int) -> None:
@@ -3002,6 +3006,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_range.setValue((0, length))
         if self.ui.history_enabled.isChecked():
             self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
+        self.config.history_length = length
+        self.config.save()
 
     @QtCore.Slot()
     def _update_playback_range_labels(self) -> None:
