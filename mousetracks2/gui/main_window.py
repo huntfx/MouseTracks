@@ -167,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._playback_seeking = False
         self._seek_in_progress = False
         self._playback_monitor_size: tuple[int, int] | None = None
+        self._playback_monitor_resync_pending = False
         self._profile_change_pending = False
         self._history_length_ticks = 0
         self._keep_playback_label_min_width = False
@@ -1252,20 +1253,30 @@ class MainWindow(QtWidgets.QMainWindow):
             if custom_height:
                 height = min(height, custom_height)
 
-            # When playing back, there's no data yet, so force the monitor aspect ratio
-            if self.is_playback and self._playback_monitor_size is not None:
-                monitor_width, monitor_height = self._playback_monitor_size
-                if monitor_width > 0 and monitor_height > 0:
-                    scale = min(width / monitor_width, height / monitor_height)
-                    width = max(1, round(monitor_width * scale))
-                    height = max(1, round(monitor_height * scale))
-
         else:
             sampling = self.ui.sampling.value()
             width = custom_width
             height = custom_height
 
         return width, height, sampling, lock_aspect
+
+    def _expected_render_size(self, width: int | None, height: int | None) -> tuple[int, int] | None:
+        """Calculate the expected render size when no data is available.
+
+        This is currently only used for playback, when it's common for
+        the data to reset to an empty slate.
+
+        Note that this only makes a "best guess" based on the multi
+        monitor config. If recording each monitor independently, then
+        only the primary monitor is used.
+        """
+        if not self.is_playback or self._playback_monitor_size is None or width is None or height is None:
+            return None
+        monitor_width, monitor_height = self._playback_monitor_size
+        if monitor_width <= 0 or monitor_height <= 0:
+            return None
+        scale = min(width / monitor_width, height / monitor_height)
+        return max(1, round(monitor_width * scale)), max(1, round(monitor_height * scale))
 
     def get_render_layer_data(self, file_path: str | None = None) -> Iterator[ipc.RenderLayer]:
         """Yield all render layer data, starting with the bottom layer."""
@@ -1290,6 +1301,7 @@ class MainWindow(QtWidgets.QMainWindow):
             lock_aspect=lock_aspect,
             show_keyboard_time=self.ui.show_time.isChecked(),
             interpolation_order=self.ui.interpolation_order.value(),
+            empty_render_size=self._expected_render_size(width, height),
         )
 
     @QtCore.Slot(QtCore.QSize)
@@ -1494,6 +1506,7 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.PlaybackRestarted():
                 self.ui.thumbnail.clear_pixmap()
                 self._reset_render_counters()
+                self._playback_monitor_resync_pending = True
 
                 # Send off the initial render request for a canvas to draw on
                 self._seek_in_progress = False
@@ -1523,12 +1536,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.shut_down(force=True)
 
             # When monitors change, store the new data
-            case ipc.MonitorsChanged():
-                self.component.set_monitor_data(message.data)
+            case ipc.MonitorsChanged(data=monitor_data):
+                self.component.set_monitor_data(monitor_data)
 
-                # Force a render when the first monitor size message comes from playback
-                if self.is_playback:
-                    self._playback_monitor_size = message.data.physical.size
+                # Force a render in playback when first receiving monitor data
+                if self._playback_monitor_resync_pending:
+                    self._playback_monitor_resync_pending = False
+                    if not monitor_data.physical:
+                        self._playback_monitor_size = None
+                    elif self.is_single_monitor_mode():
+                        self._playback_monitor_size = monitor_data.physical.size
+                    else:
+                        self._playback_monitor_size = monitor_data.physical[0].size
                     self.request_thumbnail()
 
             case ipc.Render():
@@ -3129,6 +3148,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
         self._reset_render_counters()
+        self._playback_monitor_resync_pending = True
         self.request_thumbnail()
 
     def _exit_playback_mode(self) -> None:
@@ -3136,6 +3156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.is_playback = False
         self._history_length_snapshot = 0
         self._playback_monitor_size = None
+        self._playback_monitor_resync_pending = False
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.setEnabled(False)

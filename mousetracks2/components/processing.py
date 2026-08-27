@@ -406,7 +406,8 @@ class Processing(AppComponent, MonitorComponent):
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False, invert: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
                       interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0,
-                      allow_empty: bool = False) -> npt.NDArray[np.uint8]:
+                      allow_empty: bool = False,
+                      empty_size: tuple[int, int] | None = None) -> npt.NDArray[np.uint8]:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
@@ -429,7 +430,7 @@ class Processing(AppComponent, MonitorComponent):
             image = render(colour_map, positional_arrays, width, height, sampling,
                            lock_aspect=lock_aspect, linear=linear, invert=invert,
                            blur=blur, contrast=contrast, clipping=clipping,
-                           interpolation_order=interpolation_order)
+                           interpolation_order=interpolation_order, empty_size=empty_size)
         except EmptyRenderError:
             if allow_empty and width is not None and height is not None:
                 image = np.zeros((height, width, 4), dtype=np.uint8)
@@ -673,6 +674,7 @@ class Processing(AppComponent, MonitorComponent):
                             right_clicks=request.show_right_clicks,
                             interpolation_order=request.interpolation_order,
                             allow_empty=request.allow_empty_render,
+                            empty_size=request.empty_render_size,
                         )
 
                     # If not visible, skip here unless there aren't any other visible layers
@@ -693,6 +695,7 @@ class Processing(AppComponent, MonitorComponent):
                             middle_clicks=False,
                             right_clicks=False,
                             allow_empty=request.allow_empty_render,
+                            empty_size=request.empty_render_size,
                         )
                     image = np.divide(_image.astype(np.float64), 255)
 

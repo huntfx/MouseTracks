@@ -283,6 +283,7 @@ class RenderRequest(Message):
     interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
     layer_visible: bool = True
     allow_empty_render: bool = False
+    empty_render_size: tuple[int, int] | None = None
 
 
 @dataclass
