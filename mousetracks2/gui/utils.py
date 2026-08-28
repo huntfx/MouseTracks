@@ -27,35 +27,37 @@ def format_distance(pixels: float, ppi: float = 96.0) -> str:
 
 def format_ticks(ticks: float, ups: int = UPDATES_PER_SECOND, accuracy: int = 1, length: int = 5) -> str:
     """Convert ticks to a formatted time string."""
+    limits = (60, 60, 24, 365)
+
     seconds = ticks / ups
-    minutes, seconds = divmod(seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    days, hours = divmod(hours, 24)
-    years, days = divmod(days, 365)
+    minutes, seconds = divmod(seconds, limits[0])
+    hours, minutes = divmod(minutes, limits[1])
+    days, hours = divmod(hours, limits[2])
+    years, days = divmod(days, limits[3])
 
     # If a length is set, calculate which items to show
     diff = (5 if years else 4 if days else 3 if hours else 2 if minutes else 1) - length
 
     # Merge the smaller data into the minimum value
     if diff > 0:
-        minutes += seconds / 60
+        minutes += seconds / limits[0]
     if diff > 1:
-        hours += minutes / 60
+        hours += minutes / limits[1]
     if diff > 2:
-        days += hours / 24
+        days += hours / limits[2]
     if diff > 3:
-        years += days / 365
+        years += days / limits[3]
 
     # Round the smallest displayed unit and carry overflow
     # (59.6 seconds displays as "1m 0s" rather than "0m 60s")
     values = [seconds, minutes, hours, days, years]
-    caps = [60, 60, 24, 365, None]
     idx = max(0, min(4, diff))
     values[idx] = round(values[idx], accuracy)
-    while idx < 4 and caps[idx] is not None and values[idx] >= caps[idx]:
-        values[idx] -= caps[idx]
+    while idx < 4 and values[idx] >= limits[idx]:
+        values[idx] -= limits[idx]
         values[idx + 1] += 1
         idx += 1
+
     seconds, minutes, hours, days, years = values
 
     # Build up the string
