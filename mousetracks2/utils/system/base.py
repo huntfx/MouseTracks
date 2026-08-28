@@ -147,6 +147,14 @@ class UserResizeAppListener(EventListener):
         return False
 
 
+class SessionActivityListener(EventListener):
+    """Determine if the user session is currently active."""
+
+    @property
+    def triggered(self) -> bool:
+        return True
+
+
 def hide_child_process() -> None:
     """This is here to allow macOS to hide the child processes."""
 

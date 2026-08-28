@@ -34,6 +34,8 @@ psapi = ctypes.windll.psapi
 
 shell32 = ctypes.windll.shell32
 
+wtsapi32 = ctypes.windll.wtsapi32
+
 SM_CXSCREEN = 0
 
 SM_CYSCREEN = 1
@@ -48,9 +50,13 @@ WM_DISPLAYCHANGE = 0x007E
 
 WM_DEVICECHANGE  = 0x0219
 
+WM_WTSSESSION_CHANGE = 0x02B1
+
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 DBT_DEVNODES_CHANGED = 0x0007
+
+NOTIFY_FOR_THIS_SESSION = 0
 
 EVENT_SYSTEM_FOREGROUND = 0x0003
 
@@ -118,6 +124,16 @@ PROCESS_DPI_UNAWARE = 0
 PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 
+# WM_WTSSESSION_CHANGE wparam values
+WTS_CONSOLE_CONNECT = 0x1
+WTS_CONSOLE_DISCONNECT = 0x2
+WTS_REMOTE_CONNECT = 0x3
+WTS_REMOTE_DISCONNECT = 0x4
+WTS_SESSION_LOGON = 0x5
+WTS_SESSION_LOGOFF = 0x6
+WTS_SESSION_LOCK = 0x7
+WTS_SESSION_UNLOCK = 0x8
+
 user32.GetWindowThreadProcessId.argtypes = [HWND, ctypes.POINTER(DWORD)]
 user32.GetWindowThreadProcessId.restype = DWORD
 
@@ -163,6 +179,12 @@ user32.DefWindowProcW.argtypes = [HWND, UINT, WPARAM, LPARAM]
 
 user32.SetThreadDpiAwarenessContext.argtypes = [ctypes.wintypes.HANDLE]
 user32.SetThreadDpiAwarenessContext.restype = ctypes.wintypes.HANDLE
+
+wtsapi32.WTSRegisterSessionNotification.argtypes = [HWND, DWORD]
+wtsapi32.WTSRegisterSessionNotification.restype = BOOL
+
+wtsapi32.WTSUnRegisterSessionNotification.argtypes = [HWND]
+wtsapi32.WTSUnRegisterSessionNotification.restype = BOOL
 
 class WNDCLASS(ctypes.Structure):
     _fields_ = [
@@ -498,6 +520,12 @@ class _WindowMessageListener(base.EventListener):
         """Determine if a specific event has been fired."""
         return False
 
+    def setup(self, hwnd: int) -> None:
+        """Run additional setup once the hidden window has been created."""
+
+    def teardown(self, hwnd: int) -> None:
+        """Run cleanup before the hidden window is destroyed."""
+
     def _win_proc(self, hwnd: int, msg: int, wparam: int, lparam: int) -> int:
         if self.check(hwnd, msg, wparam, lparam):
             self.trigger()
@@ -523,6 +551,7 @@ class _WindowMessageListener(base.EventListener):
         )
         if not self._hwnd:
             raise ctypes.WinError(ctypes.get_last_error())
+        self.setup(self._hwnd)
 
         self.trigger()
 
@@ -534,6 +563,7 @@ class _WindowMessageListener(base.EventListener):
     def stop(self) -> None:
         """Stops the message loop and cleans up the window."""
         if self._hwnd:
+            self.teardown(self._hwnd)
             user32.PostMessageW(self._hwnd, WM_QUIT, 0, 0)
 
 
@@ -599,6 +629,37 @@ class ControllerEventListener(_WindowMessageListener):
 
     def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
         return msg == WM_DEVICECHANGE and wparam == DBT_DEVNODES_CHANGED
+
+
+class SessionActivityListener(_WindowMessageListener):
+    """Determine if the user session is currently active."""
+
+    INACTIVE_EVENTS = (WTS_SESSION_LOCK, WTS_SESSION_LOGOFF,
+                       WTS_CONSOLE_DISCONNECT, WTS_REMOTE_DISCONNECT)
+    ACTIVE_EVENTS = (WTS_SESSION_UNLOCK, WTS_CONSOLE_CONNECT, WTS_REMOTE_CONNECT)
+
+    def __init__(self) -> None:
+        self._active = True
+        super().__init__()
+
+    def setup(self, hwnd: int) -> None:
+        wtsapi32.WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION)
+
+    def teardown(self, hwnd: int) -> None:
+        wtsapi32.WTSUnRegisterSessionNotification(hwnd)
+
+    def check(self, hwnd: int, msg: int, wparam: int, lparam: int) -> bool:
+        if msg != WM_WTSSESSION_CHANGE:
+            return False
+        if wparam in self.INACTIVE_EVENTS:
+            self._active = False
+        elif wparam in self.ACTIVE_EVENTS:
+            self._active = True
+        return False
+
+    @property
+    def triggered(self) -> bool:
+        return self._active
 
 
 class ForegroundAppListener(_WinEventHookListener):
