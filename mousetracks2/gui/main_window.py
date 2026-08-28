@@ -193,8 +193,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
         self.ui.prefs_track_gamepad.setChecked(self.config.track_gamepad)
         self.ui.prefs_track_network.setChecked(self.config.track_network)
-        self.ui.history_enabled.setChecked(self.config.history_enabled)
         self.ui.history_length.setValue(self.config.history_length)
+        self.ui.playback_exit.setVisible(False)
+        self.ui.playback_pause.setVisible(False)
         self.ui.contrast.setMaximum(float('inf'))
         self.update_focused_application('', '', False)
 
@@ -398,10 +399,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.layer_up.clicked.connect(self.move_layer_up)
         self.ui.layer_down.clicked.connect(self.move_layer_down)
         self.ui.layer_presets.currentIndexChanged.connect(self.layer_preset_chosen)
-        self.ui.history_enabled.toggled.connect(self.history_toggled)
         self.ui.history_length.valueChanged.connect(self.history_length_changed)
+        self.ui.playback_enter.clicked.connect(self.history_play)
+        self.ui.playback_exit.clicked.connect(self.history_stop)
         self.ui.playback_play.clicked.connect(self.history_play)
-        self.ui.playback_stop.clicked.connect(self.history_stop)
+        self.ui.playback_pause.clicked.connect(self.history_pause)
         self.ui.playback_speed.mapped_value_changed.connect(self.playback_speed_changed)
         self.ui.playback_skip.toggled.connect(self.playback_skip_toggled)
         self.ui.playback_range.valueChanged.connect(self._playback_range_changed)
@@ -843,8 +845,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def _playback_slider_pressed(self) -> None:
         self._playback_seeking = True
-        self.ui.thumbnail.playback_overlay.playback_state = False
-        self.component.send_data(ipc.PausePlayback())
+        self.history_pause()
 
     @QtCore.Slot()
     def _playback_slider_released(self) -> None:
@@ -1322,12 +1323,9 @@ class MainWindow(QtWidgets.QMainWindow):
         """Handle what to do when the thumbnail is clicked."""
         if self.is_playback:
             if state:
-                if self._playback_running:
-                    self.component.send_data(ipc.ResumePlayback())
-                else:
-                    self.history_play()
+                self.history_play()
             else:
-                self.component.send_data(ipc.PausePlayback())
+                self.history_pause()
         elif state:
             self.start_tracking()
         else:
@@ -1527,7 +1525,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # The replay has naturally reached the end and has paused
                 if self.is_playback:
-                    self.ui.thumbnail.playback_overlay.playback_state = False
+                    self._set_playback_playing(False)
 
                 # The user has switched back to live tracking
                 else:
@@ -3018,21 +3016,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stat_app_title.setText(title)
         self.ui.stat_app_tracked.setText('Yes' if tracked else 'No')
 
-    @QtCore.Slot(bool)
-    def history_toggled(self, enabled: bool) -> None:
-        """Enable or disable recording history."""
-        ticks = round(self.ui.history_length.value() * 60 * UPDATES_PER_SECOND if enabled else 0)
-        self.component.send_data(ipc.SetHistoryLength(ticks))
-        self.config.history_enabled = enabled
-        self.config.save()
-
     @QtCore.Slot(int)
     def history_length_changed(self, length: int) -> None:
         """Set the recorded history length."""
         self.ui.playback_range.setRange(0, length)
         self.ui.playback_range.setValue((0, length))
-        if self.ui.history_enabled.isChecked():
-            self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
+        self.component.send_data(ipc.SetHistoryLength(round(length * 60 * UPDATES_PER_SECOND)))
         self.config.history_length = length
         self.config.save()
 
@@ -3112,16 +3101,22 @@ class MainWindow(QtWidgets.QMainWindow):
         """Send updated playback options when the skip idle time option is toggled."""
         self.playback_speed_changed(self.ui.playback_speed.value())
 
+    def _set_playback_playing(self, playing: bool) -> None:
+        """Reflect whether the replay is currently advancing in the play/pause controls."""
+        self.ui.thumbnail.playback_overlay.playback_state = playing
+        self.ui.playback_play.setVisible(not playing)
+        self.ui.playback_pause.setVisible(playing)
+
     def history_play(self) -> None:
         """Play back the selected history range."""
         if self._playback_running:
             self.component.send_data(ipc.ResumePlayback())
-            self.ui.thumbnail.playback_overlay.playback_state = True
+            self._set_playback_playing(True)
             return
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
-        if not total or not self.ui.history_enabled.isChecked():
+        if not total:
             return
 
         start_percentage = start / total
@@ -3132,6 +3127,11 @@ class MainWindow(QtWidgets.QMainWindow):
             skip_empty_ticks=self.ui.playback_skip.isChecked(),
             ups=self.ui.playback_speed.mapped_value(),
         )))
+
+    def history_pause(self) -> None:
+        """Pause the currently playing history replay."""
+        self.component.send_data(ipc.PausePlayback())
+        self._set_playback_playing(False)
 
     def _reset_render_counters(self, cursor_position: tuple[int, int] | None = None) -> None:
         """Reset all render frequency counters when entering/exiting playback mode."""
@@ -3156,8 +3156,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._history_length_snapshot = self._history_length_ticks
         self.is_playback = True
         self._playback_running = True
-        self.ui.thumbnail.playback_overlay.playback_state = not paused
+        self._set_playback_playing(not paused)
         self.ui.thumbnail.clear_pixmap()
+        self.ui.playback_enter.setVisible(False)
+        self.ui.playback_exit.setVisible(True)
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(False)
         self.ui.opts_resolution.setEnabled(False)
@@ -3175,6 +3177,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.setEnabled(False)
+        self.ui.playback_enter.setVisible(True)
+        self.ui.playback_exit.setVisible(False)
+        self._set_playback_playing(False)
         self.ui.recording_start.setEnabled(True)
         self.ui.opts_resolution.setEnabled(True)
         self.ui.opts_monitor.setEnabled(True)
@@ -3201,7 +3206,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()
-        if not total or not self.ui.history_enabled.isChecked():
+        if not total:
             return
 
         start_percentage = start / total if total else 0.0

@@ -22,7 +22,6 @@ class GlobalConfig:
         track_keyboard: Enable keyboard tracking.
         track_gamepad: Enable gamepad tracking.
         track_network: Enable network tracking.
-        history_enabled: Enable recording history for playback.
         history_length: How many minutes of history to keep, when enabled.
         inactivity_time: How long before the user is classed as inactive.
         save_frequency: How often to autosave.
@@ -43,7 +42,6 @@ class GlobalConfig:
     track_keyboard: bool = True
     track_gamepad: bool = True
     track_network: bool = True
-    history_enabled: bool = True
     history_length: int = 120
     inactivity_time: float = 300.0
     save_frequency: float = 600.0

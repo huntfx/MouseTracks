@@ -1273,36 +1273,35 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
-        self.history_enabled = QGroupBox(self.scrollAreaWidgetContents_4)
-        self.history_enabled.setObjectName(u"history_enabled")
-        self.history_enabled.setCheckable(True)
-        self.history_enabled.setChecked(False)
-        self.verticalLayout_12 = QVBoxLayout(self.history_enabled)
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.history_enabled)
+        self.label_7 = QLabel(self.scrollAreaWidgetContents_4)
         self.label_7.setObjectName(u"label_7")
 
         self.horizontalLayout.addWidget(self.label_7)
 
-        self.history_length = QSpinBox(self.history_enabled)
+        self.history_length = QSpinBox(self.scrollAreaWidgetContents_4)
         self.history_length.setObjectName(u"history_length")
-        self.history_length.setMinimum(1)
+        self.history_length.setMinimum(0)
         self.history_length.setMaximum(9999)
         self.history_length.setValue(120)
 
         self.horizontalLayout.addWidget(self.history_length)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout)
+        self.verticalLayout_19.addLayout(self.horizontalLayout)
 
-        self.groupBox = QGroupBox(self.history_enabled)
+        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_4)
         self.groupBox.setObjectName(u"groupBox")
         self.verticalLayout_16 = QVBoxLayout(self.groupBox)
         self.verticalLayout_16.setObjectName(u"verticalLayout_16")
         self.horizontalLayout_14 = QHBoxLayout()
         self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
+        self.label_35 = QLabel(self.groupBox)
+        self.label_35.setObjectName(u"label_35")
+
+        self.horizontalLayout_14.addWidget(self.label_35)
+
         self.playback_start = QLabel(self.groupBox)
         self.playback_start.setObjectName(u"playback_start")
 
@@ -1322,32 +1321,6 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_16.addLayout(self.horizontalLayout_14)
-
-        self.horizontalLayout_12 = QHBoxLayout()
-        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
-        self.playback_play = QPushButton(self.groupBox)
-        self.playback_play.setObjectName(u"playback_play")
-
-        self.horizontalLayout_12.addWidget(self.playback_play)
-
-        self.playback_stop = QPushButton(self.groupBox)
-        self.playback_stop.setObjectName(u"playback_stop")
-
-        self.horizontalLayout_12.addWidget(self.playback_stop)
-
-        self.playback_export = QPushButton(self.groupBox)
-        self.playback_export.setObjectName(u"playback_export")
-
-        self.horizontalLayout_12.addWidget(self.playback_export)
-
-
-        self.verticalLayout_16.addLayout(self.horizontalLayout_12)
-
-        self.playback_skip = QCheckBox(self.groupBox)
-        self.playback_skip.setObjectName(u"playback_skip")
-        self.playback_skip.setChecked(True)
-
-        self.verticalLayout_16.addWidget(self.playback_skip)
 
         self.horizontalLayout_15 = QHBoxLayout()
         self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
@@ -1392,11 +1365,34 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_16.addLayout(self.horizontalLayout_11)
 
+        self.playback_skip = QCheckBox(self.groupBox)
+        self.playback_skip.setObjectName(u"playback_skip")
+        self.playback_skip.setChecked(True)
 
-        self.verticalLayout_12.addWidget(self.groupBox)
+        self.verticalLayout_16.addWidget(self.playback_skip)
+
+        self.horizontalLayout_12 = QHBoxLayout()
+        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
+        self.playback_play = QPushButton(self.groupBox)
+        self.playback_play.setObjectName(u"playback_play")
+
+        self.horizontalLayout_12.addWidget(self.playback_play)
+
+        self.playback_pause = QPushButton(self.groupBox)
+        self.playback_pause.setObjectName(u"playback_pause")
+
+        self.horizontalLayout_12.addWidget(self.playback_pause)
+
+        self.playback_export = QPushButton(self.groupBox)
+        self.playback_export.setObjectName(u"playback_export")
+
+        self.horizontalLayout_12.addWidget(self.playback_export)
 
 
-        self.verticalLayout_19.addWidget(self.history_enabled)
+        self.verticalLayout_16.addLayout(self.horizontalLayout_12)
+
+
+        self.verticalLayout_19.addWidget(self.groupBox)
 
         self.verticalSpacer_3 = QSpacerItem(20, 150, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -1405,6 +1401,16 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
 
         self.verticalLayout_18.addWidget(self.scrollArea_4)
+
+        self.playback_enter = QPushButton(self.tab_2)
+        self.playback_enter.setObjectName(u"playback_enter")
+
+        self.verticalLayout_18.addWidget(self.playback_enter)
+
+        self.playback_exit = QPushButton(self.tab_2)
+        self.playback_exit.setObjectName(u"playback_exit")
+
+        self.verticalLayout_18.addWidget(self.playback_exit)
 
         self.tab_options.addTab(self.tab_2, "")
         self.horizontal_splitter.addWidget(self.tab_options)
@@ -1494,7 +1500,6 @@ class Ui_MainWindow(object):
         self.label_32.setBuddy(self.layer_opacity)
         self.label_7.setBuddy(self.history_length)
         self.label_37.setBuddy(self.playback_progress)
-        self.label_12.setBuddy(self.playback_speed)
 #endif // QT_CONFIG(shortcut)
 
         self.menubar.addAction(self.menuFile.menuAction())
@@ -2110,18 +2115,20 @@ class Ui_MainWindow(object):
         self.status_playback_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_playback_pid.setText("")
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
-        self.history_enabled.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Playback Controls", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
+        self.label_35.setText(QCoreApplication.translate("MainWindow", u"Range:", None))
         self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
         self.playback_end.setText(QCoreApplication.translate("MainWindow", u"---", None))
-        self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Start Playback", None))
-        self.playback_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Playback", None))
-        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
-        self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
-        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Progress", None))
+        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Progress:", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Speed:", None))
         self.playback_speed_visual.setText(QCoreApplication.translate("MainWindow", u"1.0x", None))
+        self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
+        self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Play", None))
+        self.playback_pause.setText(QCoreApplication.translate("MainWindow", u"Pause", None))
+        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
+        self.playback_enter.setText(QCoreApplication.translate("MainWindow", u"Enter Replay Mode", None))
+        self.playback_exit.setText(QCoreApplication.translate("MainWindow", u"Exit Replay Mode", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))
 
         __sortingEnabled1 = self.listWidget_3.isSortingEnabled()
