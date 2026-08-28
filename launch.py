@@ -7,13 +7,6 @@ from multiprocessing import freeze_support
 if __name__ == '__main__':
     freeze_support()
 
-    from mousetracks2.gui.utils import format_ticks
-
-    for i in range(-30, 30):
-        print((60*4*60 + i) / 60, format_ticks(60*4*60 + i, 60))
-
-    1/0
-
     while True:
         try:
             # We import inside the loop so the module namespace is re-evaluated if possible
