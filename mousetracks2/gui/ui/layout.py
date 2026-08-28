@@ -139,6 +139,8 @@ class Ui_MainWindow(object):
         self.debug_pause_monitor = QAction(MainWindow)
         self.debug_pause_monitor.setObjectName(u"debug_pause_monitor")
         self.debug_pause_monitor.setCheckable(True)
+        self.generate_random_colour = QAction(MainWindow)
+        self.generate_random_colour.setObjectName(u"generate_random_colour")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.main_layout = QVBoxLayout(self.centralwidget)
@@ -1339,6 +1341,8 @@ class Ui_MainWindow(object):
         self.menu_debug_raise.setObjectName(u"menu_debug_raise")
         self.menuTracking = QMenu(self.menubar)
         self.menuTracking.setObjectName(u"menuTracking")
+        self.colour_context_menu = QMenu(self.menubar)
+        self.colour_context_menu.setObjectName(u"colour_context_menu")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -1363,6 +1367,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuTracking.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menubar.addAction(self.tray_context_menu.menuAction())
+        self.menubar.addAction(self.colour_context_menu.menuAction())
         self.menuFile.addAction(self.file_tracking_start)
         self.menuFile.addAction(self.file_tracking_pause)
         self.menuFile.addSeparator()
@@ -1423,6 +1428,7 @@ class Ui_MainWindow(object):
         self.menuTracking.addAction(self.prefs_track_keyboard)
         self.menuTracking.addAction(self.prefs_track_gamepad)
         self.menuTracking.addAction(self.prefs_track_network)
+        self.colour_context_menu.addAction(self.generate_random_colour)
 
         self.retranslateUi(MainWindow)
         self.tray_about.triggered.connect(self.about.trigger)
@@ -1500,6 +1506,10 @@ class Ui_MainWindow(object):
         self.link_donate.setText(QCoreApplication.translate("MainWindow", u"Donate", None))
         self.debug_pause_app.setText(QCoreApplication.translate("MainWindow", u"Pause Application Detection", None))
         self.debug_pause_monitor.setText(QCoreApplication.translate("MainWindow", u"Pause Monitor Check", None))
+        self.generate_random_colour.setText(QCoreApplication.translate("MainWindow", u"Generate Random Scheme", None))
+#if QT_CONFIG(shortcut)
+        self.generate_random_colour.setShortcut(QCoreApplication.translate("MainWindow", u"F5", None))
+#endif // QT_CONFIG(shortcut)
 #if QT_CONFIG(tooltip)
         self.thumbnail.setToolTip(QCoreApplication.translate("MainWindow", u"Live preview of the render.\n"
 "\n"
@@ -1612,8 +1622,8 @@ class Ui_MainWindow(object):
         self.colour_option.setItemText(2, QCoreApplication.translate("MainWindow", u"Sunburst", None))
 
 #if QT_CONFIG(tooltip)
-        self.colour_option.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p>Set the colour map for the render.<br/>The preset maps are shown, but custom maps can be input.</p><p><span style=\" font-weight:700;\">Colours<br/></span>Preset colour names or hex values can be used.<br/>Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.</p><p><span style=\" font-weight:700;\">Groups<br/></span>A group of colours are mixed together to create the final colour.<br/>Combine multiple colours by writing them next to each other.<br/><span style=\" font-style:italic;\">eg. YellowPinkRed will result in a deep orange.</span></p><p><span style=\" font-weight:700;\">Transitions<br/></span>Separate groups with a &quot;To&quot; to create a transition between the two.<br/>eg. BlackTo<span style=\" font-style:italic;\">YellowPinkRed</span> will create a colour map from black to that deep orange.</p><p><span style=\" font-weight:700;\">Modifiers<br/></span>Used as prefixes to modify an individual colour.<br/><span style=\" font-style:italic;\">Supported: dark, light, transparent"
-                        ", translucent, opaque<br/>eg. LightYellowOrange will combine orange with light yellow.</span></p><p><span style=\" font-weight:700;\">Duplicates<br/></span>Multiply the effect of the next word.<br/><span style=\" font-style:italic;\">Supported: single, double, triple, quadruple, ...<br/>eg. TripleDarkRed is red with the dark modifier applied 3 times</span></p><p><span style=\" font-weight:700;\">Examples<br/></span>The default <span style=\" font-style:italic;\">Ice</span> colour map is defined as <span style=\" font-style:italic;\">BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite</span>.<br/>The <span style=\" font-style:italic;\">Citrus</span> map is <span style=\" font-style:italic;\">BlackToDarkDarkGreyToDarkGreenToYellow</span>.</p></body></html>", None))
+        self.colour_option.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p>Set the colour map for the render.<br/>The preset maps are shown, but custom maps can be input.<br/><span style=\" font-weight:700;\">Right click</span> or press <span style=\" font-weight:700;\">F5</span> to generate a random colour map.</p><p><span style=\" font-weight:700;\">Colours<br/></span>Preset colour names or hex values can be used.<br/>Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.</p><p><span style=\" font-weight:700;\">Groups<br/></span>A group of colours are mixed together to create the final colour.<br/>Combine multiple colours by writing them next to each other.<br/><span style=\" font-style:italic;\">eg. YellowPinkRed will result in a deep orange.</span></p><p><span style=\" font-weight:700;\">Transitions<br/></span>Separate groups with a &quot;To&quot; to create a transition between the two.<br/>eg. BlackTo<span style=\" font-style:italic;\">YellowPinkRed</span> will create a colour map from black to that deep orange.</p><p><span style=\" font-weight:700;\">Mo"
+                        "difiers<br/></span>Used as prefixes to modify an individual colour.<br/><span style=\" font-style:italic;\">Supported: dark, light, transparent, translucent, opaque<br/>eg. LightYellowOrange will combine orange with light yellow.</span></p><p><span style=\" font-weight:700;\">Duplicates<br/></span>Multiply the effect of the next word.<br/><span style=\" font-style:italic;\">Supported: single, double, triple, quadruple, ...<br/>eg. TripleDarkRed is red with the dark modifier applied 3 times</span></p><p><span style=\" font-weight:700;\">Examples<br/></span>The default <span style=\" font-style:italic;\">Ice</span> colour map is defined as <span style=\" font-style:italic;\">BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite</span>.<br/>The <span style=\" font-style:italic;\">Citrus</span> map is <span style=\" font-style:italic;\">BlackToDarkDarkGreyToDarkGreenToYellow</span>.</p></body></html>", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.sampling.setToolTip(QCoreApplication.translate("MainWindow", u"Set the render sampling level.\n"
@@ -2020,5 +2030,6 @@ class Ui_MainWindow(object):
         self.menu_debug_state.setTitle(QCoreApplication.translate("MainWindow", u"Set Tracking State", None))
         self.menu_debug_raise.setTitle(QCoreApplication.translate("MainWindow", u"Raise Exception", None))
         self.menuTracking.setTitle(QCoreApplication.translate("MainWindow", u"Tracking", None))
+        self.colour_context_menu.setTitle(QCoreApplication.translate("MainWindow", u"_Colour_", None))
     # retranslateUi
 

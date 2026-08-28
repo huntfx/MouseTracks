@@ -23,6 +23,7 @@ from .utils import format_distance, format_ticks, format_bytes, format_network_s
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..cli import CLI
+from ..colour import generate_colour_schemes
 from ..config import GlobalConfig
 from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
@@ -155,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.output_logs.setVisible(False)
         self.ui.record_history.setVisible(False)
         self.ui.tray_context_menu.menuAction().setVisible(False)
+        self.ui.colour_context_menu.menuAction().setVisible(False)
         self.ui.prefs_automin.setChecked(self.config.minimise_on_start)
         self.ui.prefs_track_mouse.setChecked(self.config.track_mouse)
         self.ui.prefs_track_keyboard.setChecked(self.config.track_keyboard)
@@ -205,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Store things for full screen
         # The `addAction` is required for a hidden menubar
         self.addAction(self.ui.full_screen)
+        self.addAction(self.ui.generate_random_colour)
         self._margins_main = self.ui.main_layout.contentsMargins()
         self._margins_render = self.ui.render_layout.contentsMargins()
 
@@ -278,6 +281,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.show_time.toggled.connect(self.show_time_changed)
         self.ui.sampling.valueChanged.connect(self.sampling_changed)
         self.ui.colour_option.currentTextChanged.connect(self.render_colour_changed)
+        self.ui.colour_option.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.colour_option.customContextMenuRequested.connect(self.show_colour_context_menu)
+        self.ui.colour_option.lineEdit().setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.colour_option.lineEdit().customContextMenuRequested.connect(self.show_colour_context_menu)
+        self.ui.generate_random_colour.triggered.connect(self.generate_random_colour)
         self.ui.auto_switch_profile.stateChanged.connect(self.toggle_auto_switch_profile)
         self.ui.thumbnail_refresh.clicked.connect(self.request_thumbnail)
         self.ui.thumbnail.resized.connect(self.thumbnail_resize)
@@ -972,6 +980,17 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.current_layer.render_colour = colour
         self.request_thumbnail()
+
+    @QtCore.Slot(QtCore.QPoint)
+    def show_colour_context_menu(self, pos: QtCore.QPoint) -> None:
+        """Show the colour context menu at the given position."""
+        widget = cast(QtWidgets.QLineEdit, self.sender())
+        self.ui.colour_context_menu.exec(widget.mapToGlobal(pos))
+
+    @QtCore.Slot()
+    def generate_random_colour(self) -> None:
+        """Generate a random colour scheme and apply it to the current layer."""
+        self.ui.colour_option.setCurrentText(next(generate_colour_schemes()))
 
     @QtCore.Slot(int)
     def padding_changed(self, value: int) -> None:

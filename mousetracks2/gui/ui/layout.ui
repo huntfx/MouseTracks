@@ -520,7 +520,7 @@ This applies an exponential adjustment to enhance or reduce colour variation.</s
                       </sizepolicy>
                      </property>
                      <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the colour map for the render.&lt;br/&gt;The preset maps are shown, but custom maps can be input.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Colours&lt;br/&gt;&lt;/span&gt;Preset colour names or hex values can be used.&lt;br/&gt;Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Groups&lt;br/&gt;&lt;/span&gt;A group of colours are mixed together to create the final colour.&lt;br/&gt;Combine multiple colours by writing them next to each other.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;eg. YellowPinkRed will result in a deep orange.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Transitions&lt;br/&gt;&lt;/span&gt;Separate groups with a &amp;quot;To&amp;quot; to create a transition between the two.&lt;br/&gt;eg. BlackTo&lt;span style=&quot; font-style:italic;&quot;&gt;YellowPinkRed&lt;/span&gt; will create a colour map from black to that deep orange.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Modifiers&lt;br/&gt;&lt;/span&gt;Used as prefixes to modify an individual colour.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: dark, light, transparent, translucent, opaque&lt;br/&gt;eg. LightYellowOrange will combine orange with light yellow.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Duplicates&lt;br/&gt;&lt;/span&gt;Multiply the effect of the next word.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: single, double, triple, quadruple, ...&lt;br/&gt;eg. TripleDarkRed is red with the dark modifier applied 3 times&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Examples&lt;br/&gt;&lt;/span&gt;The default &lt;span style=&quot; font-style:italic;&quot;&gt;Ice&lt;/span&gt; colour map is defined as &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite&lt;/span&gt;.&lt;br/&gt;The &lt;span style=&quot; font-style:italic;&quot;&gt;Citrus&lt;/span&gt; map is &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkDarkGreyToDarkGreenToYellow&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the colour map for the render.&lt;br/&gt;The preset maps are shown, but custom maps can be input.&lt;br/&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Right click&lt;/span&gt; or press &lt;span style=&quot; font-weight:700;&quot;&gt;F5&lt;/span&gt; to generate a random colour map.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Colours&lt;br/&gt;&lt;/span&gt;Preset colour names or hex values can be used.&lt;br/&gt;Supported hex values are #RGB, #RGBA, #RRGGBB, #RRGGBBAA.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Groups&lt;br/&gt;&lt;/span&gt;A group of colours are mixed together to create the final colour.&lt;br/&gt;Combine multiple colours by writing them next to each other.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;eg. YellowPinkRed will result in a deep orange.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Transitions&lt;br/&gt;&lt;/span&gt;Separate groups with a &amp;quot;To&amp;quot; to create a transition between the two.&lt;br/&gt;eg. BlackTo&lt;span style=&quot; font-style:italic;&quot;&gt;YellowPinkRed&lt;/span&gt; will create a colour map from black to that deep orange.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Modifiers&lt;br/&gt;&lt;/span&gt;Used as prefixes to modify an individual colour.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: dark, light, transparent, translucent, opaque&lt;br/&gt;eg. LightYellowOrange will combine orange with light yellow.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Duplicates&lt;br/&gt;&lt;/span&gt;Multiply the effect of the next word.&lt;br/&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Supported: single, double, triple, quadruple, ...&lt;br/&gt;eg. TripleDarkRed is red with the dark modifier applied 3 times&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Examples&lt;br/&gt;&lt;/span&gt;The default &lt;span style=&quot; font-style:italic;&quot;&gt;Ice&lt;/span&gt; colour map is defined as &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkBlueToDarkBlueLightDarkCyanToLightBlueDarkCyanToWhite&lt;/span&gt;.&lt;br/&gt;The &lt;span style=&quot; font-style:italic;&quot;&gt;Citrus&lt;/span&gt; map is &lt;span style=&quot; font-style:italic;&quot;&gt;BlackToDarkDarkGreyToDarkGreenToYellow&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                      <property name="editable">
                       <bool>true</bool>
@@ -2380,11 +2380,18 @@ This should be used after manually editing it.</string>
     <addaction name="prefs_track_gamepad"/>
     <addaction name="prefs_track_network"/>
    </widget>
+   <widget class="QMenu" name="colour_context_menu">
+    <property name="title">
+     <string>_Colour_</string>
+    </property>
+    <addaction name="generate_random_colour"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPreferences"/>
    <addaction name="menuTracking"/>
    <addaction name="menuHelp"/>
    <addaction name="tray_context_menu"/>
+   <addaction name="colour_context_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="file_save">
@@ -2689,6 +2696,14 @@ This should be used after manually editing it.</string>
    </property>
    <property name="text">
     <string>Pause Monitor Check</string>
+   </property>
+  </action>
+  <action name="generate_random_colour">
+   <property name="text">
+    <string>Generate Random Scheme</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
    </property>
   </action>
  </widget>
