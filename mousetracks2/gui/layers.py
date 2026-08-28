@@ -222,6 +222,7 @@ class LayerManager:
         lock_aspect: bool,
         show_keyboard_time: bool,
         interpolation_order: Literal[0, 1, 2, 3, 4, 5],
+        empty_render_size: tuple[int, int] | None = None,
     ) -> Iterator[ipc.RenderLayer]:
         """Yield a RenderLayer for each item in the layer stack."""
         for layer_id, visible in layer_items:
@@ -232,6 +233,7 @@ class LayerManager:
                 width=width,
                 height=height,
                 lock_aspect=lock_aspect,
+                empty_render_size=empty_render_size,
                 profile=profile,
                 file_path=file_path,
                 colour_map=layer_option.render_colour.get(render_type),

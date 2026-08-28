@@ -20,11 +20,11 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QRadioButton,
-    QScrollArea, QScrollBar, QSizePolicy, QSpacerItem,
-    QSpinBox, QStatusBar, QTabWidget, QVBoxLayout,
-    QWidget)
+    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
-from mousetracks2.gui.widgets import (ResizableImage, Splitter)
+from mousetracks2.gui.widgets import (ClickSlider, MappedFloatSlider, ResizableImage, Splitter)
+from superqt import QRangeSlider
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -139,6 +139,10 @@ class Ui_MainWindow(object):
         self.debug_pause_monitor = QAction(MainWindow)
         self.debug_pause_monitor.setObjectName(u"debug_pause_monitor")
         self.debug_pause_monitor.setCheckable(True)
+        self.recording_start = QAction(MainWindow)
+        self.recording_start.setObjectName(u"recording_start")
+        self.recording_stop = QAction(MainWindow)
+        self.recording_stop.setObjectName(u"recording_stop")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.main_layout = QVBoxLayout(self.centralwidget)
@@ -754,40 +758,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.groupBox_9)
 
-        self.record_history = QGroupBox(self.scrollAreaWidgetContents)
-        self.record_history.setObjectName(u"record_history")
-        self.record_history.setEnabled(False)
-        self.record_history.setCheckable(True)
-        self.record_history.setChecked(False)
-        self.verticalLayout_12 = QVBoxLayout(self.record_history)
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.record_history)
-        self.label_7.setObjectName(u"label_7")
-
-        self.horizontalLayout.addWidget(self.label_7)
-
-        self.history_length = QSpinBox(self.record_history)
-        self.history_length.setObjectName(u"history_length")
-        self.history_length.setValue(2)
-
-        self.horizontalLayout.addWidget(self.history_length)
-
-
-        self.verticalLayout_12.addLayout(self.horizontalLayout)
-
-        self.history_current = QScrollBar(self.record_history)
-        self.history_current.setObjectName(u"history_current")
-        self.history_current.setMaximum(3600)
-        self.history_current.setValue(3600)
-        self.history_current.setOrientation(Qt.Orientation.Horizontal)
-
-        self.verticalLayout_12.addWidget(self.history_current)
-
-
-        self.verticalLayout_3.addWidget(self.record_history)
-
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
@@ -1133,6 +1103,11 @@ class Ui_MainWindow(object):
         self.status_components.setObjectName(u"status_components")
         self.gridLayout_8 = QGridLayout(self.status_components)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
+        self.status_hub_queue = QLabel(self.status_components)
+        self.status_hub_queue.setObjectName(u"status_hub_queue")
+
+        self.gridLayout_8.addWidget(self.status_hub_queue, 1, 3, 1, 1)
+
         self.status_hub_state = QLabel(self.status_components)
         self.status_hub_state.setObjectName(u"status_hub_state")
 
@@ -1143,21 +1118,86 @@ class Ui_MainWindow(object):
 
         self.gridLayout_8.addWidget(self.status_app_state, 5, 2, 1, 1)
 
-        self.status_hub_pid = QLabel(self.status_components)
-        self.status_hub_pid.setObjectName(u"status_hub_pid")
+        self.status_gui_state = QLabel(self.status_components)
+        self.status_gui_state.setObjectName(u"status_gui_state")
 
-        self.gridLayout_8.addWidget(self.status_hub_pid, 1, 1, 1, 1)
+        self.gridLayout_8.addWidget(self.status_gui_state, 4, 2, 1, 1)
 
-        self.status_tracking_state = QLabel(self.status_components)
-        self.status_tracking_state.setObjectName(u"status_tracking_state")
+        self.status_tracking_queue = QLabel(self.status_components)
+        self.status_tracking_queue.setObjectName(u"status_tracking_queue")
 
-        self.gridLayout_8.addWidget(self.status_tracking_state, 2, 2, 1, 1)
+        self.gridLayout_8.addWidget(self.status_tracking_queue, 2, 3, 1, 1)
+
+        self.status_app_pid = QLabel(self.status_components)
+        self.status_app_pid.setObjectName(u"status_app_pid")
+
+        self.gridLayout_8.addWidget(self.status_app_pid, 5, 1, 1, 1)
+
+        self.status_header_queue = QLabel(self.status_components)
+        self.status_header_queue.setObjectName(u"status_header_queue")
+        sizePolicy1.setHeightForWidth(self.status_header_queue.sizePolicy().hasHeightForWidth())
+        self.status_header_queue.setSizePolicy(sizePolicy1)
+        self.status_header_queue.setTextFormat(Qt.TextFormat.MarkdownText)
+
+        self.gridLayout_8.addWidget(self.status_header_queue, 0, 3, 1, 1)
 
         self.status_header_name = QLabel(self.status_components)
         self.status_header_name.setObjectName(u"status_header_name")
         self.status_header_name.setTextFormat(Qt.TextFormat.MarkdownText)
 
         self.gridLayout_8.addWidget(self.status_header_name, 0, 0, 1, 1)
+
+        self.status_processing_state = QLabel(self.status_components)
+        self.status_processing_state.setObjectName(u"status_processing_state")
+
+        self.gridLayout_8.addWidget(self.status_processing_state, 3, 2, 1, 1)
+
+        self.status_hub_name = QLabel(self.status_components)
+        self.status_hub_name.setObjectName(u"status_hub_name")
+
+        self.gridLayout_8.addWidget(self.status_hub_name, 1, 0, 1, 1)
+
+        self.status_processing_name = QLabel(self.status_components)
+        self.status_processing_name.setObjectName(u"status_processing_name")
+
+        self.gridLayout_8.addWidget(self.status_processing_name, 3, 0, 1, 1)
+
+        self.status_header_pid = QLabel(self.status_components)
+        self.status_header_pid.setObjectName(u"status_header_pid")
+        self.status_header_pid.setTextFormat(Qt.TextFormat.MarkdownText)
+
+        self.gridLayout_8.addWidget(self.status_header_pid, 0, 1, 1, 1)
+
+        self.status_processing_queue = QLabel(self.status_components)
+        self.status_processing_queue.setObjectName(u"status_processing_queue")
+
+        self.gridLayout_8.addWidget(self.status_processing_queue, 3, 3, 1, 1)
+
+        self.status_tracking_pid = QLabel(self.status_components)
+        self.status_tracking_pid.setObjectName(u"status_tracking_pid")
+
+        self.gridLayout_8.addWidget(self.status_tracking_pid, 2, 1, 1, 1)
+
+        self.status_gui_queue = QLabel(self.status_components)
+        self.status_gui_queue.setObjectName(u"status_gui_queue")
+
+        self.gridLayout_8.addWidget(self.status_gui_queue, 4, 3, 1, 1)
+
+        self.status_header_state = QLabel(self.status_components)
+        self.status_header_state.setObjectName(u"status_header_state")
+        self.status_header_state.setTextFormat(Qt.TextFormat.MarkdownText)
+
+        self.gridLayout_8.addWidget(self.status_header_state, 0, 2, 1, 1)
+
+        self.status_hub_pid = QLabel(self.status_components)
+        self.status_hub_pid.setObjectName(u"status_hub_pid")
+
+        self.gridLayout_8.addWidget(self.status_hub_pid, 1, 1, 1, 1)
+
+        self.status_app_queue = QLabel(self.status_components)
+        self.status_app_queue.setObjectName(u"status_app_queue")
+
+        self.gridLayout_8.addWidget(self.status_app_queue, 5, 3, 1, 1)
 
         self.status_gui_name = QLabel(self.status_components)
         self.status_gui_name.setObjectName(u"status_gui_name")
@@ -1169,28 +1209,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_8.addWidget(self.status_processing_pid, 3, 1, 1, 1)
 
-        self.status_header_state = QLabel(self.status_components)
-        self.status_header_state.setObjectName(u"status_header_state")
-        self.status_header_state.setTextFormat(Qt.TextFormat.MarkdownText)
-
-        self.gridLayout_8.addWidget(self.status_header_state, 0, 2, 1, 1)
-
-        self.status_app_pid = QLabel(self.status_components)
-        self.status_app_pid.setObjectName(u"status_app_pid")
-
-        self.gridLayout_8.addWidget(self.status_app_pid, 5, 1, 1, 1)
-
-        self.status_hub_name = QLabel(self.status_components)
-        self.status_hub_name.setObjectName(u"status_hub_name")
-
-        self.gridLayout_8.addWidget(self.status_hub_name, 1, 0, 1, 1)
-
-        self.status_header_pid = QLabel(self.status_components)
-        self.status_header_pid.setObjectName(u"status_header_pid")
-        self.status_header_pid.setTextFormat(Qt.TextFormat.MarkdownText)
-
-        self.gridLayout_8.addWidget(self.status_header_pid, 0, 1, 1, 1)
-
         self.status_app_name = QLabel(self.status_components)
         self.status_app_name.setObjectName(u"status_app_name")
 
@@ -1201,63 +1219,35 @@ class Ui_MainWindow(object):
 
         self.gridLayout_8.addWidget(self.status_tracking_name, 2, 0, 1, 1)
 
-        self.status_processing_state = QLabel(self.status_components)
-        self.status_processing_state.setObjectName(u"status_processing_state")
-
-        self.gridLayout_8.addWidget(self.status_processing_state, 3, 2, 1, 1)
-
-        self.status_gui_state = QLabel(self.status_components)
-        self.status_gui_state.setObjectName(u"status_gui_state")
-
-        self.gridLayout_8.addWidget(self.status_gui_state, 4, 2, 1, 1)
-
-        self.status_processing_name = QLabel(self.status_components)
-        self.status_processing_name.setObjectName(u"status_processing_name")
-
-        self.gridLayout_8.addWidget(self.status_processing_name, 3, 0, 1, 1)
-
-        self.status_tracking_pid = QLabel(self.status_components)
-        self.status_tracking_pid.setObjectName(u"status_tracking_pid")
-
-        self.gridLayout_8.addWidget(self.status_tracking_pid, 2, 1, 1, 1)
-
         self.status_gui_pid = QLabel(self.status_components)
         self.status_gui_pid.setObjectName(u"status_gui_pid")
 
         self.gridLayout_8.addWidget(self.status_gui_pid, 4, 1, 1, 1)
 
-        self.status_header_queue = QLabel(self.status_components)
-        self.status_header_queue.setObjectName(u"status_header_queue")
-        sizePolicy1.setHeightForWidth(self.status_header_queue.sizePolicy().hasHeightForWidth())
-        self.status_header_queue.setSizePolicy(sizePolicy1)
-        self.status_header_queue.setTextFormat(Qt.TextFormat.MarkdownText)
+        self.status_tracking_state = QLabel(self.status_components)
+        self.status_tracking_state.setObjectName(u"status_tracking_state")
 
-        self.gridLayout_8.addWidget(self.status_header_queue, 0, 3, 1, 1)
+        self.gridLayout_8.addWidget(self.status_tracking_state, 2, 2, 1, 1)
 
-        self.status_hub_queue = QLabel(self.status_components)
-        self.status_hub_queue.setObjectName(u"status_hub_queue")
+        self.status_playback_name = QLabel(self.status_components)
+        self.status_playback_name.setObjectName(u"status_playback_name")
 
-        self.gridLayout_8.addWidget(self.status_hub_queue, 1, 3, 1, 1)
+        self.gridLayout_8.addWidget(self.status_playback_name, 6, 0, 1, 1)
 
-        self.status_tracking_queue = QLabel(self.status_components)
-        self.status_tracking_queue.setObjectName(u"status_tracking_queue")
+        self.status_playback_state = QLabel(self.status_components)
+        self.status_playback_state.setObjectName(u"status_playback_state")
 
-        self.gridLayout_8.addWidget(self.status_tracking_queue, 2, 3, 1, 1)
+        self.gridLayout_8.addWidget(self.status_playback_state, 6, 2, 1, 1)
 
-        self.status_processing_queue = QLabel(self.status_components)
-        self.status_processing_queue.setObjectName(u"status_processing_queue")
+        self.status_playback_queue = QLabel(self.status_components)
+        self.status_playback_queue.setObjectName(u"status_playback_queue")
 
-        self.gridLayout_8.addWidget(self.status_processing_queue, 3, 3, 1, 1)
+        self.gridLayout_8.addWidget(self.status_playback_queue, 6, 3, 1, 1)
 
-        self.status_gui_queue = QLabel(self.status_components)
-        self.status_gui_queue.setObjectName(u"status_gui_queue")
+        self.status_playback_pid = QLabel(self.status_components)
+        self.status_playback_pid.setObjectName(u"status_playback_pid")
 
-        self.gridLayout_8.addWidget(self.status_gui_queue, 4, 3, 1, 1)
-
-        self.status_app_queue = QLabel(self.status_components)
-        self.status_app_queue.setObjectName(u"status_app_queue")
-
-        self.gridLayout_8.addWidget(self.status_app_queue, 5, 3, 1, 1)
+        self.gridLayout_8.addWidget(self.status_playback_pid, 6, 1, 1, 1)
 
 
         self.verticalLayout.addWidget(self.status_components)
@@ -1271,6 +1261,158 @@ class Ui_MainWindow(object):
         self.verticalLayout_10.addWidget(self.scrollArea_3)
 
         self.tab_options.addTab(self.tab_4, "")
+        self.tab_2 = QWidget()
+        self.tab_2.setObjectName(u"tab_2")
+        self.verticalLayout_18 = QVBoxLayout(self.tab_2)
+        self.verticalLayout_18.setObjectName(u"verticalLayout_18")
+        self.scrollArea_4 = QScrollArea(self.tab_2)
+        self.scrollArea_4.setObjectName(u"scrollArea_4")
+        self.scrollArea_4.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_4 = QWidget()
+        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
+        self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
+        self.verticalLayout_19.setObjectName(u"verticalLayout_19")
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.label_7 = QLabel(self.scrollAreaWidgetContents_4)
+        self.label_7.setObjectName(u"label_7")
+
+        self.horizontalLayout.addWidget(self.label_7)
+
+        self.history_length = QSpinBox(self.scrollAreaWidgetContents_4)
+        self.history_length.setObjectName(u"history_length")
+        self.history_length.setMinimum(0)
+        self.history_length.setMaximum(9999)
+        self.history_length.setValue(120)
+
+        self.horizontalLayout.addWidget(self.history_length)
+
+
+        self.verticalLayout_19.addLayout(self.horizontalLayout)
+
+        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.groupBox.setObjectName(u"groupBox")
+        self.verticalLayout_16 = QVBoxLayout(self.groupBox)
+        self.verticalLayout_16.setObjectName(u"verticalLayout_16")
+        self.horizontalLayout_14 = QHBoxLayout()
+        self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
+        self.label_35 = QLabel(self.groupBox)
+        self.label_35.setObjectName(u"label_35")
+
+        self.horizontalLayout_14.addWidget(self.label_35)
+
+        self.playback_start = QLabel(self.groupBox)
+        self.playback_start.setObjectName(u"playback_start")
+
+        self.horizontalLayout_14.addWidget(self.playback_start)
+
+        self.playback_range = QRangeSlider(self.groupBox)
+        self.playback_range.setObjectName(u"playback_range")
+        sizePolicy1.setHeightForWidth(self.playback_range.sizePolicy().hasHeightForWidth())
+        self.playback_range.setSizePolicy(sizePolicy1)
+
+        self.horizontalLayout_14.addWidget(self.playback_range)
+
+        self.playback_end = QLabel(self.groupBox)
+        self.playback_end.setObjectName(u"playback_end")
+
+        self.horizontalLayout_14.addWidget(self.playback_end)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_14)
+
+        self.horizontalLayout_15 = QHBoxLayout()
+        self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
+        self.label_37 = QLabel(self.groupBox)
+        self.label_37.setObjectName(u"label_37")
+
+        self.horizontalLayout_15.addWidget(self.label_37)
+
+        self.playback_progress = ClickSlider(self.groupBox)
+        self.playback_progress.setObjectName(u"playback_progress")
+        self.playback_progress.setMaximum(1000)
+        self.playback_progress.setOrientation(Qt.Orientation.Horizontal)
+
+        self.horizontalLayout_15.addWidget(self.playback_progress)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_15)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
+        self.label_12 = QLabel(self.groupBox)
+        self.label_12.setObjectName(u"label_12")
+
+        self.horizontalLayout_11.addWidget(self.label_12)
+
+        self.playback_speed = MappedFloatSlider(self.groupBox)
+        self.playback_speed.setObjectName(u"playback_speed")
+        self.playback_speed.setMaximum(100)
+        self.playback_speed.setValue(50)
+        self.playback_speed.setOrientation(Qt.Orientation.Horizontal)
+
+        self.horizontalLayout_11.addWidget(self.playback_speed)
+
+        self.playback_speed_visual = QLabel(self.groupBox)
+        self.playback_speed_visual.setObjectName(u"playback_speed_visual")
+        self.playback_speed_visual.setMinimumSize(QSize(28, 0))
+        self.playback_speed_visual.setMaximumSize(QSize(28, 16777215))
+        self.playback_speed_visual.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.horizontalLayout_11.addWidget(self.playback_speed_visual)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_11)
+
+        self.playback_skip = QCheckBox(self.groupBox)
+        self.playback_skip.setObjectName(u"playback_skip")
+        self.playback_skip.setChecked(True)
+
+        self.verticalLayout_16.addWidget(self.playback_skip)
+
+        self.horizontalLayout_12 = QHBoxLayout()
+        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
+        self.playback_play = QPushButton(self.groupBox)
+        self.playback_play.setObjectName(u"playback_play")
+
+        self.horizontalLayout_12.addWidget(self.playback_play)
+
+        self.playback_pause = QPushButton(self.groupBox)
+        self.playback_pause.setObjectName(u"playback_pause")
+
+        self.horizontalLayout_12.addWidget(self.playback_pause)
+
+        self.playback_export = QPushButton(self.groupBox)
+        self.playback_export.setObjectName(u"playback_export")
+
+        self.horizontalLayout_12.addWidget(self.playback_export)
+
+
+        self.verticalLayout_16.addLayout(self.horizontalLayout_12)
+
+
+        self.verticalLayout_19.addWidget(self.groupBox)
+
+        self.verticalSpacer_3 = QSpacerItem(20, 150, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_19.addItem(self.verticalSpacer_3)
+
+        self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
+
+        self.verticalLayout_18.addWidget(self.scrollArea_4)
+
+        self.playback_enter = QPushButton(self.tab_2)
+        self.playback_enter.setObjectName(u"playback_enter")
+
+        self.verticalLayout_18.addWidget(self.playback_enter)
+
+        self.playback_exit = QPushButton(self.tab_2)
+        self.playback_exit.setObjectName(u"playback_exit")
+
+        self.verticalLayout_18.addWidget(self.playback_exit)
+
+        self.tab_options.addTab(self.tab_2, "")
         self.horizontal_splitter.addWidget(self.tab_options)
         self.vertical_splitter.addWidget(self.horizontal_splitter)
         self.output_logs = QTabWidget(self.vertical_splitter)
@@ -1356,6 +1498,8 @@ class Ui_MainWindow(object):
         self.label_24.setBuddy(self.colour_option)
         self.label_33.setBuddy(self.layer_blending)
         self.label_32.setBuddy(self.layer_opacity)
+        self.label_7.setBuddy(self.history_length)
+        self.label_37.setBuddy(self.playback_progress)
 #endif // QT_CONFIG(shortcut)
 
         self.menubar.addAction(self.menuFile.menuAction())
@@ -1423,6 +1567,9 @@ class Ui_MainWindow(object):
         self.menuTracking.addAction(self.prefs_track_keyboard)
         self.menuTracking.addAction(self.prefs_track_gamepad)
         self.menuTracking.addAction(self.prefs_track_network)
+        self.menuTracking.addSeparator()
+        self.menuTracking.addAction(self.recording_start)
+        self.menuTracking.addAction(self.recording_stop)
 
         self.retranslateUi(MainWindow)
         self.tray_about.triggered.connect(self.about.trigger)
@@ -1500,6 +1647,8 @@ class Ui_MainWindow(object):
         self.link_donate.setText(QCoreApplication.translate("MainWindow", u"Donate", None))
         self.debug_pause_app.setText(QCoreApplication.translate("MainWindow", u"Pause Application Detection", None))
         self.debug_pause_monitor.setText(QCoreApplication.translate("MainWindow", u"Pause Monitor Check", None))
+        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
+        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Recording", None))
 #if QT_CONFIG(tooltip)
         self.thumbnail.setToolTip(QCoreApplication.translate("MainWindow", u"Live preview of the render.\n"
 "\n"
@@ -1778,8 +1927,6 @@ class Ui_MainWindow(object):
         self.label_30.setText(QCoreApplication.translate("MainWindow", u"Current Upload:", None))
         self.stat_download_current.setText(QCoreApplication.translate("MainWindow", u"3.5 Mb/s (0.3 MB/s)", None))
         self.stat_upload_current.setText(QCoreApplication.translate("MainWindow", u"80 Mb/s (8.2 MB/s)", None))
-        self.record_history.setTitle(QCoreApplication.translate("MainWindow", u"History", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of hours to keep available", None))
         self.tip.setText(QCoreApplication.translate("MainWindow", u"Tip: Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
         self.tip.setProperty(u"tip_tracking", QCoreApplication.translate("MainWindow", u"Not tracking your new game? Create a rule by clicking <strong>Add Tracked Application</strong> in the <strong>Status</strong> tab.", None))
         self.tip.setProperty(u"tip_update", QCoreApplication.translate("MainWindow", u"A new update is available. <a href=\"https://github.com/huntfx/MouseTracks/releases/latest\">Click here</a> to visit the download page.", None))
@@ -1939,31 +2086,50 @@ class Ui_MainWindow(object):
         self.status_components.setToolTip(QCoreApplication.translate("MainWindow", u"Show the state of each component.", None))
 #endif // QT_CONFIG(tooltip)
         self.status_components.setTitle(QCoreApplication.translate("MainWindow", u"Components", None))
+        self.status_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_hub_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
         self.status_app_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.status_hub_pid.setText("")
-        self.status_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_gui_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"3", None))
+        self.status_app_pid.setText("")
+        self.status_header_queue.setText(QCoreApplication.translate("MainWindow", u"**Queue**", None))
         self.status_header_name.setText(QCoreApplication.translate("MainWindow", u"**Name**", None))
+        self.status_processing_state.setText(QCoreApplication.translate("MainWindow", u"Busy", None))
+        self.status_hub_name.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
+        self.status_processing_name.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
+        self.status_header_pid.setText(QCoreApplication.translate("MainWindow", u"**PID**", None))
+        self.status_processing_queue.setText(QCoreApplication.translate("MainWindow", u"642", None))
+        self.status_tracking_pid.setText("")
+        self.status_gui_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.status_header_state.setText(QCoreApplication.translate("MainWindow", u"**State**", None))
+        self.status_hub_pid.setText("")
+        self.status_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_gui_name.setText(QCoreApplication.translate("MainWindow", u"GUI", None))
         self.status_processing_pid.setText("")
-        self.status_header_state.setText(QCoreApplication.translate("MainWindow", u"**State**", None))
-        self.status_app_pid.setText("")
-        self.status_hub_name.setText(QCoreApplication.translate("MainWindow", u"Hub", None))
-        self.status_header_pid.setText(QCoreApplication.translate("MainWindow", u"**PID**", None))
         self.status_app_name.setText(QCoreApplication.translate("MainWindow", u"App Detection", None))
         self.status_tracking_name.setText(QCoreApplication.translate("MainWindow", u"Tracking", None))
-        self.status_processing_state.setText(QCoreApplication.translate("MainWindow", u"Busy", None))
-        self.status_gui_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
-        self.status_processing_name.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
-        self.status_tracking_pid.setText("")
         self.status_gui_pid.setText("")
-        self.status_header_queue.setText(QCoreApplication.translate("MainWindow", u"**Queue**", None))
-        self.status_hub_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.status_tracking_queue.setText(QCoreApplication.translate("MainWindow", u"3", None))
-        self.status_processing_queue.setText(QCoreApplication.translate("MainWindow", u"642", None))
-        self.status_gui_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
-        self.status_app_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.status_tracking_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_playback_name.setText(QCoreApplication.translate("MainWindow", u"Playback", None))
+        self.status_playback_state.setText(QCoreApplication.translate("MainWindow", u"Running", None))
+        self.status_playback_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
+        self.status_playback_pid.setText("")
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
+        self.label_35.setText(QCoreApplication.translate("MainWindow", u"Range:", None))
+        self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
+        self.playback_end.setText(QCoreApplication.translate("MainWindow", u"---", None))
+        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Progress:", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Speed:", None))
+        self.playback_speed_visual.setText(QCoreApplication.translate("MainWindow", u"1.0x", None))
+        self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
+        self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Play", None))
+        self.playback_pause.setText(QCoreApplication.translate("MainWindow", u"Pause", None))
+        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
+        self.playback_enter.setText(QCoreApplication.translate("MainWindow", u"Enter Replay Mode", None))
+        self.playback_exit.setText(QCoreApplication.translate("MainWindow", u"Exit Replay Mode", None))
+        self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))
 
         __sortingEnabled1 = self.listWidget_3.isSortingEnabled()
         self.listWidget_3.setSortingEnabled(False)

@@ -1,4 +1,5 @@
 import math
+import os
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -15,7 +16,7 @@ from ..config import GlobalConfig
 from ..context import CTX
 from ..exceptions import ExitRequest
 from ..export import Export
-from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
+from ..file import ArrayResolutionMap, MovementMaps, PROFILE_DIR, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
@@ -58,12 +59,11 @@ class Processing(AppComponent, MonitorComponent):
 
         self.tick = 0
         self._timestamp = -1
-
+        self.is_playback = CTX.playback_file is not None
         self.previous_mouse_click: PreviousMouseClick | None = None
-        self.previous_monitor = None
 
         # Load in the default profile
-        self.all_profiles = TrackingProfileLoader()
+        self.all_profiles = self._all_profiles = TrackingProfileLoader()
 
         self.config = GlobalConfig()
 
@@ -145,14 +145,6 @@ class Processing(AppComponent, MonitorComponent):
             multi_monitor=profile.config.multi_monitor,
         ))
 
-    @property
-    def profile_age_days(self) -> int:
-        """Get the number of days since the profile was created.
-        This is for use with the daily stats.
-        """
-        creation_day = self.profile.created // 86400
-        current_day = self.timestamp // 86400
-        return max(0, current_day - creation_day)
 
     def is_single_monitor_mode(self) -> bool:
         """Determine if running in single or multi monitor mode."""
@@ -212,6 +204,116 @@ class Processing(AppComponent, MonitorComponent):
             print('[Processing] Reduced all arrays')
 
         return distance
+
+    def _handle_mouse_move(self, profile: TrackingProfile, message: ipc.MouseMove) -> None:
+        """Record a mouse movement event into the given profile."""
+        if not profile.config.track_mouse or self.app_resizing:
+            return
+
+        distance = self._record_move(profile.cursor_map, message.position)
+        profile.daily_distance[profile.age_days(self.timestamp)] += distance
+
+    def _handle_mouse_held(self, profile: TrackingProfile, message: ipc.MouseHeld) -> None:
+        """Record a held mouse button event into the given profile."""
+        if not profile.config.track_mouse or self.app_resizing:
+            return
+
+        result = self.get_render_space_offset(message.position)
+        if result is None:
+            return
+
+        current_monitor, pixel = result
+        index = (pixel[1], pixel[0])
+        profile.mouse_held_clicks[message.button][current_monitor][index] += 1
+
+    def _handle_key_press(self, profile: TrackingProfile, message: ipc.KeyPress) -> None:
+        """Record a key press event into the given profile."""
+        if not profile.config.should_track_keycode(message.keycode):
+            return
+        if message.keycode not in keycodes.CLICK_CODES:
+            print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
+        profile.key_presses[message.keycode] += 1
+        profile.key_held[message.keycode] += 1
+        if message.keycode in keycodes.MOUSE_CODES:
+            profile.daily_clicks[profile.age_days(self.timestamp)] += 1
+        else:
+            profile.daily_keys[profile.age_days(self.timestamp)] += 1
+
+    def _handle_key_held(self, profile: TrackingProfile, message: ipc.KeyHeld) -> None:
+        """Record a key held event into the given profile."""
+        if not profile.config.should_track_keycode(message.keycode):
+            return
+        if message.keycode in keycodes.SCROLL_CODES:
+            print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
+            profile.daily_scrolls[profile.age_days(self.timestamp)] += 1
+        profile.key_held[message.keycode] += 1
+
+    def _handle_mouse_click(self, profile: TrackingProfile, message: ipc.MouseClick) -> None:
+        """Record a mouse click event into the given profile."""
+        if not profile.config.track_mouse:
+            return
+        previous = self.previous_mouse_click
+        double_click = (
+            previous is not None
+            and previous.button == message.button
+            and previous.tick + (UPDATES_PER_SECOND * DOUBLE_CLICK_MS / 1000) > self.tick
+            and calculate_distance(previous.position, message.position) <= DOUBLE_CLICK_TOL
+            and not previous.double_clicked
+        )
+        if double_click:
+            arrays = profile.mouse_double_clicks[message.button]
+            print(f'[Processing] {keycodes.KeyCode(message.button)} double clicked.')
+        else:
+            arrays = profile.mouse_single_clicks[message.button]
+            print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
+        result = self.get_render_space_offset(message.position)
+        if result is not None:
+            current_monitor, pixel = result
+            index = (pixel[1], pixel[0])
+            arrays[current_monitor][index] += 1
+        self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
+
+    def _handle_button_press(self, profile: TrackingProfile, message: ipc.ButtonPress) -> None:
+        """Record a gamepad button press event into the given profile."""
+        if not profile.config.track_gamepad:
+            return
+        print(f'[Processing] {keycodes.GamepadCode(message.keycode)} pressed.')
+        profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
+        profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
+        profile.daily_buttons[profile.age_days(self.timestamp)] += 1
+
+    def _handle_button_held(self, profile: TrackingProfile, message: ipc.ButtonHeld) -> None:
+        """Record a gamepad button held event into the given profile."""
+        if not profile.config.track_gamepad:
+            return
+        profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
+
+    def _handle_thumbstick_move(self, profile: TrackingProfile, message: ipc.ThumbstickMove) -> None:
+        """Record a thumbstick movement event into the given profile."""
+        if not profile.config.track_gamepad:
+            return
+        width = height = RADIAL_ARRAY_SIZE
+        x = round((message.position[0] + 1) * (width - 1) / 2)
+        y = round((message.position[1] + 1) * (height - 1) / 2)
+        remapped = (x, height - y - 1)
+        match message.thumbstick:
+            case ipc.ThumbstickMove.Thumbstick.Left:
+                self._record_move(profile.thumbstick_l_map[message.gamepad], remapped, (width, height))
+            case ipc.ThumbstickMove.Thumbstick.Right:
+                self._record_move(profile.thumbstick_r_map[message.gamepad], remapped, (width, height))
+            case _:
+                raise NotImplementedError(message.thumbstick)
+
+    def _handle_data_transfer(self, profile: TrackingProfile, message: ipc.DataTransfer) -> None:
+        """Record a network data transfer event into the given profile."""
+        if not profile.config.track_network:
+            return
+        profile.data_upload[message.mac_address] += message.bytes_sent
+        profile.data_download[message.mac_address] += message.bytes_recv
+        profile.daily_upload[profile.age_days(self.timestamp)] += message.bytes_sent
+        profile.daily_download[profile.age_days(self.timestamp)] += message.bytes_recv
+        if message.mac_address not in profile.data_interfaces:
+            profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
 
     def _arrays_for_rendering(self, profile: TrackingProfile, render_type: ipc.RenderType,
                               left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
@@ -303,7 +405,9 @@ class Processing(AppComponent, MonitorComponent):
                       padding: int = 0, contrast: float = 1.0, lock_aspect: bool = True,
                       clipping: float = 0.0, blur: float = 0.0, linear: bool = False, invert: bool = False,
                       left_clicks: bool = True, middle_clicks: bool = True, right_clicks: bool = True,
-                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0) -> npt.NDArray[np.uint8]:
+                      interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0,
+                      allow_empty: bool = False,
+                      empty_size: tuple[int, int] | None = None) -> npt.NDArray[np.uint8]:
         """Render an array (tracks / heatmaps)."""
         # Get the arrays to render
         positional_arrays = self._arrays_for_rendering(profile, render_type, left_clicks=left_clicks,
@@ -326,9 +430,12 @@ class Processing(AppComponent, MonitorComponent):
             image = render(colour_map, positional_arrays, width, height, sampling,
                            lock_aspect=lock_aspect, linear=linear, invert=invert,
                            blur=blur, contrast=contrast, clipping=clipping,
-                           interpolation_order=interpolation_order)
+                           interpolation_order=interpolation_order, empty_size=empty_size)
         except EmptyRenderError:
-            image = np.ndarray([0, 0, 4], dtype=np.uint8)
+            if allow_empty and width is not None and height is not None:
+                image = np.zeros((height, width, 4), dtype=np.uint8)
+            else:
+                image = np.ndarray([0, 0, 4], dtype=np.uint8)
 
         return image
 
@@ -362,7 +469,7 @@ class Processing(AppComponent, MonitorComponent):
     def _record_active_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.active += ticks
-        profile.daily_ticks[self.profile_age_days, 1] += ticks
+        profile.daily_ticks[profile.age_days(self.timestamp), 1] += ticks
 
         if DEBUG:
             self._get_tick_diff(profile_name)
@@ -370,7 +477,7 @@ class Processing(AppComponent, MonitorComponent):
     def _record_inactive_tick(self, profile_name: str, ticks: int) -> None:
         profile = self.all_profiles[profile_name]
         profile.inactive += ticks
-        profile.daily_ticks[self.profile_age_days, 2] += ticks
+        profile.daily_ticks[profile.age_days(self.timestamp), 2] += ticks
 
         if DEBUG:
             self._get_tick_diff(profile_name)
@@ -436,6 +543,32 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Failed to save {profile_name}')
         return False
 
+    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str]]:
+        """Save all loaded profiles to disk, unloading unmodified ones.
+        If `profile_name` is given, only that profile is processed.
+        """
+        succeeded: list[str] = []
+        failed: list[str] = []
+
+        profile_names = []
+        if profile_name is not None:
+            if profile_name in self.all_profiles:
+                profile_names.append(profile_name)
+        else:
+            profile_names.extend(profile.name for profile in self.all_profiles.values())
+
+        for name in profile_names:
+            profile = self.all_profiles[name]
+            if not profile.is_modified:
+                print(f'[Processing] Unloading profile: {name}')
+                del self.all_profiles[name]
+            elif self._save(name):
+                succeeded.append(name)
+            else:
+                failed.append(name)
+
+        return succeeded, failed
+
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
         match message:
@@ -446,7 +579,7 @@ class Processing(AppComponent, MonitorComponent):
 
                 # Update profile data
                 self.profile.elapsed += 1
-                self.profile.daily_ticks[self.profile_age_days, 0] += 1
+                self.profile.daily_ticks[self.profile.age_days(self.timestamp), 0] += 1
 
                 # This message triggers once per tick, so the current profile is always "modified"
                 self.profile.is_modified = True
@@ -540,6 +673,8 @@ class Processing(AppComponent, MonitorComponent):
                             middle_clicks=request.show_middle_clicks,
                             right_clicks=request.show_right_clicks,
                             interpolation_order=request.interpolation_order,
+                            allow_empty=request.allow_empty_render,
+                            empty_size=request.empty_render_size,
                         )
 
                     # If not visible, skip here unless there aren't any other visible layers
@@ -559,6 +694,8 @@ class Processing(AppComponent, MonitorComponent):
                             left_clicks=False,
                             middle_clicks=False,
                             right_clicks=False,
+                            allow_empty=request.allow_empty_render,
+                            empty_size=request.empty_render_size,
                         )
                     image = np.divide(_image.astype(np.float64), 255)
 
@@ -584,113 +721,77 @@ class Processing(AppComponent, MonitorComponent):
                 print('[Processing] Render request completed')
 
             case ipc.MouseMove():
-                if not self.profile.config.track_mouse or self.app_resizing:
-                    return
-
-                distance = self._record_move(self.profile.cursor_map, message.position)
-                self.profile.daily_distance[self.profile_age_days] += distance
+                self._handle_mouse_move(self.profile, message)
 
             case ipc.MouseHeld():
-                if not self.profile.config.track_mouse or self.app_resizing:
-                    return
-
-                result = self.get_render_space_offset(message.position)
-                if result is not None:
-                    current_monitor, pixel = result
-                    index = (pixel[1], pixel[0])
-                    self.profile.mouse_held_clicks[message.button][current_monitor][index] += 1
+                self._handle_mouse_held(self.profile, message)
 
             case ipc.MouseClick():
-                if not self.profile.config.track_mouse:
-                    return
-
-                previous = self.previous_mouse_click
-                double_click = (
-                    previous is not None
-                    and previous.button == message.button
-                    and previous.tick + (UPDATES_PER_SECOND * DOUBLE_CLICK_MS / 1000) > self.tick
-                    and calculate_distance(previous.position, message.position) <= DOUBLE_CLICK_TOL
-                    and not previous.double_clicked
-                )
-
-                if double_click:
-                    arrays = self.profile.mouse_double_clicks[message.button]
-                    print(f'[Processing] {keycodes.KeyCode(message.button)} double clicked.')
-                else:
-                    arrays = self.profile.mouse_single_clicks[message.button]
-                    print(f'[Processing] {keycodes.KeyCode(message.button)} clicked.')
-
-                result = self.get_render_space_offset(message.position)
-                if result is not None:
-                    current_monitor, pixel = result
-                    index = (pixel[1], pixel[0])
-                    arrays[current_monitor][index] += 1
-
-                self.previous_mouse_click = PreviousMouseClick(message, self.tick, double_click)
+                self._handle_mouse_click(self.profile, message)
 
             case ipc.KeyPress():
-                if not self.profile.config.should_track_keycode(message.keycode):
-                    return
-
-                if message.keycode not in keycodes.CLICK_CODES:
-                    print(f'[Processing] {keycodes.KeyCode(message.keycode)} pressed.')
-                self.profile.key_presses[message.keycode] += 1
-                self.profile.key_held[message.keycode] += 1
-
-                if message.keycode in keycodes.MOUSE_CODES:
-                    self.profile.daily_clicks[self.profile_age_days] += 1
-                else:
-                    self.profile.daily_keys[self.profile_age_days] += 1
+                self._handle_key_press(self.profile, message)
 
             case ipc.KeyHeld():
-                if not self.profile.config.should_track_keycode(message.keycode):
-                    return
-
-                if message.keycode in keycodes.SCROLL_CODES:
-                    print(f'[Processing] {keycodes.KeyCode(message.keycode)} triggered.')
-                    self.profile.daily_scrolls[self.profile_age_days] += 1
-                self.profile.key_held[message.keycode] += 1
+                self._handle_key_held(self.profile, message)
 
             case ipc.ButtonPress():
-                if not self.profile.config.track_gamepad:
-                    return
-
-                print(f'[Processing] {keycodes.GamepadCode(message.keycode)} pressed.')
-                self.profile.button_presses[message.gamepad][int(math.log2(message.keycode))] += 1
-                self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
-                self.profile.daily_buttons[self.profile_age_days] += 1
+                self._handle_button_press(self.profile, message)
 
             case ipc.ButtonHeld():
-                if not self.profile.config.track_gamepad:
-                    return
-
-                self.profile.button_held[message.gamepad][int(math.log2(message.keycode))] += 1
+                self._handle_button_held(self.profile, message)
 
             case ipc.MonitorsChanged():
                 print('[Processing] Monitors changed.')
                 self.set_monitor_data(message.data)
 
             case ipc.ThumbstickMove():
-                if not self.profile.config.track_gamepad:
-                    return
-
-                width = height = RADIAL_ARRAY_SIZE
-                x = round((message.position[0] + 1) * (width - 1) / 2)
-                y = round((message.position[1] + 1) * (height - 1) / 2)
-                remapped = (x, height - y - 1)
-                match message.thumbstick:
-                    case ipc.ThumbstickMove.Thumbstick.Left:
-                        self._record_move(self.profile.thumbstick_l_map[message.gamepad], remapped, (width, height))
-                    case ipc.ThumbstickMove.Thumbstick.Right:
-                        self._record_move(self.profile.thumbstick_r_map[message.gamepad], remapped, (width, height))
-                    case _:
-                        raise NotImplementedError(message.thumbstick)
+                self._handle_thumbstick_move(self.profile, message)
 
             case ipc.DebugRaiseError():
                 raise RuntimeError('test exception')
 
+            # When playback starts/restarts, switch to empty tracking profiles
+            case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
+                self.all_profiles = TrackingProfileLoader(profile_dir=None)
+                self.previous_mouse_click = None
+                self.is_playback = True
+
+            case ipc.PlaybackStopping():
+                self.all_profiles = self._all_profiles
+                self.previous_mouse_click = None
+                self.is_playback = False
+
+            # Nothing needs to be done, added here to avoid NotImplementedError
+            case ipc.PlaybackFinished(): ...
+
             case ipc.TrackingStarted():
                 self.profile.cursor_map.position = None
+
+            case ipc.StartRecording():
+                # Send a snapshot of the current state so the recording
+                self.send_data(ipc.MonitorsChanged(data=self._monitor_data))
+                self.send_data(ipc.CurrentProfileChanged(
+                    name=self.focused_app.name,
+                    process_id=None,
+                    rects=self.focused_app.rects,
+                ))
+                if self.profile.cursor_map.position is not None:
+                    self.send_data(ipc.MouseMove(position=self.profile.cursor_map.position))
+                for gamepad, maps in self.profile.thumbstick_l_map.items():
+                    if maps.position is not None:
+                        self.send_data(ipc.ThumbstickMove(
+                            gamepad=gamepad,
+                            thumbstick=ipc.ThumbstickMove.Thumbstick.Left,
+                            position=maps.position,
+                        ))
+                for gamepad, maps in self.profile.thumbstick_r_map.items():
+                    if maps.position is not None:
+                        self.send_data(ipc.ThumbstickMove(
+                            gamepad=gamepad,
+                            thumbstick=ipc.ThumbstickMove.Thumbstick.Right,
+                            position=maps.position,
+                        ))
 
             case ipc.StopTracking() | ipc.Exit():
                 raise ExitRequest
@@ -699,44 +800,11 @@ class Processing(AppComponent, MonitorComponent):
                 self.focused_app = Application(message.name, message.rects)
 
             case ipc.Save():
-                # Keep track of what saved and what didn't
-                succeeded = []
-                failed = []
-
-                profile_names = []
-                if message.profile_name is not None:
-                    if message.profile_name in self.all_profiles:
-                        profile_names.append(message.profile_name)
-                else:
-                    profile_names.extend(profile.name for profile in self.all_profiles.values())
-
-                for profile_name in profile_names:
-                    profile = self.all_profiles[profile_name]
-
-                    # If not modified since last time, unload it from memory
-                    if not profile.is_modified:
-                        print(f'[Processing] Unloading profile: {profile_name}')
-                        del self.all_profiles[profile_name]
-
-                    # Attempt the save
-                    elif self._save(profile_name):
-                        succeeded.append(profile_name)
-
-                    else:
-                        failed.append(profile_name)
+                succeeded, failed = self.save(message.profile_name)
                 self.send_data(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
-                if not self.profile.config.track_network:
-                    return
-
-                self.profile.data_upload[message.mac_address] += message.bytes_sent
-                self.profile.data_download[message.mac_address] += message.bytes_recv
-                self.profile.daily_upload[self.profile_age_days] += message.bytes_sent
-                self.profile.daily_download[self.profile_age_days] += message.bytes_recv
-
-                if message.mac_address not in self.profile.data_interfaces:
-                    self.profile.data_interfaces[message.mac_address] = Interfaces.get_from_mac(message.mac_address).name
+                self._handle_data_transfer(self.profile, message)
 
             case ipc.ProfileDataRequest():
                 profile = self.all_profiles[message.sanitised_name]
@@ -799,7 +867,7 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Deleting profile {profile_name}...')
         del self.all_profiles[profile_name]
         with suppress(FileNotFoundError):
-            send2trash(get_filename(profile_name))
+            send2trash(os.path.join(PROFILE_DIR, get_filename(profile_name)))
 
     def _delete_profile_data(self, profile_name: str, devices: ipc.Device) -> None:
         """Delete tracking data for one or more devices."""

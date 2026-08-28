@@ -1,6 +1,6 @@
 DEFAULT_PROFILE_NAME = 'Desktop'
 
-UPDATES_PER_SECOND = 60
+UPDATES_PER_SECOND = 60.0
 
 DOUBLE_CLICK_MS = 500
 """Maximum time in ms where a double click is valid."""

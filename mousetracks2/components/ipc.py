@@ -16,14 +16,15 @@ from ..types import RectList
 from ..utils.monitor import MonitorData
 
 
-class Target:
+class Target(IntFlag):
     """System components that can send or receive messages."""
 
-    Hub = 2 ** 0
-    Tracking = 2 ** 1
-    Processing = 2 ** 2
-    GUI = 2 ** 3
-    AppDetection = 2 ** 4
+    Hub = auto()
+    Tracking = auto()
+    Processing = auto()
+    GUI = auto()
+    AppDetection = auto()
+    Playback = auto()
 
 
 class RenderType(Enum):
@@ -70,18 +71,18 @@ class Message:
 
     Attributes:
         target: The intended recipient component of the message.
-        type: The type of message being sent.
-        data: Optional data payload associated with the message.
+        source: The component that sent the message.
     """
 
-    target: int = field(default=0)
+    target: Target = field(default=Target(0))
+    source: Target = field(default_factory=lambda: Target(0), init=False)
 
 
 @dataclass
 class Tick(Message):
     """Send the current tick."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Processing | Target.GUI | Target.Playback, init=False)
     tick: int
     timestamp: int
 
@@ -90,7 +91,7 @@ class Tick(Message):
 class MouseMove(Message):
     """Mouse has moved to a new location on the screen."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     position: tuple[int, int]
 
 
@@ -98,7 +99,7 @@ class MouseMove(Message):
 class MouseClick(Message):
     """Mouse has been clicked."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     button: int
     position: tuple[int, int]
 
@@ -107,7 +108,7 @@ class MouseClick(Message):
 class MouseHeld(Message):
     """Mouse button is being held."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     button: int
     position: tuple[int, int]
 
@@ -116,7 +117,7 @@ class MouseHeld(Message):
 class KeyPress(Message):
     """Key has been pressed."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     keycode: int
 
 
@@ -126,7 +127,7 @@ class KeyHeld(Message):
     This does not trigger on the first press.
     """
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     keycode: int
 
 
@@ -134,7 +135,7 @@ class KeyHeld(Message):
 class ButtonPress(Message):
     """Gamepad button has been pressed."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     gamepad: int
     keycode: int
 
@@ -143,7 +144,7 @@ class ButtonPress(Message):
 class ButtonHeld(Message):
     """Gamepad button is being held."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing | Target.Playback, init=False)
     gamepad: int
     keycode: int
 
@@ -156,7 +157,7 @@ class ThumbstickMove(Message):
         Left = auto()
         Right = auto()
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     gamepad: int
     thumbstick: Thumbstick
     position: tuple[float, float]
@@ -166,7 +167,7 @@ class ThumbstickMove(Message):
 class Traceback(Message):
     """Send data when a traceback is raised."""
 
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
     exception: Exception
     traceback: str
 
@@ -185,32 +186,70 @@ class StartTracking(Message):
     """Send a request to start tracking.
     Once this is processed, the `TrackingStarted` message will be sent.
     """
-    target: int = field(default=Target.Tracking | Target.Hub, init=False)
+    target: Target = field(default=Target.Tracking | Target.Playback | Target.Hub, init=False)
 
 
 @dataclass
 class TrackingStarted(Message):
     """Send a message after tracking has started."""
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
+
+
+@dataclass
+class PlaybackStarted(Message):
+    """Sent when the playback component begins replaying events."""
+
+    paused: bool = False
+    target: Target = field(default=Target.Hub | Target.GUI | Target.Processing, init=False)
+
+
+@dataclass
+class PlaybackRestarted(Message):
+    """Sent when the playback component restarts the stream for a backward seek."""
+    target: Target = field(default=Target.GUI | Target.Processing, init=False)
+
+
+@dataclass
+class PlaybackStopping(Message):
+    """Sent during the playback stop process."""
+    target: Target = field(default=Target.Processing, init=False)
+
+
+@dataclass
+class PlaybackStopped(Message):
+    """Sent once the playback has successfully stopped."""
+    target: Target = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class PlaybackResumeRender(Message):
+    """Notification sent once a render has been received so playback can continue."""
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class PlaybackFinished(Message):
+    """Sent when the playback component has finished replaying events."""
+    target: Target = field(default=Target.Hub | Target.GUI | Target.Processing | Target.Tracking, init=False)
 
 
 @dataclass
 class PauseTracking(Message):
     """Send a request to pause tracking."""
-    target: int = field(default=Target.Hub | Target.Tracking | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.GUI, init=False)
 
 
 @dataclass
 class StopTracking(Message):
     """Send a request to stop tracking."""
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
 class MonitorsChanged(Message):
     """Send the location of each monitor when the setup changes."""
 
-    target: int = field(default=Target.GUI | Target.Processing, init=False)
+    target: Target = field(default=Target.GUI | Target.Processing | Target.Playback, init=False)
     data: MonitorData
 
 
@@ -222,7 +261,7 @@ class RenderRequest(Message):
     rendered.
     """
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing | Target.Playback, init=False)
     type: RenderType
     profile: str | None
     file_path: str | None
@@ -243,13 +282,15 @@ class RenderRequest(Message):
     show_keyboard_time: bool = False
     interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0
     layer_visible: bool = True
+    allow_empty_render: bool = False
+    empty_render_size: tuple[int, int] | None = None
 
 
 @dataclass
 class Render(Message):
     """A render has been completed."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI | Target.Playback, init=False)
     array: npt.NDArray[np.uint8]
     request: RenderRequest
 
@@ -259,7 +300,7 @@ class Render(Message):
 class RequestRunningAppCheck(Message):
     """Check which applications are running."""
 
-    target: int = field(default=Target.AppDetection, init=False)
+    target: Target = field(default=Target.AppDetection, init=False)
 
 
 @dataclass
@@ -273,7 +314,7 @@ class TrackedApplicationDetected(Message):
     other components, but in sync with the ticks.
     """
 
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     name: str
     process_id: int | None
     rects: RectList = field(default_factory=RectList)
@@ -287,7 +328,7 @@ class CurrentProfileChanged(Message):
     sync with the tick counter to prevent race conditions.
     """
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     name: str
     process_id: int | None
     rects: RectList = field(default_factory=RectList)
@@ -299,7 +340,7 @@ class ApplicationFocusChanged(Message):
     This is for debugging and is not used for logic.
     """
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     exe: str
     title: str
     tracked: bool
@@ -310,7 +351,7 @@ class ApplicationFocusChanged(Message):
 class Exit(Message):
     """Quit the whole application."""
 
-    target: int = field(default=Target.Hub | Target.Tracking | Target.Processing | Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.Tracking | Target.Playback | Target.Processing | Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
@@ -321,15 +362,15 @@ class DebugRaiseError(Message):
 @dataclass
 class ProcessShutDownNotification(Message):
     """Send a notification from a process that it has ended."""
-    target: int = field(default=Target.Hub, init=False)
-    source: int
+    target: Target = field(default=Target.Hub, init=False)
+    source: Target
 
 
 @dataclass
 class Save(Message):
     """Once a save is ready to be done."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str | None = None
 
 
@@ -337,14 +378,14 @@ class Save(Message):
 class SaveComplete(Message):
     """After a profile has been saved."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     succeeded: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ProfileDataRequest(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     sanitised_name: str
     profile_name: str
 
@@ -353,7 +394,7 @@ class ProfileDataRequest(Message):
 class ProfileData(Message):
     """Information about a profile."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     profile_name: str
     distance: float
     cursor_counter: int
@@ -377,7 +418,7 @@ class ProfileData(Message):
 class DataTransfer(Message):
     """Upload and download data since the previous message."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI | Target.Playback, init=False)
     mac_address: str
     bytes_sent: int
     bytes_recv: int
@@ -386,7 +427,7 @@ class DataTransfer(Message):
 @dataclass
 class Active(Message):
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     profile_name: str
     ticks: int
 
@@ -394,14 +435,14 @@ class Active(Message):
 @dataclass
 class Inactive(Message):
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     profile_name: str
     ticks: int
 
 
 @dataclass
 class SetProfileTracking(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
     device: Device
     enable: bool
@@ -409,61 +450,62 @@ class SetProfileTracking(Message):
 
 @dataclass
 class SetGlobalTracking(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     device: Device
     enable: bool
 
 
 @dataclass
 class DebugDisableAppDetection(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     disable: bool
 
 
 @dataclass
 class DebugDisableMonitorCheck(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     disable: bool
 
 
 @dataclass
 class DeleteData(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
     devices: Device
 
 
 @dataclass
 class DeleteProfile(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile_name: str
 
 
 @dataclass
 class Autosave(Message):
-    target: int = field(default=Target.Tracking, init=False)
+    target: Target = field(default=Target.Tracking, init=False)
     enabled: bool
 
 
 @dataclass
 class RequestQueueSize(Message):
-    target: int = field(default=Target.Hub, init=False)
+    target: Target = field(default=Target.Hub, init=False)
 
 
 @dataclass
 class QueueSize(Message):
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     hub: int
     tracking: int
     processing: int
     gui: int
     app_detection: int
+    playback: int
 
 
 @dataclass
 class ToggleConsole(Message):
     """Change the visible state of the console."""
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI, init=False)
     show: bool
 
 
@@ -472,14 +514,14 @@ class InvalidConsole(Message):
     """Triggered if the console is determined to be not valid.
     This may be the built in console in an IDE for example.
     """
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
 
 
 @dataclass
 class ImportProfile(Message):
     """Send a request to import a profile."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     path: str
 
@@ -488,7 +530,7 @@ class ImportProfile(Message):
 class ImportLegacyProfile(Message):
     """Send a request to import a legacy profile."""
 
-    target: int = field(default=Target.Processing | Target.GUI, init=False)
+    target: Target = field(default=Target.Processing | Target.GUI, init=False)
     name: str
     path: str
 
@@ -497,13 +539,13 @@ class ImportLegacyProfile(Message):
 class FailedProfileImport(Message):
     """Send a request to import a legacy profile."""
 
-    target: int = field(default=Target.GUI, init=False)
-    source: ImportProfile | ImportLegacyProfile
+    target: Target = field(default=Target.GUI, init=False)
+    request: ImportProfile | ImportLegacyProfile
 
 
 @dataclass
 class ExportStats(Message):
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     path: str
 
@@ -537,22 +579,31 @@ class ExportDailyStats(ExportStats):
 class ExportStatsSuccessful(Message):
     """Send a message when the export was successful."""
 
-    target: int = field(default=Target.GUI, init=False)
-    source: ExportStats
+    target: Target = field(default=Target.GUI, init=False)
+    request: ExportStats
+
+
+@dataclass
+class HistoryExported(Message):
+    """Notify the GUI that a history export has been saved successfully."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    path: str
+    duration_ticks: int
 
 
 @dataclass
 class ReloadAppList(Message):
     """Reload AppList.txt."""
 
-    target: int = field(default=Target.AppDetection | Target.GUI, init=False)
+    target: Target = field(default=Target.AppDetection | Target.GUI, init=False)
 
 
 @dataclass
 class ToggleProfileResolution(Message):
     """Enable or disable a resolution for a profile."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     resolution: tuple[int, int]
     enable: bool
@@ -562,7 +613,7 @@ class ToggleProfileResolution(Message):
 class ToggleProfileMultiMonitor(Message):
     """Change multi monitor handling for a profile."""
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     profile: str
     multi_monitor: bool | None
 
@@ -576,8 +627,8 @@ class RequestPID(Message):
 class SendPID(Message):
     """Send a components PID."""
 
-    target: int = field(default=Target.GUI, init=False)
-    source: int
+    target: Target = field(default=Target.GUI, init=False)
+    source: Target
     pid: int
 
 
@@ -599,7 +650,7 @@ class RenderLayerRequest(Message):
     rather than once per render layer request.
     """
 
-    target: int = field(default=Target.Processing, init=False)
+    target: Target = field(default=Target.Processing, init=False)
     layers: list[RenderLayer]
 
 
@@ -607,20 +658,149 @@ class RenderLayerRequest(Message):
 class ComponentLoaded(Message):
     """Notify when a single component has loaded."""
 
-    target: int = field(default=Target.Hub, init=False)
-    component: int
+    target: Target = field(default=Target.Hub, init=False)
+    component: Target
 
 
 @dataclass
 class AllComponentsLoaded(Message):
     """Notify once every component has been loaded."""
 
-    target: int = field(default=Target.Hub | Target.GUI, init=False)
+    target: Target = field(default=Target.Hub | Target.GUI | Target.Playback, init=False)
 
 
 @dataclass
 class ShowPopup(Message):
     """Trigger a popup message in the GUI."""
 
-    target: int = field(default=Target.GUI, init=False)
+    target: Target = field(default=Target.GUI, init=False)
     content: str
+
+
+@dataclass
+class SetHistoryLength(Message):
+    """Set the history window in ticks. 0 disables caching and clears history."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    ticks: int
+
+
+@dataclass
+class ExportHistory(Message):
+    """Export a slice of the history buffer to a .mtr file."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    path: str
+    start_percentage: float
+    end_percentage: float
+
+
+@dataclass
+class PlaybackOptions(Message):
+    """Configure playback settings before or during playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    ups: float
+    skip_empty_ticks: bool
+    start_percentage: float
+    end_percentage: float
+
+
+@dataclass
+class StartPlayback(Message):
+    """Start replaying the buffered history."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    options: PlaybackOptions
+
+
+@dataclass
+class StopPlayback(Message):
+    """Stop history playback mode."""
+
+    target: Target = field(default=Target.Hub | Target.Playback | Target.Tracking, init=False)
+
+
+@dataclass
+class PausePlayback(Message):
+    """Pause history playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class ResumePlayback(Message):
+    """Resume a paused history playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class RequestPlaybackProgress(Message):
+    """Request the current playback position."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class PlaybackProgress(Message):
+    """Current playback position within the history range."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    percentage: float
+
+
+@dataclass
+class SeekPlayback(Message):
+    """Seek to a position within the current playback."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    percentage: float
+
+    def __post_init__(self) -> None:
+        self.percentage = max(0.0, min(1.0, self.percentage))
+
+
+@dataclass
+class SeekComplete(Message):
+    """Sent by the playback component when a seek has finished."""
+
+    target: Target = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class StartRecording(Message):
+    """Record tracking messages to a specific path."""
+
+    target: Target = field(default=Target.Hub | Target.Processing, init=False)
+    path: str
+
+
+@dataclass
+class StopRecording(Message):
+    """Finish recording messages."""
+
+    target: Target = field(default=Target.Hub, init=False)
+
+
+@dataclass
+class RecordingComplete(Message):
+    """Notify GUI that recording has been saved successfully."""
+
+    target: Target = field(default=Target.GUI, init=False)
+
+
+@dataclass
+class RequestHistoryLength(Message):
+    """Request the current amount of recorded ticks."""
+
+    target: Target = field(default=Target.Playback, init=False)
+
+
+@dataclass
+class HistoryLength(Message):
+    """Send the current amount of recorded ticks."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    ticks: int
+

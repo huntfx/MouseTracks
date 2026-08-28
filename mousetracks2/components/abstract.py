@@ -30,7 +30,7 @@ class Component:
     for initialisation, running, and clean shutdown.
     """
 
-    target: ClassVar[int]
+    target: ClassVar[ipc.Target]
 
     def __init__(self, q_send: multiprocessing.queues.Queue, q_receive: multiprocessing.queues.Queue) -> None:
         self._q_send = q_send
@@ -67,6 +67,7 @@ class Component:
             return False
 
     def send_data(self, message: ipc.Message) -> None:
+        message.source = self.target
         self._q_send.put(message)
 
     def receive_data(self, polling_rate: float = 0.0) -> Iterator[ipc.Message]:
