@@ -46,6 +46,18 @@ def format_ticks(ticks: float, ups: int = UPDATES_PER_SECOND, accuracy: int = 1,
     if diff > 3:
         years += days / 365
 
+    # Round the smallest displayed unit and carry overflow
+    # (59.6 seconds displays as "1m 0s" rather than "0m 60s")
+    values = [seconds, minutes, hours, days, years]
+    caps = [60, 60, 24, 365, None]
+    idx = max(0, min(4, diff))
+    values[idx] = round(values[idx], accuracy)
+    while idx < 4 and caps[idx] is not None and values[idx] >= caps[idx]:
+        values[idx] -= caps[idx]
+        values[idx + 1] += 1
+        idx += 1
+    seconds, minutes, hours, days, years = values
+
     # Build up the string
     parts = []
     if diff < 1:
