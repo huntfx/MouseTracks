@@ -2450,9 +2450,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _profile_name_available(self, profile_name: str) -> bool:
         """Check whether a profile name is free to import a new profile into."""
-        if not PROFILE_DIR.exists():
-            return True
-        if os.path.basename(get_filename(profile_name)) in os.listdir(PROFILE_DIR):
+        if PROFILE_DIR.exists() and os.path.basename(get_filename(profile_name)) in os.listdir(PROFILE_DIR):
             return False
         return sanitise_profile_name(profile_name) not in self._profile_names
 
