@@ -7,7 +7,7 @@ import zipfile
 from collections import defaultdict
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Generic, Iterator, Self, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterator, Literal, Self, Sequence, Type, TypeVar, overload
 from uuid import uuid4
 
 import numpy as np
@@ -645,9 +645,20 @@ class TrackingProfile:
         self.modified = previous
         return False
 
+    @overload
     @classmethod
-    def load(cls, path: str) -> Self:
-        """Load a profile."""
+    def load(cls, path: str) -> Self: ...
+    @overload
+    @classmethod
+    def load(cls, path: str, allow_legacy: Literal[True]) -> Self | None: ...
+    @classmethod
+    def load(cls, path: str, allow_legacy: bool = False) -> Self | None:
+        """Load a profile.
+        Returns None if a legacy profile import fails.
+        """
+        if allow_legacy and cls.is_file_legacy(path):
+            return cls.load_legacy(path)
+
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
             profile._load_from_zip(zf)
@@ -674,13 +685,10 @@ class TrackingProfile:
         """Import a profile file to disk.
         Supports both legacy and current profiles.
         """
-        if cls.is_file_legacy(path):
-            profile = cls.load_legacy(path, name)
-            if profile is None:
-                return None
-        else:
-            profile = cls.load(path)
-            profile.name = name
+        profile = cls.load(path, allow_legacy=True)
+        if profile is None:
+            return None
+        profile.name = name
 
         profile.is_modified = True
         if not profile.save():
@@ -688,7 +696,7 @@ class TrackingProfile:
         return profile
 
     @classmethod
-    def load_legacy(cls, profile_path: str, profile_name: str | None = None) -> Self | None:
+    def load_legacy(cls, profile_path: str) -> Self | None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -706,9 +714,7 @@ class TrackingProfile:
             Thumbstick data is discarded as X and Y were recorded separately
             and cannot be recombined.
         """
-        if profile_name is None:
-            profile_name = os.path.basename(profile_path)
-        new = cls(profile_name)
+        new = cls()
 
         # Load the data using the legacy libraries
         from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
