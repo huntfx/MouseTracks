@@ -678,8 +678,8 @@ class TrackingProfile:
         Supports both legacy and current profiles.
         """
         if cls.is_file_legacy(path):
-            profile = cls(name)
-            if not profile.import_legacy(path):
+            profile = cls.load_legacy(path, name)
+            if profile is None:
                 return None
         else:
             profile = cls.load(path)
@@ -690,7 +690,8 @@ class TrackingProfile:
             return None
         return profile
 
-    def import_legacy(self, path: str) -> bool:
+    @classmethod
+    def load_legacy(cls, profile_path: str, profile_name: str | None = None) -> Self | None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -708,70 +709,74 @@ class TrackingProfile:
             Thumbstick data is discarded as X and Y were recorded separately
             and cannot be recombined.
         """
+        if profile_name is None:
+            profile_name = os.path.basename(profile_path)
+        new = cls(profile_name)
+
         # Load the data using the legacy libraries
         from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
 
-        with CustomOpen(path, 'rb') as f:
+        with CustomOpen(profile_path, 'rb') as f:
             try:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
             except Exception as e:  # pylint: disable=broad-exception-caught
-                print(f'Error importing {path}: {e}')
-                return False
+                print(f'Error importing {profile_path}: {e}')
+                return None
 
         # Process main tracking data
         # Use the array shape as it does not always match the correct resolution
         for values in data['Resolution'].values():
             tracks = values['Tracks']
             if np.any(tracks > 0):
-                self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
+                new.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
 
             speed = values['Speed']
             if np.any(speed > 0):
-                self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
+                new.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
 
             single_clicks = values['Clicks']['Single']
             for i, mb in enumerate(('Left', 'Middle', 'Right')):
                 array = single_clicks[mb]
                 if np.any(array > 0):
-                    self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
+                    new.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
             double_clicks = values['Clicks']['Double']
             for i, mb in enumerate(('Left', 'Middle', 'Right')):
                 array = double_clicks[mb]
                 if np.any(array > 0):
-                    self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
+                    new.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
-        self.created = int(data['Time']['Created'])
-        self.cursor_map.distance = float(data['Distance']['Tracks'])
-        self.cursor_map.counter = int(data['Ticks']['Tracks'])
+        new.created = int(data['Time']['Created'])
+        new.cursor_map.distance = float(data['Distance']['Tracks'])
+        new.cursor_map.counter = int(data['Ticks']['Tracks'])
 
         # Calculate the active / inactive time
         # This was not recorded properly in the legacy code, so a very
         # rough formula is used to estimate based on the data available
-        self.elapsed = data['Ticks']['Total']
+        new.elapsed = data['Ticks']['Total']
         try:
-            self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+            new.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
         except ZeroDivisionError:
-            self.active = data['Ticks']['Recorded']
-        self.inactive = data['Ticks']['Total'] - self.active
+            new.active = data['Ticks']['Recorded']
+        new.inactive = data['Ticks']['Total'] - new.active
 
         # Process key/button data
         for keycode, count in data['Keys']['All']['Pressed'].items():
-            self.key_presses[keycode] = count
+            new.key_presses[keycode] = count
         for keycode, count in data['Keys']['All']['Held'].items():
-            self.key_held[keycode] = count
+            new.key_held[keycode] = count
 
         for keycode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
-            self.button_presses[0][keycode] = count
+            new.button_presses[0][keycode] = count
         for keycode, count in data['Gamepad']['All']['Buttons']['Held'].items():
-            self.button_held[0][keycode] = count
+            new.button_held[0][keycode] = count
 
         # Simple way to get the density array populated
-        for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
-            self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
+        for array in map(np.asarray, new.cursor_map.sequential_arrays.values()):
+            new.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
 
-        return True
+        return new
 
 
 class TrackingProfileLoader(MutableMapping):
