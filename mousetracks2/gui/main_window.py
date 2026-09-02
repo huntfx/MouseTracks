@@ -1285,7 +1285,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # from disk if the requested profile isn't current
         if self._is_loading_profile:
             try:
-                _profile = TrackingProfile.load(get_filename(profile_name), metadata_only=True)
+                _profile = TrackingProfile.load(get_filename(profile_name))
             except FileNotFoundError:
                 elapsed_time = 0
             else:

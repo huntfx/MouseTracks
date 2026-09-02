@@ -486,7 +486,7 @@ class TrackingProfile:
 
         self.last_accessed = time.time()
 
-    def _load_from_zip(self, zf: zipfile.ZipFile, metadata_only: bool = False) -> None:
+    def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
 
         self.name = zf.read('metadata/name').decode('utf-8')
@@ -499,9 +499,6 @@ class TrackingProfile:
         self.elapsed = int(zf.read('metadata/ticks/elapsed'))
         self.active = int(zf.read('metadata/ticks/active'))
         self.inactive = int(zf.read('metadata/ticks/inactive'))
-
-        if metadata_only:
-            return
 
         self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
         mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks/')}
@@ -649,11 +646,11 @@ class TrackingProfile:
         return False
 
     @classmethod
-    def load(cls, path: str, metadata_only: bool = False) -> Self:
+    def load(cls, path: str) -> Self:
         """Load a profile."""
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
-            profile._load_from_zip(zf, metadata_only)
+            profile._load_from_zip(zf)
         return profile
 
     @classmethod
