@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
@@ -6,6 +7,8 @@ from typing import Callable, Sequence
 
 from .version import VERSION
 
+
+LOG_LEVEL_CHOICES = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 
 def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argparse.Namespace:
@@ -26,6 +29,7 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--admin', '--elevate', action='store_true', help='request to run as administrator if not already')
     parser.add_argument('--portable', action='store_true', help='run as portable (save data next to executable)')
     parser.add_argument('--disable-temp-warning', action='store_true', help='disable the startup warning message when saving to the temporary directory')
+    parser.add_argument('--log-level', type=str.upper, choices=LOG_LEVEL_CHOICES, default='INFO', help='set the logging verbosity')
 
     startup_group = parser.add_argument_group('Startup Options')
     startup_group.set_defaults(start_hidden=None)
@@ -194,6 +198,7 @@ class CLI:
             self.portable = False
             self.disable_temp_warning = False
             self.eager_load = False
+            self.log_level = logging.INFO
 
         finally:
             self._soft_load = False
@@ -232,6 +237,8 @@ class CLI:
             self.disable_temp_warning = True
         if args.eager_load:
             self.eager_load = True
+        if args.log_level != 'INFO':
+            self.log_level = args.log_level
 
         return args
 
@@ -421,6 +428,20 @@ class CLI:
     def eager_load(self, value: bool) -> None:
         """Set eager loading mode."""
         self._set('MT_EAGER_LOAD', bool2str(value))
+
+    @property
+    def log_level(self) -> int:
+        """Get the logging level."""
+        return int(self.env['MT_LOG_LEVEL'])
+
+    @log_level.setter
+    def log_level(self, value: str | int) -> None:
+        """Set the logging level."""
+        if not isinstance(value, int):
+            if value not in LOG_LEVEL_CHOICES:
+                raise ValueError('invalid log level')
+            value = getattr(logging, value)
+        self._set('MT_LOG_LEVEL', str(value))
 
 
 def run_cli_function(cli: CLI) -> bool:
