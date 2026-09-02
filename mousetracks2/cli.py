@@ -59,6 +59,8 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
 
+    parser.add_argument('paths', nargs='*', default=[], help=argparse.SUPPRESS)
+
     if strict:
         result = parser.parse_args(args)
     else:
@@ -427,6 +429,40 @@ def run_cli_function(cli: CLI) -> bool:
     # pylint: disable=import-outside-toplevel
     """Run a single function and quit."""
     match cli.args:
+        case argparse.Namespace(paths=paths) if paths:
+            from .file import EXTENSION, TrackingProfile, get_filename
+            from .popups import show_legacy_import_warning, show_import_result_dialog, show_unsupported_files_error
+
+            # Block the whole batch rather than silently ignoring the ones that don't belong
+            unsupported = [path for path in paths if not path.lower().endswith(f'.{EXTENSION}')]
+            if unsupported:
+                show_unsupported_files_error(unsupported)
+                return True
+
+            imported: list[str] = []
+            exists: list[str] = []
+            skipped: list[str] = []
+            failed: list[str] = []
+
+            for path in paths:
+                name = TrackingProfile.get_name(path) or os.path.splitext(os.path.basename(path))[0]
+
+                # Never overwrite or rename onto an existing profile
+                if os.path.exists(get_filename(name)):
+                    exists.append(name)
+                    continue
+
+                if TrackingProfile.is_file_legacy(path) and not show_legacy_import_warning(name):
+                    skipped.append(name)
+                    continue
+
+                if TrackingProfile.import_file(path, name) is not None:
+                    imported.append(name)
+                else:
+                    failed.append(name)
+
+            show_import_result_dialog(imported, skipped, exists, failed)
+
         case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':
             from .sign import get_runtime_public_key
 

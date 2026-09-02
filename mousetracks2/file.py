@@ -667,6 +667,29 @@ class TrackingProfile:
         except (KeyError, zipfile.BadZipFile):
             return None
 
+    @classmethod
+    def is_file_legacy(cls, path: str) -> bool:
+        """Determine if a file is legacy or not."""
+        return cls.get_name(path) is None
+
+    @classmethod
+    def import_file(cls, path: str, name: str) -> Self | None:
+        """Import a profile file to disk.
+        Supports both legacy and current profiles.
+        """
+        if cls.is_file_legacy(path):
+            profile = cls(name)
+            if not profile.import_legacy(path):
+                return None
+        else:
+            profile = cls.load(path)
+            profile.name = name
+
+        profile.is_modified = True
+        if not profile.save():
+            return None
+        return profile
+
     def import_legacy(self, path: str) -> bool:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,

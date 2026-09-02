@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 from contextlib import suppress
@@ -156,6 +157,101 @@ def show_already_running_dialog(data_dir: Path | str) -> None:
             message=message,
             detail=detail,
         )
+
+    def console_action() -> None:
+        input('Press enter to exit...')
+
+    return _run_dialog(tk_action, console_action)
+
+
+def show_unsupported_files_error(paths: list[str]) -> None:
+    """Show an error when file(s) dropped onto the executable aren't profile files.
+    This blocks the whole batch rather than silently importing just the valid ones.
+    """
+    message = 'Mousetracks can only import .mtk profile files.'
+    detail = 'Unsupported file(s):\n    ' + '\n    '.join(map(os.path.basename, paths))
+
+    print(message)
+    print(detail)
+
+    def tk_action() -> None:
+        from tkinter import messagebox
+        messagebox.showerror(title='MouseTracks', message=message, detail=detail)
+
+    def console_action() -> None:
+        input('Press enter to exit...')
+
+    return _run_dialog(tk_action, console_action)
+
+
+def show_legacy_import_warning(profile_name: str) -> bool:
+    """Ask for confirmation before importing a legacy (pickle-based) profile file.
+    Returns True if the user accepted.
+    """
+    message = f'Do you want to import the profile "{profile_name}"?'
+    detail = ('This is a legacy profile format. Only import legacy profiles from sources '
+              'you trust, as loading them is not guaranteed to be safe.')
+
+    print(message)
+    print(detail)
+
+    def tk_action() -> bool:
+        from tkinter import messagebox
+        return messagebox.askyesno(
+            title='MouseTracks',
+            message=message,
+            detail=detail,
+            icon=messagebox.WARNING,
+        )
+
+    def console_action() -> bool:
+        return _prompt_yes_no(f'{message} [Y/n] ')
+
+    return _run_dialog(tk_action, console_action)
+
+
+def show_import_result_dialog(imported: list[str], skipped: list[str], exists: list[str], failed: list[str]) -> None:
+    """Show a summary of profiles imported directly from files dropped onto the executable."""
+    lines: list[str] = []
+    if imported:
+        if lines:
+            lines.append('')
+        lines.append('Imported:')
+        for mtk in imported:
+            lines.append(f' - {mtk}')
+    if exists:
+        if lines:
+            lines.append('')
+        lines.append('Already Exists:')
+        for mtk in exists:
+            lines.append(f' - {mtk}')
+    if skipped:
+        if lines:
+            lines.append('')
+        lines.append('Skipped:')
+        for mtk in skipped:
+            lines.append(f' - {mtk}')
+    if failed:
+        if lines:
+            lines.append('')
+        lines.append('Failed:')
+        for mtk in failed:
+            lines.append(f' - {mtk}')
+    detail = '\n'.join(lines) or 'No profiles were imported.'
+
+    print('MouseTracks Profile Import')
+    print(detail)
+
+    def tk_action() -> None:
+        from tkinter import messagebox
+        if imported and not failed:
+            messagebox.showinfo(title='MouseTracks', message='Profile import complete.', detail=detail)
+        elif imported:
+            messagebox.showwarning(title='MouseTracks', message='Profile import finished with errors.', detail=detail)
+        elif failed:
+            messagebox.showerror(title='MouseTracks', message='Profile import failed.', detail=detail)
+        else:
+            messagebox.showwarning(title='MouseTracks', message='Profile import skipped.', detail=detail)
 
     def console_action() -> None:
         input('Press enter to exit...')
