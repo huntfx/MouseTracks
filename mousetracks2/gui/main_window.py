@@ -28,8 +28,10 @@ from ..config import GlobalConfig
 from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
 from ..context import CTX
+from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING
+from ..dragdrop import ProfileImporter, ImportResultDisplay
 from ..enums import BlendMode, Channel
-from ..file import EXTENSION, PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
+from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
 from ..runtime import SYS_EXECUTABLE
@@ -92,7 +94,6 @@ class NetworkSpeedStats:
     def bytes_sent(self) -> int:
         """Get the number of bytes sent."""
         return self.get().bytes_sent
-
 
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
@@ -2060,13 +2061,12 @@ class MainWindow(QtWidgets.QMainWindow):
         Mixed drops are rejected outright rather than importing some and ignoring others.
         """
         urls = event.mimeData().urls()
-        if urls and all(url.toLocalFile().lower().endswith(f'.{EXTENSION}') for url in urls):
+        if ProfileImporter.validate_selection(url.toLocalFile() for url in urls):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         """Import each dropped profile file."""
-        for url in event.mimeData().urls():
-            self._import_dropped_profile(url.toLocalFile())
+        self._import_dropped_profile(*(url.toLocalFile() for url in event.mimeData().urls()))
 
     def handle_session_shutdown(self, manager: QtGui.QSessionManager) -> None:
         """Force the app to close when the system is shutting down.
@@ -2448,44 +2448,68 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.tray.showMessage(title, message, self.tray.icon(), 2000)
 
-    def _profile_name_available(self, profile_name: str) -> bool:
-        """Check whether a profile name is free to import a new profile into."""
-        if PROFILE_DIR.exists() and os.path.basename(get_filename(profile_name)) in os.listdir(PROFILE_DIR):
-            return False
-        return sanitise_profile_name(profile_name) not in self._profile_names
-
     def _confirm_profile_import(self, profile_name: str, is_legacy: bool) -> bool:
         """Ask for confirmation before importing a single profile file."""
         msg = QtWidgets.QMessageBox(self)
         msg.setIcon(QtWidgets.QMessageBox.Icon.Question)
-        msg.setWindowTitle('Import Profile')
-        msg.setText(f'Do you want to import this profile?\n\n{profile_name}')
+        msg.setWindowTitle(IMPORT_TITLE)
+        msg.setText(IMPORT_MESSAGE.format(profile_name=profile_name))
         if is_legacy:
-            msg.setInformativeText('This is a legacy profile format. Only import legacy profiles '
-                                   'from sources you trust, as loading them is not guaranteed to be safe.')
+            msg.setInformativeText(IMPORT_LEGACY_WARNING)
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         return msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes
 
-    def _import_dropped_profile(self, path: str) -> None:
+    def _import_dropped_profile(self, *paths: str) -> None:
         """Confirm and import a single dropped profile file."""
-        profile_name = TrackingProfile.get_name(path)
-        is_legacy = profile_name is None
-        if profile_name is None:
-            profile_name = QtCore.QFileInfo(path).baseName()
 
-        if not self._profile_name_available(profile_name):
-            QtWidgets.QMessageBox.warning(self, 'Import Failed',
-                                          f'A profile named "{profile_name}" already exists.')
-            return
+        imported: list[str] = []
+        exists: list[str] = []
+        skipped: list[str] = []
+        failed: list[str] = []
 
-        if not self._confirm_profile_import(profile_name, is_legacy):
-            return
+        for path in paths:
+            importer = ProfileImporter(path)
 
-        if is_legacy:
-            self.component.send_data(ipc.ImportLegacyProfile(profile_name, path))
-        else:
-            self.component.send_data(ipc.ImportProfile(profile_name, path))
+            if self._profile_already_loaded(importer):
+                exists.append(importer.profile_name)
+
+            elif not self._confirm_profile_import(importer.profile_name, importer.is_legacy):
+                skipped.append(importer.profile_name)
+
+            elif importer.import_profile():
+                imported.append(importer.profile_name)
+
+                if importer.is_legacy:
+                    self.component.send_data(ipc.ImportLegacyProfile(importer.profile_name, path))
+                else:
+                    self.component.send_data(ipc.ImportProfile(importer.profile_name, path))
+
+            else:
+                failed.append(importer.profile_name)
+
+        display = ImportResultDisplay(imported=imported,
+                                      skipped=skipped,
+                                      exists=exists,
+                                      failed=failed)
+        match display.level:
+            case 'info':
+                icon = QtWidgets.QMessageBox.Icon.Information
+            case 'warning':
+                icon = QtWidgets.QMessageBox.Icon.Warning
+            case 'error':
+                icon = QtWidgets.QMessageBox.Icon.Critical
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setIcon(icon)
+        msg.setWindowTitle(IMPORT_TITLE)
+        msg.setText(display.message)
+        msg.setInformativeText(display.detail)
+        msg.exec()
+
+    def _profile_already_loaded(self, importer: ProfileImporter) -> bool:
+        """Check if a profile is already on disk or in the current session."""
+        return importer.exists() or sanitise_profile_name(importer.profile_name) in self._profile_names
 
     @QtCore.Slot()
     def import_profile(self) -> None:
@@ -2509,24 +2533,20 @@ class MainWindow(QtWidgets.QMainWindow):
         if not path:
             return
 
-        is_legacy = False
-        profile_name = TrackingProfile.get_name(path)
-        if profile_name is None:
-            profile_name = QtCore.QFileInfo(path).baseName()
-            is_legacy = True
-
+        importer = ProfileImporter(path)
         while True:
             profile_name, accept = QtWidgets.QInputDialog.getText(self, 'Profile Name', 'Enter the name of the profile:',
-                                                                  QtWidgets.QLineEdit.EchoMode.Normal, profile_name)
+                                                                  QtWidgets.QLineEdit.EchoMode.Normal, importer.profile_name)
             if not accept:
                 return
+            if TYPE_CHECKING:
+                assert isinstance(profile_name, str)
             if not profile_name.strip():
                 continue
-            elif TYPE_CHECKING:
-                assert isinstance(profile_name, str)
 
-            # Check if the profile already exists
-            if self._profile_name_available(profile_name):
+            # Check if the profile name is available
+            importer.profile_name = profile_name
+            if not self._profile_already_loaded(importer):
                 break
 
             # Show a warning
@@ -2539,7 +2559,7 @@ class MainWindow(QtWidgets.QMainWindow):
             msg.exec()
 
         # Send the request
-        if is_legacy:
+        if importer.is_legacy:
             self.component.send_data(ipc.ImportLegacyProfile(profile_name, path))
         else:
             self.component.send_data(ipc.ImportProfile(profile_name, path))

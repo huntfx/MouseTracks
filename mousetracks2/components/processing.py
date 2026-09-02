@@ -758,7 +758,7 @@ class Processing(AppComponent, MonitorComponent):
                 profile.is_modified = True
 
             case ipc.ImportLegacyProfile():
-                legacy_profile = TrackingProfile.load_legacy(message.path)
+                legacy_profile = TrackingProfile.load(message.path, allow_legacy=True)
                 if legacy_profile is None:
                     self.send_data(ipc.FailedProfileImport(message))
                 else:

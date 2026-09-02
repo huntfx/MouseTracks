@@ -657,7 +657,7 @@ class TrackingProfile:
         Returns None if a legacy profile import fails.
         """
         if allow_legacy and cls.is_file_legacy(path):
-            return cls.load_legacy(path)
+            return cls._load_legacy(path)
 
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
@@ -696,7 +696,7 @@ class TrackingProfile:
         return profile
 
     @classmethod
-    def load_legacy(cls, profile_path: str) -> Self | None:
+    def _load_legacy(cls, profile_path: str) -> Self | None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.

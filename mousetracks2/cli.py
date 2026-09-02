@@ -430,13 +430,13 @@ def run_cli_function(cli: CLI) -> bool:
     """Run a single function and quit."""
     match cli.args:
         case argparse.Namespace(paths=paths) if paths:
-            from .file import EXTENSION, TrackingProfile, get_filename
-            from .popups import show_legacy_import_warning, show_import_result_dialog, show_unsupported_files_error
+            from .dragdrop import ProfileImporter
+            from .popups import show_legacy_import_warning, show_import_result_dialog, show_invalid_files_error
 
             # Block the whole batch rather than silently ignoring the ones that don't belong
-            unsupported = [path for path in paths if not path.lower().endswith(f'.{EXTENSION}')]
-            if unsupported:
-                show_unsupported_files_error(unsupported)
+            invalid = ProfileImporter.get_invalid_paths(paths)
+            if invalid:
+                show_invalid_files_error(invalid)
                 return True
 
             imported: list[str] = []
@@ -445,21 +445,16 @@ def run_cli_function(cli: CLI) -> bool:
             failed: list[str] = []
 
             for path in paths:
-                name = TrackingProfile.get_name(path) or os.path.splitext(os.path.basename(path))[0]
+                importer = ProfileImporter(path)
 
-                # Never overwrite or rename onto an existing profile
-                if os.path.exists(get_filename(name)):
-                    exists.append(name)
-                    continue
-
-                if TrackingProfile.is_file_legacy(path) and not show_legacy_import_warning(name):
-                    skipped.append(name)
-                    continue
-
-                if TrackingProfile.import_file(path, name) is not None:
-                    imported.append(name)
+                if importer.exists():
+                    exists.append(importer.profile_name)
+                elif importer.is_legacy and not show_legacy_import_warning(importer.profile_name):
+                    skipped.append(importer.profile_name)
+                elif importer.import_profile():
+                    imported.append(importer.profile_name)
                 else:
-                    failed.append(name)
+                    failed.append(importer.profile_name)
 
             show_import_result_dialog(imported, skipped, exists, failed)
 

@@ -164,11 +164,11 @@ def show_already_running_dialog(data_dir: Path | str) -> None:
     return _run_dialog(tk_action, console_action)
 
 
-def show_unsupported_files_error(paths: list[str]) -> None:
+def show_invalid_files_error(paths: list[str]) -> None:
     """Show an error when file(s) dropped onto the executable aren't profile files.
     This blocks the whole batch rather than silently importing just the valid ones.
     """
-    message = 'Mousetracks can only import .mtk profile files.'
+    from .dragdrop import IMPORT_TITLE, IMPORT_FILETYPE_ERROR as message
     detail = 'Unsupported file(s):\n    ' + '\n    '.join(map(os.path.basename, paths))
 
     print(message)
@@ -176,7 +176,7 @@ def show_unsupported_files_error(paths: list[str]) -> None:
 
     def tk_action() -> None:
         from tkinter import messagebox
-        messagebox.showerror(title='MouseTracks', message=message, detail=detail)
+        messagebox.showerror(title=IMPORT_TITLE, message=message, detail=detail)
 
     def console_action() -> None:
         input('Press enter to exit...')
@@ -188,9 +188,8 @@ def show_legacy_import_warning(profile_name: str) -> bool:
     """Ask for confirmation before importing a legacy (pickle-based) profile file.
     Returns True if the user accepted.
     """
-    message = f'Do you want to import the profile "{profile_name}"?'
-    detail = ('This is a legacy profile format. Only import legacy profiles from sources '
-              'you trust, as loading them is not guaranteed to be safe.')
+    from .dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING as detail
+    message = IMPORT_MESSAGE.format(profile_name=profile_name)
 
     print(message)
     print(detail)
@@ -198,7 +197,7 @@ def show_legacy_import_warning(profile_name: str) -> bool:
     def tk_action() -> bool:
         from tkinter import messagebox
         return messagebox.askyesno(
-            title='MouseTracks',
+            title=IMPORT_TITLE,
             message=message,
             detail=detail,
             icon=messagebox.WARNING,
@@ -212,46 +211,25 @@ def show_legacy_import_warning(profile_name: str) -> bool:
 
 def show_import_result_dialog(imported: list[str], skipped: list[str], exists: list[str], failed: list[str]) -> None:
     """Show a summary of profiles imported directly from files dropped onto the executable."""
-    lines: list[str] = []
-    if imported:
-        if lines:
-            lines.append('')
-        lines.append('Imported:')
-        for mtk in imported:
-            lines.append(f' - {mtk}')
-    if exists:
-        if lines:
-            lines.append('')
-        lines.append('Already Exists:')
-        for mtk in exists:
-            lines.append(f' - {mtk}')
-    if skipped:
-        if lines:
-            lines.append('')
-        lines.append('Skipped:')
-        for mtk in skipped:
-            lines.append(f' - {mtk}')
-    if failed:
-        if lines:
-            lines.append('')
-        lines.append('Failed:')
-        for mtk in failed:
-            lines.append(f' - {mtk}')
-    detail = '\n'.join(lines) or 'No profiles were imported.'
+    from .dragdrop import ImportResultDisplay, IMPORT_TITLE
+    display = ImportResultDisplay(imported=imported,
+                                  skipped=skipped,
+                                  exists=exists,
+                                  failed=failed)
 
-    print('MouseTracks Profile Import')
-    print(detail)
+    print(display.message)
+    print(display.detail)
 
     def tk_action() -> None:
         from tkinter import messagebox
-        if imported and not failed:
-            messagebox.showinfo(title='MouseTracks', message='Profile import complete.', detail=detail)
-        elif imported:
-            messagebox.showwarning(title='MouseTracks', message='Profile import finished with errors.', detail=detail)
-        elif failed:
-            messagebox.showerror(title='MouseTracks', message='Profile import failed.', detail=detail)
-        else:
-            messagebox.showwarning(title='MouseTracks', message='Profile import skipped.', detail=detail)
+        match display.level:
+            case 'info':
+                fn = messagebox.showinfo
+            case 'warning':
+                fn = messagebox.showwarning
+            case 'error':
+                fn = messagebox.showerror
+        fn(title=IMPORT_TITLE, message=display.message, detail=display.detail)
 
     def console_action() -> None:
         input('Press enter to exit...')
