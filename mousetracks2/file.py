@@ -7,7 +7,7 @@ import zipfile
 from collections import defaultdict
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Generic, Iterator, Self, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterator, Literal, Self, Sequence, Type, TypeVar, overload
 from uuid import uuid4
 
 import numpy as np
@@ -486,7 +486,7 @@ class TrackingProfile:
 
         self.last_accessed = time.time()
 
-    def _load_from_zip(self, zf: zipfile.ZipFile, metadata_only: bool = False) -> None:
+    def _load_from_zip(self, zf: zipfile.ZipFile) -> None:
         all_paths = zf.namelist()
 
         self.name = zf.read('metadata/name').decode('utf-8')
@@ -499,9 +499,6 @@ class TrackingProfile:
         self.elapsed = int(zf.read('metadata/ticks/elapsed'))
         self.active = int(zf.read('metadata/ticks/active'))
         self.inactive = int(zf.read('metadata/ticks/inactive'))
-
-        if metadata_only:
-            return
 
         self.cursor_map._load_from_zip(zf, 'data/mouse/cursor')
         mouse_buttons = {int(path.split('/')[3]) for path in all_paths if path.startswith('data/mouse/clicks/')}
@@ -648,12 +645,23 @@ class TrackingProfile:
         self.modified = previous
         return False
 
+    @overload
     @classmethod
-    def load(cls, path: str, metadata_only: bool = False) -> Self:
-        """Load a profile."""
+    def load(cls, path: str) -> Self: ...
+    @overload
+    @classmethod
+    def load(cls, path: str, allow_legacy: Literal[True]) -> Self | None: ...
+    @classmethod
+    def load(cls, path: str, allow_legacy: bool = False) -> Self | None:
+        """Load a profile.
+        Returns None if a legacy profile import fails.
+        """
+        if allow_legacy and cls.is_file_legacy(path):
+            return cls._load_legacy(path)
+
         profile = cls()
         with zipfile.ZipFile(path, mode='r') as zf:
-            profile._load_from_zip(zf, metadata_only)
+            profile._load_from_zip(zf)
         return profile
 
     @classmethod
@@ -667,7 +675,28 @@ class TrackingProfile:
         except (KeyError, zipfile.BadZipFile):
             return None
 
-    def import_legacy(self, path: str) -> bool:
+    @classmethod
+    def is_file_legacy(cls, path: str) -> bool:
+        """Determine if a file is legacy or not."""
+        return cls.get_name(path) is None
+
+    @classmethod
+    def import_file(cls, path: str, name: str) -> Self | None:
+        """Import a profile file to disk.
+        Supports both legacy and current profiles.
+        """
+        profile = cls.load(path, allow_legacy=True)
+        if profile is None:
+            return None
+        profile.name = name
+
+        profile.is_modified = True
+        if not profile.save():
+            return None
+        return profile
+
+    @classmethod
+    def _load_legacy(cls, profile_path: str) -> Self | None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -685,70 +714,72 @@ class TrackingProfile:
             Thumbstick data is discarded as X and Y were recorded separately
             and cannot be recombined.
         """
+        new = cls()
+
         # Load the data using the legacy libraries
         from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
 
-        with CustomOpen(path, 'rb') as f:
+        with CustomOpen(profile_path, 'rb') as f:
             try:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
             except Exception as e:  # pylint: disable=broad-exception-caught
-                print(f'Error importing {path}: {e}')
-                return False
+                print(f'Error importing {profile_path}: {e}')
+                return None
 
         # Process main tracking data
         # Use the array shape as it does not always match the correct resolution
         for values in data['Resolution'].values():
             tracks = values['Tracks']
             if np.any(tracks > 0):
-                self.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
+                new.cursor_map.sequential_arrays[tracks.shape[::-1]] = TrackingIntArray(tracks)
 
             speed = values['Speed']
             if np.any(speed > 0):
-                self.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
+                new.cursor_map.speed_arrays[speed.shape[::-1]] = TrackingIntArray(speed)
 
             single_clicks = values['Clicks']['Single']
             for i, mb in enumerate(('Left', 'Middle', 'Right')):
                 array = single_clicks[mb]
                 if np.any(array > 0):
-                    self.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
+                    new.mouse_single_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
             double_clicks = values['Clicks']['Double']
             for i, mb in enumerate(('Left', 'Middle', 'Right')):
                 array = double_clicks[mb]
                 if np.any(array > 0):
-                    self.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
+                    new.mouse_double_clicks[int(CLICK_CODES[i])][array.shape[::-1]] = TrackingIntArray(array)
 
         # Load in the metadata
-        self.created = int(data['Time']['Created'])
-        self.cursor_map.distance = float(data['Distance']['Tracks'])
-        self.cursor_map.counter = int(data['Ticks']['Tracks'])
+        new.created = int(data['Time']['Created'])
+        new.cursor_map.distance = float(data['Distance']['Tracks'])
+        new.cursor_map.counter = int(data['Ticks']['Tracks'])
 
         # Calculate the active / inactive time
         # This was not recorded properly in the legacy code, so a very
         # rough formula is used to estimate based on the data available
-        self.elapsed = data['Ticks']['Total']
+        new.elapsed = data['Ticks']['Total']
         try:
-            self.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
+            new.active = round(data['Ticks']['Recorded'] * (data['Ticks']['Total'] / data['Ticks']['Recorded']) ** 0.9)
         except ZeroDivisionError:
-            self.active = data['Ticks']['Recorded']
-        self.inactive = data['Ticks']['Total'] - self.active
+            new.active = data['Ticks']['Recorded']
+        new.inactive = data['Ticks']['Total'] - new.active
 
         # Process key/button data
         for keycode, count in data['Keys']['All']['Pressed'].items():
-            self.key_presses[keycode] = count
+            new.key_presses[keycode] = count
         for keycode, count in data['Keys']['All']['Held'].items():
-            self.key_held[keycode] = count
+            new.key_held[keycode] = count
 
         for keycode, count in data['Gamepad']['All']['Buttons']['Pressed'].items():
-            self.button_presses[0][keycode] = count
+            new.button_presses[0][keycode] = count
         for keycode, count in data['Gamepad']['All']['Buttons']['Held'].items():
-            self.button_held[0][keycode] = count
+            new.button_held[0][keycode] = count
 
         # Simple way to get the density array populated
-        for array in map(np.asarray, self.cursor_map.sequential_arrays.values()):
-            self.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
+        for array in map(np.asarray, new.cursor_map.sequential_arrays.values()):
+            new.cursor_map.density_arrays[array.shape[::-1]].array[np.where(array > 1)] = 1
 
-        return True
+        return new
 
 
 class TrackingProfileLoader(MutableMapping):

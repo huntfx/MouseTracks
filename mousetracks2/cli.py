@@ -59,6 +59,8 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
 
+    parser.add_argument('paths', nargs='*', default=[], help=argparse.SUPPRESS)
+
     if strict:
         result = parser.parse_args(args)
     else:
@@ -427,6 +429,35 @@ def run_cli_function(cli: CLI) -> bool:
     # pylint: disable=import-outside-toplevel
     """Run a single function and quit."""
     match cli.args:
+        case argparse.Namespace(paths=paths) if paths:
+            from .dragdrop import ProfileImporter
+            from .popups import show_legacy_import_warning, show_import_result_dialog, show_invalid_files_error
+
+            # Block the whole batch rather than silently ignoring the ones that don't belong
+            invalid = ProfileImporter.get_invalid_paths(paths)
+            if invalid:
+                show_invalid_files_error(invalid)
+                return True
+
+            imported: list[str] = []
+            exists: list[str] = []
+            skipped: list[str] = []
+            failed: list[str] = []
+
+            for path in paths:
+                importer = ProfileImporter(path)
+
+                if importer.exists():
+                    exists.append(importer.profile_name)
+                elif importer.is_legacy and not show_legacy_import_warning(importer.profile_name):
+                    skipped.append(importer.profile_name)
+                elif importer.import_profile():
+                    imported.append(importer.profile_name)
+                else:
+                    failed.append(importer.profile_name)
+
+            show_import_result_dialog(imported, skipped, exists, failed)
+
         case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':
             from .sign import get_runtime_public_key
 
