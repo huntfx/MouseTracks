@@ -155,20 +155,20 @@ class Playback(MonitorComponent):
                     self.set_monitor_data(message.data)
                     if self._last_monitors_changed is None:
                         self._last_monitors_changed = message
-                    if self._history_length:
+                    if self._history_length and self._components_loaded:
                         self._history.append((self._current_tick, message))
 
                 case ipc.CurrentProfileChanged():
                     if self._last_profile_changed is None:
                         self._last_profile_changed = message
-                    if self._history_length:
+                    if self._history_length and self._components_loaded:
                         self._history.append((self._current_tick, message))
 
                 case ipc.RequestHistoryLength():
                     self.send_data(ipc.HistoryLength(self.history_length))
 
                 # Record all other events in the history queue
-                case _ if self._history_length:
+                case _ if self._history_length and self._components_loaded:
                     self._history.append((self._current_tick, message))
 
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
