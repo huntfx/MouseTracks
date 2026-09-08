@@ -15,6 +15,7 @@ if __name__ == '__main__':
 
         except Exception:  # pylint: disable=broad-exception-caught
             exc_type, exc_val, exc_tb = sys.exc_info()
+            assert exc_type is not None and exc_val is not None and exc_tb is not None
 
             from mousetracks2.popups import show_error_dialog
             if not show_error_dialog(exc_type, exc_val, exc_tb):

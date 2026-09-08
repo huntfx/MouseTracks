@@ -5,9 +5,11 @@ on:
     branches:
       - master
   pull_request:
-    branches:
-      - master
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mypy:
@@ -36,4 +38,4 @@ jobs:
 
       - name: Run Pylint
         run: |
-          python -m pylint mousetracks2 launcher.py --disable=fixme
+          python -m pylint mousetracks2 launch.py launcher.py --disable=fixme

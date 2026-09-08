@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     ControllerEventListener: Type[base.EventListener]
     ForegroundAppListener: Type[base.EventListener]
     UserResizeAppListener: Type[base.EventListener]
+    SessionActivityListener: Type[base.EventListener]
 
 match sys.platform:
     case 'win32':
@@ -23,6 +24,7 @@ match sys.platform:
         from .windows import Window
         from .windows import MonitorEventListener, ControllerEventListener
         from .windows import ForegroundAppListener, UserResizeAppListener
+        from .windows import SessionActivityListener
         from .base import hide_child_process
         from .windows import prepare_application_icon
         from .windows import update_installer_version_number
@@ -36,6 +38,7 @@ match sys.platform:
         from .macos import Window
         from .base import MonitorEventListener, ControllerEventListener
         from .base import ForegroundAppListener, UserResizeAppListener
+        from .base import SessionActivityListener
         from .macos import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
         from .base import force_physical_dpi_awareness
@@ -48,6 +51,7 @@ match sys.platform:
         from .linux import Window
         from .base import MonitorEventListener, ControllerEventListener
         from .base import ForegroundAppListener, UserResizeAppListener
+        from .base import SessionActivityListener
         from .base import hide_child_process, prepare_application_icon
         from .base import update_installer_version_number
         from .base import force_physical_dpi_awareness
@@ -60,6 +64,7 @@ __all__ = [
     'Window',
     'MonitorEventListener', 'ControllerEventListener',
     'ForegroundAppListener', 'UserResizeAppListener',
+    'SessionActivityListener',
     'hide_child_process', 'prepare_application_icon',
     'update_installer_version_number',
     'force_physical_dpi_awareness',
