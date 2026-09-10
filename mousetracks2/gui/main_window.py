@@ -25,7 +25,7 @@ from ..components import ipc
 from ..cli import CLI
 from ..colour import generate_colour_schemes
 from ..config import GlobalConfig
-from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE
+from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE, RECORDING_EXT
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
 from ..context import CTX
 from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING
@@ -2096,13 +2096,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Prompt for a save path and begin recording."""
         path, accepted = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Save Recording',
-            str(CTX.data_dir / 'recording.mtr'),
-            'MouseTracks Recording (*.mtr)',
+            str(CTX.data_dir / f'recording{RECORDING_EXT}'),
+            f'MouseTracks Recording (*{RECORDING_EXT})',
         )
         if not accepted or not path:
             return
-        if not path.endswith('.mtr'):
-            path += '.mtr'
+        if not path.endswith(RECORDING_EXT):
+            path += RECORDING_EXT
         self.ui.recording_start.setEnabled(False)
         self.ui.recording_stop.setEnabled(True)
         self.component.send_data(ipc.StartRecording(path=path))
@@ -3288,13 +3288,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Export the selected history range to a recording file."""
         path, accepted = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Export History',
-            str(CTX.data_dir / 'history.mtr'),
-            'MouseTracks Recording (*.mtr)',
+            str(CTX.data_dir / f'history{RECORDING_EXT}'),
+            f'MouseTracks Recording (*{RECORDING_EXT})',
         )
         if not accepted or not path:
             return
-        if not path.endswith('.mtr'):
-            path += '.mtr'
+        if not path.endswith(RECORDING_EXT):
+            path += RECORDING_EXT
 
         start, end = self.ui.playback_range.value()
         total = self.ui.history_length.value()

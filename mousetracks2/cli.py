@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -59,8 +60,6 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--test-recording', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--playback', metavar='FILE', default=None,
-                        help='play back a .mtr recording instead of live tracking')
 
     parser.add_argument('paths', nargs='*', default=[], help=argparse.SUPPRESS)
 
@@ -205,11 +204,6 @@ class CLI:
             self._soft_load = False
 
         # Only update if the value is different to the default
-        if args.playback is not None:
-            self.playback_file = Path(args.playback)
-            if args.data_dir is None:
-                import tempfile
-                self.data_dir = Path(tempfile.mkdtemp(prefix='mousetracks_playback_'))
         if args.data_dir is not None:
             self.data_dir = Path(args.data_dir)
         if args.start_hidden is not None:
@@ -450,21 +444,48 @@ def run_cli_function(cli: CLI) -> bool:
     """Run a single function and quit."""
     match cli.args:
         case argparse.Namespace(paths=paths) if paths:
+            from .constants import PROFILE_EXT, RECORDING_EXT
             from .dragdrop import ProfileImporter
-            from .popups import show_legacy_import_warning, show_import_result_dialog, show_invalid_files_error
+            from .popups import (show_legacy_import_warning, show_import_result_dialog,
+                                 show_invalid_files_error, show_playback_multiple_error)
 
-            # Block the whole batch rather than silently ignoring the ones that don't belong
-            invalid = ProfileImporter.get_invalid_paths(paths)
-            if invalid:
-                show_invalid_files_error(invalid)
+            # Split the input paths by extension
+            extension_groups: dict[str, list[str]] = defaultdict(list)
+            for path in paths:
+                extension_groups[os.path.splitext(path)[1].lower()].append(path)
+
+            extension_count = len(extension_groups)
+            recordings = extension_groups.pop(RECORDING_EXT, [])
+            profiles = extension_groups.pop(PROFILE_EXT, [])
+            invalid_paths = [path for group in extension_groups.values() for path in group]
+
+            if invalid_paths:
+                show_invalid_files_error(invalid_paths)
                 return True
+
+            # A recording can't be combined with a profile import
+            if extension_count > 1:
+                show_playback_multiple_error(paths)
+                return True
+
+            # Only one recording can be played back at a time
+            if recordings:
+                if len(recordings) > 1:
+                    show_playback_multiple_error(recordings)
+                    return True
+
+                cli.playback_file = Path(recordings[0])
+                if cli.data_dir is None:
+                    import tempfile
+                    cli.data_dir = Path(tempfile.mkdtemp(prefix='mousetracks_playback_'))
+                return False
 
             imported: list[str] = []
             exists: list[str] = []
             skipped: list[str] = []
             failed: list[str] = []
 
-            for path in paths:
+            for path in profiles:
                 importer = ProfileImporter(path)
 
                 if importer.exists():

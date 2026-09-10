@@ -2,14 +2,17 @@ import os
 from dataclasses import dataclass
 from typing import Iterator, Literal
 
-from .file import EXTENSION, PROFILE_DIR, TrackingProfile, get_filename
+from .constants import PROFILE_EXT, RECORDING_EXT
+from .file import PROFILE_DIR, TrackingProfile, get_filename
 
 
 IMPORT_TITLE = 'MouseTracks Profile Import'
 
 IMPORT_MESSAGE = 'Do you want to import the profile "{profile_name}"?'
 
-IMPORT_FILETYPE_ERROR = 'Mousetracks can only import valid .mtk profile files.'
+IMPORT_PROFILE_FILETYPE_ERROR = f'Mousetracks can only import valid {PROFILE_EXT} profile files.'
+
+IMPORT_PLAYBACK_MULTIPLE_ERROR = f'Mousetracks can only play a single {RECORDING_EXT} recording file.'
 
 IMPORT_LEGACY_WARNING = 'This is a legacy profile format. Only import legacy profiles from sources you trust, as loading them is not guaranteed to be safe.'
 
@@ -26,11 +29,6 @@ class ProfileImporter:
         self._path = str(path)
 
     @classmethod
-    def get_invalid_paths(cls, paths: Iterator[str]) -> list[str]:
-        """Get which paths are not supported by this class."""
-        return [path for path in paths if not cls(path).validate()]
-
-    @classmethod
     def validate_selection(cls, paths: Iterator[str]) -> bool:
         """Validate if the selection of paths is ok for import."""
         if not paths:
@@ -39,7 +37,7 @@ class ProfileImporter:
 
     def validate(self) -> bool:
         """Check if the profile is valid before import."""
-        return self._path.lower().endswith(f'.{EXTENSION}')
+        return self._path.lower().endswith(PROFILE_EXT)
 
     @property
     def profile_name(self) -> str:

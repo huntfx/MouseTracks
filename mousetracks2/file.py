@@ -15,15 +15,12 @@ import numpy as np
 import numpy.typing as npt
 
 from .config import ProfileConfig
-from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, PROFILE_EXT, TRACKING_DISABLE
 from .context import CTX
 from .utils.keycodes import CLICK_CODES
 
 
 CURRENT_FILE_VERSION = 1
-
-EXTENSION = 'mtk'
-"""Extension to use for the profile data."""
 
 PROFILE_DIR = CTX.data_dir / 'Profiles'
 
@@ -880,7 +877,7 @@ def sanitise_profile_name(profile_name: str) -> str:
 
 def get_filename(profile_name: str) -> str:
     """Get the filename for a profile."""
-    return f'{sanitise_profile_name(profile_name)}.{EXTENSION}'
+    return f'{sanitise_profile_name(profile_name)}{PROFILE_EXT}'
 
 
 def get_profile_names() -> dict[str, str]:
@@ -889,7 +886,7 @@ def get_profile_names() -> dict[str, str]:
         return {}
     files = []
     for file in PROFILE_DIR.iterdir():
-        if file.suffix != f'.{EXTENSION}':
+        if file.suffix != PROFILE_EXT:
             continue
         profile_name = TrackingProfile.get_name(file)
         if profile_name is not None:

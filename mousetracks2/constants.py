@@ -34,4 +34,10 @@ PACKAGE_IDENTIFIER = 'uk.peterhunt.mousetracks'
 
 UNTRUSTED_EXT = '.skipped'
 
+PROFILE_EXT = '.mtk'
+"""Extension to use for the profile data."""
+
+RECORDING_EXT = '.mtr'
+"""Extension to use for recording files."""
+
 APP_BORDER_TOLERANCE = 32

@@ -3,8 +3,8 @@
 In normal operation (no playback file) the component runs continuously, caching
 incoming events into a history deque so they can be replayed later.
 
-When launched with a recording file (--playback), it replays the stored events
-back through the hub at the original tick rate instead.
+When launched with a recording file (a .mtr file dropped onto the executable),
+it replays the stored events back through the hub at the original tick rate instead.
 """
 
 from __future__ import annotations
