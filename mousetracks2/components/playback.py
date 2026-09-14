@@ -15,7 +15,7 @@ from typing import Callable, Iterator
 
 from . import ipc
 from .abstract import MonitorComponent
-from .recording import open_recording, read_recording, get_recording_length, write_event, RECORDED_MESSAGE_TYPES
+from .recording import open_recording, read_recording, get_recording_range, write_event, RECORDED_MESSAGE_TYPES
 from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
@@ -42,17 +42,22 @@ class Playback(MonitorComponent):
         self._seek_pos = 0
         self._stream_range: tuple[float, float] = (0.0, 1.0)
         self._playback_end_tick: int | None = None
+        self._active_file: str | None = None
+        self._active_file_first_tick = 0
+        self._active_file_total_ticks = 0
         self._options = ipc.PlaybackOptions(ups=UPDATES_PER_SECOND, skip_empty_ticks=True,
                                             start_percentage=0.0, end_percentage=1.0)
 
     def run(self) -> None:
         if CTX.playback_file is not None:
-            self._run_file_playback()
+            self._play_recording_file(str(CTX.playback_file))
         self._cache_live_events()
 
     @property
     def history_length(self) -> int:
         """Get the actual history length in ticks."""
+        if self._active_file is not None:
+            return self._active_file_total_ticks
         if self._history:
             return self._current_tick - self._history[0][0]
         return 0
@@ -65,6 +70,17 @@ class Playback(MonitorComponent):
     def _get_stream_and_ticks(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int]:
         """Build a fresh stream and tick count from the current history options."""
         self._stream_range = (self._options.start_percentage, self._options.end_percentage)
+
+        if self._active_file is not None:
+            path = self._active_file
+            first_tick = self._active_file_first_tick
+            start_tick = first_tick + round(self._options.start_percentage * self._active_file_total_ticks)
+            end_tick = first_tick + round(self._options.end_percentage * self._active_file_total_ticks)
+
+            def get_stream() -> Iterator[tuple[int, ipc.Message]]:
+                return ((tick, msg) for tick, msg in read_recording(path) if start_tick <= tick <= end_tick)
+
+            return get_stream, end_tick - start_tick
 
         if self._history:
             first_tick = self._history[0][0]
@@ -124,11 +140,15 @@ class Playback(MonitorComponent):
                     self._options = message
 
                 case ipc.StartPlayback():
+                    self._active_file = None
                     self._options = message.options
                     self._playback_end_tick = self._current_tick
                     if stream_data := self._load_history_stream():
                         get_stream, total_ticks = stream_data
                         self._replay(get_stream, total_ticks)
+
+                case ipc.PlayRecordingFile():
+                    self._play_recording_file(message.path)
 
                 case ipc.SeekPlayback():
                     if self._playback_end_tick is None:
@@ -141,8 +161,11 @@ class Playback(MonitorComponent):
                     else:
                         self.send_data(ipc.SeekComplete())
 
+                case ipc.StopPlayback():
+                    self._active_file = None
+
                 # Don't record these events to history
-                case ipc.StopPlayback() | ipc.PausePlayback() | ipc.ResumePlayback(): ...
+                case ipc.PausePlayback() | ipc.ResumePlayback(): ...
 
                 # If just caching, then progress is always at 100%
                 case ipc.RequestPlaybackProgress():
@@ -208,13 +231,16 @@ class Playback(MonitorComponent):
         print(f'[Playback] History saved to {path}')
         self.send_data(ipc.HistoryExported(path=path, duration_ticks=last_tick - first_tick))
 
-    def _run_file_playback(self) -> None:
-        """Replay a recording file."""
-        if CTX.playback_file is None:
-            return
-        path = str(CTX.playback_file)
-        total_ticks = get_recording_length(path)
-        self._replay(lambda: read_recording(path), total_ticks)
+    def _play_recording_file(self, path: str) -> None:
+        """Replay a recording file, whether triggered on startup or elsewhere."""
+        first_tick, last_tick = get_recording_range(path)
+        self._active_file = path
+        self._active_file_first_tick = first_tick
+        self._active_file_total_ticks = last_tick - first_tick
+
+        self.send_data(ipc.HistoryLength(self.history_length))
+        get_stream, total_ticks = self._get_stream_and_ticks()
+        self._replay(get_stream, total_ticks)
 
     def _iter_ticks(self) -> Iterator[int]:
         """Yield a continuously incrementing tick count.
@@ -311,6 +337,7 @@ class Playback(MonitorComponent):
                         self._options = message
 
                     case ipc.StopPlayback():
+                        self._active_file = None
                         break_required = True
 
                     case ipc.SeekPlayback():

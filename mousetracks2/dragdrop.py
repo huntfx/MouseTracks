@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Iterator, Literal
+from typing import Literal
 
 from .constants import PROFILE_EXT, RECORDING_EXT
 from .file import PROFILE_DIR, TrackingProfile, get_filename
@@ -27,17 +27,6 @@ class ProfileImporter:
     def __init__(self, path: str | os.PathLike):
         self._name: str | None = None
         self._path = str(path)
-
-    @classmethod
-    def validate_selection(cls, paths: Iterator[str]) -> bool:
-        """Validate if the selection of paths is ok for import."""
-        if not paths:
-            return False
-        return all(cls(path).validate() for path in paths)
-
-    def validate(self) -> bool:
-        """Check if the profile is valid before import."""
-        return self._path.lower().endswith(PROFILE_EXT)
 
     @property
     def profile_name(self) -> str:

@@ -9,7 +9,7 @@ import time
 import webbrowser
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Iterable, Iterator, TypeVar, TYPE_CHECKING
+from typing import cast, Any, Iterable, Iterator, Sequence, TypeVar, TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
@@ -31,7 +31,7 @@ from ..context import CTX
 from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING
 from ..dragdrop import ProfileImporter, ImportResultDisplay
 from ..enums import BlendMode, Channel
-from ..file import PROFILE_DIR, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
+from ..file import PROFILE_DIR, PROFILE_EXT, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
 from ..runtime import SYS_EXECUTABLE
@@ -175,6 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._keep_playback_label_min_width = False
         self._last_playback_range: tuple[int, int] = (0, 0)
         self._history_length_snapshot: int = 0
+        self._active_playback_file: str | None = None
 
         # Setup UI
         self.ui = layout.Ui_MainWindow()
@@ -2275,17 +2276,39 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
-    def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
-        """Accept a drag only if every item is a profile file.
-        Mixed drops are rejected outright rather than importing some and ignoring others.
+    def _get_valid_profile_import_paths(self, paths: Sequence[str]) -> list[str]:
+        """Get the paths to import from a list of paths.
+        If mixed paths, nothing will be returned.
         """
-        urls = event.mimeData().urls()
-        if ProfileImporter.validate_selection(url.toLocalFile() for url in urls):
+        if paths and all(path.lower().endswith(PROFILE_EXT) for path in paths):
+            return list(paths)
+        return []
+
+    def _get_valid_replay_paths(self, paths: Sequence[str]) -> list[str]:
+        """Get the paths to replay from a list of paths.
+        If mixed or multiple paths, nothing will be returned.
+        """
+        if len(paths) == 1 and paths[0].lower().endswith(RECORDING_EXT) and self._can_play_recording():
+            return list(paths)
+        return []
+
+    def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
+        """Accept a drag if a known filetype.
+        Mixed filetypes are rejected.
+        """
+        paths = [url.toLocalFile() for url in event.mimeData().urls()]
+        if self._get_valid_profile_import_paths(paths) or self._get_valid_replay_paths(paths):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
-        """Import each dropped profile file."""
-        self._import_dropped_profile(*(url.toLocalFile() for url in event.mimeData().urls()))
+        """Import each dropped profile file, or play back a dropped recording file."""
+        paths = [url.toLocalFile() for url in event.mimeData().urls()]
+
+        if profile_paths := self._get_valid_profile_import_paths(paths):
+            self._import_dropped_profile(profile_paths)
+
+        for replay_path in self._get_valid_replay_paths(paths):
+            self._play_recording(replay_path)
 
     def handle_session_shutdown(self, manager: QtGui.QSessionManager) -> None:
         """Force the app to close when the system is shutting down.
@@ -2683,7 +2706,7 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Yes)
         return msg.exec() == QtWidgets.QMessageBox.StandardButton.Yes
 
-    def _import_dropped_profile(self, *paths: str) -> None:
+    def _import_dropped_profile(self, paths: Sequence[str]) -> None:
         """Confirm and import a single dropped profile file."""
 
         imported: list[str] = []
@@ -2711,6 +2734,9 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 failed.append(importer.profile_name)
 
+        if not (imported or skipped or exists or failed):
+            return
+
         display = ImportResultDisplay(imported=imported,
                                       skipped=skipped,
                                       exists=exists,
@@ -2733,6 +2759,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def _profile_already_loaded(self, importer: ProfileImporter) -> bool:
         """Check if a profile is already on disk or in the current session."""
         return importer.exists() or sanitise_profile_name(importer.profile_name) in self._profile_names
+
+    def _can_play_recording(self) -> bool:
+        """Determine if a dropped recording file can currently be played back.
+        Playback is disabled while recording to disk.
+        """
+        return not self.is_playback and not self.ui.recording_stop.isEnabled()
+
+    def _play_recording(self, path: str) -> None:
+        """Start or restart playback of a recording file."""
+        self._active_playback_file = path
+        self.ui.playback_range.setValue((0, self.ui.playback_range.maximum()))
+        self.component.send_data(ipc.PlayRecordingFile(path))
 
     @QtCore.Slot()
     def import_profile(self) -> None:
@@ -3145,7 +3183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._keep_playback_label_min_width = True
         self._update_playback_range_labels()
         self._timer_playback_labels.start(1000)  # Wait a second to lock the widths
-        self.playback_speed_changed(self.ui.playback_speed.value())
+        self.playback_speed_changed(self.ui.playback_speed.mapped_value())
         if not self.is_playback:
             self._last_playback_range = self.ui.playback_range.value()
 
@@ -3191,7 +3229,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot(bool)
     def playback_skip_toggled(self, checked: bool) -> None:
         """Send updated playback options when the skip idle time option is toggled."""
-        self.playback_speed_changed(self.ui.playback_speed.value())
+        self.playback_speed_changed(self.ui.playback_speed.mapped_value())
 
     def _set_playback_playing(self, playing: bool) -> None:
         """Reflect whether the replay is currently advancing in the play/pause controls."""
@@ -3201,9 +3239,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def history_play(self) -> None:
         """Play back the selected history range."""
+        # Resume an in-progress replay
         if self._playback_running:
             self.component.send_data(ipc.ResumePlayback())
             self._set_playback_playing(True)
+            return
+
+        # Restart the loaded file
+        if self._active_playback_file is not None:
+            self._play_recording(self._active_playback_file)
             return
 
         start, end = self.ui.playback_range.value()
@@ -3263,6 +3307,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _exit_playback_mode(self) -> None:
         """Exit history playback mode and restore the live UI state."""
         self.is_playback = False
+        self._active_playback_file = None
         self._history_length_snapshot = 0
         self._playback_monitor_size = None
         self._playback_monitor_resync_pending = False

@@ -715,6 +715,14 @@ class StartPlayback(Message):
 
 
 @dataclass
+class PlayRecordingFile(Message):
+    """Start replaying a recording file dropped onto the GUI."""
+
+    target: Target = field(default=Target.Playback, init=False)
+    path: str
+
+
+@dataclass
 class StopPlayback(Message):
     """Stop history playback mode."""
 
