@@ -164,7 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._startup_notify_queue: list[tuple[str, str]] = []
         self._network_speed = NetworkSpeedStats()
         self.state = ipc.TrackingState.Paused
-        self.is_playback = CTX.playback_file is not None
+        self.is_playback = False
         self._playback_running = False
         self._playback_seeking = False
         self._seek_in_progress = False
