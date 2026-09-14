@@ -202,6 +202,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_exit.setVisible(False)
         self.ui.playback_pause.setVisible(False)
         self.ui.contrast.setMaximum(float('inf'))
+        self.ui.playback_enter.setEnabled(CTX.playback_file is None)
+        self.ui.playback_exit.setEnabled(CTX.playback_file is None)
         self.update_focused_application('', '', False)
 
         # Special logic for the autostart option, depending on if
@@ -3325,6 +3327,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def history_stop(self) -> None:
         """Stop history playback."""
+        if CTX.playback_file is not None:
+            return
         self._exit_playback_mode()
         self.component.send_data(ipc.StopPlayback())
 
