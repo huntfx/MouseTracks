@@ -1275,18 +1275,18 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
-        self.groupBox_4 = QGroupBox(self.scrollAreaWidgetContents_4)
-        self.groupBox_4.setObjectName(u"groupBox_4")
-        self.verticalLayout_12 = QVBoxLayout(self.groupBox_4)
+        self.recording_settings = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.recording_settings.setObjectName(u"recording_settings")
+        self.verticalLayout_12 = QVBoxLayout(self.recording_settings)
         self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.groupBox_4)
+        self.label_7 = QLabel(self.recording_settings)
         self.label_7.setObjectName(u"label_7")
 
         self.horizontalLayout.addWidget(self.label_7)
 
-        self.history_length = QSpinBox(self.groupBox_4)
+        self.history_length = QSpinBox(self.recording_settings)
         self.history_length.setObjectName(u"history_length")
         self.history_length.setMinimum(0)
         self.history_length.setMaximum(9999)
@@ -1299,12 +1299,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_13 = QHBoxLayout()
         self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
-        self.recording_start = QPushButton(self.groupBox_4)
+        self.recording_start = QPushButton(self.recording_settings)
         self.recording_start.setObjectName(u"recording_start")
 
         self.horizontalLayout_13.addWidget(self.recording_start)
 
-        self.recording_stop = QPushButton(self.groupBox_4)
+        self.recording_stop = QPushButton(self.recording_settings)
         self.recording_stop.setObjectName(u"recording_stop")
 
         self.horizontalLayout_13.addWidget(self.recording_stop)
@@ -1313,32 +1313,32 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.addLayout(self.horizontalLayout_13)
 
 
-        self.verticalLayout_19.addWidget(self.groupBox_4)
+        self.verticalLayout_19.addWidget(self.recording_settings)
 
-        self.groupBox = QGroupBox(self.scrollAreaWidgetContents_4)
-        self.groupBox.setObjectName(u"groupBox")
-        self.verticalLayout_16 = QVBoxLayout(self.groupBox)
+        self.replay_settings = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.replay_settings.setObjectName(u"replay_settings")
+        self.verticalLayout_16 = QVBoxLayout(self.replay_settings)
         self.verticalLayout_16.setObjectName(u"verticalLayout_16")
         self.horizontalLayout_14 = QHBoxLayout()
         self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
-        self.label_35 = QLabel(self.groupBox)
+        self.label_35 = QLabel(self.replay_settings)
         self.label_35.setObjectName(u"label_35")
 
         self.horizontalLayout_14.addWidget(self.label_35)
 
-        self.playback_start = QLabel(self.groupBox)
+        self.playback_start = QLabel(self.replay_settings)
         self.playback_start.setObjectName(u"playback_start")
 
         self.horizontalLayout_14.addWidget(self.playback_start)
 
-        self.playback_range = QRangeSlider(self.groupBox)
+        self.playback_range = QRangeSlider(self.replay_settings)
         self.playback_range.setObjectName(u"playback_range")
         sizePolicy1.setHeightForWidth(self.playback_range.sizePolicy().hasHeightForWidth())
         self.playback_range.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_14.addWidget(self.playback_range)
 
-        self.playback_end = QLabel(self.groupBox)
+        self.playback_end = QLabel(self.replay_settings)
         self.playback_end.setObjectName(u"playback_end")
 
         self.horizontalLayout_14.addWidget(self.playback_end)
@@ -1348,12 +1348,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_15 = QHBoxLayout()
         self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
-        self.label_37 = QLabel(self.groupBox)
+        self.label_37 = QLabel(self.replay_settings)
         self.label_37.setObjectName(u"label_37")
 
         self.horizontalLayout_15.addWidget(self.label_37)
 
-        self.playback_progress = ClickSlider(self.groupBox)
+        self.playback_progress = ClickSlider(self.replay_settings)
         self.playback_progress.setObjectName(u"playback_progress")
         self.playback_progress.setMaximum(1000)
         self.playback_progress.setOrientation(Qt.Orientation.Horizontal)
@@ -1365,12 +1365,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11 = QHBoxLayout()
         self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
-        self.label_12 = QLabel(self.groupBox)
+        self.label_12 = QLabel(self.replay_settings)
         self.label_12.setObjectName(u"label_12")
 
         self.horizontalLayout_11.addWidget(self.label_12)
 
-        self.playback_speed = MappedFloatSlider(self.groupBox)
+        self.playback_speed = MappedFloatSlider(self.replay_settings)
         self.playback_speed.setObjectName(u"playback_speed")
         self.playback_speed.setMaximum(100)
         self.playback_speed.setValue(50)
@@ -1378,7 +1378,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addWidget(self.playback_speed)
 
-        self.playback_speed_visual = QLabel(self.groupBox)
+        self.playback_speed_visual = QLabel(self.replay_settings)
         self.playback_speed_visual.setObjectName(u"playback_speed_visual")
         self.playback_speed_visual.setMinimumSize(QSize(28, 0))
         self.playback_speed_visual.setMaximumSize(QSize(28, 16777215))
@@ -1389,7 +1389,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_16.addLayout(self.horizontalLayout_11)
 
-        self.playback_skip = QCheckBox(self.groupBox)
+        self.playback_skip = QCheckBox(self.replay_settings)
         self.playback_skip.setObjectName(u"playback_skip")
         self.playback_skip.setChecked(True)
 
@@ -1397,17 +1397,17 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_12 = QHBoxLayout()
         self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
-        self.playback_play = QPushButton(self.groupBox)
+        self.playback_play = QPushButton(self.replay_settings)
         self.playback_play.setObjectName(u"playback_play")
 
         self.horizontalLayout_12.addWidget(self.playback_play)
 
-        self.playback_pause = QPushButton(self.groupBox)
+        self.playback_pause = QPushButton(self.replay_settings)
         self.playback_pause.setObjectName(u"playback_pause")
 
         self.horizontalLayout_12.addWidget(self.playback_pause)
 
-        self.playback_export = QPushButton(self.groupBox)
+        self.playback_export = QPushButton(self.replay_settings)
         self.playback_export.setObjectName(u"playback_export")
 
         self.horizontalLayout_12.addWidget(self.playback_export)
@@ -1416,7 +1416,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_16.addLayout(self.horizontalLayout_12)
 
 
-        self.verticalLayout_19.addWidget(self.groupBox)
+        self.verticalLayout_19.addWidget(self.replay_settings)
 
         self.verticalSpacer_3 = QSpacerItem(20, 150, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -2147,11 +2147,11 @@ class Ui_MainWindow(object):
         self.status_playback_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_playback_pid.setText("")
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Recording Settings", None))
+        self.recording_settings.setTitle(QCoreApplication.translate("MainWindow", u"Recording Settings", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
-        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
-        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Save Recording", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
+        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording to Disk", None))
+        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Save Recording to Disk", None))
+        self.replay_settings.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
         self.label_35.setText(QCoreApplication.translate("MainWindow", u"Range:", None))
         self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
         self.playback_end.setText(QCoreApplication.translate("MainWindow", u"---", None))

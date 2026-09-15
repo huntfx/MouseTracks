@@ -2116,11 +2116,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.recording_stop.setVisible(True)
         self.ui.menu_recording_start.setEnabled(False)
         self.ui.menu_recording_stop.setEnabled(True)
+        self.ui.replay_settings.setEnabled(False)
 
         self.component.send_data(ipc.StartRecording(path=path))
 
     def stop_recording(self) -> None:
         """Stop the current recording."""
+        self.ui.replay_settings.setEnabled(True)
         self.component.send_data(ipc.StopRecording())
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
@@ -3307,14 +3309,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.clear_pixmap()
         self.ui.playback_enter.setVisible(False)
         self.ui.playback_exit.setVisible(True)
-        self.ui.history_length.setEnabled(False)
-        self._buddies[self.ui.history_length].setEnabled(False)
-        self.ui.recording_start.setEnabled(False)
+        self.ui.recording_settings.setEnabled(False)
         self.ui.recording_stop.setVisible(False)
         self.ui.menu_recording_start.setEnabled(False)
         self.ui.menu_recording_stop.setEnabled(False)
         self.ui.opts_resolution.setEnabled(False)
         self.ui.opts_monitor.setEnabled(False)
+        self.ui.opts_tracking.setEnabled(False)
         self._reset_render_counters()
         self._playback_monitor_resync_pending = True
         self.request_thumbnail()
@@ -3329,15 +3330,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._profile_change_pending = False
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         self.setEnabled(False)
-        self.ui.history_length.setEnabled(True)
-        self._buddies[self.ui.history_length].setEnabled(True)
         self.ui.playback_enter.setVisible(True)
         self.ui.playback_exit.setVisible(False)
         self._set_playback_playing(False)
-        self.ui.recording_start.setEnabled(True)
+        self.ui.recording_settings.setEnabled(True)
         self.ui.menu_recording_start.setEnabled(True)
         self.ui.opts_resolution.setEnabled(True)
         self.ui.opts_monitor.setEnabled(True)
+        self.ui.opts_tracking.setEnabled(True)
         self._reset_render_counters()
 
     @QtCore.Slot()
