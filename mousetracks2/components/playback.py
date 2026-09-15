@@ -64,7 +64,8 @@ class Playback(MonitorComponent):
 
     def _filter_history(self, start_tick: int, end_tick: int) -> list[tuple[int, ipc.Message]]:
         """Get history messages from within a range."""
-        return [(tick, msg) for tick, msg in self._history
+        source = read_recording(self._active_file) if self._active_file is not None else self._history
+        return [(tick, msg) for tick, msg in source
                 if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
 
     def _get_stream_and_ticks(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int]:
@@ -196,19 +197,18 @@ class Playback(MonitorComponent):
 
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
         """Export a slice of the history to disk."""
-        # Safety check - this shouldn't ever happen
-        if not self._history or not self._history_length:
-            print(f'[Playback] No history being recorded')
-            return
+        if self._active_file is None:
+            first_tick = self._current_tick - self._history_length
+            total_ticks = self._history_length
+        else:
+            first_tick = self._active_file_first_tick
+            total_ticks = self._active_file_total_ticks
 
-        oldest_tick = self._current_tick - self._history_length
-        start_tick = oldest_tick + round(start_percentage * self._history_length)
-        end_tick = oldest_tick + round(end_percentage * self._history_length)
+        start_tick = first_tick + round(start_percentage * total_ticks)
+        end_tick = first_tick + round(end_percentage * total_ticks)
 
         # Filter events within the playback window
         events = self._filter_history(start_tick, end_tick)
-
-        # Safety check - this shouldn't ever happen
         if not events:
             print(f'[Playback] No matching events found')
             return
@@ -216,8 +216,12 @@ class Playback(MonitorComponent):
         # Get the ticks and timestamps
         first_tick = events[0][0]
         last_tick = events[-1][0]
-        first_timestamp = self._current_timestamp - round((self._current_tick - first_tick) // UPDATES_PER_SECOND)
-        last_timestamp = first_timestamp + round((last_tick - first_tick) // UPDATES_PER_SECOND)
+        if self._active_file is None:
+            first_timestamp = self._current_timestamp - round((self._current_tick - first_tick) / UPDATES_PER_SECOND)
+            last_timestamp = first_timestamp + round((last_tick - first_tick) / UPDATES_PER_SECOND)
+        else:
+            first_timestamp = round(first_tick / UPDATES_PER_SECOND)
+            last_timestamp = round(last_tick / UPDATES_PER_SECOND)
 
         # Write to file
         print(f'[Playback] Writing to {path}')
@@ -366,6 +370,9 @@ class Playback(MonitorComponent):
                             self.send_data(ipc.PlaybackProgress(min(1.0, (recorded_tick - start_tick) / total_ticks)))
                         else:
                             self.send_data(ipc.PlaybackProgress(1.0))
+
+                    case ipc.ExportHistory():
+                        self._export_history(message.path, message.start_percentage, message.end_percentage)
 
             if break_required:
                 break
