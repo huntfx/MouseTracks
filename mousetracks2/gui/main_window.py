@@ -3335,6 +3335,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def history_export(self) -> None:
         """Export the selected history range to a recording file."""
+        total = self.ui.history_length.value()
+        if not total:
+            return
+
         path, accepted = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Export History',
             str(CTX.data_dir / f'history{RECORDING_EXT}'),
@@ -3346,9 +3350,6 @@ class MainWindow(QtWidgets.QMainWindow):
             path += RECORDING_EXT
 
         start, end = self.ui.playback_range.value()
-        total = self.ui.history_length.value()
-        if not total:
-            return
 
         start_percentage = start / total if total else 0.0
         end_percentage = end / total if total else 1.0
