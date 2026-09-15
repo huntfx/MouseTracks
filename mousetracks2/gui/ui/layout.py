@@ -1275,14 +1275,18 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
+        self.groupBox_4 = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.groupBox_4.setObjectName(u"groupBox_4")
+        self.verticalLayout_12 = QVBoxLayout(self.groupBox_4)
+        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.scrollAreaWidgetContents_4)
+        self.label_7 = QLabel(self.groupBox_4)
         self.label_7.setObjectName(u"label_7")
 
         self.horizontalLayout.addWidget(self.label_7)
 
-        self.history_length = QSpinBox(self.scrollAreaWidgetContents_4)
+        self.history_length = QSpinBox(self.groupBox_4)
         self.history_length.setObjectName(u"history_length")
         self.history_length.setMinimum(0)
         self.history_length.setMaximum(9999)
@@ -1291,7 +1295,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.history_length)
 
 
-        self.verticalLayout_19.addLayout(self.horizontalLayout)
+        self.verticalLayout_12.addLayout(self.horizontalLayout)
+
+
+        self.verticalLayout_19.addWidget(self.groupBox_4)
 
         self.groupBox = QGroupBox(self.scrollAreaWidgetContents_4)
         self.groupBox.setObjectName(u"groupBox")
@@ -2125,6 +2132,7 @@ class Ui_MainWindow(object):
         self.status_playback_queue.setText(QCoreApplication.translate("MainWindow", u"0", None))
         self.status_playback_pid.setText("")
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Recording Settings", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
         self.label_35.setText(QCoreApplication.translate("MainWindow", u"Range:", None))
