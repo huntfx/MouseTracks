@@ -139,10 +139,10 @@ class Ui_MainWindow(object):
         self.debug_pause_monitor = QAction(MainWindow)
         self.debug_pause_monitor.setObjectName(u"debug_pause_monitor")
         self.debug_pause_monitor.setCheckable(True)
-        self.recording_start = QAction(MainWindow)
-        self.recording_start.setObjectName(u"recording_start")
-        self.recording_stop = QAction(MainWindow)
-        self.recording_stop.setObjectName(u"recording_stop")
+        self.menu_recording_start = QAction(MainWindow)
+        self.menu_recording_start.setObjectName(u"menu_recording_start")
+        self.menu_recording_stop = QAction(MainWindow)
+        self.menu_recording_stop.setObjectName(u"menu_recording_stop")
         self.generate_random_colour = QAction(MainWindow)
         self.generate_random_colour.setObjectName(u"generate_random_colour")
         self.centralwidget = QWidget(MainWindow)
@@ -1297,6 +1297,21 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_12.addLayout(self.horizontalLayout)
 
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
+        self.recording_start = QPushButton(self.groupBox_4)
+        self.recording_start.setObjectName(u"recording_start")
+
+        self.horizontalLayout_13.addWidget(self.recording_start)
+
+        self.recording_stop = QPushButton(self.groupBox_4)
+        self.recording_stop.setObjectName(u"recording_stop")
+
+        self.horizontalLayout_13.addWidget(self.recording_stop)
+
+
+        self.verticalLayout_12.addLayout(self.horizontalLayout_13)
+
 
         self.verticalLayout_19.addWidget(self.groupBox_4)
 
@@ -1580,8 +1595,8 @@ class Ui_MainWindow(object):
         self.menuTracking.addAction(self.prefs_track_gamepad)
         self.menuTracking.addAction(self.prefs_track_network)
         self.menuTracking.addSeparator()
-        self.menuTracking.addAction(self.recording_start)
-        self.menuTracking.addAction(self.recording_stop)
+        self.menuTracking.addAction(self.menu_recording_start)
+        self.menuTracking.addAction(self.menu_recording_stop)
         self.colour_context_menu.addAction(self.generate_random_colour)
 
         self.retranslateUi(MainWindow)
@@ -1660,8 +1675,8 @@ class Ui_MainWindow(object):
         self.link_donate.setText(QCoreApplication.translate("MainWindow", u"Donate", None))
         self.debug_pause_app.setText(QCoreApplication.translate("MainWindow", u"Pause Application Detection", None))
         self.debug_pause_monitor.setText(QCoreApplication.translate("MainWindow", u"Pause Monitor Check", None))
-        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
-        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Recording", None))
+        self.menu_recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
+        self.menu_recording_stop.setText(QCoreApplication.translate("MainWindow", u"Stop Recording", None))
         self.generate_random_colour.setText(QCoreApplication.translate("MainWindow", u"Generate Random Scheme", None))
 #if QT_CONFIG(shortcut)
         self.generate_random_colour.setShortcut(QCoreApplication.translate("MainWindow", u"F5", None))
@@ -2134,6 +2149,8 @@ class Ui_MainWindow(object):
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Status", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Recording Settings", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of minutes to keep available", None))
+        self.recording_start.setText(QCoreApplication.translate("MainWindow", u"Start Recording", None))
+        self.recording_stop.setText(QCoreApplication.translate("MainWindow", u"Save Recording", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Replay Settings", None))
         self.label_35.setText(QCoreApplication.translate("MainWindow", u"Range:", None))
         self.playback_start.setText(QCoreApplication.translate("MainWindow", u"1h 23m", None))
@@ -2144,7 +2161,7 @@ class Ui_MainWindow(object):
         self.playback_skip.setText(QCoreApplication.translate("MainWindow", u"Skip Idle Time", None))
         self.playback_play.setText(QCoreApplication.translate("MainWindow", u"Play", None))
         self.playback_pause.setText(QCoreApplication.translate("MainWindow", u"Pause", None))
-        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export Replay", None))
+        self.playback_export.setText(QCoreApplication.translate("MainWindow", u"Export", None))
         self.playback_enter.setText(QCoreApplication.translate("MainWindow", u"Enter Replay Mode", None))
         self.playback_exit.setText(QCoreApplication.translate("MainWindow", u"Exit Replay Mode", None))
         self.tab_options.setTabText(self.tab_options.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"History", None))

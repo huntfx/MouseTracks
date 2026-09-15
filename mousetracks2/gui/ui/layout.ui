@@ -2157,6 +2157,24 @@ This should be used after manually editing it.</string>
                    </item>
                   </layout>
                  </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_13">
+                   <item>
+                    <widget class="QPushButton" name="recording_start">
+                     <property name="text">
+                      <string>Start Recording</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="recording_stop">
+                     <property name="text">
+                      <string>Save Recording</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
                 </layout>
                </widget>
               </item>
@@ -2300,7 +2318,7 @@ This should be used after manually editing it.</string>
                    <item>
                     <widget class="QPushButton" name="playback_export">
                      <property name="text">
-                      <string>Export Replay</string>
+                      <string>Export</string>
                      </property>
                     </widget>
                    </item>
@@ -2597,8 +2615,8 @@ This should be used after manually editing it.</string>
     <addaction name="prefs_track_gamepad"/>
     <addaction name="prefs_track_network"/>
     <addaction name="separator"/>
-    <addaction name="recording_start"/>
-    <addaction name="recording_stop"/>
+    <addaction name="menu_recording_start"/>
+    <addaction name="menu_recording_stop"/>
    </widget>
    <widget class="QMenu" name="colour_context_menu">
     <property name="title">
@@ -2918,12 +2936,12 @@ This should be used after manually editing it.</string>
     <string>Pause Monitor Check</string>
    </property>
   </action>
-  <action name="recording_start">
+  <action name="menu_recording_start">
    <property name="text">
     <string>Start Recording</string>
    </property>
   </action>
-  <action name="recording_stop">
+  <action name="menu_recording_stop">
    <property name="text">
     <string>Stop Recording</string>
    </property>
@@ -3007,8 +3025,8 @@ This should be used after manually editing it.</string>
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>886</x>
-     <y>-24</y>
+     <x>861</x>
+     <y>235</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -3024,11 +3042,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>316</y>
+     <y>208</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>312</y>
+     <y>213</y>
     </hint>
    </hints>
   </connection>
@@ -3040,11 +3058,11 @@ This should be used after manually editing it.</string>
    <hints>
     <hint type="sourcelabel">
      <x>999</x>
-     <y>346</y>
+     <y>238</y>
     </hint>
     <hint type="destinationlabel">
      <x>980</x>
-     <y>342</y>
+     <y>243</y>
     </hint>
    </hints>
   </connection>
@@ -3060,7 +3078,7 @@ This should be used after manually editing it.</string>
     </hint>
     <hint type="destinationlabel">
      <x>1000</x>
-     <y>-90</y>
+     <y>169</y>
     </hint>
    </hints>
   </connection>

@@ -368,9 +368,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tray_exit.triggered.connect(self.shut_down)
         self.ui.tray_open_exe_dir.triggered.connect(self.open_executable_dir)
         self.ui.tray_open_data_dir.triggered.connect(self.open_data_dir)
-        self.ui.recording_start.triggered.connect(self.start_recording)
-        self.ui.recording_stop.triggered.connect(self.stop_recording)
-        self.ui.recording_stop.setEnabled(False)
+        self.ui.recording_start.clicked.connect(self.start_recording)
+        self.ui.recording_stop.clicked.connect(self.stop_recording)
+        self.ui.recording_stop.setVisible(False)
+        self.ui.menu_recording_start.triggered.connect(self.start_recording)
+        self.ui.menu_recording_stop.triggered.connect(self.stop_recording)
+        self.ui.menu_recording_stop.setEnabled(False)
         self.ui.prefs_autostart.triggered.connect(self.toggle_autostart)
         self.ui.prefs_automin.triggered.connect(self.set_minimise_on_start)
         self.ui.prefs_console.triggered.connect(self.toggle_console)
@@ -1769,8 +1772,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.RecordingComplete():
                 self.notify('Recording saved.')
-                self.ui.recording_start.setEnabled(True)
-                self.ui.recording_stop.setEnabled(False)
+                self.ui.recording_start.setVisible(True)
+                self.ui.recording_stop.setVisible(False)
+                self.ui.menu_recording_start.setEnabled(True)
+                self.ui.menu_recording_stop.setEnabled(False)
 
             case ipc.HistoryLength():
                 self._history_length_ticks = message.ticks
@@ -2106,8 +2111,12 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         if not path.endswith(RECORDING_EXT):
             path += RECORDING_EXT
-        self.ui.recording_start.setEnabled(False)
-        self.ui.recording_stop.setEnabled(True)
+
+        self.ui.recording_start.setVisible(False)
+        self.ui.recording_stop.setVisible(True)
+        self.ui.menu_recording_start.setEnabled(False)
+        self.ui.menu_recording_stop.setEnabled(True)
+
         self.component.send_data(ipc.StartRecording(path=path))
 
     def stop_recording(self) -> None:
@@ -3298,8 +3307,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.thumbnail.clear_pixmap()
         self.ui.playback_enter.setVisible(False)
         self.ui.playback_exit.setVisible(True)
-        self.ui.recording_start.setEnabled(False)
-        self.ui.recording_stop.setEnabled(False)
+        self.ui.recording_start.setVisible(False)
+        self.ui.recording_stop.setVisible(False)
+        self.ui.menu_recording_start.setEnabled(False)
+        self.ui.menu_recording_stop.setEnabled(False)
         self.ui.opts_resolution.setEnabled(False)
         self.ui.opts_monitor.setEnabled(False)
         self._reset_render_counters()
@@ -3319,7 +3330,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_enter.setVisible(True)
         self.ui.playback_exit.setVisible(False)
         self._set_playback_playing(False)
-        self.ui.recording_start.setEnabled(True)
+        self.ui.recording_start.setVisible(True)
+        self.ui.menu_recording_start.setEnabled(True)
         self.ui.opts_resolution.setEnabled(True)
         self.ui.opts_monitor.setEnabled(True)
         self._reset_render_counters()
