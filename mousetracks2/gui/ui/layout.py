@@ -1267,15 +1267,15 @@ class Ui_MainWindow(object):
         self.tab_2.setObjectName(u"tab_2")
         self.verticalLayout_18 = QVBoxLayout(self.tab_2)
         self.verticalLayout_18.setObjectName(u"verticalLayout_18")
-        self.scrollArea_4 = QScrollArea(self.tab_2)
-        self.scrollArea_4.setObjectName(u"scrollArea_4")
-        self.scrollArea_4.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_4 = QWidget()
-        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 328, 321))
-        self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
-        self.verticalLayout_19.setObjectName(u"verticalLayout_19")
-        self.recording_settings = QGroupBox(self.scrollAreaWidgetContents_4)
+        self.scrollArea_5 = QScrollArea(self.tab_2)
+        self.scrollArea_5.setObjectName(u"scrollArea_5")
+        self.scrollArea_5.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_5 = QWidget()
+        self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 311, 84))
+        self.verticalLayout_20 = QVBoxLayout(self.scrollAreaWidgetContents_5)
+        self.verticalLayout_20.setObjectName(u"verticalLayout_20")
+        self.recording_settings = QGroupBox(self.scrollAreaWidgetContents_5)
         self.recording_settings.setObjectName(u"recording_settings")
         self.verticalLayout_12 = QVBoxLayout(self.recording_settings)
         self.verticalLayout_12.setObjectName(u"verticalLayout_12")
@@ -1297,24 +1297,35 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_12.addLayout(self.horizontalLayout)
 
-        self.horizontalLayout_13 = QHBoxLayout()
-        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
-        self.recording_start = QPushButton(self.recording_settings)
+        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_12.addItem(self.verticalSpacer_5)
+
+
+        self.verticalLayout_20.addWidget(self.recording_settings)
+
+        self.scrollArea_5.setWidget(self.scrollAreaWidgetContents_5)
+
+        self.verticalLayout_18.addWidget(self.scrollArea_5)
+
+        self.recording_start = QPushButton(self.tab_2)
         self.recording_start.setObjectName(u"recording_start")
 
-        self.horizontalLayout_13.addWidget(self.recording_start)
+        self.verticalLayout_18.addWidget(self.recording_start)
 
-        self.recording_stop = QPushButton(self.recording_settings)
+        self.recording_stop = QPushButton(self.tab_2)
         self.recording_stop.setObjectName(u"recording_stop")
 
-        self.horizontalLayout_13.addWidget(self.recording_stop)
+        self.verticalLayout_18.addWidget(self.recording_stop)
 
-
-        self.verticalLayout_12.addLayout(self.horizontalLayout_13)
-
-
-        self.verticalLayout_19.addWidget(self.recording_settings)
-
+        self.scrollArea_4 = QScrollArea(self.tab_2)
+        self.scrollArea_4.setObjectName(u"scrollArea_4")
+        self.scrollArea_4.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_4 = QWidget()
+        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 311, 196))
+        self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_4)
+        self.verticalLayout_19.setObjectName(u"verticalLayout_19")
         self.replay_settings = QGroupBox(self.scrollAreaWidgetContents_4)
         self.replay_settings.setObjectName(u"replay_settings")
         self.verticalLayout_16 = QVBoxLayout(self.replay_settings)
