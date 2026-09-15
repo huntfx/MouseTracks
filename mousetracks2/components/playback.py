@@ -392,7 +392,7 @@ class Playback(MonitorComponent):
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
             # Skip over empty ticks to avoid waiting on them
-            if self._seek_tick is None:
+            if self._seek_tick is None and self._options.skip_empty_ticks:
                 assert next_event is not None  # Keep mypy happy
                 ticks_until_action = next_event[0] - recorded_tick - 1
                 tick_offset += max(0, ticks_until_action)
