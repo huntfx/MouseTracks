@@ -2144,6 +2144,10 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="QSpinBox" name="history_length">
+                     <property name="toolTip">
+                      <string>Set how many minutes of live history is kept in memory.
+This is not saved to any profile.</string>
+                     </property>
                      <property name="minimum">
                       <number>0</number>
                      </property>
@@ -2179,6 +2183,9 @@ This should be used after manually editing it.</string>
           </item>
           <item>
            <widget class="QPushButton" name="recording_start">
+            <property name="toolTip">
+             <string>Switch back into live mode.</string>
+            </property>
             <property name="text">
              <string>Start Recording to Disk</string>
             </property>
@@ -2186,6 +2193,11 @@ This should be used after manually editing it.</string>
           </item>
           <item>
            <widget class="QPushButton" name="recording_stop">
+            <property name="toolTip">
+             <string>Export the current replay to disk.
+
+The range settings are taken into account.</string>
+            </property>
             <property name="text">
              <string>Save Recording to Disk</string>
             </property>
@@ -2223,6 +2235,9 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="QLabel" name="playback_start">
+                     <property name="toolTip">
+                      <string>Start time offset of the replay.</string>
+                     </property>
                      <property name="text">
                       <string>1h 23m</string>
                      </property>
@@ -2236,10 +2251,16 @@ This should be used after manually editing it.</string>
                        <verstretch>0</verstretch>
                       </sizepolicy>
                      </property>
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the playback range.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;The left handle controls when playback starts.&lt;/p&gt;&lt;p&gt;The right handle controls when playback ends.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
                     </widget>
                    </item>
                    <item>
                     <widget class="QLabel" name="playback_end">
+                     <property name="toolTip">
+                      <string>End time offset of the replay.</string>
+                     </property>
                      <property name="text">
                       <string>---</string>
                      </property>
@@ -2261,6 +2282,9 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="ClickSlider" name="playback_progress">
+                     <property name="toolTip">
+                      <string>The current replay progress.</string>
+                     </property>
                      <property name="maximum">
                       <number>1000</number>
                      </property>
@@ -2282,6 +2306,9 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="MappedFloatSlider" name="playback_speed">
+                     <property name="toolTip">
+                      <string>The speed to play back the replay.</string>
+                     </property>
                      <property name="maximum">
                       <number>100</number>
                      </property>
@@ -2307,6 +2334,9 @@ This should be used after manually editing it.</string>
                        <height>16777215</height>
                       </size>
                      </property>
+                     <property name="toolTip">
+                      <string>The current speed of the replay.</string>
+                     </property>
                      <property name="text">
                       <string>1.0x</string>
                      </property>
@@ -2319,6 +2349,9 @@ This should be used after manually editing it.</string>
                  </item>
                  <item>
                   <widget class="QCheckBox" name="playback_skip">
+                   <property name="toolTip">
+                    <string>Skip over any ticks where nothing happened.</string>
+                   </property>
                    <property name="text">
                     <string>Skip Idle Time</string>
                    </property>
@@ -2331,6 +2364,9 @@ This should be used after manually editing it.</string>
                   <layout class="QHBoxLayout" name="horizontalLayout_12">
                    <item>
                     <widget class="QPushButton" name="playback_play">
+                     <property name="toolTip">
+                      <string>Play the current replay.</string>
+                     </property>
                      <property name="text">
                       <string>Play</string>
                      </property>
@@ -2338,6 +2374,9 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="QPushButton" name="playback_pause">
+                     <property name="toolTip">
+                      <string>Pause the current replay.</string>
+                     </property>
                      <property name="text">
                       <string>Pause</string>
                      </property>
@@ -2345,6 +2384,11 @@ This should be used after manually editing it.</string>
                    </item>
                    <item>
                     <widget class="QPushButton" name="playback_export">
+                     <property name="toolTip">
+                      <string>Export the current replay to disk.
+
+The range settings are taken into account.</string>
+                     </property>
                      <property name="text">
                       <string>Export</string>
                      </property>
@@ -2374,6 +2418,9 @@ This should be used after manually editing it.</string>
           </item>
           <item>
            <widget class="QPushButton" name="playback_enter">
+            <property name="toolTip">
+             <string>Switch into playback mode.</string>
+            </property>
             <property name="text">
              <string>Enter Replay Mode</string>
             </property>
@@ -2381,6 +2428,9 @@ This should be used after manually editing it.</string>
           </item>
           <item>
            <widget class="QPushButton" name="playback_exit">
+            <property name="toolTip">
+             <string>Switch back into live mode.</string>
+            </property>
             <property name="text">
              <string>Exit Replay Mode</string>
             </property>
