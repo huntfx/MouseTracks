@@ -1407,7 +1407,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # from disk if the requested profile isn't current
         if self._is_loading_profile:
             try:
-                _profile = TrackingProfile.load(os.path.join(CTX.profile_dir, get_filename(profile_name)))
+                _profile = TrackingProfile.load(CTX.profile_dir / get_filename(profile_name))
             except FileNotFoundError:
                 elapsed_time = 0
             else:
@@ -2827,7 +2827,7 @@ class MainWindow(QtWidgets.QMainWindow):
             importer.profile_name = profile_name
             if not self._profile_already_loaded(importer):
                 break
-            if get_filename(profile_name) not in os.listdir(CTX.profile_dir):
+            if not (CTX.profile_dir / get_filename(profile_name)).exists():
                 if sanitise_profile_name(profile_name) not in self._profile_names:
                     break
 

@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from .constants import PROFILE_EXT, RECORDING_EXT
@@ -57,7 +58,9 @@ class ProfileImporter:
         """Determine if the profile currently exists."""
         if not CTX.profile_dir.exists():
             return False
-        return os.path.basename(self.path).lower() in map(str.lower, os.listdir(CTX.profile_dir))
+
+        target = Path(self.path).name.lower()
+        return any(item.name.lower() == target for item in CTX.profile_dir.iterdir())
 
     def import_profile(self) -> TrackingProfile | None:
         """Import and save a profile to the data directory."""

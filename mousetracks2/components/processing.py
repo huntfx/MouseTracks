@@ -868,7 +868,7 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Deleting profile {profile_name}...')
         del self.all_profiles[profile_name]
         with suppress(FileNotFoundError):
-            send2trash(os.path.join(CTX.profile_dir, get_filename(profile_name)))
+            send2trash(CTX.profile_dir / get_filename(profile_name))
 
     def _delete_profile_data(self, profile_name: str, devices: ipc.Device) -> None:
         """Delete tracking data for one or more devices."""
