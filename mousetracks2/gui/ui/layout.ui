@@ -2184,7 +2184,7 @@ This is not saved to any profile.</string>
           <item>
            <widget class="QPushButton" name="recording_start">
             <property name="toolTip">
-             <string>Switch back into live mode.</string>
+             <string>Start saving a live recording to a file.</string>
             </property>
             <property name="text">
              <string>Start Recording to Disk</string>
