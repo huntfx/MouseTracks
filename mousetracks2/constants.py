@@ -1,6 +1,6 @@
 DEFAULT_PROFILE_NAME = 'Desktop'
 
-UPDATES_PER_SECOND = 60
+UPDATES_PER_SECOND = 60.0
 
 DOUBLE_CLICK_MS = 500
 """Maximum time in ms where a double click is valid."""
@@ -33,5 +33,11 @@ TRACKING_WILDCARD = '<*>'
 PACKAGE_IDENTIFIER = 'uk.peterhunt.mousetracks'
 
 UNTRUSTED_EXT = '.skipped'
+
+PROFILE_EXT = '.mtk'
+"""Extension to use for the profile data."""
+
+RECORDING_EXT = '.mtr'
+"""Extension to use for recording files."""
 
 APP_BORDER_TOLERANCE = 32

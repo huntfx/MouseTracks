@@ -140,5 +140,10 @@ class Context:
         """Disable lazy loading of profile data."""
         return self.cli.eager_load
 
+    @property
+    def playback_file(self) -> Path | None:
+        """Path to a playback file, or None for live tracking."""
+        return self.cli.playback_file
+
 
 CTX = Context()

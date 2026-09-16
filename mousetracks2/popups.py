@@ -168,8 +168,28 @@ def show_invalid_files_error(paths: list[str]) -> None:
     """Show an error when file(s) dropped onto the executable aren't profile files.
     This blocks the whole batch rather than silently importing just the valid ones.
     """
-    from .dragdrop import IMPORT_TITLE, IMPORT_FILETYPE_ERROR as message
+    from .dragdrop import IMPORT_TITLE, IMPORT_PROFILE_FILETYPE_ERROR as message
     detail = 'Unsupported file(s):\n    ' + '\n    '.join(map(os.path.basename, paths))
+
+    print(message)
+    print(detail)
+
+    def tk_action() -> None:
+        from tkinter import messagebox
+        messagebox.showerror(title=IMPORT_TITLE, message=message, detail=detail)
+
+    def console_action() -> None:
+        input('Press enter to exit...')
+
+    return _run_dialog(tk_action, console_action)
+
+
+def show_playback_multiple_error(paths: list[str]) -> None:
+    """Show an error when a .mtr recording is dropped alongside other files.
+    A recording can only be played back on its own.
+    """
+    from .dragdrop import IMPORT_TITLE, IMPORT_PLAYBACK_MULTIPLE_ERROR as message
+    detail = 'Dropped files:\n    ' + '\n    '.join(map(os.path.basename, paths))
 
     print(message)
     print(detail)

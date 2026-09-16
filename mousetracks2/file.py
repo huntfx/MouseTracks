@@ -7,6 +7,7 @@ import zipfile
 from collections import defaultdict
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Generic, Iterator, Literal, Self, Sequence, Type, TypeVar, overload
 from uuid import uuid4
 
@@ -14,15 +15,12 @@ import numpy as np
 import numpy.typing as npt
 
 from .config import ProfileConfig
-from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, TRACKING_DISABLE
+from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, PROFILE_EXT, TRACKING_DISABLE
 from .context import CTX
 from .utils.keycodes import CLICK_CODES
 
 
 CURRENT_FILE_VERSION = 1
-
-EXTENSION = 'mtk'
-"""Extension to use for the profile data."""
 
 PROFILE_DIR = CTX.data_dir / 'Profiles'
 
@@ -433,6 +431,12 @@ class TrackingProfile:
 
     last_accessed: float = field(default_factory=time.time, init=False)
 
+    def age_days(self, timestamp: int | None = None) -> int:
+        """Get the number of days since the profile was created."""
+        if timestamp is None:
+            timestamp = int(time.time())
+        return max(0, timestamp // 86400 - self.created // 86400)
+
     def _write_to_zip(self, zf: zipfile.ZipFile) -> None:
         if DEBUG:
             assert (self.active + self.inactive) == self.elapsed
@@ -548,34 +552,36 @@ class TrackingProfile:
 
         self.last_accessed = time.time()
 
-    def _save_main(self, path: str | None = None) -> bool:
+    def _save_main(self, path: Path | str | None = None) -> bool:
         """Save the profile."""
         if path is None:
-            path = get_filename(self.name)
+            path = PROFILE_DIR / get_filename(self.name)
+        else:
+            path = Path(path)
 
         # Ensure the folder exists
-        base_dir = os.path.dirname(path)
-        if not os.path.exists(base_dir):
-            os.makedirs(base_dir)
+        base_dir = path.parent
+        if not base_dir.exists():
+            base_dir.mkdir(parents=True)
 
         # Setup filenames
-        temp_file_base = os.path.join(base_dir, uuid4().hex)
-        temp_file = f'{temp_file_base}.tmp'
-        del_file = f'{temp_file_base}.del'
+        temp_file_base = base_dir / uuid4().hex
+        temp_file = temp_file_base.with_suffix('.tmp')
+        del_file = temp_file_base.with_suffix('.del')
 
         try:
             with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
                 self._write_to_zip(zf)
 
             # Quickly swap over the files to reduce chances of a race condition
-            if os.path.exists(path):
+            if path.exists():
 
                 # Rename the existing file
                 # If it has a permission error, then keep retrying
                 # If it never unlocks then skip the save
                 for _ in range(5):
                     try:
-                        os.rename(path, del_file)
+                        path.rename(del_file)
                     except PermissionError:
                         print(f'[File] Permission error when renaming {path}, trying again...')
                         time.sleep(2)
@@ -589,7 +595,7 @@ class TrackingProfile:
             os.utime(temp_file, (self.modified, self.modified))
 
             # Replace file
-            os.rename(temp_file, path)
+            temp_file.rename(path)
             self._update_lazy_paths(temp_file, path)
 
         except Exception:  # pylint: disable=broad-exception-caught
@@ -597,13 +603,13 @@ class TrackingProfile:
 
         finally:
             # Clean up files
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            if os.path.exists(del_file):
-                if not os.path.exists(path):
-                    os.rename(del_file, path)
+            if temp_file.exists():
+                temp_file.unlink()
+            if del_file.exists():
+                if not path.exists():
+                    del_file.rename(path)
                 else:
-                    os.remove(del_file)
+                    del_file.unlink()
 
         return True
 
@@ -622,8 +628,10 @@ class TrackingProfile:
                     self.daily_scrolls, self.daily_keys, self.daily_buttons,
                     self.daily_upload, self.daily_download)
 
-    def _update_lazy_paths(self, temp_file: str, final_path: str) -> None:
+    def _update_lazy_paths(self, temp_file: Path | str, final_path: Path | str) -> None:
         """Update any _lazy_zip paths that still point to the temp file."""
+        temp_file = str(temp_file)
+        final_path = str(final_path)
         for array in self._iter_arrays():
             if array._lazy_zip is not None and array._lazy_zip[0] == temp_file:
                 array._lazy_zip = (final_path, array._lazy_zip[1])
@@ -647,12 +655,12 @@ class TrackingProfile:
 
     @overload
     @classmethod
-    def load(cls, path: str) -> Self: ...
+    def load(cls, path: str | os.PathLike) -> Self: ...
     @overload
     @classmethod
-    def load(cls, path: str, allow_legacy: Literal[True]) -> Self | None: ...
+    def load(cls, path: str | os.PathLike, allow_legacy: Literal[True]) -> Self | None: ...
     @classmethod
-    def load(cls, path: str, allow_legacy: bool = False) -> Self | None:
+    def load(cls, path: str | os.PathLike, allow_legacy: bool = False) -> Self | None:
         """Load a profile.
         Returns None if a legacy profile import fails.
         """
@@ -665,7 +673,7 @@ class TrackingProfile:
         return profile
 
     @classmethod
-    def get_name(cls, path: str) -> str | None:
+    def get_name(cls, path: str | os.PathLike) -> str | None:
         """Get the profile name if possible.
         If not possible, it's likely a legacy profile.
         """
@@ -676,7 +684,7 @@ class TrackingProfile:
             return None
 
     @classmethod
-    def is_file_legacy(cls, path: str) -> bool:
+    def is_file_legacy(cls, path: str | os.PathLike) -> bool:
         """Determine if a file is legacy or not."""
         return cls.get_name(path) is None
 
@@ -696,7 +704,7 @@ class TrackingProfile:
         return profile
 
     @classmethod
-    def _load_legacy(cls, profile_path: str) -> Self | None:
+    def _load_legacy(cls, profile_path: str | os.PathLike) -> Self | None:
         """Load in data from the legacy tracking.
         This is not perfectly safe as it involves loading pickled data,
         so it is hidden behind the "File > Import" option.
@@ -719,7 +727,7 @@ class TrackingProfile:
         # Load the data using the legacy libraries
         from mousetracks.files import CustomOpen, decode_file, upgrade_version  # pylint: disable=import-outside-toplevel
 
-        with CustomOpen(profile_path, 'rb') as f:
+        with CustomOpen(str(profile_path), 'rb') as f:
             try:
                 data = upgrade_version(decode_file(f, legacy=f.zip is None))
             except Exception as e:  # pylint: disable=broad-exception-caught
@@ -785,8 +793,9 @@ class TrackingProfile:
 class TrackingProfileLoader(MutableMapping):
     """Act like a defaultdict to load data if available."""
 
-    def __init__(self, max_profiles: int = 5):
+    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = PROFILE_DIR):
         self.max_profiles = max_profiles
+        self._profile_dir = Path(profile_dir) if profile_dir is not None else None
         self._profiles: dict[str, TrackingProfile] = {}
 
     def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
@@ -823,10 +832,10 @@ class TrackingProfileLoader(MutableMapping):
         This is in the place of `__missing__`, as the profile name gets
         sanitised before it reaches that point.
         """
-        filename = get_filename(profile_name)
         sanitised = sanitise_profile_name(profile_name)
-        if os.path.exists(filename):
-            profile = TrackingProfile.load(filename)
+        if self._profile_dir is not None:
+            filename = self._profile_dir / get_filename(profile_name)
+            profile = TrackingProfile.load(filename) if filename.exists() else TrackingProfile()
         else:
             profile = TrackingProfile()
         self._profiles[sanitised] = profile
@@ -868,18 +877,18 @@ def sanitise_profile_name(profile_name: str) -> str:
 
 def get_filename(profile_name: str) -> str:
     """Get the filename for a profile."""
-    return os.path.join(PROFILE_DIR, f'{sanitise_profile_name(profile_name)}.{EXTENSION}')
+    return f'{sanitise_profile_name(profile_name)}{PROFILE_EXT}'
 
 
 def get_profile_names() -> dict[str, str]:
     """Get all the profile_names, ordered by modified time."""
-    if not os.path.exists(PROFILE_DIR):
+    if not PROFILE_DIR.exists():
         return {}
     files = []
-    for file in os.scandir(PROFILE_DIR):
-        if os.path.splitext(file.name)[1] != f'.{EXTENSION}':
+    for file in PROFILE_DIR.iterdir():
+        if file.suffix != PROFILE_EXT:
             continue
-        profile_name = TrackingProfile.get_name(file.path)
+        profile_name = TrackingProfile.get_name(file)
         if profile_name is not None:
-            files.append((file.stat().st_mtime, profile_name, os.path.splitext(file.name)[0]))
+            files.append((file.stat().st_mtime, profile_name, file.stem))
     return {filename: profile_name for modified, profile_name, filename in sorted(files, reverse=True)}
