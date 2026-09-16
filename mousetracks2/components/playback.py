@@ -23,6 +23,46 @@ from ..utils.system import hide_child_process
 from ..utils.timing import ticks
 
 
+# Message types to exclude from the "skip if idle" option
+IMPORTANT_MESSAGE_TYPES: frozenset[type] = frozenset({
+    ipc.MouseMove,
+    ipc.MouseClick,
+    ipc.MouseHeld,
+    ipc.KeyPress,
+    ipc.KeyHeld,
+    ipc.ButtonPress,
+    ipc.ButtonHeld,
+    ipc.ThumbstickMove,
+})
+
+
+class _SkippableEventStream:
+    """Wrap an event stream to allow looking ahead."""
+
+    def __init__(self, source: Iterator[tuple[int, ipc.Message]]) -> None:
+        self._source = source
+        self._buffer: deque[tuple[int, ipc.Message]] = deque()
+
+    def __iter__(self) -> Iterator[tuple[int, ipc.Message]]:
+        return self
+
+    def __next__(self) -> tuple[int, ipc.Message]:
+        if self._buffer:
+            return self._buffer.popleft()
+        return next(self._source)
+
+    def next_active_tick(self, current: tuple[int, ipc.Message]) -> int:
+        """Find the tick of the next event worth waiting for."""
+        tick, message = current
+        while type(message) not in IMPORTANT_MESSAGE_TYPES:
+            event = next(self._source, None)
+            if event is None:
+                return tick
+            self._buffer.append(event)
+            tick, message = event
+        return tick
+
+
 class Playback(MonitorComponent):
     """Cache live events for history playback, or replay a .mtr recording."""
 
@@ -68,7 +108,7 @@ class Playback(MonitorComponent):
         return [(tick, msg) for tick, msg in source
                 if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
 
-    def _get_stream_and_ticks(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int]:
+    def _get_stream_and_ticks(self) -> tuple[Callable[[], _SkippableEventStream], int]:
         """Build a fresh stream and tick count from the current history options."""
         self._stream_range = (self._options.start_percentage, self._options.end_percentage)
 
@@ -78,8 +118,9 @@ class Playback(MonitorComponent):
             start_tick = first_tick + round(self._options.start_percentage * self._active_file_total_ticks)
             end_tick = first_tick + round(self._options.end_percentage * self._active_file_total_ticks)
 
-            def get_stream() -> Iterator[tuple[int, ipc.Message]]:
-                return ((tick, msg) for tick, msg in read_recording(path) if start_tick <= tick <= end_tick)
+            def get_stream() -> _SkippableEventStream:
+                raw = ((tick, msg) for tick, msg in read_recording(path) if start_tick <= tick <= end_tick)
+                return _SkippableEventStream(raw)
 
             return get_stream, end_tick - start_tick
 
@@ -91,11 +132,11 @@ class Playback(MonitorComponent):
             end_tick = first_tick + round(self._options.end_percentage * history_length)
 
             if events := self._filter_history(start_tick, end_tick):
-                return lambda: iter(events), events[-1][0] - events[0][0]
+                return lambda: _SkippableEventStream(iter(events)), events[-1][0] - events[0][0]
 
-        return lambda: iter(()), 0
+        return lambda: _SkippableEventStream(iter(())), 0
 
-    def _load_history_stream(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int] | None:
+    def _load_history_stream(self) -> tuple[Callable[[], _SkippableEventStream], int] | None:
         """Build a replayable stream from the current history.
 
         Returns (get_stream, total_ticks) if events were found, else None.
@@ -281,10 +322,10 @@ class Playback(MonitorComponent):
                         self._seek_tick = None
                         self.send_data(ipc.SeekComplete())
 
-    def _replay(self, get_stream: Callable[[], Iterator[tuple[int, ipc.Message]]],
+    def _replay(self, get_stream: Callable[[], _SkippableEventStream],
                 total_ticks: int, paused: bool = False) -> None:
         """Replay events from a stream factory at the live tick rate."""
-        stream: Iterator[tuple[int, ipc.Message]] = iter(())
+        stream = _SkippableEventStream(iter(()))
         next_event = None
         start_tick = recorded_tick = 0
         start_timestamp = int(time.time())
@@ -394,7 +435,7 @@ class Playback(MonitorComponent):
             # Skip over empty ticks to avoid waiting on them
             if self._seek_tick is None and self._options.skip_empty_ticks:
                 assert next_event is not None  # Keep mypy happy
-                ticks_until_action = next_event[0] - recorded_tick - 1
+                ticks_until_action = stream.next_active_tick(next_event) - recorded_tick - 1
                 tick_offset += max(0, ticks_until_action)
 
             # Process events for the current tick
