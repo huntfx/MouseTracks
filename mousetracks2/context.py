@@ -81,6 +81,11 @@ class Context:
         return self._data_dir
 
     @property
+    def profile_dir(self) -> Path:
+        """Get the profile directory path."""
+        return CTX.data_dir / 'Profiles'
+
+    @property
     def disable_splash(self) -> bool:
         """Disable the splash screen."""
         return self.cli.disable_splash
