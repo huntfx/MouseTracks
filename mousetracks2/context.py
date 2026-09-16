@@ -14,6 +14,7 @@ class Context:
         self.cli = CLI(args, group=group)
 
         self._data_dir: Path | None = None
+        self._cli_data_dir_cache: Path | None = None
         self._launch_executable: Path | None = None
         self._executable_dir: Path | None = None
 
@@ -67,7 +68,8 @@ class Context:
     @property
     def data_dir(self) -> Path:
         """Get the data directory path."""
-        if self._data_dir is None:
+        if self._data_dir is None or self.cli.data_dir != self._cli_data_dir_cache:
+            self._cli_data_dir_cache = self.cli.data_dir
             if self.cli.data_dir is None:
                 if self.cli.portable:
                     if CURRENT_DIR.is_relative_to(tempfile.gettempdir()):
