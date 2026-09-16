@@ -789,11 +789,17 @@ class TrackingProfile:
 
 
 class TrackingProfileLoader(MutableMapping):
-    """Act like a defaultdict to load data if available."""
+    """Act like a defaultdict to load data if available.
 
-    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = CTX.profile_dir):
+    If `profile_dir` is left empty, it'll use the main location.
+    If it's an empty string, then this will all work in memory.
+    """
+
+    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = None):
         self.max_profiles = max_profiles
-        self._profile_dir = Path(profile_dir) if profile_dir is not None else None
+        if profile_dir is None:
+            profile_dir = CTX.profile_dir
+        self._profile_dir = Path(profile_dir) if profile_dir else None
         self._profiles: dict[str, TrackingProfile] = {}
 
     def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
