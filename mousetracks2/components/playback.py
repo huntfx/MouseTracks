@@ -11,12 +11,12 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
 from . import ipc
 from .abstract import MonitorComponent
 from .recording import open_recording, read_recording, get_recording_range, write_event, RECORDED_MESSAGE_TYPES
-from ..constants import UPDATES_PER_SECOND
+from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
 from ..utils.system import hide_child_process
@@ -62,11 +62,48 @@ class Playback(MonitorComponent):
             return self._current_tick - self._history[0][0]
         return 0
 
+    def _iter_events_with_state(self, source: Iterable[tuple[int, ipc.Message]],
+                                start_tick: int, end_tick: int,
+                                ) -> Iterator[tuple[int, ipc.Message]]:
+        """Iterate events within the start and end tick.
+        The correct monitor and profile data state is inserted at the start.
+        """
+        carried: dict[type, ipc.Message] = {
+            ipc.MonitorsChanged: (self._last_monitors_changed
+                                  if self._last_monitors_changed is not None
+                                  else ipc.MonitorsChanged(data=self._monitor_data)),
+            ipc.CurrentProfileChanged: (self._last_profile_changed
+                                        if self._last_profile_changed is not None
+                                        else ipc.CurrentProfileChanged(DEFAULT_PROFILE_NAME, None)),
+        }
+
+        injected = False
+        for tick, message in source:
+            if tick > end_tick:
+                break
+
+            if tick < start_tick:
+                if isinstance(message, (ipc.MonitorsChanged, ipc.CurrentProfileChanged)):
+                    carried[type(message)] = message
+                continue
+
+            if not injected:
+                for msg_type in (ipc.MonitorsChanged, ipc.CurrentProfileChanged):
+                    yield start_tick, carried[msg_type]
+                injected = True
+
+            yield tick, message
+
+        # The range had no events of its own to carry the state forward with
+        if not injected:
+            for msg_type in (ipc.MonitorsChanged, ipc.CurrentProfileChanged):
+                yield start_tick, carried[msg_type]
+
     def _filter_history(self, start_tick: int, end_tick: int) -> list[tuple[int, ipc.Message]]:
         """Get history messages from within a range."""
         source = read_recording(self._active_file) if self._active_file is not None else self._history
-        return [(tick, msg) for tick, msg in source
-                if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
+        return [(tick, msg) for tick, msg in self._iter_events_with_state(source, start_tick, end_tick)
+                if type(msg) in RECORDED_MESSAGE_TYPES]
 
     def _get_stream_and_ticks(self) -> tuple[Callable[[], Iterator[tuple[int, ipc.Message]]], int]:
         """Build a fresh stream and tick count from the current history options."""
@@ -79,7 +116,7 @@ class Playback(MonitorComponent):
             end_tick = first_tick + round(self._options.end_percentage * self._active_file_total_ticks)
 
             def get_stream() -> Iterator[tuple[int, ipc.Message]]:
-                return ((tick, msg) for tick, msg in read_recording(path) if start_tick <= tick <= end_tick)
+                return self._iter_events_with_state(read_recording(path), start_tick, end_tick)
 
             return get_stream, end_tick - start_tick
 

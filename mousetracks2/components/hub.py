@@ -346,6 +346,9 @@ class Hub:
                 case ipc.StartRecording():
                     self._recording = open_recording(message.path)
                     write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
+                    # Start the recording with the current monitor/profile state
+                    for live_message in self._live_state:
+                        write_event(self._recording, self._current_tick, live_message)
 
                 case ipc.StopRecording():
                     if self._recording is not None:
