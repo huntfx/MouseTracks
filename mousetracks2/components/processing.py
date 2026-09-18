@@ -769,13 +769,6 @@ class Processing(AppComponent, MonitorComponent):
                 self.profile.cursor_map.position = None
 
             case ipc.StartRecording():
-                # Send a snapshot of the current state so the recording
-                self.send_data(ipc.MonitorsChanged(data=self._monitor_data))
-                self.send_data(ipc.CurrentProfileChanged(
-                    name=self.focused_app.name,
-                    process_id=None,
-                    rects=self.focused_app.rects,
-                ))
                 if self.profile.cursor_map.position is not None:
                     self.send_data(ipc.MouseMove(position=self.profile.cursor_map.position))
                 for gamepad, maps in self.profile.thumbstick_l_map.items():

@@ -16,13 +16,13 @@ import traceback
 import multiprocessing
 import multiprocessing.queues
 import queue
-from dataclasses import dataclass, field, fields
-from typing import IO, TYPE_CHECKING, Any, ClassVar, Generic, Iterator, TypeVar, get_type_hints
+from dataclasses import dataclass
+from typing import IO, TYPE_CHECKING, Any, Generic, TypeVar, get_type_hints
 
 from . import ipc
-from .recording import open_recording, write_event, RECORDED_MESSAGE_TYPES
+from .recording import open_recording, write_event, LiveState, RECORDED_MESSAGE_TYPES
 from ..config import GlobalConfig
-from ..constants import DEFAULT_PROFILE_NAME, UPDATES_PER_SECOND
+from ..constants import UPDATES_PER_SECOND
 from ..exceptions import ExitRequest
 from ..gui.utils import should_minimise_on_start
 from ..runtime import IS_BUILT_EXE
@@ -104,25 +104,6 @@ class Queue(multiprocessing.queues.Queue, Generic[T]):
         return result
 
 
-@dataclass
-class _LiveState:
-    """Snapshot of tracking state to restoring after playback."""
-
-    monitors: ipc.MonitorsChanged = field(default_factory=lambda: ipc.MonitorsChanged(data=ipc.MonitorData()))
-    profile: ipc.CurrentProfileChanged = field(default_factory=lambda: ipc.CurrentProfileChanged(DEFAULT_PROFILE_NAME, None))
-
-    types: ClassVar[tuple[type[ipc.Message], ...]] = (ipc.MonitorsChanged, ipc.CurrentProfileChanged)
-
-    def __iter__(self) -> Iterator[ipc.Message]:
-        for f in fields(self):
-            yield getattr(self, f.name)
-
-    def update(self, message: ipc.Message) -> None:
-        for f, t in zip(fields(self), self.types):
-            if isinstance(message, t):
-                setattr(self, f.name, message)
-                return
-
 
 class Hub:
     """Set up individual components with queues for communication."""
@@ -139,7 +120,7 @@ class Hub:
         self._playback_buffer: list[ipc.Message] = []
         self._playback_replay_finished = False
         self._playback_stop_requested = False
-        self._live_state = _LiveState()
+        self._live_state = LiveState()
 
         self._wait_to_load = ipc.Target.Processing | ipc.Target.Playback
         if not playback_mode:
@@ -346,6 +327,9 @@ class Hub:
                 case ipc.StartRecording():
                     self._recording = open_recording(message.path)
                     write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
+                    # Start the recording with the current monitor/profile state
+                    for live_message in self._live_state:
+                        write_event(self._recording, self._current_tick, live_message)
 
                 case ipc.StopRecording():
                     if self._recording is not None:

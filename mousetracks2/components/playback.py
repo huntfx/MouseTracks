@@ -11,11 +11,12 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
 from . import ipc
 from .abstract import MonitorComponent
-from .recording import open_recording, read_recording, get_recording_range, write_event, RECORDED_MESSAGE_TYPES
+from .recording import (open_recording, read_recording, get_recording_range, write_event,
+                        LiveState, RECORDED_MESSAGE_TYPES)
 from ..constants import UPDATES_PER_SECOND
 from ..context import CTX
 from ..exceptions import ExitRequest
@@ -75,8 +76,7 @@ class Playback(MonitorComponent):
         self._current_timestamp = 0
         self._history_length = 0
         self._components_loaded = False
-        self._last_monitors_changed: ipc.MonitorsChanged | None = None
-        self._last_profile_changed: ipc.CurrentProfileChanged | None = None
+        self._last_state = LiveState()
         self._seek_tick: int | None = None
         self._seek_tick_percentage: float | None = None
         self._seek_pos = 0
@@ -102,11 +102,43 @@ class Playback(MonitorComponent):
             return self._current_tick - self._history[0][0]
         return 0
 
+    def _iter_events_with_state(self, source: Iterable[tuple[int, ipc.Message]],
+                                start_tick: int, end_tick: int,
+                                ) -> Iterator[tuple[int, ipc.Message]]:
+        """Iterate events within the start and end tick.
+
+        The initial states (monitor/profile/cursor/thumbstick) are set
+        before any other messages are sent.
+        """
+        state_copy = LiveState(monitors=self._last_state.monitors, profile=self._last_state.profile,
+                               mouse=self._last_state.mouse, thumbsticks=dict(self._last_state.thumbsticks))
+
+        injected = False
+        for tick, message in source:
+            if tick > end_tick:
+                break
+
+            if tick < start_tick:
+                state_copy.update(message)
+                continue
+
+            if not injected:
+                for state_message in state_copy:
+                    yield start_tick, state_message
+                injected = True
+
+            yield tick, message
+
+        # The range had no events of its own, so send the state
+        if not injected:
+            for state_message in state_copy:
+                yield start_tick, state_message
+
     def _filter_history(self, start_tick: int, end_tick: int) -> list[tuple[int, ipc.Message]]:
         """Get history messages from within a range."""
         source = read_recording(self._active_file) if self._active_file is not None else self._history
-        return [(tick, msg) for tick, msg in source
-                if start_tick <= tick <= end_tick and type(msg) in RECORDED_MESSAGE_TYPES]
+        return [(tick, msg) for tick, msg in self._iter_events_with_state(source, start_tick, end_tick)
+                if type(msg) in RECORDED_MESSAGE_TYPES]
 
     def _get_stream_and_ticks(self) -> tuple[Callable[[], _SkippableEventStream], int]:
         """Build a fresh stream and tick count from the current history options."""
@@ -119,8 +151,7 @@ class Playback(MonitorComponent):
             end_tick = first_tick + round(self._options.end_percentage * self._active_file_total_ticks)
 
             def get_stream() -> _SkippableEventStream:
-                raw = ((tick, msg) for tick, msg in read_recording(path) if start_tick <= tick <= end_tick)
-                return _SkippableEventStream(raw)
+                return _SkippableEventStream(self._iter_events_with_state(read_recording(path), start_tick, end_tick))
 
             return get_stream, end_tick - start_tick
 
@@ -147,7 +178,14 @@ class Playback(MonitorComponent):
         return None
 
     def _cache_live_events(self) -> None:
-        """Cache messages from live tracking."""
+        """Cache messages from live tracking.
+
+        Certain state events are cached so that playback can read them
+        back first. This is handled in two parts. The first is during
+        live caching, in that when history is pruned, the states will
+        update. However, if history is disabled or not yet loaded, then
+        any events received will immediately update the state.
+        """
         for message in self.receive_data(polling_rate=1 / UPDATES_PER_SECOND):
             if message.source == ipc.Target.Playback:
                 continue
@@ -156,21 +194,14 @@ class Playback(MonitorComponent):
                     self._current_tick = message.tick
                     self._current_timestamp = message.timestamp
 
-                    # Trim the history length if required
-                    if self._history_length:
-                        cutoff = message.tick - self._history_length
-                        while self._history and self._history[0][0] < cutoff:
-                            _, pruned = self._history.popleft()
-                            match pruned:
-                                case ipc.MonitorsChanged():
-                                    self._last_monitors_changed = pruned
-                                case ipc.CurrentProfileChanged():
-                                    self._last_profile_changed = pruned
+                    # Trim the history length
+                    cutoff = message.tick - self._history_length
+                    while self._history and self._history[0][0] < cutoff:
+                        _, pruned = self._history.popleft()
+                        self._last_state.update(pruned)
 
                 case ipc.SetHistoryLength():
                     self._history_length = message.ticks
-                    if not message.ticks:
-                        self._history.clear()
 
                 case ipc.AllComponentsLoaded():
                     self._components_loaded = True
@@ -218,23 +249,26 @@ class Playback(MonitorComponent):
 
                 case ipc.MonitorsChanged():
                     self.set_monitor_data(message.data)
-                    if self._last_monitors_changed is None:
-                        self._last_monitors_changed = message
                     if self._history_length and self._components_loaded:
                         self._history.append((self._current_tick, message))
+                    else:
+                        self._last_state.update(message)
 
                 case ipc.CurrentProfileChanged():
-                    if self._last_profile_changed is None:
-                        self._last_profile_changed = message
                     if self._history_length and self._components_loaded:
                         self._history.append((self._current_tick, message))
+                    else:
+                        self._last_state.update(message)
 
                 case ipc.RequestHistoryLength():
                     self.send_data(ipc.HistoryLength(self.history_length))
 
                 # Record all other events in the history queue
-                case _ if self._history_length and self._components_loaded:
-                    self._history.append((self._current_tick, message))
+                case _:
+                    if self._history_length and self._components_loaded:
+                        self._history.append((self._current_tick, message))
+                    else:
+                        self._last_state.update(message)
 
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
         """Export a slice of the history to disk."""
@@ -350,15 +384,10 @@ class Playback(MonitorComponent):
                 start_timestamp = int(time.time())
                 tick_offset = 0
 
-                # Reset render data then set up monitor and profile state
                 if i:
                     self.send_data(ipc.PlaybackRestarted())
                 else:
                     self.send_data(ipc.PlaybackStarted(paused=paused))
-
-                self.send_data(self._last_monitors_changed or ipc.MonitorsChanged(data=self._monitor_data))
-                if self._last_profile_changed is not None:
-                    self.send_data(self._last_profile_changed)
 
             # Process any messages sent during the replay
             continue_required = break_required = False
