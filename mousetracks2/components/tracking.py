@@ -482,6 +482,16 @@ class Tracking(Component):
 
                     if data.gamepads_current != data.gamepads_previous:
                         print('[Tracking] Gamepad change detected')
+
+                        # Zero out the thumbsticks of any gamepad that just disconnected
+                        for gamepad, (was_active, is_active) in enumerate(zip(data.gamepads_previous,
+                                                                              data.gamepads_current)):
+                            if was_active and not is_active:
+                                self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Left, (0, 0)))
+                                self.send_data(ipc.ThumbstickMove(gamepad, ipc.ThumbstickMove.Thumbstick.Right, (0, 0)))
+                                data.gamepad_stick_l_position.pop(gamepad, None)
+                                data.gamepad_stick_r_position.pop(gamepad, None)
+
                         data.gamepads_previous = data.gamepads_current
 
                 for gamepad, active in enumerate(data.gamepads_current):
