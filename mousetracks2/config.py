@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, IO
@@ -56,25 +55,17 @@ class GlobalConfig:
 
     def save(self, path: str | Path | None = None) -> None:
         """Save the config to a YAML file."""
-        if path is not None:
-            path = GLOBAL_CONFIG_PATH
-
-        # Ensure the folder exists
-        base_dir = os.path.dirname(path)
-        if not os.path.exists(base_dir):
-            os.makedirs(base_dir)
-
-        # Save the data
-        with open(path, 'w', encoding='utf-8') as f:
+        path = Path(path) if path is not None else GLOBAL_CONFIG_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('w', encoding='utf-8') as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
 
     def load(self, path: str | Path | None = None) -> None:
         """Load the config from a YAML file, if it exists."""
-        if path is not None:
-            path = GLOBAL_CONFIG_PATH
+        path = Path(path) if path is not None else GLOBAL_CONFIG_PATH
 
-        if os.path.exists(path):
-            with open(path, 'r', encoding='utf-8') as f:
+        if path.exists():
+            with path.open('r', encoding='utf-8') as f:
                 self.__dict__.update(yaml.safe_load(f))
 
         # Create the config file if it doesn't exist
