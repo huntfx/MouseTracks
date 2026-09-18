@@ -14,6 +14,7 @@ class Context:
         self.cli = CLI(args, group=group)
 
         self._data_dir: Path | None = None
+        self._cli_data_dir_cache: Path | None = None
         self._launch_executable: Path | None = None
         self._executable_dir: Path | None = None
 
@@ -67,7 +68,8 @@ class Context:
     @property
     def data_dir(self) -> Path:
         """Get the data directory path."""
-        if self._data_dir is None:
+        if self._data_dir is None or self.cli.data_dir != self._cli_data_dir_cache:
+            self._cli_data_dir_cache = self.cli.data_dir
             if self.cli.data_dir is None:
                 if self.cli.portable:
                     if CURRENT_DIR.is_relative_to(tempfile.gettempdir()):
@@ -79,6 +81,21 @@ class Context:
             else:
                 self._data_dir = self.cli.data_dir
         return self._data_dir
+
+    @property
+    def profile_dir(self) -> Path:
+        """Get the profile directory path."""
+        return CTX.data_dir / 'Profiles'
+
+    @property
+    def config_path(self) -> Path:
+        """Get the path to the config file."""
+        return CTX.data_dir / 'config.yaml'
+
+    @property
+    def applist_path(self) -> Path:
+        """Get the path to AppList.txt."""
+        return CTX.data_dir / 'AppList.txt'
 
     @property
     def disable_splash(self) -> bool:

@@ -22,8 +22,6 @@ from .utils.keycodes import CLICK_CODES
 
 CURRENT_FILE_VERSION = 1
 
-PROFILE_DIR = CTX.data_dir / 'Profiles'
-
 _DType_co = TypeVar('_DType_co', bound=np.generic, covariant=True)
 
 _ScalarType_co = TypeVar('_ScalarType_co', covariant=True)
@@ -555,7 +553,7 @@ class TrackingProfile:
     def _save_main(self, path: Path | str | None = None) -> bool:
         """Save the profile."""
         if path is None:
-            path = PROFILE_DIR / get_filename(self.name)
+            path = CTX.profile_dir / get_filename(self.name)
         else:
             path = Path(path)
 
@@ -791,11 +789,17 @@ class TrackingProfile:
 
 
 class TrackingProfileLoader(MutableMapping):
-    """Act like a defaultdict to load data if available."""
+    """Act like a defaultdict to load data if available.
 
-    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = PROFILE_DIR):
+    If `profile_dir` is left empty, it'll use the main location.
+    If it's an empty string, then this will all work in memory.
+    """
+
+    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = None):
         self.max_profiles = max_profiles
-        self._profile_dir = Path(profile_dir) if profile_dir is not None else None
+        if profile_dir is None:
+            profile_dir = CTX.profile_dir
+        self._profile_dir = Path(profile_dir) if profile_dir else None
         self._profiles: dict[str, TrackingProfile] = {}
 
     def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
@@ -882,10 +886,10 @@ def get_filename(profile_name: str) -> str:
 
 def get_profile_names() -> dict[str, str]:
     """Get all the profile_names, ordered by modified time."""
-    if not PROFILE_DIR.exists():
+    if not CTX.profile_dir.exists():
         return {}
     files = []
-    for file in PROFILE_DIR.iterdir():
+    for file in CTX.profile_dir.iterdir():
         if file.suffix != PROFILE_EXT:
             continue
         profile_name = TrackingProfile.get_name(file)

@@ -16,7 +16,7 @@ from ..config import GlobalConfig
 from ..context import CTX
 from ..exceptions import ExitRequest
 from ..export import Export
-from ..file import ArrayResolutionMap, MovementMaps, PROFILE_DIR, TrackingProfile, TrackingProfileLoader, get_filename
+from ..file import ArrayResolutionMap, MovementMaps, TrackingProfile, TrackingProfileLoader, get_filename
 from ..legacy import keyboard
 from ..types import Application
 from ..utils import keycodes
@@ -753,7 +753,7 @@ class Processing(AppComponent, MonitorComponent):
 
             # When playback starts/restarts, switch to empty tracking profiles
             case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
-                self.all_profiles = TrackingProfileLoader(profile_dir=None)
+                self.all_profiles = TrackingProfileLoader(profile_dir='')
                 self.previous_mouse_click = None
                 self.is_playback = True
 
@@ -861,7 +861,7 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Deleting profile {profile_name}...')
         del self.all_profiles[profile_name]
         with suppress(FileNotFoundError):
-            send2trash(os.path.join(PROFILE_DIR, get_filename(profile_name)))
+            send2trash(CTX.profile_dir / get_filename(profile_name))
 
     def _delete_profile_data(self, profile_name: str, devices: ipc.Device) -> None:
         """Delete tracking data for one or more devices."""

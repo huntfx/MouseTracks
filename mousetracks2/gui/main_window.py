@@ -31,7 +31,7 @@ from ..context import CTX
 from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING
 from ..dragdrop import ProfileImporter, ImportResultDisplay
 from ..enums import BlendMode, Channel
-from ..file import PROFILE_DIR, PROFILE_EXT, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
+from ..file import PROFILE_EXT, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
 from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
 from ..runtime import SYS_EXECUTABLE
@@ -1406,7 +1406,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # from disk if the requested profile isn't current
         if self._is_loading_profile:
             try:
-                _profile = TrackingProfile.load(os.path.join(PROFILE_DIR, get_filename(profile_name)))
+                _profile = TrackingProfile.load(CTX.profile_dir / get_filename(profile_name))
             except FileNotFoundError:
                 elapsed_time = 0
             else:
@@ -2799,8 +2799,8 @@ class MainWindow(QtWidgets.QMainWindow):
         documents_path = _get_docs_folder()
         default_dir = documents_path / 'Mouse Tracks' / 'Data'
         if not default_dir.exists():
-            if PROFILE_DIR.exists():
-                default_dir = PROFILE_DIR
+            if CTX.profile_dir.exists():
+                default_dir = CTX.profile_dir
             else:
                 default_dir = documents_path
 
@@ -2826,7 +2826,7 @@ class MainWindow(QtWidgets.QMainWindow):
             importer.profile_name = profile_name
             if not self._profile_already_loaded(importer):
                 break
-            if get_filename(profile_name) not in os.listdir(PROFILE_DIR):
+            if not (CTX.profile_dir / get_filename(profile_name)).exists():
                 if sanitise_profile_name(profile_name) not in self._profile_names:
                     break
 
