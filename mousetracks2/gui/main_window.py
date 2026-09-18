@@ -866,6 +866,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def _playback_slider_released(self) -> None:
         self._playback_seeking = False
         self._seek_in_progress = True
+
+        self.ui.thumbnail.show_rendering_text()
         self.component.send_data(ipc.SeekPlayback(self.ui.playback_progress.value() / self.ui.playback_progress.maximum()))
 
     @property
@@ -1225,15 +1227,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self._thumbnail_redraw_required = True
             return True
 
+        # Quit early if a render is not possible
         sanitised_profile_name, profile_name = self._selected_profile_data()
-        if sanitised_profile_name is None:
-            return False
-
         layers = list(self.get_render_layer_data())
-        if not layers:
+        if sanitised_profile_name is None or not layers:
+            self._timer_rendering.stop()
+            self.ui.thumbnail.hide_rendering_text()
             return False
 
-        # When playing back history, we want an empty render to start with
+        # When playing back history, start with an empty render
         if self.is_playback:
             for layer in layers:
                 layer.request.allow_empty_render = True
