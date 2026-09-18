@@ -85,6 +85,7 @@ ApplicationFrameHost.exe[Madness: Project Nexus<*>]: Madness: Project Nexus
 ApplicationFrameHost.exe[Sea of Thieves]
 ApplicationFrameHost.exe[Sea of Thieves Closed Beta]: Sea of Thieves
 ApplicationFrameHost.exe[bonk.io - Official Site: Play Bonk Here!<*>- Microsoft Edge]: bonk.io
+Aragami.exe
 ArcheAge.exe
 arena.exe: Total War: Arena
 Argentum.exe
@@ -97,6 +98,7 @@ armoredwarfare.exe: Armored Warfare
 Arpiel.exe
 AShortHike.exe: A Short Hike
 ASN_App_PcDx9_Final.exe: Sonic & All-Stars Racing Transformed
+Asphalt9_Steam_x64_rtl.exe: Asphalt Legends
 AssassinsCreed_Game.exe: Assassin's Creed
 AssettoCorsa.exe: Assetto Corsa
 Astebreed.exe
@@ -181,6 +183,8 @@ Blackshot.exe: Blackshot SEA
 BlackSurvivalER.exe: Black Survival: Eternal Return
 Blameless.exe
 blender.exe: Blender
+Blindfire-Win64-Shipping.exe: Blindfire
+Blindfire.exe
 blobby.exe: Blobby Volley 2
 Blockland.exe
 BlockNLoad.exe: Block N Load
@@ -279,6 +283,8 @@ Crashlands.exe
 Crawl.exe
 crayon.exe: Crayon Physics Deluxe
 Creativerse.exe
+CreaturesOfAva-Win64-Shipping.exe: Creatures Of Ava
+CreaturesOfAva.exe: Creatures Of Ava
 Creeper World 2.exe: Creeper World 2: Redemption
 Crimsonland.exe
 CrowdControl.exe: Crowd Control
@@ -408,6 +414,7 @@ DonutCounty.exe: Donut County
 Doom.exe: DOOM 3
 Doom3BFG.exe: DOOM 3
 DOOMEternalx64vk.exe: DOOM Eternal
+DOOMSandBox64vk.exe: DOOM Eternal
 DOOMx64.exe: DOOM
 DOOMx64vk.exe: DOOM
 DoorKickers.exe: Door Kickers
@@ -425,6 +432,8 @@ Downwell.exe
 downwell.exe: Downwell
 DQXGame.exe: Dragon Quest X: Mezameshi Itsutsu no Shuzoku Online
 DRAG.exe
+Dragon Age The Veilguard: Dragon Age: The Veilguard
+Dragon Age The Veilguard.exe: Dragon Age: The Veilguard
 Dragon's Dogma Dark Arisen: DDDA.exe
 DragonAge2.exe: Dragon Age 2
 DragonAge2.exe[Dragon Age II]: <ignore>
@@ -461,6 +470,7 @@ DXB.exe: Deus Ex: Breach
 dxhr.exe: Deus Ex: Human Revolution
 DXHRDC.exe: Deus Ex: Human Revolution
 DyingLightGame.exe: Dying Light
+Earth.exe: Google Earth
 ed6_win.exe: The Legend of Heroes: Trails in the Sky
 ed6_win2.exe: Trails in the Sky SC
 Editor.exe: Untracked
@@ -521,8 +531,12 @@ falloutw.exe: Fallout
 fancy_skulls.exe: Fancy Skulls
 FarCry2.exe: Far Cry 2
 farcry3.exe: Far Cry 3
+farcry3_d3d11.exe: Far Cry 3
 FarCry4.exe: Far Cry 4
 FarmingSimulator2015Game.exe: Farming Simulator 15
+fc3_blooddragon.exe: Far Cry 3 Blood Dragon
+fc3_blooddragon_d3d11.exe: Far Cry 3 Blood Dragon
+FC3Editor.exe: Far Cry 3 Map Editor
 Fceux.exe: Nintendo Emulator
 FEAR.exe: F.E.A.R.
 FEAR2.exe: F.E.A.R. 2: Project Origin
@@ -582,6 +596,7 @@ GalCiv2.exe: Galactic Civilization 2
 GalCiv3.exe: Galactic Civilization 3
 Game.exe: Untracked
 Game.exe[DOLL EYE - CHAPTER <*>]: DOLL EYE
+Game.exe[Invictus]
 Game.exe[Warface]
 game.exe: Untracked
 game.exe[ - The Longest Journey - Build <*>]: The Longest Journey
@@ -624,6 +639,7 @@ Geographical Adventures.exe
 GeometryWars.exe: Geometry Wars
 GGXXACPR_Win.exe: Guilty Gear XX Accent Core Plus R
 gh3.exe: Guitar Hero 3: Legends of Rock
+ghost.exe: Ghostbusters
 Ghostrunner-Win64-Shipping.exe: Ghostrunner
 Ghostrunner.exe
 GHWT.exe: Guitar Hero World Tour
@@ -639,6 +655,7 @@ GoatOfDuty.exe: Goat of Duty
 GodMode.exe: God Mode
 GooG.exe: Grey Goo
 GothicRemake.exe: Gothic
+GoW.exe: God of War
 GP5.exe: Guitar Pro 5
 grandia2.exe: Grandia 2
 gravel.exe: Gravel
@@ -715,6 +732,8 @@ Hexcells Plus.exe
 Hexcells.exe
 HexPatch.exe: Hex: Shards of Fate
 HHFirstRide_09_02_2018_17_28.exe: Hitchhiker
+HighguardClient-Win64-Shipping.exe: Highguard
+HighguardClient.exe: Highguard
 HillClimbRacing.Windows .exe: Hill Climb Racing
 hindie.exe: Houdini
 hl.exe: Half-Life
@@ -759,12 +778,14 @@ I Wanna Be the Calamity Fortune.exe
 IAmWeaponRevival.exe: I am weapon: Revival
 ibbobb.exe: ibb & obb
 IdleDragons.exe: Idle Champions of the Forgotten Realms
+IdleWizard.exe: Idle Wizard
 ImmortalsOfAveum-Win64-Shipping.exe: Immortals Of Aveum
 ImmortalsOfAveum.exe: Immortals Of Aveum
 ImpossibleGame.exe: The Impossible Game
 infantry.exe: Infantry
 Injustice2.exe: Injustice 2
 Injustice2.exe[DCF2 (x64)]: Ignore
+Instruments.exe: Instruments of Destruction
 Insurgency.exe
 Intruder.exe
 invisibleinc.exe: Invisible Inc.
@@ -799,6 +820,7 @@ jk2mvmp_x64.exe: Star Wars Jedi Knight II
 jk2mvmp_x86.exe: Star Wars Jedi Knight II
 jng_gold.exe: Jets'n'Guns
 Jotunnslayer.exe: Jotunnslayer: Hordes of Hel
+Jump Space.exe
 JurassicPark100.exe: Jurassic Park: The Game
 JustCause.exe: Just Cause
 JustCause2.exe: Just Cause 2
@@ -860,6 +882,7 @@ lineage.exe: Lineage
 LineageII.exe: Lineage II
 Linf-Win64-Shipping.exe: Chasing the Unseen
 Linf.exe: Chasing the Unseen
+Lithtech.exe: Tron 2.0
 Little Man Has a Day.exe
 Livelock.exe
 LLO_beta2.exe: Love Live Online
@@ -990,6 +1013,8 @@ NCSOFT/BnS/bin/Client.exe: Blade & Soul
 NecroDancer.exe: Crypt of the NecroDancer
 NeedForSpeedHeat.exe: Need for Speed: Heat
 NeedForSpeedHeatTrial.exe: Need for Speed: Heat
+NeedForSpeedUnbound.exe: Need for Speed Unbound
+NeedForSpeedUnboundTrial.exe: Need for Speed Unbound
 nekopara_vol0.exe: Nekopara Vol. 0
 nekopara_vol1.exe: Nekopara Vol. 1
 Nekyia.exe
@@ -1007,6 +1032,8 @@ NFS16.exe: Need For Speed 2016
 NFSC.exe: Need for Speed: Carbon
 Nicole.exe: Nicole (Otome Version)
 Nidhogg.exe
+NightfallClient-Win64-Shipping.exe: Killing Floor 3
+NightfallClient.exe: Killing Floor 3
 NitronicRush.exe: Nitronic Rush
 NMS.exe: No Man's Sky
 Noire.exe
@@ -1055,6 +1082,7 @@ OSBuddy.exe: RuneScape
 osu!.exe: OSU!
 outerra.exe: Outerra Anteworld
 Outlast.app
+Over_The_Top_WWI.exe: Over The Top: WWI
 OverstepClient.exe: Overstep
 Overwatch Launcher.exe: Overwatch
 Overwatch.exe
@@ -1124,6 +1152,7 @@ popcapgame1.exe: Plants Vs Zombies
 portal2.exe: Portal 2
 PortalWars-Win64-Shipping.exe: Splitgate: Arena Warfare
 Powder.exe: The Powder Toy
+PowerWashSimulator.exe: PowerWash Simulator
 PPSSPPWindows.exe: PPSSPP
 PPSSPPWindows64.exe: PPSSPP
 Prepar3D.exe
@@ -1189,6 +1218,7 @@ RebelGalaxy.exe: Rebel Galaxy
 RebelGalaxyGOG.exe: Rebel Galaxy
 RebelGalaxySteam.exe: Rebel Galaxy
 Reckoning.exe: Kingdoms of Amalur: Reckoning
+Reclaimer.exe
 RedFactionArmageddon.exe: Red Faction: Armageddon
 RedFactionArmageddon_DX11.exe: Red Faction: Armageddon
 redout-Win64-Shipping.exe: Redout
@@ -1259,6 +1289,7 @@ RxGame-Win64-Shipping.exe: Gigantic
 Ryse.exe: Ryse: Son of Rome
 s2_mp64_ship.exe: Call of Duty: WWII
 S4Client.exe: S4 League
+Saboteur.exe: The Saboteur
 sacred2.exe: Sacred 2
 SaintsRowIV.exe: Saints Row IV
 SaintsRowTheThird.exe: Saints Row 3
@@ -1304,6 +1335,7 @@ she4.exe: Silent Hunter 4: Wolves of the Pacific
 Shipping-ThiefGame.exe: Thief
 ShippingPC-AFEARGame.exe: Alien Rage
 ShippingPC-BmGame.exe: Batman Arkham Asylum
+ShippingPC-BmGame.exe[SplashScreen]: <ignore>
 ShippingPC-StormGame.exe: Bulletstorm
 shock2.exe: System Shock 2
 Shogun2.exe: Total War: Shogun 2
@@ -1330,7 +1362,11 @@ SlimeRancher.exe: Slime Rancher
 slw.exe: Sonic Lost World
 smite.exe: Smite
 Snes9x.exe
+Sniper5_dx12.exe: Sniper Elite 5
+Sniper5_vulkan.exe: Sniper Elite 5
 Sniper_x86.exe: Sniper: Ghost Warrior
+SniperElite4_DX11.exe: Sniper Elite 4
+SniperElite4_DX12.exe: Sniper Elite 4
 SniperEliteV2.exe: Sniper Elite V2
 Solar platform.exe: Solar Platform
 Solar2.exe: Solar 2
@@ -1587,7 +1623,7 @@ Trine2.app: Trine 2
 trine2_32bit.exe: Trine 2
 TripleTown.exe: Triple Town
 trl.exe: Tomb Raider: Legend
-Tron.exe: Tron 2.0
+Tron.exe: <ignore>
 tropico3.exe: Tropico 3
 Trove.exe
 tru.exe: Tomb Raider: Underworld
@@ -1717,8 +1753,8 @@ Wow.exe: World of Warcraft
 WoWSLauncher.exe: World of Warships
 WowT-64.exe: World of Warcraft PTR
 WRC.exe
-Wreckfest.exe: Next Car Game: Wreckfest
-Wreckfest_x64.exe: Next Car Game: Wreckfest
+Wreckfest.exe
+Wreckfest_x64.exe: Wreckfest
 wwzRetail.exe: World War Z
 wwzRetailEgs.exe: World War Z
 wz2100.app: Warzone 2100
@@ -1741,6 +1777,7 @@ ygopro.app: Yu-gi-oh Pro
 ygopro_vs.exe: YGOPRO
 yo_cm_client.exe: Life is Feudal
 zandronum.exe: Zandronum
+ZAT.exe: Zombie Army Trilogy
 ZenoClash.exe: Zeno Clash
 Ziggurat.exe
 ZissisIsland.exe: Zissi's Island
