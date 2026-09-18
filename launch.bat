@@ -1,4 +1,7 @@
 @echo off
+:: Run relative to current folder
+cd /d "%~dp0"
+
 :: Check the virtual environment exists
 if not exist ".venv" (
     echo Virtual Environment does not exist.

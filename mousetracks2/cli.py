@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -58,6 +59,9 @@ def parse_args(args: Sequence[str] | None = None, strict: bool = False) -> argpa
 
     parser.add_argument('--debug-get-autostart', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--debug-remap-autostart', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--test-recording', action='store_true', help=argparse.SUPPRESS)
+
+    parser.add_argument('paths', nargs='*', default=[], help=argparse.SUPPRESS)
 
     if strict:
         result = parser.parse_args(args)
@@ -194,6 +198,7 @@ class CLI:
             self.portable = False
             self.disable_temp_warning = False
             self.eager_load = False
+            self.playback_file = None
 
         finally:
             self._soft_load = False
@@ -422,11 +427,78 @@ class CLI:
         """Set eager loading mode."""
         self._set('MT_EAGER_LOAD', bool2str(value))
 
+    @property
+    def playback_file(self) -> Path | None:
+        """Path to a playback file, or None for live tracking."""
+        value = self.env.get('MT_PLAYBACK_FILE')
+        return Path(value) if value else None
+
+    @playback_file.setter
+    def playback_file(self, value: Path | None) -> None:
+        """Set the playback file path."""
+        self._set('MT_PLAYBACK_FILE', str(value) if value else '')
+
 
 def run_cli_function(cli: CLI) -> bool:
     # pylint: disable=import-outside-toplevel
     """Run a single function and quit."""
     match cli.args:
+        case argparse.Namespace(paths=paths) if paths:
+            from .constants import PROFILE_EXT, RECORDING_EXT
+            from .dragdrop import ProfileImporter
+            from .popups import (show_legacy_import_warning, show_import_result_dialog,
+                                 show_invalid_files_error, show_playback_multiple_error)
+
+            # Split the input paths by extension
+            extension_groups: dict[str, list[str]] = defaultdict(list)
+            for path in paths:
+                extension_groups[os.path.splitext(path)[1].lower()].append(path)
+
+            extension_count = len(extension_groups)
+            recordings = extension_groups.pop(RECORDING_EXT, [])
+            profiles = extension_groups.pop(PROFILE_EXT, [])
+            invalid_paths = [path for group in extension_groups.values() for path in group]
+
+            if invalid_paths:
+                show_invalid_files_error(invalid_paths)
+                return True
+
+            # A recording can't be combined with a profile import
+            if extension_count > 1:
+                show_playback_multiple_error(paths)
+                return True
+
+            # Only one recording can be played back at a time
+            if recordings:
+                if len(recordings) > 1:
+                    show_playback_multiple_error(recordings)
+                    return True
+
+                cli.playback_file = Path(recordings[0])
+                if cli.data_dir is None:
+                    import tempfile
+                    cli.data_dir = Path(tempfile.mkdtemp(prefix='mousetracks_playback_'))
+                return False
+
+            imported: list[str] = []
+            exists: list[str] = []
+            skipped: list[str] = []
+            failed: list[str] = []
+
+            for path in profiles:
+                importer = ProfileImporter(path)
+
+                if importer.exists():
+                    exists.append(importer.profile_name)
+                elif importer.is_legacy and not show_legacy_import_warning(importer.profile_name):
+                    skipped.append(importer.profile_name)
+                elif importer.import_profile():
+                    imported.append(importer.profile_name)
+                else:
+                    failed.append(importer.profile_name)
+
+            show_import_result_dialog(imported, skipped, exists, failed)
+
         case argparse.Namespace(show_public_key=True) if sys.platform == 'win32':
             from .sign import get_runtime_public_key
 
@@ -469,6 +541,10 @@ def run_cli_function(cli: CLI) -> bool:
             from .utils.system import remap_autostart
             result = remap_autostart()
             print(f'Remapped autostart: {result}')
+
+        case argparse.Namespace(test_recording=True):
+            from .components.recording import _test
+            _test()
 
         case _:
             return False

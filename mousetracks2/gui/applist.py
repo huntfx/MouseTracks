@@ -6,8 +6,9 @@ import psutil
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from .ui import applist
-from ..applications import LOCAL_PATH, AppList
+from ..applications import AppList
 from ..constants import TRACKING_IGNORE, TRACKING_DISABLE
+from ..context import CTX
 
 
 PROCESS_LOAD_TEXT = 'Loading processes list...'
@@ -240,13 +241,12 @@ class AppListWindow(QtWidgets.QDialog):
     @QtCore.Slot()
     def open_applist(self) -> None:
         """Open AppList.txt."""
-        filename = LOCAL_PATH
         if sys.platform.startswith('darwin'):  # macOS
-            subprocess.run(['open', filename], check=True)
+            subprocess.run(['open', CTX.applist_path], check=True)
         elif os.name == 'nt':  # Windows
-            os.startfile(filename)
+            os.startfile(CTX.applist_path)
         elif os.name == 'posix':  # Linux / Unix
-            subprocess.run(['xdg-open', filename], check=True)
+            subprocess.run(['xdg-open', CTX.applist_path], check=True)
         else:
             raise RuntimeError(f'Unsupported OS: {os.name}')
 
