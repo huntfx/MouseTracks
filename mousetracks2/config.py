@@ -54,8 +54,11 @@ class GlobalConfig:
     def __post_init__(self) -> None:
         self.load()
 
-    def save(self, path: str | Path = GLOBAL_CONFIG_PATH) -> None:
+    def save(self, path: str | Path | None = None) -> None:
         """Save the config to a YAML file."""
+        if path is not None:
+            path = GLOBAL_CONFIG_PATH
+
         # Ensure the folder exists
         base_dir = os.path.dirname(path)
         if not os.path.exists(base_dir):
@@ -65,8 +68,11 @@ class GlobalConfig:
         with open(path, 'w', encoding='utf-8') as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
 
-    def load(self, path: str | Path = GLOBAL_CONFIG_PATH) -> None:
+    def load(self, path: str | Path | None = None) -> None:
         """Load the config from a YAML file, if it exists."""
+        if path is not None:
+            path = GLOBAL_CONFIG_PATH
+
         if os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
                 self.__dict__.update(yaml.safe_load(f))
