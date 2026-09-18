@@ -13,17 +13,18 @@ directly to the constructor on deserialisation.
 
 from __future__ import annotations
 
-import dataclasses
 import gzip
 import json
 import traceback
 import typing
 from collections.abc import Iterator
+from dataclasses import dataclass, field, fields
 from enum import Enum
 from pathlib import Path
-from typing import IO, Any
+from typing import Any, ClassVar, IO
 
 from . import ipc
+from ..constants import DEFAULT_PROFILE_NAME
 from ..types import Rect, RectList
 from ..utils.monitor import MonitorData
 
@@ -43,6 +44,38 @@ RECORDED_MESSAGE_TYPES: frozenset[type] = frozenset({
 })
 
 
+@dataclass
+class LiveState:
+    """Snapshot of tracking state, for restoring after playback and in new recordings."""
+
+    monitors: ipc.MonitorsChanged = field(default_factory=lambda: ipc.MonitorsChanged(data=MonitorData()))
+    profile: ipc.CurrentProfileChanged = field(default_factory=lambda: ipc.CurrentProfileChanged(DEFAULT_PROFILE_NAME, None))
+    mouse: ipc.MouseMove | None = None
+    thumbsticks: dict[tuple[int, ipc.ThumbstickMove.Thumbstick], ipc.ThumbstickMove] = field(default_factory=dict)
+
+    types: ClassVar[tuple[type[ipc.Message], ...]] = (
+        ipc.MonitorsChanged, ipc.CurrentProfileChanged, ipc.MouseMove, ipc.ThumbstickMove,
+    )
+
+    def __iter__(self) -> Iterator[ipc.Message]:
+        yield self.monitors
+        yield self.profile
+        if self.mouse is not None:
+            yield self.mouse
+        yield from self.thumbsticks.values()
+
+    def update(self, message: ipc.Message) -> None:
+        match message:
+            case ipc.MonitorsChanged():
+                self.monitors = message
+            case ipc.CurrentProfileChanged():
+                self.profile = message
+            case ipc.MouseMove():
+                self.mouse = message
+            case ipc.ThumbstickMove():
+                self.thumbsticks[message.gamepad, message.thumbstick] = message
+
+
 # --- Serialisation ---
 
 def _serialise_value(value: Any) -> Any:
@@ -60,7 +93,7 @@ def _serialise_value(value: Any) -> Any:
 
 def _build_serialiser(cls: type) -> Any:
     """Build a serialisation function for a message class."""
-    field_names = tuple(f.name for f in dataclasses.fields(cls) if f.init)
+    field_names = tuple(f.name for f in fields(cls) if f.init)
     cls_name = cls.__name__
 
     def serialiser(tick: int, message: ipc.Message) -> str:
@@ -109,10 +142,10 @@ def _convert_value(value: Any, hint: Any) -> Any:
 def _build_parser(cls: type) -> Any:
     """Build a deserialisation function for a message class."""
     hints = typing.get_type_hints(cls)
-    fields = [f for f in dataclasses.fields(cls) if f.init]
+    _fields = [f for f in fields(cls) if f.init]
 
     def parser(d: dict[str, Any]) -> ipc.Message:
-        return cls(**{f.name: _convert_value(d[f.name], hints[f.name]) for f in fields})
+        return cls(**{f.name: _convert_value(d[f.name], hints[f.name]) for f in _fields})
 
     return parser
 
