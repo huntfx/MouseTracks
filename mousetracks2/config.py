@@ -1,14 +1,10 @@
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, IO
 
 import yaml
 
 from .context import CTX
 from .utils import keycodes
-
-
-GLOBAL_CONFIG_PATH = CTX.data_dir / 'config.yaml'
 
 
 @dataclass
@@ -53,19 +49,16 @@ class GlobalConfig:
     def __post_init__(self) -> None:
         self.load()
 
-    def save(self, path: str | Path | None = None) -> None:
+    def save(self) -> None:
         """Save the config to a YAML file."""
-        path = Path(path) if path is not None else GLOBAL_CONFIG_PATH
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open('w', encoding='utf-8') as f:
+        CTX.config_path.parent.mkdir(parents=True, exist_ok=True)
+        with CTX.config_path.open('w', encoding='utf-8') as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
 
-    def load(self, path: str | Path | None = None) -> None:
+    def load(self) -> None:
         """Load the config from a YAML file, if it exists."""
-        path = Path(path) if path is not None else GLOBAL_CONFIG_PATH
-
-        if path.exists():
-            with path.open('r', encoding='utf-8') as f:
+        if CTX.config_path.exists():
+            with CTX.config_path.open('r', encoding='utf-8') as f:
                 self.__dict__.update(yaml.safe_load(f))
 
         # Create the config file if it doesn't exist
