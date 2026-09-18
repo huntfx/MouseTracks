@@ -93,6 +93,11 @@ class Context:
         return CTX.data_dir / 'config.yaml'
 
     @property
+    def applist_path(self) -> Path:
+        """Get the path to AppList.txt."""
+        return CTX.data_dir / 'AppList.txt'
+
+    @property
     def disable_splash(self) -> bool:
         """Disable the splash screen."""
         return self.cli.disable_splash

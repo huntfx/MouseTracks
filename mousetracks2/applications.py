@@ -29,8 +29,6 @@ DEFAULT_TEXT = (
     f'(such as a splash screen), use "{TRACKING_IGNORE}" as its name.'
 )
 
-LOCAL_PATH = CTX.data_dir / 'AppList.txt'
-
 REPO_PATH = REPO_DIR / 'config' / 'AppList.txt'
 
 APP_PATTERN = re.compile(r'^([^:\[\]]+)(?:\[([^\]]*)\])?(?::\s*(.*))?$')
@@ -138,8 +136,8 @@ class AppList:
                 print(f'Error downloading applist: {e}')
 
         # Update with any local changes
-        if LOCAL_PATH.exists():
-            self.load(LOCAL_PATH)
+        if CTX.applist_path.exists():
+            self.load(CTX.applist_path)
 
     def load(self, path: Path | str) -> None:
         """Load the contents from disk."""
@@ -165,7 +163,7 @@ class AppList:
 
     def save(self) -> None:
         """Save the sorted file contents to disk."""
-        with open(LOCAL_PATH, 'w', encoding='utf-8') as f:
+        with CTX.applist_path.open('w', encoding='utf-8') as f:
             f.write('\n'.join(_prepare_data(self.data)))
 
     def _match_exe(self, exe: str, full_paths: bool = False) -> Iterator[tuple[dict[str | None, str], str]]:
