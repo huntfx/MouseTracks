@@ -112,6 +112,7 @@ class NetworkSpeedStats:
         """Get the number of bytes sent."""
         return self.get().bytes_sent
 
+
 class MainWindow(QtWidgets.QMainWindow):
     """Window used to wrap the main program.
     This does not directly do any tracking, it is just meant as an
@@ -841,9 +842,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def update_current_network_stats(self) -> None:
-        """Update the data transfer statistics once per second.
-        This relies on the data
-        """
+        """Update the data transfer statistics once per second."""
         self.ui.stat_download_current.setText(format_network_speed(self._network_speed.bytes_recv))
         self.ui.stat_upload_current.setText(format_network_speed(self._network_speed.bytes_sent))
 
