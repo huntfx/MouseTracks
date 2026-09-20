@@ -2201,8 +2201,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """Ask the user to save.
         Returns True if the close event should proceed.
         """
-        # Pause the tracking
-        if self.state != ipc.TrackingState.Stopped:
+        # Pause the tracking / playback
+        if self.is_playback:
+            self.history_pause()
+        elif self.state != ipc.TrackingState.Stopped:
             self.component.send_data(ipc.PauseTracking())
 
         msg = AutoCloseMessageBox(self)
@@ -2215,7 +2217,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         match msg.exec_with_timeout('Saving automatically', self.config.shutdown_timeout):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                if self.state != ipc.TrackingState.Stopped:
+                if self.is_playback:
+                    self.history_play()
+                elif self.state != ipc.TrackingState.Stopped:
                     self.component.send_data(ipc.StartTracking())
                 return False
 
