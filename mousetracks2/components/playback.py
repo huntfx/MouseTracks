@@ -273,8 +273,8 @@ class Playback(MonitorComponent):
     def _export_history(self, path: str, start_percentage: float, end_percentage: float) -> None:
         """Export a slice of the history to disk."""
         if self._active_file is None:
-            first_tick = self._current_tick - self._history_length
-            total_ticks = self._history_length
+            first_tick = self._history[0][0] if self._history else self._current_tick
+            total_ticks = self._current_tick - first_tick
         else:
             first_tick = self._active_file_first_tick
             total_ticks = self._active_file_total_ticks
