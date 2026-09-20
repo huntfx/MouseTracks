@@ -2307,8 +2307,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """Get the paths to replay from a list of paths.
         If mixed or multiple paths, nothing will be returned.
         """
-        if len(paths) == 1 and paths[0].lower().endswith(RECORDING_EXT) and self._can_play_recording():
-            return list(paths)
+        if len(paths) == 1 and paths[0].lower().endswith(RECORDING_EXT):
+            if self._can_play_recording():
+                return list(paths)
+            print('[GUI] Path is valid recording, but GUI is not able to play back currently.')
         return []
 
     def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
@@ -2316,8 +2318,18 @@ class MainWindow(QtWidgets.QMainWindow):
         Mixed filetypes are rejected.
         """
         paths = [url.toLocalFile() for url in event.mimeData().urls()]
-        if self._get_valid_profile_import_paths(paths) or self._get_valid_replay_paths(paths):
+        print('[GUI] Dragged paths:')
+        for path in paths:
+            print(f'[GUI]     {path}')
+
+        if self._get_valid_profile_import_paths(paths):
+            print('[GUI] Accepting drop request for profile import.')
             event.acceptProposedAction()
+        elif self._get_valid_replay_paths(paths):
+            print('[GUI] Accepting drop request for replay.')
+            event.acceptProposedAction()
+        else:
+            print('[GUI] Refusing drop event - no validators passed.')
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         """Import each dropped profile file, or play back a dropped recording file."""
@@ -2783,7 +2795,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Determine if a dropped recording file can currently be played back.
         Playback is disabled while recording to disk.
         """
-        return not self.is_playback and not self.ui.recording_stop.isEnabled()
+        return not self.is_playback and not self.ui.recording_stop.isVisible()
 
     def _play_recording(self, path: str) -> None:
         """Start or restart playback of a recording file."""
