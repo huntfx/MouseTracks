@@ -2795,7 +2795,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Determine if a dropped recording file can currently be played back.
         Playback is disabled while recording to disk.
         """
-        return not self.is_playback and not self.ui.recording_stop.isEnabled()
+        return not self.is_playback and not self.ui.recording_stop.isVisible()
 
     def _play_recording(self, path: str) -> None:
         """Start or restart playback of a recording file."""
