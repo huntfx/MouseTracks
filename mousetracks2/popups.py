@@ -204,6 +204,26 @@ def show_playback_multiple_error(paths: list[str]) -> None:
     return _run_dialog(tk_action, console_action)
 
 
+def show_playback_invalid_file_error(path: str | Path) -> None:
+    """Show an error when a recording file can't be read.
+    It can be corrupt or missing.
+    """
+    from .dragdrop import IMPORT_TITLE, IMPORT_PLAYBACK_INVALID_ERROR as message
+    detail = f'File:\n    {os.path.basename(path)}'
+
+    print(message)
+    print(detail)
+
+    def tk_action() -> None:
+        from tkinter import messagebox
+        messagebox.showerror(title=IMPORT_TITLE, message=message, detail=detail)
+
+    def console_action() -> None:
+        input('Press enter to exit...')
+
+    return _run_dialog(tk_action, console_action)
+
+
 def show_legacy_import_warning(profile_name: str) -> bool:
     """Ask for confirmation before importing a legacy (pickle-based) profile file.
     Returns True if the user accepted.

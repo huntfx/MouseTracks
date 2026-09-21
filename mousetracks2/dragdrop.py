@@ -16,6 +16,8 @@ IMPORT_PROFILE_FILETYPE_ERROR = f'Mousetracks can only import valid {PROFILE_EXT
 
 IMPORT_PLAYBACK_MULTIPLE_ERROR = f'Mousetracks can only play a single {RECORDING_EXT} recording file.'
 
+IMPORT_PLAYBACK_INVALID_ERROR = 'Mousetracks was unable to read the recording file.'
+
 IMPORT_LEGACY_WARNING = 'This is a legacy profile format. Only import legacy profiles from sources you trust, as loading them is not guaranteed to be safe.'
 
 
