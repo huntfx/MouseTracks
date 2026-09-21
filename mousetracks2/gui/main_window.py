@@ -27,8 +27,9 @@ from ..colour import generate_colour_schemes
 from ..config import GlobalConfig
 from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE, RECORDING_EXT
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
+from ..components.recording import read_recording
 from ..context import CTX
-from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING
+from ..dragdrop import IMPORT_TITLE, IMPORT_MESSAGE, IMPORT_LEGACY_WARNING, IMPORT_PLAYBACK_INVALID_ERROR
 from ..dragdrop import ProfileImporter, ImportResultDisplay
 from ..enums import BlendMode, Channel
 from ..file import PROFILE_EXT, get_profile_names, get_filename, sanitise_profile_name, TrackingProfile
@@ -2799,6 +2800,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _play_recording(self, path: str) -> None:
         """Start or restart playback of a recording file."""
+        try:
+            next(read_recording(path), None)
+        except Exception:
+            msg = QtWidgets.QMessageBox(self)
+            msg.setWindowTitle(IMPORT_TITLE)
+            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+            msg.setText(IMPORT_PLAYBACK_INVALID_ERROR)
+            msg.setInformativeText(f'File:\n    {os.path.basename(path)}')
+            msg.exec()
+            return
+
         self._active_playback_file = path
         self.ui.playback_range.setValue((0, self.ui.playback_range.maximum()))
         self.component.send_data(ipc.PlayRecordingFile(path))
