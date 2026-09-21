@@ -1563,8 +1563,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.request_thumbnail()
 
             case ipc.PlaybackStopped():
-                QtWidgets.QApplication.restoreOverrideCursor()
-                self.setEnabled(True)
+                # Continue shutdown now message has been received
+                if self._is_closing:
+                    self.component.send_data(ipc.Save())
+                else:
+                    QtWidgets.QApplication.restoreOverrideCursor()
+                    self.setEnabled(True)
 
             case ipc.Exit():
                 self.shut_down(force=True)
@@ -2220,10 +2224,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
 
             case QtWidgets.QMessageBox.StandardButton.Yes:
-                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
                 self.setEnabled(False)
-                self.component.send_data(ipc.Save())
                 self._waiting_on_save = True
+
+                # Either exit playback mode or send a save signal
+                # If exiting playback, a save will be sent after
+                if not self.history_stop():
+                    QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+                    self.component.send_data(ipc.Save())
+
         return True
 
     def _handle_close_event(self) -> bool:
@@ -3362,12 +3371,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self._reset_render_counters()
 
     @QtCore.Slot()
-    def history_stop(self) -> None:
+    def history_stop(self) -> bool:
         """Stop history playback."""
         if CTX.playback_file is not None:
-            return
+            return False
         self._exit_playback_mode()
         self.component.send_data(ipc.StopPlayback())
+        return True
 
     @QtCore.Slot()
     def history_export(self) -> None:
