@@ -1563,12 +1563,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.request_thumbnail()
 
             case ipc.PlaybackStopped():
-                QtWidgets.QApplication.restoreOverrideCursor()
-                self.setEnabled(True)
-
                 # Continue shutdown now message has been received
                 if self._is_closing:
                     self.component.send_data(ipc.Save())
+                else:
+                    QtWidgets.QApplication.restoreOverrideCursor()
+                    self.setEnabled(True)
 
             case ipc.Exit():
                 self.shut_down(force=True)
