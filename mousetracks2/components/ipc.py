@@ -585,11 +585,12 @@ class ExportStatsSuccessful(Message):
 
 @dataclass
 class HistoryExported(Message):
-    """Notify the GUI that a history export has been saved successfully."""
+    """Notify the GUI of a history export or its error."""
 
     target: Target = field(default=Target.GUI, init=False)
     path: str
-    duration_ticks: int
+    duration_ticks: int = 0
+    error: str | None = None
 
 
 @dataclass
@@ -793,9 +794,10 @@ class StopRecording(Message):
 
 @dataclass
 class RecordingComplete(Message):
-    """Notify GUI that recording has been saved successfully."""
+    """Notify GUI once recording has finished and if there was an error."""
 
     target: Target = field(default=Target.GUI, init=False)
+    error: str | None = None
 
 
 @dataclass

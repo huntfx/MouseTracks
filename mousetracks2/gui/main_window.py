@@ -1745,12 +1745,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
 
             case ipc.HistoryExported():
-                msg = AutoCloseMessageBox(self)
-                msg.setWindowTitle('Export Successful')
-                msg.setText(f'"{message.path}" was successfully saved.')
-                msg.setInformativeText(f'Exported {format_ticks(message.duration_ticks)} of activity history.')
-                msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
-                msg.exec_with_timeout('Closing notification', self.config.export_notification_timeout)
+                if message.error is None:
+                    self.notify(f'Exported {format_ticks(message.duration_ticks)} of activity history.',
+                                title='Export Successful')
+                else:
+                    self.notify(f'Unable to export activity history: {message.error}',
+                                title='Export Failed')
 
             case ipc.ReloadAppList():
                 self._last_app_reload_time = int(time.time() * 10)
@@ -1777,11 +1777,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.notify(message.content)
 
             case ipc.RecordingComplete():
-                self.notify('Recording saved.')
                 self.ui.recording_start.setVisible(True)
                 self.ui.recording_stop.setVisible(False)
                 self.ui.menu_recording_start.setEnabled(True)
                 self.ui.menu_recording_stop.setEnabled(False)
+
+                if message.error is None:
+                    self.notify('Recording saved.')
+                else:
+                    self.notify(f'Unable to start recording: {message.error}', title='Recording Failed')
 
             case ipc.HistoryLength():
                 self._history_length_ticks = message.ticks

@@ -300,11 +300,17 @@ class Playback(MonitorComponent):
 
         # Write to file
         print(f'[Playback] Writing to {path}')
-        with open_recording(path) as f:
-            write_event(f, first_tick, ipc.Tick(first_tick, first_timestamp))
-            for tick, msg in events:
-                write_event(f, tick, msg)
-            write_event(f, last_tick, ipc.Tick(last_tick, last_timestamp))
+        try:
+            with open_recording(path) as f:
+                write_event(f, first_tick, ipc.Tick(first_tick, first_timestamp))
+                for tick, msg in events:
+                    write_event(f, tick, msg)
+                write_event(f, last_tick, ipc.Tick(last_tick, last_timestamp))
+
+        except PermissionError as e:
+            print(f'[Playback] Failed to write to {path}: {e}')
+            self.send_data(ipc.HistoryExported(path=path, error=str(e)))
+            return
 
         # Notify the GUI it's saved
         print(f'[Playback] History saved to {path}')
