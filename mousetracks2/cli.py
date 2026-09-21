@@ -444,10 +444,12 @@ def run_cli_function(cli: CLI) -> bool:
     """Run a single function and quit."""
     match cli.args:
         case argparse.Namespace(paths=paths) if paths:
+            from .components.recording import read_recording
             from .constants import PROFILE_EXT, RECORDING_EXT
             from .dragdrop import ProfileImporter
             from .popups import (show_legacy_import_warning, show_import_result_dialog,
-                                 show_invalid_files_error, show_playback_multiple_error)
+                                 show_invalid_files_error, show_playback_multiple_error,
+                                 show_playback_invalid_file_error)
 
             # Split the input paths by extension
             extension_groups: dict[str, list[str]] = defaultdict(list)
@@ -474,7 +476,16 @@ def run_cli_function(cli: CLI) -> bool:
                     show_playback_multiple_error(recordings)
                     return True
 
-                cli.playback_file = Path(recordings[0])
+                # Verify the file can be read
+                recording_path = Path(recordings[0])
+                try:
+                    next(read_recording(str(recording_path)), None)
+                except (FileNotFoundError, OSError):
+                    show_playback_invalid_file_error(recording_path)
+                    return True
+
+                # Update the data dir to a temp location to allow multiple loads
+                cli.playback_file = recording_path
                 if cli.data_dir is None:
                     import tempfile
                     cli.data_dir = Path(tempfile.mkdtemp(prefix='mousetracks_playback_'))
