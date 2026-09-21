@@ -325,11 +325,20 @@ class Hub:
                     self._current_timestamp = message.timestamp
 
                 case ipc.StartRecording():
-                    self._recording = open_recording(message.path)
-                    write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
-                    # Start the recording with the current monitor/profile state
-                    for live_message in self._live_state:
-                        write_event(self._recording, self._current_tick, live_message)
+                    print('[Hub] Writing to {message.path}')
+                    try:
+                        self._recording = open_recording(message.path)
+
+                    except PermissionError as e:
+                        print(f'[Playback] Failed to write to {message.path}: {e}')
+                        self._recording = None
+                        self._q_main.put(ipc.RecordingComplete(error=str(e)))
+
+                    else:
+                        write_event(self._recording, self._current_tick, ipc.Tick(self._current_tick, self._current_timestamp))
+                        # Start the recording with the current monitor/profile state
+                        for live_message in self._live_state:
+                            write_event(self._recording, self._current_tick, live_message)
 
                 case ipc.StopRecording():
                     if self._recording is not None:
