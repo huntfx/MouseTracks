@@ -167,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state = ipc.TrackingState.Paused
         self.is_playback = False
         self._playback_running = False
+        self._playback_playing = False
         self._playback_seeking = False
         self._seek_in_progress = False
         self._playback_monitor_size: tuple[int, int] | None = None
@@ -2205,8 +2206,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """Ask the user to save.
         Returns True if the close event should proceed.
         """
-        # Pause the tracking
-        if self.state != ipc.TrackingState.Stopped:
+        # Pause the tracking / playback
+        was_playing = self.is_playback and self._playback_playing
+        was_tracking = not self.is_playback and self.state == ipc.TrackingState.Running
+        if self.is_playback:
+            self.history_pause()
+        elif self.state != ipc.TrackingState.Stopped:
             self.component.send_data(ipc.PauseTracking())
 
         msg = AutoCloseMessageBox(self)
@@ -2219,7 +2224,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         match msg.exec_with_timeout('Saving automatically', self.config.shutdown_timeout):
             case QtWidgets.QMessageBox.StandardButton.Cancel:
-                if self.state != ipc.TrackingState.Stopped:
+                # Restore the previous state of tracking / playback
+                if was_playing:
+                    self.history_play()
+                if was_tracking:
                     self.component.send_data(ipc.StartTracking())
                 return False
 
@@ -3273,6 +3281,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _set_playback_playing(self, playing: bool) -> None:
         """Reflect whether the replay is currently advancing in the play/pause controls."""
+        self._playback_playing = playing
         self.ui.thumbnail.playback_overlay.playback_state = playing
         self.ui.playback_play.setVisible(not playing)
         self.ui.playback_pause.setVisible(playing)
