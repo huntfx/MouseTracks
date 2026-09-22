@@ -8,8 +8,9 @@ import psutil
 
 from . import ipc
 from .abstract import Component
-from ..applications import AppList, LOCAL_PATH
+from ..applications import AppList
 from ..constants import APP_BORDER_TOLERANCE, DEFAULT_PROFILE_NAME, TRACKING_IGNORE
+from ..context import CTX
 from ..exceptions import ExitRequest
 from ..types import RectList
 from ..utils.system import Window, hide_child_process, monitor_locations
@@ -194,8 +195,8 @@ class AppDetection(Component):
                 raise RuntimeError('[Application Detection] Test Exception')
 
             case ipc.ReloadAppList():
-                self.applist.load(LOCAL_PATH)
-                print(f'[Application Detection] Successfully reloaded "{LOCAL_PATH}"')
+                self.applist.load(CTX.applist_path)
+                print(f'[Application Detection] Successfully reloaded "{CTX.applist_path}"')
 
     def run(self) -> None:
         """Listen for events to process."""

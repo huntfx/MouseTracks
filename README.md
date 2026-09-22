@@ -67,6 +67,10 @@ MouseTracks is and will always remain free, but if you enjoy using it and would 
   All internal rendering settings can be edited and previewed live in the GUI.
   Go one step further and use the layer blending modes to combine multiple renders together.
 
+- ### History & Replay
+  Scrub back and replay recently tracked activity at any time.
+  Record or export to disk to play back later or share with others.
+
 ---
 
 ## Installation (v2.0)

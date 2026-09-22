@@ -157,7 +157,8 @@ def generate_colour_lut(*colour_list: tuple[int, ...], input_bit_depth: int,
 def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typing.ArrayLike]],
            width: int | None = None, height: int | None = None, sampling: int = 1, lock_aspect: bool = True,
            linear: bool = False, blur: float = 0.0, contrast: float = 1.0, clipping: float = 0.0,
-           interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0, invert: bool = False) -> np.ndarray:
+           interpolation_order: Literal[0, 1, 2, 3, 4, 5] = 0, invert: bool = False,
+           empty_size: tuple[int, int] | None = None) -> np.ndarray:
     """Combine a group of arrays into a single array for rendering.
 
     Parameters:
@@ -188,6 +189,9 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
             Recommended to leave at 0, otherwise the arrays will be
             interpolated before the colours are mapped.
         invert: Invert the values / colours.
+        empty_size: Resolution to use if there's no data.
+            This is used to get the aspect ratio.
+            Ignored if there's any data, since the real aspect ratio takes priority.
     """
     # Calculate width / height
     all_arrays = []
@@ -195,6 +199,8 @@ def render(colour_map: str, positional_arrays: dict[tuple[int, int], list[np.typ
         all_arrays.extend(arrays)
     if all_arrays:
         width, height = array_target_resolution(all_arrays, width, height, lock_aspect)
+    elif empty_size is not None:
+        width, height = empty_size
     if not width or not height:
         raise EmptyRenderError
 
