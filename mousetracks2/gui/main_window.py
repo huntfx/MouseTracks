@@ -2834,6 +2834,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._active_playback_file = path
         self.ui.playback_range.setValue((0, self.ui.playback_range.maximum()))
+        self._enter_playback_mode()
         self.component.send_data(ipc.PlayRecordingFile(path))
 
     @QtCore.Slot()
@@ -3322,6 +3323,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start_percentage = start / total
         end_percentage = end / total
+        self._enter_playback_mode()
         self.component.send_data(ipc.StartPlayback(options=ipc.PlaybackOptions(
             start_percentage=start_percentage,
             end_percentage=end_percentage,
@@ -3353,8 +3355,11 @@ class MainWindow(QtWidgets.QMainWindow):
         as they are directly tied to live profiles, so would require
         refactoring to integrate with playback mode.
         """
-        if not self.is_playback:
-            self._history_length_snapshot = self._history_length_ticks
+        if self.is_playback:
+            self._set_playback_playing(not paused)
+            return
+
+        self._history_length_snapshot = self._history_length_ticks
         self.is_playback = True
         self._playback_running = True
         self._set_playback_playing(not paused)
