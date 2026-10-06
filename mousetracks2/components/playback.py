@@ -354,8 +354,9 @@ class Playback(MonitorComponent):
                 elif self._seek_tick is not None:
                     try:
                         while self._seek_pos <= self._seek_tick:
-                            yield self._seek_pos
+                            pos = self._seek_pos
                             self._seek_pos += 1
+                            yield pos
                         offset = self._seek_tick - tick
 
                     finally:
