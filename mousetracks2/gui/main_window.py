@@ -3356,6 +3356,7 @@ class MainWindow(QtWidgets.QMainWindow):
         refactoring to integrate with playback mode.
         """
         if self.is_playback:
+            self._playback_running = True
             self._set_playback_playing(not paused)
             return
 
