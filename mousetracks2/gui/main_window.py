@@ -1790,6 +1790,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.HistoryLength():
                 self._history_length_ticks = message.ticks
+
+                # The snapshot taken on playback mode is outdated, it needs overriding if a file is dropped in
+                if self.is_playback and self._active_playback_file is not None:
+                    self._history_length_snapshot = message.ticks
+
                 self._update_playback_range_labels()
 
     def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
