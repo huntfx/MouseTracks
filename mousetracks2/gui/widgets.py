@@ -262,8 +262,13 @@ class ClickSlider(QtWidgets.QSlider):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             ratio = event.position().x() / self.width()
             self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
+            self.sliderPressed.emit()
         super().mousePressEvent(event)
 
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.sliderReleased.emit()
+        super().mouseReleaseEvent(event)
 
 class MappedFloatSlider(ClickSlider):
     """A QSlider that allows a custom float mapping."""
