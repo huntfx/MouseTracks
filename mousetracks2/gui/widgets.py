@@ -259,13 +259,38 @@ class ClickSlider(QtWidgets.QSlider):
     mapped_value_changed = QtCore.Signal(float)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Edit the slider on click.
+
+        If clicking right at the edge, the sliderPressed signal may not
+        emit, so manually emit it.
+        """
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            ratio = event.position().x() / self.width()
-            self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
+            # Get the component sizes
+            opt = QtWidgets.QStyleOptionSlider()
+            self.initStyleOption(opt)
+            cc = QtWidgets.QStyle.ComplexControl.CC_Slider
+            style = self.style()
+            groove = style.subControlRect(cc, opt, QtWidgets.QStyle.SubControl.SC_SliderGroove, self)
+            handle = style.subControlRect(cc, opt, QtWidgets.QStyle.SubControl.SC_SliderHandle, self)
+
+            # Account for the handle width
+            slider_min = groove.x()
+            slider_max = groove.right() - handle.width() + 1
+            pos = event.position().x() - handle.width() / 2
+            value = QtWidgets.QStyle.sliderValueFromPosition(
+                self.minimum(),
+                self.maximum(),
+                round(pos - slider_min),
+                slider_max - slider_min,
+                opt.upsideDown,
+            )
+
+            self.setValue(value)
             self.sliderPressed.emit()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Emit the released signal on click."""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.sliderReleased.emit()
         super().mouseReleaseEvent(event)
