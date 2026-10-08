@@ -254,16 +254,18 @@ class ResizableImage(QtWidgets.QLabel):
 
 
 class ClickSlider(QtWidgets.QSlider):
-    """A QSlider that jumps to the clicked position on left click."""
+    """A QSlider that jumps to the clicked position on left click.
+
+    Note that `sliderPressed` and `sliderReleased` may not emit if
+    clicking right at the edge, so use `clicked` and `released` instead.
+    """
 
     mapped_value_changed = QtCore.Signal(float)
+    clicked = QtCore.Signal()
+    released = QtCore.Signal()
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        """Edit the slider on click.
-
-        If clicking right at the edge, the sliderPressed signal may not
-        emit, so manually emit it.
-        """
+        """Jump the slider to the clicked position."""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             # Get the component sizes
             opt = QtWidgets.QStyleOptionSlider()
@@ -286,13 +288,13 @@ class ClickSlider(QtWidgets.QSlider):
             )
 
             self.setValue(value)
-            self.sliderPressed.emit()
+            self.clicked.emit()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         """Emit the released signal on click."""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self.sliderReleased.emit()
+            self.released.emit()
         super().mouseReleaseEvent(event)
 
 class MappedFloatSlider(ClickSlider):
