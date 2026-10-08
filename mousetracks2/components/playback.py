@@ -469,8 +469,7 @@ class Playback(MonitorComponent):
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
             # Skip over empty ticks to avoid waiting on them
-            if self._options.skip_empty_ticks:
-                assert next_event is not None  # Keep mypy happy
+            if next_event is not None and self._options.skip_empty_ticks:
                 ticks_until_action = stream.next_active_tick(next_event) - recorded_tick - 1
 
                 # Don't jump past the seek target
@@ -499,7 +498,8 @@ class Playback(MonitorComponent):
                 self.send_data(message)
                 next_event = next(stream, None)
 
-            if next_event is None:
+            # The seek still needs to reach its target even if there are no more events
+            if next_event is None and self._seek_tick is None:
                 break
 
         self.send_data(ipc.PlaybackFinished())
