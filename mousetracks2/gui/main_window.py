@@ -429,8 +429,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.playback_range.sliderPressed.connect(self._playback_range_pressed)
         self.ui.playback_range.sliderReleased.connect(self._playback_range_released)
         self.ui.playback_export.clicked.connect(self.history_export)
-        self.ui.playback_progress.sliderPressed.connect(self._playback_slider_pressed)
-        self.ui.playback_progress.sliderReleased.connect(self._playback_slider_released)
+        self.ui.playback_progress.clicked.connect(self._playback_slider_pressed)
+        self.ui.playback_progress.released.connect(self._playback_slider_released)
         self.ui.tray_context_menu.aboutToShow.connect(self.update_tray_menu)
         self.timer_activity.timeout.connect(self.update_activity_preview)
         self.timer_activity.timeout.connect(self.update_time_since_save)
@@ -1790,6 +1790,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             case ipc.HistoryLength():
                 self._history_length_ticks = message.ticks
+
+                # The snapshot taken on playback mode is outdated, it needs overriding if a file is dropped in
+                if self.is_playback and self._active_playback_file is not None:
+                    self._history_length_snapshot = message.ticks
+
                 self._update_playback_range_labels()
 
     def _handle_save_complete(self, message: ipc.SaveComplete) -> None:
@@ -2834,6 +2839,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._active_playback_file = path
         self.ui.playback_range.setValue((0, self.ui.playback_range.maximum()))
+        self._enter_playback_mode()
         self.component.send_data(ipc.PlayRecordingFile(path))
 
     @QtCore.Slot()
@@ -3322,6 +3328,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start_percentage = start / total
         end_percentage = end / total
+        self._enter_playback_mode()
         self.component.send_data(ipc.StartPlayback(options=ipc.PlaybackOptions(
             start_percentage=start_percentage,
             end_percentage=end_percentage,
@@ -3344,6 +3351,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.key_press_count = 0
         self.last_render = (self.render_type, -1)
         self.pause_redraw = 0
+        self._pixel_redraw_queue = []
         self._thumbnail_redraw_required = False
 
     def _enter_playback_mode(self, paused: bool = False) -> None:
@@ -3353,8 +3361,12 @@ class MainWindow(QtWidgets.QMainWindow):
         as they are directly tied to live profiles, so would require
         refactoring to integrate with playback mode.
         """
-        if not self.is_playback:
-            self._history_length_snapshot = self._history_length_ticks
+        if self.is_playback:
+            self._playback_running = True
+            self._set_playback_playing(not paused)
+            return
+
+        self._history_length_snapshot = self._history_length_ticks
         self.is_playback = True
         self._playback_running = True
         self._set_playback_playing(not paused)

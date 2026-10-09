@@ -254,16 +254,48 @@ class ResizableImage(QtWidgets.QLabel):
 
 
 class ClickSlider(QtWidgets.QSlider):
-    """A QSlider that jumps to the clicked position on left click."""
+    """A QSlider that jumps to the clicked position on left click.
+
+    Note that `sliderPressed` and `sliderReleased` may not emit if
+    clicking right at the edge, so use `clicked` and `released` instead.
+    """
 
     mapped_value_changed = QtCore.Signal(float)
+    clicked = QtCore.Signal()
+    released = QtCore.Signal()
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Jump the slider to the clicked position."""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            ratio = event.position().x() / self.width()
-            self.setValue(round(self.minimum() + ratio * (self.maximum() - self.minimum())))
+            # Get the component sizes
+            opt = QtWidgets.QStyleOptionSlider()
+            self.initStyleOption(opt)
+            cc = QtWidgets.QStyle.ComplexControl.CC_Slider
+            style = self.style()
+            groove = style.subControlRect(cc, opt, QtWidgets.QStyle.SubControl.SC_SliderGroove, self)
+            handle = style.subControlRect(cc, opt, QtWidgets.QStyle.SubControl.SC_SliderHandle, self)
+
+            # Account for the handle width
+            slider_min = groove.x()
+            slider_max = groove.right() - handle.width() + 1
+            pos = event.position().x() - handle.width() / 2
+            value = QtWidgets.QStyle.sliderValueFromPosition(
+                self.minimum(),
+                self.maximum(),
+                round(pos - slider_min),
+                slider_max - slider_min,
+                opt.upsideDown,
+            )
+
+            self.setValue(value)
+            self.clicked.emit()
         super().mousePressEvent(event)
 
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Emit the released signal on click."""
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.released.emit()
+        super().mouseReleaseEvent(event)
 
 class MappedFloatSlider(ClickSlider):
     """A QSlider that allows a custom float mapping."""
