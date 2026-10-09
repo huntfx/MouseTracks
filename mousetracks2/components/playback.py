@@ -469,7 +469,8 @@ class Playback(MonitorComponent):
             self.send_data(ipc.Tick(recorded_tick, timestamp))
 
             # Skip over empty ticks to avoid waiting on them
-            if next_event is not None and self._options.skip_empty_ticks:
+            # The skip works by fast forwarding the target tick for a single batch call
+            if next_event is not None and (self._options.skip_empty_ticks or self._seek_tick is not None):
                 ticks_until_action = stream.next_active_tick(next_event) - recorded_tick - 1
 
                 # Don't jump past the seek target
