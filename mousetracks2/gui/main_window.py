@@ -3351,6 +3351,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.key_press_count = 0
         self.last_render = (self.render_type, -1)
         self.pause_redraw = 0
+        self._pixel_redraw_queue = []
         self._thumbnail_redraw_required = False
 
     def _enter_playback_mode(self, paused: bool = False) -> None:
