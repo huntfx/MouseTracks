@@ -470,19 +470,15 @@ class Playback(MonitorComponent):
 
             # Skip over empty ticks to avoid waiting on them
             # The skip works by fast forwarding the target tick for a single batch call
-            if next_event is not None and (self._options.skip_empty_ticks or self._seek_tick is not None):
-                ticks_until_action = stream.next_active_tick(next_event) - recorded_tick - 1
-
-                # Don't jump past the seek target
-                if self._seek_tick is not None:
-                    ticks_until_action = min(ticks_until_action, self._seek_tick - tick)
-
-                jump = max(0, ticks_until_action)
+            if self._seek_tick is not None:
+                jump = max(0, self._seek_tick - tick)
                 recorded_tick += jump
-                if self._seek_tick is not None:
-                    self._seek_pos += jump
-                else:
-                    tick_offset += jump
+                self._seek_pos += jump
+
+            elif next_event is not None and self._options.skip_empty_ticks:
+                jump = max(0, stream.next_active_tick(next_event) - recorded_tick - 1)
+                recorded_tick += jump
+                tick_offset += jump
 
             # Process events for the current tick
             while next_event is not None and next_event[0] <= recorded_tick:
