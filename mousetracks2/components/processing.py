@@ -543,12 +543,13 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Failed to save {profile_name}')
         return False
 
-    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str]]:
+    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str], list[str]]:
         """Save all loaded profiles to disk, unloading unmodified ones.
         If `profile_name` is given, only that profile is processed.
         """
         succeeded: list[str] = []
         failed: list[str] = []
+        unloaded: list[str] = []
 
         profile_names = []
         if profile_name is not None:
@@ -562,12 +563,13 @@ class Processing(AppComponent, MonitorComponent):
             if not profile.is_modified:
                 print(f'[Processing] Unloading profile: {name}')
                 del self.all_profiles[name]
+                unloaded.append(name)
             elif self._save(name):
                 succeeded.append(name)
             else:
                 failed.append(name)
 
-        return succeeded, failed
+        return succeeded, failed, unloaded
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
@@ -793,8 +795,8 @@ class Processing(AppComponent, MonitorComponent):
                 self.focused_app = Application(message.name, message.rects)
 
             case ipc.Save():
-                succeeded, failed = self.save(message.profile_name)
-                self.send_data(ipc.SaveComplete(succeeded, failed))
+                succeeded, failed, unloaded = self.save(message.profile_name)
+                self.send_data(ipc.SaveComplete(succeeded, failed, unloaded))
 
             case ipc.DataTransfer():
                 self._handle_data_transfer(self.profile, message)

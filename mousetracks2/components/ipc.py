@@ -381,6 +381,7 @@ class SaveComplete(Message):
     target: Target = field(default=Target.GUI, init=False)
     succeeded: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+    unloaded: list[str] = field(default_factory=list)
 
 
 @dataclass

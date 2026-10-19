@@ -1801,7 +1801,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Handle a save completion message."""
         self._last_save_message = message
         self._last_save_time = int(time.time() * 10)
-        self.mark_profiles_saved(*message.succeeded)
+        self.mark_profiles_saved(*message.succeeded, *message.unloaded)
         self.mark_profiles_unsaved(self.component.focused_app.name)
         self._redraw_profile_combobox()
 
