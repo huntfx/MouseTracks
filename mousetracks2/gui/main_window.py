@@ -1677,6 +1677,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.SaveComplete():
                 self._handle_save_complete(message)
 
+            case ipc.ProfileUnloaded():
+                self.mark_profiles_saved(message.name)
+
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
 
@@ -1801,7 +1804,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Handle a save completion message."""
         self._last_save_message = message
         self._last_save_time = int(time.time() * 10)
-        self.mark_profiles_saved(*message.succeeded, *message.unloaded)
+        self.mark_profiles_saved(*message.succeeded)
         self.mark_profiles_unsaved(self.component.focused_app.name)
         self._redraw_profile_combobox()
 

@@ -8,7 +8,7 @@ from collections import defaultdict
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Generic, Iterator, Literal, Self, Sequence, Type, TypeVar, overload
+from typing import Any, Callable, Generic, Iterator, Literal, Self, Sequence, Type, TypeVar, overload
 from uuid import uuid4
 
 import numpy as np
@@ -795,12 +795,14 @@ class TrackingProfileLoader(MutableMapping):
     If it's an empty string, then this will all work in memory.
     """
 
-    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = None):
+    def __init__(self, max_profiles: int = 5, profile_dir: Path | str | None = None,
+                 on_evict: Callable[[str], None] | None = None):
         self.max_profiles = max_profiles
         if profile_dir is None:
             profile_dir = CTX.profile_dir
         self._profile_dir = Path(profile_dir) if profile_dir else None
         self._profiles: dict[str, TrackingProfile] = {}
+        self._on_evict = on_evict
 
     def __setitem__(self, profile_name: str, profile: TrackingProfile) -> None:
         sanitised = sanitise_profile_name(profile_name)
@@ -868,10 +870,12 @@ class TrackingProfileLoader(MutableMapping):
                  name, profile)
                 for name, profile in self._profiles.items())
 
-        for i, (is_modified, _load_time, name, _profile) in enumerate(sorted(data, reverse=True)):
+        for i, (is_modified, _load_time, name, profile) in enumerate(sorted(data, reverse=True)):
             if i < self.max_profiles or is_modified or name == keep_loaded:
                 continue
             del self._profiles[name]
+            if self._on_evict is not None:
+                self._on_evict(profile.name)
 
 
 def sanitise_profile_name(profile_name: str) -> str:

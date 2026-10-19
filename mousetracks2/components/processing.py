@@ -63,7 +63,7 @@ class Processing(AppComponent, MonitorComponent):
         self.previous_mouse_click: PreviousMouseClick | None = None
 
         # Load in the default profile
-        self.all_profiles = self._all_profiles = TrackingProfileLoader()
+        self.all_profiles = self._all_profiles = TrackingProfileLoader(on_evict=self._profile_evicted)
 
         self.config = GlobalConfig()
 
@@ -543,13 +543,16 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Failed to save {profile_name}')
         return False
 
-    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str], list[str]]:
+    def _profile_evicted(self, profile_name: str) -> None:
+        """Notify the GUI that a profile has been unloaded."""
+        self.send_data(ipc.ProfileUnloaded(profile_name))
+
+    def save(self, profile_name: str | None = None) -> tuple[list[str], list[str]]:
         """Save all loaded profiles to disk, unloading unmodified ones.
         If `profile_name` is given, only that profile is processed.
         """
         succeeded: list[str] = []
         failed: list[str] = []
-        unloaded: list[str] = []
 
         profile_names = []
         if profile_name is not None:
@@ -563,13 +566,13 @@ class Processing(AppComponent, MonitorComponent):
             if not profile.is_modified:
                 print(f'[Processing] Unloading profile: {name}')
                 del self.all_profiles[name]
-                unloaded.append(name)
+                self._profile_evicted(name)
             elif self._save(name):
                 succeeded.append(name)
             else:
                 failed.append(name)
 
-        return succeeded, failed, unloaded
+        return succeeded, failed
 
     def _process_message(self, message: ipc.Message) -> None:
         """Process an item of data."""
@@ -755,7 +758,7 @@ class Processing(AppComponent, MonitorComponent):
 
             # When playback starts/restarts, switch to empty tracking profiles
             case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
-                self.all_profiles = TrackingProfileLoader(profile_dir='')
+                self.all_profiles = TrackingProfileLoader(profile_dir='', on_evict=self._profile_evicted)
                 self.previous_mouse_click = None
                 self.is_playback = True
 
@@ -795,8 +798,8 @@ class Processing(AppComponent, MonitorComponent):
                 self.focused_app = Application(message.name, message.rects)
 
             case ipc.Save():
-                succeeded, failed, unloaded = self.save(message.profile_name)
-                self.send_data(ipc.SaveComplete(succeeded, failed, unloaded))
+                succeeded, failed = self.save(message.profile_name)
+                self.send_data(ipc.SaveComplete(succeeded, failed))
 
             case ipc.DataTransfer():
                 self._handle_data_transfer(self.profile, message)
