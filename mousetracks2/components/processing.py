@@ -63,7 +63,8 @@ class Processing(AppComponent, MonitorComponent):
         self.previous_mouse_click: PreviousMouseClick | None = None
 
         # Load in the default profile
-        self.all_profiles = self._all_profiles = TrackingProfileLoader(on_evict=self._profile_evicted)
+        self.all_profiles = self._all_profiles = TrackingProfileLoader()
+        self.all_profiles.evicted.connect(self._profile_evicted)
 
         self.config = GlobalConfig()
 
@@ -758,7 +759,8 @@ class Processing(AppComponent, MonitorComponent):
 
             # When playback starts/restarts, switch to empty tracking profiles
             case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
-                self.all_profiles = TrackingProfileLoader(profile_dir='', on_evict=self._profile_evicted)
+                self.all_profiles = TrackingProfileLoader(profile_dir='')
+                self.all_profiles.evicted.connect(self._profile_evicted)
                 self.previous_mouse_click = None
                 self.is_playback = True
 
