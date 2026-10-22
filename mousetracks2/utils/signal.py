@@ -153,6 +153,41 @@ class Signal:
 
         self._args_default: list[Any] = []
         self._kwargs_default: dict[str, Any] = {}
+        self._name: str | None = None
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        """Record the class attribute name of this signal."""
+        self._name = name
+
+    def __get__(self, instance: object | None, owner: type | None = None) -> Self:
+        """Give each instance its own signal.
+
+        This is called when the signal is defined as a class attribute,
+        as each instance of the class needs its own copy of the signal.
+        """
+        if instance is None:
+            return self
+        bound = self._fork_instance()
+        assert self._name is not None
+        instance.__dict__[self._name] = bound
+        return bound
+
+    def _fork_instance(self) -> Self:
+        # pylint: disable=protected-access
+        """Create a shared instance fork.
+        This is used to create separate instances that share everything
+        but connections.
+        """
+        bound = object.__new__(type(self))
+        bound._arg_types = self._arg_types
+        bound._kwarg_types = self._kwarg_types
+        bound._num_args = self._num_args
+        bound._num_kwargs = self._num_kwargs
+        bound._args_default = self._args_default
+        bound._kwargs_default = self._kwargs_default
+        bound._name = self._name
+        bound._connections = [[] for _ in self._connections]
+        return bound
 
     def connect(self, func: Callable) -> None:
         """Connect a function to a signal.
@@ -281,7 +316,7 @@ class Signal:
             for connection in connections:
                 connection(*connection_args, **connection_kwargs)
 
-    def defaults(self, *args_: Any, **kwargs: Any) -> None:
+    def defaults(self, *args_: Any, **kwargs: Any) -> Self:
         """Set default values for emit() to use.
         These work similar to `namedtuple`, in order but filling in the
         right most slice of function arguments.
@@ -298,6 +333,7 @@ class Signal:
         self._check_kwarg_types(kwargs, self._kwarg_types[0])
         self._args_default = args
         self._kwargs_default = kwargs
+        return self
 
 
 class _LightweightTest:
@@ -458,9 +494,8 @@ class _TestSignal(_LightweightTest):
         calls = []
         def func(x, y): calls.append((x, y))  # type: ignore[no-untyped-def]
 
-        sig = Signal(str, int)
+        sig = Signal(str, int).defaults(5)
         sig.connect(func)
-        sig.defaults(5)
         sig.emit('hi')
 
         assert calls == [('hi', 5)]
@@ -469,9 +504,8 @@ class _TestSignal(_LightweightTest):
         calls = []
         def func(x, y): calls.append((x, y))  # type: ignore[no-untyped-def]
 
-        sig = Signal(x=int, y=int)
+        sig = Signal(x=int, y=int).defaults(y=5)
         sig.connect(func)
-        sig.defaults(y=5)
         sig.emit(x=1)
 
         assert calls == [(1, 5)]
@@ -479,9 +513,8 @@ class _TestSignal(_LightweightTest):
     def test_defaults_named_missing_required_raises(self) -> None:
         def func(x, y): ...  # type: ignore[no-untyped-def]
 
-        sig = Signal(x=int, y=int)
+        sig = Signal(x=int, y=int).defaults(y=5)
         sig.connect(func)
-        sig.defaults(y=5)
 
         with self.assert_raises(TypeError):
             sig.emit(y=5)  # x still required
@@ -490,16 +523,14 @@ class _TestSignal(_LightweightTest):
         calls = []
         def func(s, *, enable, x, y): calls.append((s, enable, x, y))  # type: ignore[no-untyped-def]
 
-        sig = Signal(str, enable=bool, x=int, y=int)
+        sig = Signal(str, enable=bool, x=int, y=int).defaults(True, x=0, y=0)
         sig.connect(func)
-        sig.defaults(True, x=0, y=0)
         sig.emit('hi')
 
         assert calls == [('hi', True, 0, 0)]
 
     def test_defaults_cannot_set_twice(self) -> None:
-        sig = Signal(int)
-        sig.defaults(1)
+        sig = Signal(int).defaults(1)
 
         with self.assert_raises(RuntimeError):
             sig.defaults(2)
@@ -538,9 +569,8 @@ class _TestSignal(_LightweightTest):
         calls = []
         def func(s, *, x, y, z): calls.append((s, x, y, z))  # type: ignore[no-untyped-def]
 
-        sig = Signal(str, x=int, y=int, z=int)
+        sig = Signal(str, x=int, y=int, z=int).defaults(1)
         sig.connect(func)
-        sig.defaults(1)
         sig.emit('hi', x=2, y=3)
 
         assert calls == [('hi', 2, 3, 1)]
@@ -548,9 +578,8 @@ class _TestSignal(_LightweightTest):
     def test_defaults_partial_trailing_fill_missing_raises(self) -> None:
         def func(s, *, x, y, z): ...  # type: ignore[no-untyped-def]
 
-        sig = Signal(str, x=int, y=int, z=int)
+        sig = Signal(str, x=int, y=int, z=int).defaults(1)
         sig.connect(func)
-        sig.defaults(1)
 
         with self.assert_raises(TypeError):
             sig.emit('hi', x=2)
@@ -559,9 +588,8 @@ class _TestSignal(_LightweightTest):
         calls = []
         def func(x, y): calls.append((x, y))  # type: ignore[no-untyped-def]
 
-        sig = Signal(x=int, y=int)
+        sig = Signal(x=int, y=int).defaults(x=0, y=0)
         sig.connect(func)
-        sig.defaults(x=0, y=0)
         sig.emit(x=1, y=2)
 
         assert calls == [(1, 2)]
@@ -594,6 +622,49 @@ class _TestSignal(_LightweightTest):
     def test_emit_with_no_connections(self) -> None:
         sig = Signal(int)
         sig.emit(1)
+
+    def test_class_attribute_signals_are_independent_per_instance(self) -> None:
+        calls = []
+
+        class Widget:
+            clicked = Signal(int)
+
+        a = Widget()
+        b = Widget()
+
+        def on_a(x): calls.append(('a', x))  # type: ignore[no-untyped-def]
+        def on_b(x): calls.append(('b', x))  # type: ignore[no-untyped-def]
+
+        a.clicked.connect(on_a)
+        b.clicked.connect(on_b)
+
+        a.clicked.emit(1)
+        b.clicked.emit(2)
+
+        assert calls == [('a', 1), ('b', 2)]
+        assert a.clicked is a.clicked  # cached, not rebuilt every access
+        assert a.clicked is not b.clicked
+        assert Widget.clicked is not a.clicked
+
+    def test_class_attribute_defaults_are_shared_across_instances(self) -> None:
+        calls = []
+
+        class Widget:
+            clicked = Signal(int).defaults(0)
+
+        a = Widget()
+        b = Widget()
+
+        def on_a(x): calls.append(('a', x))  # type: ignore[no-untyped-def]
+        def on_b(x): calls.append(('b', x))  # type: ignore[no-untyped-def]
+
+        a.clicked.connect(on_a)
+        b.clicked.connect(on_b)
+
+        a.clicked.emit()
+        b.clicked.emit()
+
+        assert calls == [('a', 0), ('b', 0)]
 
 
 if __name__ == '__main__':
