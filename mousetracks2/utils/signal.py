@@ -35,6 +35,7 @@ Not Implemented:
 """
 
 import inspect
+import threading
 import weakref
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
@@ -155,6 +156,7 @@ class Signal:
         self._args_default: list[Any] = []
         self._kwargs_default: dict[str, Any] = {}
         self._name: str | None = None
+        self._lock = threading.Lock()
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Record the class attribute name of this signal."""
@@ -168,9 +170,12 @@ class Signal:
         """
         if instance is None:
             return self
-        bound = self._fork_instance()
         assert self._name is not None
-        instance.__dict__[self._name] = bound
+        with self._lock:
+            bound = instance.__dict__.get(self._name)
+            if bound is None:
+                bound = self._fork_instance()
+                instance.__dict__[self._name] = bound
         return bound
 
     def _fork_instance(self) -> Self:
@@ -188,6 +193,7 @@ class Signal:
         bound._kwargs_default = self._kwargs_default
         bound._name = self._name
         bound._connections = [[] for _ in self._connections]
+        bound._lock = threading.Lock()
         return bound
 
     def connect(self, func: Callable) -> None:
@@ -202,10 +208,12 @@ class Signal:
                     ref = cast(weakref.ref[Callable], weakref.WeakMethod(func))
                 else:
                     ref = weakref.ref(func)
-                self._connections[i].append(ref)
-                return
+                break
+        else:
+            raise ValueError('signal does not support function signature')
 
-        raise ValueError('signal does not support function signature') from None
+        with self._lock:
+            self._connections[i].append(ref)
 
     def _resolve_overflow(self, args: list[Any], kwargs: dict[str, Any],
                           reverse: bool = False) -> tuple[list, dict]:
@@ -327,7 +335,8 @@ class Signal:
 
             # Only rebuild the list if a connection was actually deleted
             if dead:
-                connections[:] = [ref for ref in connections if ref() is not None]
+                with self._lock:
+                    connections[:] = [ref for ref in connections if ref() is not None]
 
     def defaults(self, *args_: Any, **kwargs: Any) -> Self:
         """Set default values for emit() to use.
@@ -693,6 +702,32 @@ class _TestSignal(_LightweightTest):
         sig.emit(1)
 
         assert calls == []
+
+    def test_concurrent_connect_does_not_lose_connections(self) -> None:
+        calls: list[int] = []
+        sig = Signal(int)
+        barrier = threading.Barrier(20)
+
+        def make_func(i: int) -> Callable:
+            def func(x: int) -> None:
+                calls.append(i)
+            return func
+
+        funcs = [make_func(i) for i in range(20)]
+
+        def connect(func: Callable) -> None:
+            barrier.wait()
+            sig.connect(func)
+
+        threads = [threading.Thread(target=connect, args=(func,)) for func in funcs]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        sig.emit(1)
+
+        assert len(calls) == 20
 
 
 if __name__ == '__main__':
