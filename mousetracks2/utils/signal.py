@@ -35,10 +35,11 @@ Not Implemented:
 """
 
 import inspect
+import weakref
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from types import UnionType
-from typing import Any, Callable, Generator, Self, Sequence, Type
+from typing import cast, Any, Callable, Generator, Self, Sequence, Type
 
 
 def _normalise_annotation(annotation: Any) -> type | UnionType | Any:
@@ -133,7 +134,7 @@ class Signal:
     def __init__(self, *args_: type | UnionType, **kwargs: type | UnionType) -> None:
         self._arg_types: list[list[type | UnionType]] = [[]]
         self._kwarg_types: list[dict[str, type | UnionType]] = [{}]
-        self._connections: list[list[Callable]] = [[]]
+        self._connections: list[list[weakref.ref[Callable]]] = [[]]
 
         # Generate variants by trimming the parameters
         args: list[type | UnionType] = list(args_)
@@ -197,7 +198,11 @@ class Signal:
 
         for i, (arg_types, kwarg_types) in enumerate(zip(self._arg_types, self._kwarg_types)):
             if signature.match(*arg_types, **kwarg_types):
-                self._connections[i].append(func)
+                if inspect.ismethod(func):
+                    ref = cast(weakref.ref[Callable], weakref.WeakMethod(func))
+                else:
+                    ref = weakref.ref(func)
+                self._connections[i].append(ref)
                 return
 
         raise ValueError('signal does not support function signature') from None
@@ -313,8 +318,16 @@ class Signal:
             # Emit signal to the connection
             connection_args = args[:len(arg_types)]
             connection_kwargs = {k: v for k, v in kwargs.items() if k in kwarg_types}
-            for connection in connections:
-                connection(*connection_args, **connection_kwargs)
+            dead = False
+            for ref in connections:
+                if connection := ref():
+                    connection(*connection_args, **connection_kwargs)
+                else:
+                    dead = True
+
+            # Only rebuild the list if a connection was actually deleted
+            if dead:
+                connections[:] = [ref for ref in connections if ref() is not None]
 
     def defaults(self, *args_: Any, **kwargs: Any) -> Self:
         """Set default values for emit() to use.
@@ -665,6 +678,21 @@ class _TestSignal(_LightweightTest):
         b.clicked.emit()
 
         assert calls == [('a', 0), ('b', 0)]
+
+    def test_connect_drops_collected_receiver(self) -> None:
+        calls = []
+
+        class Receiver:
+            def on_click(self, x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        receiver = Receiver()
+        sig.connect(receiver.on_click)
+
+        del receiver
+        sig.emit(1)
+
+        assert calls == []
 
 
 if __name__ == '__main__':
