@@ -384,6 +384,14 @@ class SaveComplete(Message):
 
 
 @dataclass
+class ProfileUnloaded(Message):
+    """After a profile has been unloaded from memory."""
+
+    target: Target = field(default=Target.GUI, init=False)
+    name: str
+
+
+@dataclass
 class ProfileDataRequest(Message):
     target: Target = field(default=Target.Processing, init=False)
     sanitised_name: str

@@ -63,7 +63,7 @@ class Processing(AppComponent, MonitorComponent):
         self.previous_mouse_click: PreviousMouseClick | None = None
 
         # Load in the default profile
-        self.all_profiles = self._all_profiles = TrackingProfileLoader()
+        self.all_profiles = self._all_profiles = TrackingProfileLoader(on_evict=self._profile_evicted)
 
         self.config = GlobalConfig()
 
@@ -543,6 +543,10 @@ class Processing(AppComponent, MonitorComponent):
         print(f'[Processing] Failed to save {profile_name}')
         return False
 
+    def _profile_evicted(self, profile_name: str) -> None:
+        """Notify the GUI that a profile has been unloaded."""
+        self.send_data(ipc.ProfileUnloaded(profile_name))
+
     def save(self, profile_name: str | None = None) -> tuple[list[str], list[str]]:
         """Save all loaded profiles to disk, unloading unmodified ones.
         If `profile_name` is given, only that profile is processed.
@@ -562,6 +566,7 @@ class Processing(AppComponent, MonitorComponent):
             if not profile.is_modified:
                 print(f'[Processing] Unloading profile: {name}')
                 del self.all_profiles[name]
+                self._profile_evicted(name)
             elif self._save(name):
                 succeeded.append(name)
             else:
@@ -753,7 +758,7 @@ class Processing(AppComponent, MonitorComponent):
 
             # When playback starts/restarts, switch to empty tracking profiles
             case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
-                self.all_profiles = TrackingProfileLoader(profile_dir='')
+                self.all_profiles = TrackingProfileLoader(profile_dir='', on_evict=self._profile_evicted)
                 self.previous_mouse_click = None
                 self.is_playback = True
 

@@ -1677,6 +1677,9 @@ class MainWindow(QtWidgets.QMainWindow):
             case ipc.SaveComplete():
                 self._handle_save_complete(message)
 
+            case ipc.ProfileUnloaded():
+                self.mark_profiles_saved(message.name)
+
             case ipc.DebugRaiseError():
                 raise RuntimeError('[GUI] Test Exception')
 
