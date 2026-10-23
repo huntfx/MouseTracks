@@ -16,6 +16,7 @@ from ..exceptions import ExitRequest
 from ..types import RectList, Application
 from ..utils.math import calculate_line
 from ..utils.monitor import MonitorData
+from ..utils.signal import Signal
 from ..utils.system import UserResizeAppListener
 from ..utils.system.base import EventListener
 
@@ -169,14 +170,11 @@ class Component:
 class AppComponent(Component):
     """Implement methods for tracking focused application."""
 
-    _app_change_hooks: list[Callable[[Application], None]]
+    application_changed = Signal(Application)
     _focused_app: Application
     _resize_listener: EventListener
 
     def _register_mixin(self) -> None:
-        # Setup the hook list
-        self._app_change_hooks = []
-
         # Setup the focused app tracking
         self._focused_app = Application('', RectList())
         self.focused_app = Application(DEFAULT_PROFILE_NAME, RectList())
@@ -186,13 +184,6 @@ class AppComponent(Component):
         self._resize_listener.start()
 
         super()._register_mixin()
-
-    def register_app_change_hook(self, fn: Callable[[Application], None]) -> None:
-        """Register a function to run when the focused application changes.
-        It takes one input parameter of the `Application` instance.
-        """
-        self._app_change_hooks.append(fn)
-        fn(self.focused_app)
 
     @property
     def focused_app(self) -> Application:
@@ -205,9 +196,7 @@ class AppComponent(Component):
         if application == self._focused_app:
             return
         self._focused_app = application
-
-        for func in self._app_change_hooks:
-            func(application)
+        self.application_changed.emit(application)
 
     @property
     def app_resizing(self) -> bool:

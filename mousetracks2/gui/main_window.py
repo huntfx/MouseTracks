@@ -463,7 +463,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._profile_names = {sanitised: app.name} | self._profile_names
             self.mark_profiles_unsaved(app.name)
             self._redraw_profile_combobox()
-        self.component.register_app_change_hook(update_profile_order)
+        self.component.application_changed.connect(update_profile_order)
+        update_profile_order(self.component.focused_app)
 
         # Trigger initial setup
         self.profile_changed(0)

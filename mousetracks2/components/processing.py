@@ -69,9 +69,9 @@ class Processing(AppComponent, MonitorComponent):
         self.config = GlobalConfig()
 
         # Reset the cursor position on focused application change
-        def on_application_change(app: Application) -> None:
+        def on_application_change() -> None:
             self.profile.cursor_map.position = None
-        self.register_app_change_hook(on_application_change)
+        self.application_changed.connect(on_application_change)
 
     @property
     def timestamp(self) -> int:
