@@ -32,6 +32,11 @@ Not Implemented:
         Turns out the class is too dynamic and Python literally doesn't
         support the type hints I'd need. I tested a half-baked solution,
         but it wasn't good enough so I removed it. `Any` it is.
+
+    Thread Safety:
+        To become truly thread safe, I'd have to implement queues, event
+        loops and so on. I'm not trying to literally re-implement Qt's
+        signal so this would be way too overkill.
 """
 
 import inspect
@@ -133,6 +138,9 @@ class Signal:
     """
 
     def __init__(self, *args_: type | UnionType, **kwargs: type | UnionType) -> None:
+        self._paused = False
+        self._replay_queue: list[tuple[tuple[Any, ...], dict[str, Any]]] | None = None
+
         self._arg_types: list[list[type | UnionType]] = [[]]
         self._kwarg_types: list[dict[str, type | UnionType]] = [{}]
         self._connections: list[list[Callable | weakref.WeakMethod]] = [[]]
@@ -182,9 +190,12 @@ class Signal:
         # pylint: disable=protected-access
         """Create a shared instance fork.
         This is used to create separate instances that share everything
-        but connections.
+        but connections. The purpose of this is for optimisation, so
+        that the fork does not need to recalculate all the variants.
         """
         bound = object.__new__(type(self))
+        bound._paused = False
+        bound._replay_queue = None
         bound._arg_types = self._arg_types
         bound._kwarg_types = self._kwarg_types
         bound._num_args = self._num_args
@@ -321,6 +332,11 @@ class Signal:
 
     def emit(self, *args_: Any, **kwargs: Any) -> None:
         """Emit data to all connections."""
+        if self._paused:
+            if self._replay_queue is not None:
+                self._replay_queue.append((args_, kwargs))
+            return
+
         args = list(args_)
         args, kwargs = self._resolve_overflow(args, kwargs)
         self._verify_input_length(args, kwargs)
@@ -369,6 +385,26 @@ class Signal:
         self._args_default = args
         self._kwargs_default = kwargs
         return self
+
+    @contextmanager
+    def pause(self, *, replay: bool = False) -> Generator[None, None, None]:
+        """Pause the signal for the block of code.
+        Use `replay=True` to emit the paused signals after. If an
+        exception occurs in the block, then signals won't be emitted.
+        """
+        self._paused = True
+        replay_queue: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+        if replay:
+            self._replay_queue = replay_queue
+
+        try:
+            yield
+        finally:
+            self._paused = False
+            self._replay_queue = None
+
+        for args, kwargs in replay_queue:
+            self.emit(*args, **kwargs)
 
 
 class _LightweightTest:
@@ -796,6 +832,47 @@ class _TestSignal(_LightweightTest):
         sig = Signal(int)
         with self.assert_raises(ValueError):
             sig.disconnect(func)
+
+    def test_paused_discards_emits_by_default(self) -> None:
+        calls = []
+        def func(x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        sig.connect(func)
+
+        with sig.pause():
+            sig.emit(1)
+            sig.emit(2)
+
+        assert calls == []
+
+    def test_paused_replays_emits_after_block_exits(self) -> None:
+        calls = []
+        def func(x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        sig.connect(func)
+
+        with sig.pause(replay=True):
+            sig.emit(1)
+            sig.emit(2)
+            assert calls == []
+
+        assert calls == [1, 2]
+
+    def test_paused_does_not_replay_if_error_in_block(self) -> None:
+        calls = []
+        def func(x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        sig.connect(func)
+
+        with self.assert_raises(RuntimeError):
+            with sig.pause(replay=True):
+                sig.emit(1)
+                raise RuntimeError('test error')
+
+        assert calls == []
 
 
 if __name__ == '__main__':
