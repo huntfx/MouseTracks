@@ -63,14 +63,15 @@ class Processing(AppComponent, MonitorComponent):
         self.previous_mouse_click: PreviousMouseClick | None = None
 
         # Load in the default profile
-        self.all_profiles = self._all_profiles = TrackingProfileLoader(on_evict=self._profile_evicted)
+        self.all_profiles = self._all_profiles = TrackingProfileLoader()
+        self.all_profiles.evicted.connect(self._profile_evicted)
 
         self.config = GlobalConfig()
 
         # Reset the cursor position on focused application change
-        def on_application_change(app: Application) -> None:
+        def on_application_change() -> None:
             self.profile.cursor_map.position = None
-        self.register_app_change_hook(on_application_change)
+        self.application_changed.connect(on_application_change)
 
     @property
     def timestamp(self) -> int:
@@ -758,7 +759,8 @@ class Processing(AppComponent, MonitorComponent):
 
             # When playback starts/restarts, switch to empty tracking profiles
             case ipc.PlaybackStarted() | ipc.PlaybackRestarted():
-                self.all_profiles = TrackingProfileLoader(profile_dir='', on_evict=self._profile_evicted)
+                self.all_profiles = TrackingProfileLoader(profile_dir='')
+                self.all_profiles.evicted.connect(self._profile_evicted)
                 self.previous_mouse_click = None
                 self.is_playback = True
 
