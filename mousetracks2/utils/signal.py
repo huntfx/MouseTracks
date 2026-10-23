@@ -212,6 +212,20 @@ class Signal:
         with self._lock:
             self._connections[i].append(ref)
 
+    def disconnect(self, func: Callable) -> None:
+        """Disconnect a previously connected function.
+        Raises a ValueError if the function is not connected.
+        """
+        for connections in self._connections:
+            for ref in connections:
+                connection = ref() if isinstance(ref, weakref.ref) else ref
+                if connection == func:
+                    with self._lock:
+                        connections.remove(ref)  # pylint: disable=modified-iterating-list
+                    return
+
+        raise ValueError('function is not connected')
+
     def _resolve_overflow(self, args: list[Any], kwargs: dict[str, Any],
                           reverse: bool = False) -> tuple[list, dict]:
         """Resolve an overflow of `args` into `kwargs`.
@@ -764,6 +778,24 @@ class _TestSignal(_LightweightTest):
         sig.emit(1)
 
         assert len(calls) == 20
+
+    def test_disconnect_removes_connection(self) -> None:
+        calls = []
+        def func(x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        sig.connect(func)
+        sig.disconnect(func)
+        sig.emit(1)
+
+        assert calls == []
+
+    def test_disconnect_not_connected_raises(self) -> None:
+        def func(x): ...  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        with self.assert_raises(ValueError):
+            sig.disconnect(func)
 
 
 if __name__ == '__main__':
