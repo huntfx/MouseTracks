@@ -40,7 +40,7 @@ import weakref
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from types import UnionType
-from typing import cast, Any, Callable, Generator, Self, Sequence, Type
+from typing import Any, Callable, Generator, Self, Sequence, Type
 
 
 def _normalise_annotation(annotation: Any) -> type | UnionType | Any:
@@ -135,7 +135,7 @@ class Signal:
     def __init__(self, *args_: type | UnionType, **kwargs: type | UnionType) -> None:
         self._arg_types: list[list[type | UnionType]] = [[]]
         self._kwarg_types: list[dict[str, type | UnionType]] = [{}]
-        self._connections: list[list[weakref.ref[Callable]]] = [[]]
+        self._connections: list[list[Callable | weakref.WeakMethod]] = [[]]
 
         # Generate variants by trimming the parameters
         args: list[type | UnionType] = list(args_)
@@ -204,10 +204,7 @@ class Signal:
 
         for i, (arg_types, kwarg_types) in enumerate(zip(self._arg_types, self._kwarg_types)):
             if signature.match(*arg_types, **kwarg_types):
-                if inspect.ismethod(func):
-                    ref = cast(weakref.ref[Callable], weakref.WeakMethod(func))
-                else:
-                    ref = weakref.ref(func)
+                ref: Callable | weakref.WeakMethod = weakref.WeakMethod(func) if inspect.ismethod(func) else func
                 break
         else:
             raise ValueError('signal does not support function signature')
@@ -328,7 +325,8 @@ class Signal:
             connection_kwargs = {k: v for k, v in kwargs.items() if k in kwarg_types}
             dead = False
             for ref in connections:
-                if connection := ref():
+                connection = ref() if isinstance(ref, weakref.ref) else ref
+                if connection is not None:
                     connection(*connection_args, **connection_kwargs)
                 else:
                     dead = True
@@ -336,7 +334,8 @@ class Signal:
             # Only rebuild the list if a connection was actually deleted
             if dead:
                 with self._lock:
-                    connections[:] = [ref for ref in connections if ref() is not None]
+                    connections[:] = [ref for ref in connections
+                                      if not isinstance(ref, weakref.ref) or ref() is not None]
 
     def defaults(self, *args_: Any, **kwargs: Any) -> Self:
         """Set default values for emit() to use.
@@ -707,6 +706,38 @@ class _TestSignal(_LightweightTest):
         sig.emit(1)
 
         assert calls == []
+
+    def test_connect_keeps_plain_function_alive(self) -> None:
+        calls = []
+
+        def make_func() -> Callable:
+            def func(x: int) -> None: calls.append(x)  # type: ignore[no-untyped-def]
+            return func
+
+        sig = Signal(int)
+        sig.connect(make_func())  # no other reference to the connected function is kept
+
+        sig.emit(1)
+
+        assert calls == [1]
+
+    def test_emit_prunes_dead_receiver_without_calling_plain_function(self) -> None:
+        calls = []
+
+        class Receiver:
+            def on_click(self, x): ...  # type: ignore[no-untyped-def]
+
+        def func(x): calls.append(x)  # type: ignore[no-untyped-def]
+
+        sig = Signal(int)
+        receiver = Receiver()
+        sig.connect(receiver.on_click)
+        sig.connect(func)
+
+        del receiver
+        sig.emit(1)
+
+        assert calls == [1]
 
     def test_concurrent_connect_does_not_lose_connections(self) -> None:
         calls: list[int] = []
