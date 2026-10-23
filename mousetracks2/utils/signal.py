@@ -72,7 +72,7 @@ class Signature:
     @classmethod
     def from_function(cls, func: Callable) -> Self:
         """Get the signature of a function."""
-        raw_signature = inspect.signature(func)
+        raw_signature = inspect.signature(func, eval_str=True)
         positional_types: list[Any] = []
         named_types: dict[str, Any] = {}
         args_type = kwargs_type = None
@@ -463,6 +463,11 @@ class _TestSignatureMatch(_LightweightTest):
         assert sig.match(list[int])  # Recursive not supported, so will match
         assert not sig.match(dict)
 
+    def test_stringified_annotation(self) -> None:
+        def fn(x: 'Signal'): ...  # type: ignore[no-untyped-def]
+        sig = self._sig(fn)
+        assert sig.match(Signal)
+        assert not sig.match(int)
 
 
 class _TestSignal(_LightweightTest):
