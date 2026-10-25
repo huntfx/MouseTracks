@@ -14,8 +14,8 @@ from .config import GlobalConfig
 from .context import CTX
 from .cli import parse_args, run_cli_function
 from .popups import show_temp_warning_dialog, show_already_running_dialog
+from .update import background_update
 from .utils.system import is_elevated, relaunch_as_elevated, remap_autostart
-from .utils.update import background_update
 from .utils.system import update_installer_version_number
 
 
