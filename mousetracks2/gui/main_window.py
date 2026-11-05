@@ -3414,7 +3414,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def history_stop(self) -> bool:
         """Stop history playback."""
-        if CTX.playback_file is not None:
+        if CTX.playback_file is not None or not self.is_playback:
             return False
         self._exit_playback_mode()
         self.component.send_data(ipc.StopPlayback())
