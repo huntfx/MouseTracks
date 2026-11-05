@@ -131,6 +131,8 @@ This only needs to be done once.
 _These are not guaranteed to be the latest version._
 - MouseTracks has been tested, reviewed and hosted by the amazing team over at [MajorGeeks](https://www.majorgeeks.com/files/details/mousetracks.html).
 
+- I noticed it's also been reviewed and hosted on [Softpedia](https://www.softpedia.com/get/Multimedia/Graphic/Graphic-Others/MouseTracks.shtml) too.
+
 ### Running from Source
 
 This is recommended if you want to view or contribute to the code.
