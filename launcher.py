@@ -7,8 +7,8 @@ import sys
 import subprocess
 
 from mousetracks2.context import CTX
-from mousetracks2.utils.update import get_local_executables
 from mousetracks2.sign import verify_signature
+from mousetracks2.update import get_local_executables
 
 
 MB_ICONERROR = 0x10

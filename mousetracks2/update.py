@@ -10,13 +10,13 @@ from threading import Thread
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .network import safe_download_file
-from ..constants import UNTRUSTED_EXT
-from ..context import CTX
-from ..version import VERSION
+from .constants import UNTRUSTED_EXT
+from .context import CTX
+from .utils.network import safe_download_file
+from .version import VERSION
 
 if sys.platform == 'win32':
-    from ..sign import verify_signature, failed_signature_verification
+    from .sign import verify_signature, failed_signature_verification
 else:
     def verify_signature(file_path: Path | str, write_untrusted: bool = True) -> bool: return True
     def failed_signature_verification(file_path: Path | str) -> bool: return False

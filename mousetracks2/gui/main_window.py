@@ -23,7 +23,6 @@ from .utils import format_distance, format_ticks, format_bytes, format_network_s
 from .widgets import Pixel, AutoCloseMessageBox
 from ..components import ipc
 from ..cli import CLI
-from ..colour import generate_colour_schemes
 from ..config import GlobalConfig
 from ..constants import DECAY_FACTOR, DECAY_THRESHOLD, RADIAL_ARRAY_SIZE, RECORDING_EXT
 from ..constants import UPDATES_PER_SECOND, TRACKING_DISABLE
@@ -37,10 +36,11 @@ from ..gui.utils import should_minimise_on_start
 from ..legacy import colours
 from ..runtime import SYS_EXECUTABLE
 from ..types import Application
+from ..update import is_latest_version, background_update
 from ..utils import keycodes
+from ..utils.colour import generate_colour_schemes
 from ..utils.math import calculate_distance
 from ..utils.system import SUPPORTS_TRAY, set_autostart, remove_autostart, split_autostart
-from ..utils.update import is_latest_version, background_update
 
 if TYPE_CHECKING:
     from ..components.gui import GUI
