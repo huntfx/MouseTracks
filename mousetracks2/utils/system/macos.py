@@ -16,13 +16,13 @@ from ...constants import PACKAGE_IDENTIFIER
 from ...context import CTX
 from ...types import Rect, RectList
 
-from AppKit import (  # type: ignore
+from AppKit import (  # type: ignore[import-not-found]
     NSApplication,
     NSApplicationActivationPolicyAccessory,
     NSImage,
     NSRunningApplication,
 )
-from Quartz import (  # type: ignore
+from Quartz import (  # type: ignore[import-not-found]
     CGWindowListCopyWindowInfo,
     kCGWindowListOptionOnScreenOnly,
     kCGWindowListExcludeDesktopElements,
