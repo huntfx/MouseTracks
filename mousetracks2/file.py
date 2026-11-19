@@ -602,7 +602,8 @@ class TrackingProfile:
             temp_file.rename(path)
             self._update_lazy_paths(temp_file, path)
 
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f'[File] Error when saving: {e}')
             return False
 
         finally:
