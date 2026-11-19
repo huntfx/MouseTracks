@@ -2,6 +2,7 @@
 Some of these are placeholders for use if a feature is missing support.
 """
 
+import os
 import queue
 import threading
 import time
@@ -37,6 +38,12 @@ def is_elevated() -> bool:
 
 def relaunch_as_elevated() -> None:
     """Relaunch the script with admin privileges."""
+
+
+def commit_to_disk(path: os.PathLike) -> None:
+    """Make sure a file is directly written to disk rather than a write buffer."""
+    with open(path, 'r+b') as f:
+        os.fsync(f.fileno())
 
 
 def monitor_locations(dpi_aware: bool = False) -> RectList:

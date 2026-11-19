@@ -19,6 +19,7 @@ from .constants import DECAY_FACTOR, DECAY_THRESHOLD, DEBUG, PROFILE_EXT, TRACKI
 from .context import CTX
 from .utils.keycodes import CLICK_CODES
 from .utils.signal import Signal
+from .utils.system import commit_to_disk
 
 
 CURRENT_FILE_VERSION = 1
@@ -572,10 +573,8 @@ class TrackingProfile:
             with zipfile.ZipFile(temp_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
                 self._write_to_zip(zf)
 
-            # Ensure the data is physically on disk
-            # Without this step, a system crash can cause data loss
-            with open(temp_file, 'r+b') as f:
-                os.fsync(f.fileno())
+            # Ensure the write buffer is written to disk
+            commit_to_disk(temp_file)
 
             # Quickly swap over the files to reduce chances of a race condition
             if path.exists():

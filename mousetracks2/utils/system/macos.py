@@ -3,6 +3,8 @@
 For usage instructions, see the linux.py file as it's very similar.
 """
 
+import fcntl  # pylint: disable=import-error
+import os
 import plistlib
 import shlex
 from contextlib import suppress
@@ -35,6 +37,15 @@ SUPPORTS_TRAY = False  # Causes bugs when restoring
 
 AUTOSTART_DIR = Path.home() / 'Library' / 'LaunchAgents'
 AUTOSTART_FILE_PATH = AUTOSTART_DIR / f'{PACKAGE_IDENTIFIER}.plist'
+
+
+def commit_to_disk(path: os.PathLike) -> None:
+    """Make sure a file is directly written to disk rather than a write buffer."""
+    with open(path, 'r+b') as f:
+        try:
+            fcntl.fcntl(f.fileno(), fcntl.F_FULLFSYNC)   # type: ignore[attr-defined]
+        except OSError:
+            os.fsync(f.fileno())
 
 
 class Window(base.Window):
